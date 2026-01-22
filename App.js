@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { BookingProvider } from './src/contexts/BookingContext';
@@ -81,20 +82,22 @@ function NotificationHandler({ children }) {
 export default function App() {
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <LanguageProvider>
-          <AuthProvider>
-            <NotificationHandler>
-              <BookingProvider>
-                <NavigationContainer>
-                  <StatusBar style="light" />
-                  <AppNavigator />
-                </NavigationContainer>
-              </BookingProvider>
-            </NotificationHandler>
-          </AuthProvider>
-        </LanguageProvider>
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <LanguageProvider>
+            <AuthProvider>
+              <NotificationHandler>
+                <BookingProvider>
+                  <NavigationContainer>
+                    <StatusBar style="light" />
+                    <AppNavigator />
+                  </NavigationContainer>
+                </BookingProvider>
+              </NotificationHandler>
+            </AuthProvider>
+          </LanguageProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

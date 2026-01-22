@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, FONTS, SPACING, BORDER_RADIUS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,8 +21,10 @@ const Tab = createBottomTabNavigator();
 
 // Custom Liquid Glass Tab Bar Component
 const LiquidGlassTabBar = ({ state, descriptors, navigation }) => {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.tabBarContainer}>
+    <View style={[styles.tabBarContainer, { bottom: Math.max(insets.bottom, SPACING.md) }]}>
       <BlurView
         intensity={40}
         tint="light"
@@ -183,7 +186,6 @@ export default MainTabNavigator;
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? SPACING.lg : SPACING.md,
     left: SPACING.md,
     right: SPACING.md,
     paddingTop: SPACING.sm,
