@@ -14,11 +14,97 @@ import Animated, {
   withTiming,
   interpolate,
   Extrapolate,
+  useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, ANIMATIONS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import ModernButton from '../components/ModernButton';
+
+// Separate component for slide to allow hooks
+const OnboardingSlide = ({ item, index, width, scrollX }) => {
+  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+  
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.8, 1, 0.8],
+      Extrapolate.CLAMP
+    );
+    
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.5, 1, 0.5],
+      Extrapolate.CLAMP
+    );
+    
+    const translateY = interpolate(
+      scrollX.value,
+      inputRange,
+      [50, 0, 50],
+      Extrapolate.CLAMP
+    );
+    
+    return {
+      transform: [
+        { scale },
+        { translateY },
+      ],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.slide, { width }, animatedStyle]}>
+      <Animated.View 
+        style={[
+          styles.iconContainer,
+          { backgroundColor: `${item.color}15` }
+        ]}
+      >
+        <Text style={styles.emoji}>{item.emoji}</Text>
+      </Animated.View>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.description}>{item.description}</Text>
+    </Animated.View>
+  );
+};
+
+// Separate component for dot to allow hooks
+const OnboardingDot = ({ index, width, scrollX }) => {
+  const dotAnimatedStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const widthValue = interpolate(
+      scrollX.value,
+      inputRange,
+      [8, 24, 8],
+      Extrapolate.CLAMP
+    );
+    const opacityValue = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.3, 1, 0.3],
+      Extrapolate.CLAMP
+    );
+    
+    return {
+      width: widthValue,
+      opacity: opacityValue,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        { backgroundColor: COLORS.primary },
+        dotAnimatedStyle,
+      ]}
+    />
+  );
+};
 
 const OnboardingScreen = ({ navigation }) => {
   const { width, height } = useWindowDimensions();
@@ -71,92 +157,34 @@ const OnboardingScreen = ({ navigation }) => {
     navigation.replace('Login');
   };
 
-  const renderSlide = ({ item, index }) => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-    
-    const animatedStyle = useAnimatedStyle(() => {
-      const scale = interpolate(
-        scrollX.value,
-        inputRange,
-        [0.8, 1, 0.8],
-        Extrapolate.CLAMP
-      );
-      
-      const opacity = interpolate(
-        scrollX.value,
-        inputRange,
-        [0.5, 1, 0.5],
-        Extrapolate.CLAMP
-      );
-      
-      const translateY = interpolate(
-        scrollX.value,
-        inputRange,
-        [50, 0, 50],
-        Extrapolate.CLAMP
-      );
-      
-      return {
-        transform: [
-          { scale },
-          { translateY },
-        ],
-        opacity,
-      };
-    });
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
 
+  const renderSlide = ({ item, index }) => {
     return (
-      <Animated.View style={[styles.slide, { width }, animatedStyle]}>
-        <Animated.View 
-          style={[
-            styles.iconContainer,
-            { backgroundColor: `${item.color}15` }
-          ]}
-        >
-          <Text style={styles.emoji}>{item.emoji}</Text>
-        </Animated.View>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
-      </Animated.View>
+      <OnboardingSlide
+        item={item}
+        index={index}
+        width={width}
+        scrollX={scrollX}
+      />
     );
   };
 
   const renderDots = () => {
     return (
       <View style={styles.dotsContainer}>
-        {slides.map((_, index) => {
-          const dotAnimatedStyle = useAnimatedStyle(() => {
-            const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-            const widthValue = interpolate(
-              scrollX.value,
-              inputRange,
-              [8, 24, 8],
-              Extrapolate.CLAMP
-            );
-            const opacityValue = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.3, 1, 0.3],
-              Extrapolate.CLAMP
-            );
-            
-            return {
-              width: widthValue,
-              opacity: opacityValue,
-            };
-          });
-
-          return (
-            <Animated.View
-              key={index}
-              style={[
-                styles.dot,
-                { backgroundColor: COLORS.primary },
-                dotAnimatedStyle,
-              ]}
-            />
-          );
-        })}
+        {slides.map((_, index) => (
+          <OnboardingDot
+            key={index}
+            index={index}
+            width={width}
+            scrollX={scrollX}
+          />
+        ))}
       </View>
     );
   };
@@ -167,19 +195,19 @@ const OnboardingScreen = ({ navigation }) => {
         <Text style={styles.skipText}>{t('skip') || 'Skip'}</Text>
       </TouchableOpacity>
 
-      <FlatList
+      <Animated.FlatList
         ref={flatListRef}
         data={slides}
         renderItem={renderSlide}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={(event) => {
-          scrollX.value = event.nativeEvent.contentOffset.x;
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={(event) => {
           const index = Math.round(event.nativeEvent.contentOffset.x / width);
           setCurrentIndex(index);
         }}
-        scrollEventThrottle={16}
       />
 
       {renderDots()}
