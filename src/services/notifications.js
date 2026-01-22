@@ -5,6 +5,7 @@
 
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from '../config/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -53,14 +54,18 @@ export async function registerForPushNotifications() {
       return null;
     }
 
-    // Get project ID from environment variable
-    // Expo SDK 50+ can often infer projectId from app.json, but if not available,
-    // you can set EXPO_PUBLIC_PROJECT_ID in your .env file
-    const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
+    // Get project ID from multiple sources
+    // 1. Try from environment variable
+    // 2. Try from Constants (expo-constants)
+    // 3. Try from app.json extra.eas.projectId
+    const projectId = 
+      process.env.EXPO_PUBLIC_PROJECT_ID ||
+      Constants.expoConfig?.extra?.eas?.projectId ||
+      Constants.expoConfig?.extra?.projectId ||
+      Constants.expoConfig?.projectId;
 
     // Get push token
-    // If projectId is not provided, Expo will try to infer it from app.json
-    // If that fails, you'll need to set EXPO_PUBLIC_PROJECT_ID in your .env file
+    // Note: Push notifications don't work in Expo Go, only in development builds
     let tokenData;
     try {
       if (projectId) {
@@ -68,21 +73,26 @@ export async function registerForPushNotifications() {
           projectId: projectId,
         });
       } else {
-        // Try without projectId - Expo SDK 50+ can often infer it from app.json
+        // Try without projectId - Expo SDK 50+ can sometimes infer it
+        // This will fail if projectId is required, which is expected in Expo Go
         tokenData = await Notifications.getExpoPushTokenAsync();
       }
       token = tokenData.data;
     } catch (error) {
-      console.error('Error getting push token:', error);
-      // If error is about projectId, provide helpful message
+      // In Expo Go, push notifications don't work, so this error is expected
       if (error.message?.includes('projectId')) {
         console.warn(
-          'Push notifications require a projectId. ' +
-          'To fix this, either:\n' +
-          '1. Add EXPO_PUBLIC_PROJECT_ID to your .env file, or\n' +
-          '2. Run "npx expo install expo-constants" and ensure your app.json has the projectId configured'
+          'Push notifications require a projectId and a development build. ' +
+          'Push notifications are not available in Expo Go. ' +
+          'To enable push notifications:\n' +
+          '1. Create a development build: npx expo run:android or npx expo run:ios\n' +
+          '2. Add your Expo project ID to app.json under extra.eas.projectId, or\n' +
+          '3. Set EXPO_PUBLIC_PROJECT_ID in your .env file'
         );
+      } else {
+        console.error('Error getting push token:', error);
       }
+      // Return null gracefully - the app can still work without push notifications
       return null;
     }
 
