@@ -83,8 +83,8 @@ function NotificationHandler({ children }) {
 export default function App() {
   return (
     <ErrorBoundary>
-      <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
           <LanguageProvider>
             <AuthProvider>
               <NotificationHandler>
@@ -103,7 +103,7 @@ export default function App() {
                         },
                       }}
                     >
-                      <StatusBar style="light" />
+                      <StatusBar style="dark" />
                       <AppNavigator />
                     </NavigationContainer>
                   </View>
@@ -111,8 +111,8 @@ export default function App() {
               </NotificationHandler>
             </AuthProvider>
           </LanguageProvider>
-        </GestureHandlerRootView>
-      </SafeAreaProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
