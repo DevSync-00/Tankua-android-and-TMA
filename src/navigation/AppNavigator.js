@@ -8,6 +8,7 @@ import { COLORS } from '../config/theme';
 // Auth Screens
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
+import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 
 // Main Screens
 import MainTabNavigator from './MainTabNavigator';
@@ -51,6 +52,7 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
         </>
       ) : (
         <>

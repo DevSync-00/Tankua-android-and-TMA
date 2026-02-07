@@ -177,7 +177,7 @@ const PaymentMethodsScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.secondary} />
@@ -256,7 +256,7 @@ const PaymentMethodsScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <SafeAreaView edges={['bottom']} style={styles.footer}>
         <ModernButton
           title="Add Payment Method"
           onPress={handleAddMethod}
@@ -266,7 +266,7 @@ const PaymentMethodsScreen = ({ navigation }) => {
           iconPosition="left"
           style={styles.addButton}
         />
-      </View>
+      </SafeAreaView>
 
       {/* Add Payment Method Modal */}
       <Modal

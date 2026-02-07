@@ -230,7 +230,7 @@ const ReviewScreen = ({ navigation, route }) => {
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <SafeAreaView edges={['bottom']} style={styles.footer}>
           <Button
             title={loading ? 'Submitting...' : 'Submit Review'}
             onPress={handleSubmit}
@@ -238,7 +238,7 @@ const ReviewScreen = ({ navigation, route }) => {
             loading={loading}
             style={styles.button}
           />
-        </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

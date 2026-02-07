@@ -37,16 +37,16 @@ export const COLORS = {
   info: '#3B82F6',
   
   // Background colors
-  background: '#FFFFFF',
-  backgroundSecondary: '#FAFAFA',
-  backgroundTertiary: '#F5F5F5',
-  cardBackground: '#FFFFFF',
-  cardBackgroundGlass: 'rgba(255, 255, 255, 0.9)',
+  background: '#FFF8E6',
+  backgroundSecondary: '#FFFAF0',
+  backgroundTertiary: '#FFF1CC',
+  cardBackground: '#FFFAF0', // Warm cream instead of pure white
+  cardBackgroundGlass: 'rgba(255, 250, 240, 0.9)', // Warm translucent
   
-  // Border and shadow
-  border: '#E5E7EB',
-  borderLight: '#F3F4F6',
-  borderDark: '#D1D5DB',
+  // Border and shadow - Warm borders to match cream background
+  border: '#FFE6A6', // Warm golden border
+  borderLight: '#FFF1CC', // Light warm border
+  borderDark: '#FFD978', // Darker warm border
   shadow: 'rgba(0, 0, 0, 0.08)',
   shadowMedium: 'rgba(0, 0, 0, 0.12)',
   shadowDark: 'rgba(0, 0, 0, 0.16)',
@@ -164,10 +164,10 @@ export const ANIMATIONS = {
   },
 };
 
-// Glassmorphism effect
+// Glassmorphism effect - Warm glass to match cream theme
 export const GLASS = {
-  background: 'rgba(255, 255, 255, 0.85)',
-  border: 'rgba(255, 255, 255, 0.3)',
+  background: 'rgba(255, 250, 240, 0.85)', // Warm cream glass
+  border: 'rgba(255, 235, 180, 0.35)', // Warm golden border
   backdrop: 'blur(20px)',
 };
 

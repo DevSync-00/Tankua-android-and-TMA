@@ -1,5 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import React, { useEffect, useRef } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -88,10 +89,24 @@ export default function App() {
             <AuthProvider>
               <NotificationHandler>
                 <BookingProvider>
-                  <NavigationContainer>
-                    <StatusBar style="light" />
-                    <AppNavigator />
-                  </NavigationContainer>
+                  <View style={{ flex: 1, backgroundColor: '#FFF8E6' }}>
+                    <NavigationContainer
+                      theme={{
+                        dark: false,
+                        colors: {
+                          primary: '#FFB800',
+                          background: '#FFF8E6',
+                          card: '#FFFFFF',
+                          text: '#1A1A2E',
+                          border: '#E5E7EB',
+                          notification: '#FFB800',
+                        },
+                      }}
+                    >
+                      <StatusBar style="light" />
+                      <AppNavigator />
+                    </NavigationContainer>
+                  </View>
                 </BookingProvider>
               </NotificationHandler>
             </AuthProvider>

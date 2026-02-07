@@ -6,7 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useBooking } from '../contexts/BookingContext';
@@ -17,9 +17,16 @@ import ModernButton from '../components/ModernButton';
 const TripsScreen = ({ navigation }) => {
   const { getUserBookings } = useBooking();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Calculate bottom padding to account for tab bar (70px height + bottom inset + padding)
+  const tabBarHeight = 70;
+  const tabBarBottomPadding = Math.max(insets.bottom, SPACING.md);
+  const tabBarTopPadding = SPACING.sm;
+  const totalTabBarSpace = tabBarHeight + tabBarBottomPadding + tabBarTopPadding + SPACING.md;
 
   useEffect(() => {
     loadBookings();
@@ -195,16 +202,7 @@ const TripsScreen = ({ navigation }) => {
           : 'Your cancelled trips will show up here.'
         }
       </Text>
-      {activeTab === 'upcoming' && (
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() => navigation.navigate('Home')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="search" size={18} color={COLORS.gray} />
-          <Text style={styles.searchButtonText}>Search Destinations</Text>
-        </TouchableOpacity>
-      )}
+
     </View>
   );
 
@@ -233,7 +231,7 @@ const TripsScreen = ({ navigation }) => {
 
       {/* Content */}
       {filteredBookings.length === 0 ? (
-        <View style={styles.emptyStateContainer}>
+        <View style={[styles.emptyStateContainer, { paddingBottom: totalTabBarSpace }]}>
           {renderEmptyState()}
         </View>
       ) : (
@@ -241,7 +239,7 @@ const TripsScreen = ({ navigation }) => {
           data={filteredBookings}
           renderItem={renderBookingCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: totalTabBarSpace }]}
           showsVerticalScrollIndicator={false}
           style={styles.list}
         />

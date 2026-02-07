@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,6 +16,13 @@ import { useAuth } from '../contexts/AuthContext';
 const ProfileScreen = ({ navigation }) => {
   const { t, language, changeLanguage } = useLanguage();
   const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
+  
+  // Calculate bottom padding to account for tab bar (70px height + bottom inset + padding)
+  const tabBarHeight = 70;
+  const tabBarBottomPadding = Math.max(insets.bottom, SPACING.md);
+  const tabBarTopPadding = SPACING.sm;
+  const totalTabBarSpace = tabBarHeight + tabBarBottomPadding + tabBarTopPadding + SPACING.md;
 
   const handleLogout = () => {
     Alert.alert(
@@ -95,7 +102,7 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: totalTabBarSpace }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -162,7 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
   },
   content: {
-    paddingBottom: SPACING.xl + SPACING.xxl,
+    paddingBottom: SPACING.md,
   },
   header: {
     paddingHorizontal: SPACING.lg,

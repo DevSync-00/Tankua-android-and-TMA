@@ -203,30 +203,30 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#FAF8F3]">
       {/* Navigation */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-[#FAF8F3]/95 backdrop-blur-lg shadow-md border-b border-[#A67C52]/10" : "bg-transparent"
+        isScrolled ? "bg-[#FAF8F3]/95 backdrop-blur-lg shadow-md border-b border-[#FFB800]/20" : "bg-transparent"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-[#A67C52] flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-xl">T</span>
+            <Link href="/" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-md overflow-hidden">
+                <Image src="/favicon.png" alt="Tankua" width={28} height={28} className="object-contain" />
               </div>
               <span className="text-2xl font-bold text-[#4A3A2A]">Tankua</span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/tours" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52] transition-colors">
+              <Link href="/tours" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800] transition-colors">
                 Explore Tours
               </Link>
-              <Link href="/providers" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52] transition-colors">
-                For Providers
+              <Link href="/providers" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800] transition-colors">
+              For Providers
               </Link>
-              <Link href="/about" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52] transition-colors">
-                About
+              <Link href="/about" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800] transition-colors">
+              About
               </Link>
-              <Link href="/contact" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52] transition-colors">
+              <Link href="/contact" className="text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800] transition-colors">
                 Contact
               </Link>
             </div>
@@ -239,7 +239,7 @@ export default function HomePage() {
               </Button>
               </Link>
               <Link href="/download">
-                <Button size="sm" className="bg-[#A67C52] hover:bg-[#8B6B47] text-white">
+                <Button size="sm" className="bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold shadow-md">
                 Download App
               </Button>
               </Link>
@@ -257,26 +257,26 @@ export default function HomePage() {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#FAF8F3] border-t border-[#A67C52]/10">
+          <div className="md:hidden bg-[#FAF8F3] border-t border-[#FFB800]/20">
             <div className="px-4 py-6 space-y-4">
-              <Link href="/tours" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52]">
+              <Link href="/tours" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800]">
                 Explore Tours
               </Link>
-              <Link href="/providers" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52]">
+              <Link href="/providers" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800]">
                 For Providers
               </Link>
-              <Link href="/about" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52]">
+              <Link href="/about" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800]">
                 About
               </Link>
-              <Link href="/contact" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#A67C52]">
+              <Link href="/contact" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800]">
                 Contact
               </Link>
-              <div className="pt-4 border-t border-[#A67C52]/10 flex gap-4">
+              <div className="pt-4 border-t border-[#FFB800]/20 flex gap-4">
                 <Link href="/login" className="flex-1">
-                  <Button variant="outline" className="w-full border-[#A67C52]/30 text-[#4A3A2A]">Sign In</Button>
+                  <Button variant="outline" className="w-full border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">Sign In</Button>
                 </Link>
                 <Link href="/download" className="flex-1">
-                  <Button className="w-full bg-[#A67C52] hover:bg-[#8B6B47] text-white">Download App</Button>
+                  <Button className="w-full bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold">Download App</Button>
                 </Link>
               </div>
             </div>
@@ -290,7 +290,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left content */}
             <div className="space-y-8">
-              <Badge className="px-4 py-2 text-sm bg-[#A67C52]/10 text-[#8B6B47] border-[#A67C52]/20">
+              <Badge className="px-4 py-2 text-sm bg-[#FFB800]/15 text-[#C48900] border-[#FFB800]/30">
                 #1 Tour & Travel Platform in Ethiopia
               </Badge>
               
@@ -305,21 +305,21 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="xl" className="bg-[#A67C52] hover:bg-[#8B6B47] text-white">
+                <Button size="xl" className="bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold shadow-lg">
                   Download the App
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button variant="outline" size="xl" className="border-[#A67C52]/30 text-[#4A3A2A] hover:bg-[#A67C52]/10">
+                <Button variant="outline" size="xl" className="border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">
                   Explore Tours
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-8 pt-8 border-t border-[#A67C52]/20">
+              <div className="flex flex-wrap gap-8 pt-8 border-t border-[#FFB800]/20">
                 {stats.map((stat, index) => (
                   <div key={index} className="text-center">
-                    <div className="text-3xl font-bold text-[#A67C52]">{stat.value}</div>
+                    <div className="text-3xl font-bold text-[#FFB800]">{stat.value}</div>
                     <div className="text-sm text-[#4A3A2A]/60">{stat.label}</div>
                   </div>
                 ))}
@@ -340,7 +340,7 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#4A3A2A]/60 via-transparent to-transparent" />
               </div>
               {/* Natural accent elements - constrained within container */}
-              <div className="absolute bottom-4 left-4 w-24 h-24 bg-[#A67C52]/20 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute bottom-4 left-4 w-24 h-24 bg-[#FFB800]/25 rounded-full blur-2xl pointer-events-none" />
               <div className="absolute top-4 right-4 w-32 h-32 bg-[#6B8E5A]/20 rounded-full blur-2xl pointer-events-none" />
             </div>
           </div>
@@ -358,7 +358,7 @@ export default function HomePage() {
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge className="mb-4 bg-[#A67C52]/10 text-[#8B6B47] border-[#A67C52]/20">Why Tankua</Badge>
+            <Badge className="mb-4 bg-[#FFB800]/15 text-[#C48900] border-[#FFB800]/30">Why Tankua</Badge>
             <h2 className="text-4xl font-bold text-[#4A3A2A] mb-4">
               Everything You Need for Your Perfect Tour
             </h2>
@@ -374,7 +374,7 @@ export default function HomePage() {
                 hoverable 
                 className="text-center p-8 group natural-card"
               >
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-[#A67C52]/10 flex items-center justify-center text-[#A67C52] mb-6 group-hover:bg-[#A67C52] group-hover:text-white transition-all duration-300">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-[#FFB800]/15 flex items-center justify-center text-[#FFB800] mb-6 group-hover:bg-[#FFB800] group-hover:text-white transition-all duration-300">
                   {feature.icon}
                 </div>
                 <h3 className="text-lg font-semibold text-[#4A3A2A] mb-3">{feature.title}</h3>
@@ -389,7 +389,7 @@ export default function HomePage() {
       <section className="py-24 bg-gradient-to-b from-white to-[#F5F1E8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <Badge className="mb-4 bg-[#A67C52]/10 text-[#8B6B47] border-[#A67C52]/20">Explore by Category</Badge>
+            <Badge className="mb-4 bg-[#FFB800]/15 text-[#C48900] border-[#FFB800]/30">Explore by Category</Badge>
             <h2 className="text-4xl font-bold text-[#4A3A2A] mb-4">
               Find Your Perfect Tour
             </h2>
@@ -406,13 +406,13 @@ export default function HomePage() {
                 className="p-6 group cursor-pointer natural-card"
               >
                 <div className="flex items-start gap-4">
-                  <div className="text-[#A67C52]">{category.icon}</div>
+                  <div className="text-[#FFB800]">{category.icon}</div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-[#4A3A2A] mb-1">{category.name}</h3>
                     <p className="text-sm text-[#4A3A2A]/60 mb-2">{category.description}</p>
-                    <div className="text-sm font-medium text-[#A67C52]">{category.count} tours available</div>
+                    <div className="text-sm font-medium text-[#FFB800]">{category.count} tours available</div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-[#4A3A2A]/40 group-hover:text-[#A67C52] transition-all" />
+                  <ChevronRight className="h-5 w-5 text-[#4A3A2A]/40 group-hover:text-[#FFB800] transition-all" />
                 </div>
               </Card>
             ))}
@@ -425,13 +425,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12">
             <div>
-              <Badge className="mb-4 bg-[#A67C52]/10 text-[#8B6B47] border-[#A67C52]/20">Popular Tours</Badge>
+              <Badge className="mb-4 bg-[#FFB800]/15 text-[#C48900] border-[#FFB800]/30">Popular Tours</Badge>
               <h2 className="text-4xl font-bold text-[#4A3A2A]">
                 Featured Destinations
               </h2>
             </div>
             <Link href="/tours">
-              <Button variant="outline" className="mt-4 sm:mt-0 border-[#A67C52]/30 text-[#4A3A2A] hover:bg-[#A67C52]/10">
+              <Button variant="outline" className="mt-4 sm:mt-0 border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">
               View All Tours
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
@@ -463,7 +463,7 @@ export default function HomePage() {
                   </div>
                   <div className="absolute bottom-4 left-4 right-4">
                     <div className="flex items-center gap-1 text-white mb-1">
-                      <Star className="h-4 w-4 fill-[#A67C52] text-[#A67C52]" />
+                      <Star className="h-4 w-4 fill-[#FFB800] text-[#FFB800]" />
                       <span className="font-semibold">{tour.rating}</span>
                       <span className="text-sm opacity-80">({tour.reviews})</span>
                     </div>
@@ -477,11 +477,11 @@ export default function HomePage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-lg font-bold text-[#A67C52]">{tour.price} ETB</span>
+                      <span className="text-lg font-bold text-[#FFB800]">{tour.price} ETB</span>
                       <span className="text-sm text-[#4A3A2A]/60"> /person</span>
                     </div>
                     <Link href={`/tours/${tour.id}`}>
-                      <Button size="sm" className="bg-[#A67C52] hover:bg-[#8B6B47] text-white">Book</Button>
+                      <Button size="sm" className="bg-[#FFB800] hover:bg-[#E5A500] text-white">Book</Button>
                     </Link>
                   </div>
                 </div>
@@ -498,7 +498,7 @@ export default function HomePage() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge className="mb-4 bg-[#A67C52]/20 text-[#D4B896] border-[#A67C52]/30">How It Works</Badge>
+            <Badge className="mb-4 bg-[#FFB800]/20 text-[#C48900] border-[#FFB800]/30">How It Works</Badge>
             <h2 className="text-4xl font-bold text-white mb-4">
               Book Your Tour in 3 Simple Steps
             </h2>
@@ -529,11 +529,11 @@ export default function HomePage() {
               },
             ].map((item, index) => (
               <div key={index} className="relative">
-                <div className="text-7xl font-bold text-[#A67C52]/10 absolute -top-4 -left-2">
+                <div className="text-7xl font-bold text-[#FFB800]/10 absolute -top-4 -left-2">
                   {item.step}
                 </div>
                 <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:bg-white/10 transition-colors">
-                  <div className="w-16 h-16 rounded-2xl bg-[#A67C52] flex items-center justify-center text-white mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-[#FFB800] flex items-center justify-center text-white mb-6">
                     {item.icon}
                   </div>
                   <h3 className="text-xl font-semibold text-white mb-3">{item.title}</h3>
@@ -549,7 +549,7 @@ export default function HomePage() {
       <section className="py-24 bg-[#FAF8F3]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge className="mb-4 bg-[#A67C52]/10 text-[#8B6B47] border-[#A67C52]/20">Testimonials</Badge>
+            <Badge className="mb-4 bg-[#FFB800]/10 text-[#E5A500] border-[#FFB800]/20">Testimonials</Badge>
             <h2 className="text-4xl font-bold text-[#4A3A2A] mb-4">
               What Our Travelers Say
             </h2>
@@ -560,12 +560,12 @@ export default function HomePage() {
               <Card key={index} variant="bordered" className="p-8 natural-card">
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-[#A67C52] text-[#A67C52]" />
+                    <Star key={i} className="h-5 w-5 fill-[#FFB800] text-[#FFB800]" />
                   ))}
                 </div>
                 <p className="text-[#4A3A2A]/70 mb-6 italic">"{testimonial.content}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#A67C52] flex items-center justify-center text-white font-semibold">
+                  <div className="w-12 h-12 rounded-full bg-[#FFB800] flex items-center justify-center text-white font-semibold">
                     {testimonial.avatar}
                   </div>
                   <div>
@@ -580,7 +580,7 @@ export default function HomePage() {
       </section>
 
       {/* Provider CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-[#A67C52] to-[#8B6B47] relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-r from-[#FFB800] to-[#E5A500] relative overflow-hidden">
         <div className="absolute inset-0 natural-pattern opacity-10" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -617,7 +617,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="bg-white rounded-2xl p-8 shadow-2xl">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-xl bg-[#4A3A2A] flex items-center justify-center text-[#A67C52] text-2xl font-bold">
+                  <div className="w-16 h-16 rounded-xl bg-[#4A3A2A] flex items-center justify-center text-[#FFB800] text-2xl font-bold">
                     T
                   </div>
                   <div>
@@ -634,12 +634,12 @@ export default function HomePage() {
                     </div>
                     <div className="text-[#6B8E5A] text-sm">+12%</div>
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-[#A67C52]/10 rounded-xl">
+                  <div className="flex justify-between items-center p-4 bg-[#FFB800]/10 rounded-xl">
                     <div>
                       <div className="font-semibold text-[#4A3A2A]">Active Bookings</div>
                       <div className="text-2xl font-bold text-[#4A3A2A]">23</div>
                     </div>
-                    <div className="text-[#A67C52] text-sm">5 new today</div>
+                    <div className="text-[#FFB800] text-sm">5 new today</div>
                   </div>
                 </div>
               </div>
@@ -696,7 +696,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <Link href="/" className="flex items-center gap-2 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-[#A67C52] flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-md">
                   <span className="text-white font-bold text-xl">T</span>
                 </div>
                 <span className="text-2xl font-bold text-white">Tankua</span>
@@ -710,22 +710,22 @@ export default function HomePage() {
               <h4 className="text-white font-semibold mb-4">Explore</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/tours" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/tours" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     All Tours
                   </Link>
                 </li>
                 <li>
-                  <Link href="/churches" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/churches" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Popular Destinations
                   </Link>
                 </li>
                 <li>
-                  <Link href="/providers" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/providers" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Travel Providers
                   </Link>
                 </li>
                 <li>
-                  <Link href="/how-it-works" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/how-it-works" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     How It Works
                     </Link>
                   </li>
@@ -736,22 +736,22 @@ export default function HomePage() {
               <h4 className="text-white font-semibold mb-4">Company</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/about" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/contact" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faq" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/faq" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     FAQ
                   </Link>
                 </li>
                 <li>
-                  <Link href="/download" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/download" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Download App
                     </Link>
                   </li>
@@ -762,17 +762,17 @@ export default function HomePage() {
               <h4 className="text-white font-semibold mb-4">Legal</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/privacy" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/terms" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faq" className="text-white/60 hover:text-[#A67C52] text-sm transition-colors">
+                  <Link href="/faq" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Help Center
                     </Link>
                   </li>
@@ -786,7 +786,7 @@ export default function HomePage() {
             </p>
             <div className="flex gap-4">
               {["Twitter", "Instagram", "Facebook", "YouTube"].map((social) => (
-                <Link key={social} href="#" className="text-white/40 hover:text-[#A67C52] text-sm transition-colors">
+                <Link key={social} href="#" className="text-white/40 hover:text-[#FFB800] text-sm transition-colors">
                   {social}
                 </Link>
               ))}

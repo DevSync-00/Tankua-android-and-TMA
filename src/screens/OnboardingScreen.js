@@ -1,29 +1,34 @@
 import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  useWindowDimensions, 
-  FlatList,
+import {
+  View,
+  Text,
+  StyleSheet,
+  useWindowDimensions,
   TouchableOpacity,
+  Image,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
-  withTiming,
   interpolate,
   Extrapolate,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SPACING, BORDER_RADIUS, ANIMATIONS } from '../config/theme';
+import { COLORS, FONTS, SPACING } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
-import ModernButton from '../components/ModernButton';
+
+const onboardingImage = require('../../assets/onboarding-fasil-ghebbi.png');
+const onboardingWaterfallImage = require('../../assets/onboarding-waterfall.png');
+const onboardingDallolImage = require('../../assets/onboarding-dallol.png');
+const DOT_INACTIVE_COLOR = '#D9E6F2';
 
 // Separate component for slide to allow hooks
-const OnboardingSlide = ({ item, index, width, scrollX }) => {
+const OnboardingSlide = ({ item, index, width, height, scrollX }) => {
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+  const showImageHeader = Boolean(item.image);
+  const imageHeight = Math.min(height * 0.45, 360);
   
   const animatedStyle = useAnimatedStyle(() => {
     const scale = interpolate(
@@ -57,23 +62,50 @@ const OnboardingSlide = ({ item, index, width, scrollX }) => {
   });
 
   return (
-    <Animated.View style={[styles.slide, { width }, animatedStyle]}>
-      <Animated.View 
+    <Animated.View
+      style={[styles.slide, { width }, animatedStyle, !showImageHeader && styles.slideCentered]}
+    >
+      {showImageHeader ? (
+        <View style={[styles.imageContainer, { height: imageHeight }]}>
+          <Image source={item.image} style={styles.headerImage} />
+        </View>
+      ) : (
+        <Animated.View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: `${item.color}15` },
+          ]}
+        >
+          <Text style={styles.emoji}>{item.emoji}</Text>
+        </Animated.View>
+      )}
+      <View
         style={[
-          styles.iconContainer,
-          { backgroundColor: `${item.color}15` }
+          styles.textContainer,
+          showImageHeader ? styles.textContainerWithImage : styles.textContainerDefault,
         ]}
       >
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </Animated.View>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+        {item.headlinePrefix && item.headlineHighlight ? (
+          <View style={styles.headlineContainer}>
+            <Text style={styles.headline}>{item.headlinePrefix}</Text>
+            <View style={styles.headlineHighlightWrapper}>
+              <Text style={[styles.headline, styles.headlineHighlight]}>
+                {item.headlineHighlight}
+              </Text>
+              <View style={styles.headlineUnderline} />
+            </View>
+          </View>
+        ) : (
+          <Text style={styles.title}>{item.title}</Text>
+        )}
+        <Text style={styles.description}>{item.description}</Text>
+      </View>
     </Animated.View>
   );
 };
 
 // Separate component for dot to allow hooks
-const OnboardingDot = ({ index, width, scrollX }) => {
+const OnboardingDot = ({ index, width, scrollX, isActive }) => {
   const dotAnimatedStyle = useAnimatedStyle(() => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
     const widthValue = interpolate(
@@ -99,7 +131,7 @@ const OnboardingDot = ({ index, width, scrollX }) => {
     <Animated.View
       style={[
         styles.dot,
-        { backgroundColor: COLORS.primary },
+        { backgroundColor: isActive ? COLORS.primary : DOT_INACTIVE_COLOR },
         dotAnimatedStyle,
       ]}
     />
@@ -116,27 +148,27 @@ const OnboardingScreen = ({ navigation }) => {
   const slides = [
     {
       id: '1',
-      title: t('onboarding1Title') || 'Discover Amazing Places',
-      description: t('onboarding1Desc') || 'Explore Ethiopia\'s most beautiful destinations and attractions with ease.',
-      icon: 'location',
-      emoji: '📍',
-      color: COLORS.primary,
+      headlinePrefix: 'Discover fascinating',
+      headlineHighlight: 'destinations',
+      description:
+        'Explore Ethiopia\'s biggest and most loved tourist attractions through our easy-to-use search and discover features.',
+      image: onboardingImage,
     },
     {
       id: '2',
-      title: t('onboarding2Title') || 'Book Your Journey',
-      description: t('onboarding2Desc') || 'Simple booking process with multiple pickup stations and flexible dates.',
-      icon: 'calendar',
-      emoji: '📅',
-      color: COLORS.secondary,
+      headlinePrefix: 'Choose your comfort time and',
+      headlineHighlight: 'destination',
+      description:
+        'Travel in comfort with everything you need for the perfect adventure. Book your trip, pick your date, and create memories that last a lifetime.',
+      image: onboardingWaterfallImage,
     },
     {
       id: '3',
-      title: t('onboarding3Title') || 'Travel in Peace',
-      description: t('onboarding3Desc') || 'Join thousands of travelers on safe and comfortable trips.',
-      icon: 'heart',
-      emoji: '✨',
-      color: COLORS.primary,
+      headlinePrefix: 'Live discover travel',
+      headlineHighlight: 'Ethiopia',
+      description:
+        'Discover and experience the beauty, history, and spirituality that define this remarkable nation.',
+      image: onboardingDallolImage,
     },
   ];
 
@@ -169,6 +201,7 @@ const OnboardingScreen = ({ navigation }) => {
         item={item}
         index={index}
         width={width}
+        height={height}
         scrollX={scrollX}
       />
     );
@@ -183,14 +216,26 @@ const OnboardingScreen = ({ navigation }) => {
             index={index}
             width={width}
             scrollX={scrollX}
+            isActive={currentIndex === index}
           />
         ))}
       </View>
     );
   };
 
+  const isFirstSlide = currentIndex === 0;
+  const primaryButtonLabel = isFirstSlide ? t('getStarted') || 'Get Started' : t('next') || 'Next';
+
   return (
     <View style={styles.container}>
+      <View style={styles.fakeStatusBar}>
+        <Text style={styles.statusTime}>9:41</Text>
+        <View style={styles.statusIcons}>
+          <Ionicons name="cellular" size={14} color={COLORS.white} />
+          <Ionicons name="wifi" size={14} color={COLORS.white} />
+          <Ionicons name="battery-full" size={16} color={COLORS.white} />
+        </View>
+      </View>
       <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
         <Text style={styles.skipText}>{t('skip') || 'Skip'}</Text>
       </TouchableOpacity>
@@ -213,16 +258,11 @@ const OnboardingScreen = ({ navigation }) => {
       {renderDots()}
 
       <View style={styles.buttonContainer}>
-        <ModernButton
-          title={currentIndex === slides.length - 1 ? (t('getStarted') || 'Get Started') : (t('next') || 'Next')}
-          onPress={handleNext}
-          variant="primary"
-          size="large"
-          style={styles.button}
-          icon={currentIndex === slides.length - 1 ? 'arrow-forward' : 'chevron-forward'}
-          iconPosition="right"
-        />
+        <TouchableOpacity style={styles.primaryButton} onPress={handleNext} activeOpacity={0.9}>
+          <Text style={styles.primaryButtonText}>{primaryButtonLabel}</Text>
+        </TouchableOpacity>
       </View>
+      <View style={styles.homeIndicator} />
     </View>
   );
 };
@@ -232,23 +272,108 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
+  fakeStatusBar: {
+    position: 'absolute',
+    top: SPACING.md,
+    left: SPACING.lg,
+    right: SPACING.lg,
+    zIndex: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statusTime: {
+    color: COLORS.white,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.semibold,
+    textShadowColor: 'rgba(0, 0, 0, 0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  statusIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
   skipButton: {
     position: 'absolute',
-    top: 50,
-    right: SPACING.md,
-    zIndex: 10,
-    padding: SPACING.sm,
+    top: SPACING.xl,
+    right: SPACING.lg,
+    zIndex: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   skipText: {
-    fontSize: FONTS.sizes.md,
-    color: COLORS.gray,
-    fontWeight: '600',
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.secondary,
+    fontWeight: FONTS.weights.semibold,
   },
   slide: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
+    justifyContent: 'flex-start',
+    backgroundColor: COLORS.white,
+  },
+  slideCentered: {
+    justifyContent: 'center',
+  },
+  imageContainer: {
+    width: '100%',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    backgroundColor: COLORS.lightGray,
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  textContainer: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
+  textContainerWithImage: {
+    marginTop: SPACING.xl,
+  },
+  textContainerDefault: {
+    marginTop: 0,
+  },
+  headlineContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  headline: {
+    fontSize: FONTS.sizes.xxxl,
+    fontWeight: FONTS.weights.bold,
+    fontFamily: Platform.select({
+      ios: 'Georgia',
+      android: 'serif',
+      default: 'serif',
+    }),
+    color: COLORS.secondary,
+    textAlign: 'center',
+    lineHeight: 38,
+    letterSpacing: -0.5,
+  },
+  headlineHighlightWrapper: {
+    alignItems: 'center',
+  },
+  headlineHighlight: {
+    color: COLORS.primary,
+  },
+  headlineUnderline: {
+    height: 6,
+    width: 120,
+    borderRadius: 999,
+    backgroundColor: COLORS.primary,
+    marginTop: 4,
+    opacity: 0.9,
+    transform: [{ rotate: '-2deg' }],
   },
   iconContainer: {
     width: 180,
@@ -273,15 +398,20 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.lg,
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: SPACING.lg,
+    lineHeight: 24,
+    marginTop: SPACING.sm,
+    fontFamily: Platform.select({
+      ios: 'System',
+      android: 'sans-serif',
+      default: 'System',
+    }),
     fontWeight: '400',
   },
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: SPACING.xl,
+    marginVertical: SPACING.lg,
     gap: SPACING.sm,
   },
   dot: {
@@ -289,11 +419,29 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   buttonContainer: {
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
-  button: {
+  primaryButton: {
     width: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
+    color: COLORS.white,
+    fontSize: FONTS.sizes.lg,
+    fontWeight: FONTS.weights.bold,
+  },
+  homeIndicator: {
+    width: 120,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: COLORS.black,
+    alignSelf: 'center',
+    marginBottom: SPACING.sm,
   },
 });
 

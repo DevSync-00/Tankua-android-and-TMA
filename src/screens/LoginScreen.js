@@ -8,51 +8,116 @@ import {
   Platform,
   Alert,
   useWindowDimensions,
+  StatusBar,
+  TouchableOpacity,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, {
-  useAnimatedStyle,
-} from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../config/theme';
-import { useLanguage } from '../contexts/LanguageContext';
+import CountryPicker, { Flag } from 'react-native-country-picker-modal';
+import Svg, { Path, Polygon } from 'react-native-svg';
+import { COLORS, FONTS, SPACING } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
-import ModernButton from '../components/ModernButton';
+
+const PaperBoatLogo = ({ size }) => {
+  const width = size;
+  const height = size * 0.72;
+
+  return (
+    <Svg width={width} height={height} viewBox="0 0 120 86">
+      <Polygon
+        points="10,60 60,18 110,60 88,76 32,76"
+        fill={COLORS.primary}
+        stroke={COLORS.secondary}
+        strokeWidth="4"
+        strokeLinejoin="round"
+      />
+      <Polygon
+        points="60,18 82,50 60,50 38,50"
+        fill={COLORS.primaryLight}
+        stroke={COLORS.secondary}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M32 76 L60 60 L88 76"
+        fill="none"
+        stroke={COLORS.secondary}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+};
+
+const Wave = ({ position, height }) => {
+  const path =
+    position === 'top'
+      ? 'M0,78 C70,25 150,120 240,60 C300,20 345,60 375,30 L375,0 L0,0 Z'
+      : 'M0,40 C70,90 160,0 240,60 C300,110 350,80 375,95 L375,120 L0,120 Z';
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.wave, position === 'top' ? styles.waveTop : styles.waveBottom, { height }]}
+    >
+      <Svg width="100%" height="100%" viewBox="0 0 375 120" preserveAspectRatio="none">
+        <Path d={path} fill={COLORS.primary} />
+      </Svg>
+    </View>
+  );
+};
 
 const LoginScreen = ({ navigation }) => {
-  const { width } = useWindowDimensions();
-  const { t } = useLanguage();
-  const { sendOTP, verifyOTP } = useAuth();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const { sendOTP } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpPhone, setOtpPhone] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState('ET');
+  const [callingCode, setCallingCode] = useState('251');
 
-  const logoAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: 1 },
-      { rotate: '0deg' },
-    ],
-  }));
+  const topWaveHeight = Math.max(90, Math.min(height * 0.18, 140));
+  const bottomWaveHeightBase = Math.max(120, Math.min(height * 0.22, 170));
+  const bottomWaveHeight = bottomWaveHeightBase + insets.bottom;
 
-  const formAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: 1,
-    transform: [{ translateY: 0 }],
-  }));
+  const contentPaddingTop = insets.top + topWaveHeight * 0.45;
+  const contentPaddingBottom = bottomWaveHeight * 0.5;
+  const logoSize = Math.min(width * 0.26, 88);
+
+  const handleSelectCountry = (country) => {
+    setCountryCode(country.cca2);
+    const nextCallingCode = Array.isArray(country.callingCode)
+      ? country.callingCode[0]
+      : country.callingCode;
+    if (nextCallingCode) {
+      setCallingCode(nextCallingCode);
+    }
+  };
+
+  const formatPhoneNumber = (raw) => {
+    const trimmed = raw.replace(/\s+/g, '');
+    if (!trimmed) return '';
+    if (trimmed.startsWith('+')) return trimmed;
+    const sanitized = trimmed.replace(/^0+/, '');
+    return `+${callingCode}${sanitized}`;
+  };
 
   const handleSendOTP = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+
+    if (!formattedPhone || formattedPhone.length < 8) {
       Alert.alert('Error', 'Please enter a valid phone number');
       return;
     }
 
     setLoading(true);
-    setOtp('');
-    setOtpPhone(null);
     try {
-      const result = await sendOTP(phoneNumber);
-      setOtpPhone(result.phoneNumber);
-      Alert.alert('Success', 'OTP sent to your phone');
+      const result = await sendOTP(formattedPhone);
+      const resolvedPhone = result?.phoneNumber || formattedPhone;
+      navigation.navigate('OTPVerification', { phoneNumber: resolvedPhone });
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
@@ -60,119 +125,97 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleVerifyOTP = async () => {
-    if (!otp || otp.length !== 6) {
-      Alert.alert('Error', 'Please enter the 6-digit OTP');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await verifyOTP(otpPhone || phoneNumber, otp);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const renderPrimaryButton = (label, onPress) => (
+    <TouchableOpacity
+      style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+      onPress={onPress}
+      activeOpacity={0.9}
+      disabled={loading}
+    >
+      {loading ? (
+        <ActivityIndicator color={COLORS.white} />
+      ) : (
+        <Text style={styles.primaryButtonText}>{label}</Text>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <Wave position="top" height={topWaveHeight} />
+      <Wave position="bottom" height={bottomWaveHeight} />
+
+      <Pressable
+        style={[styles.backButton, { top: insets.top + 8 }]}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="chevron-back" size={20} color={COLORS.secondary} />
+      </Pressable>
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
-        <View style={styles.content}>
-          {/* Animated Logo */}
-          <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoEmoji}>⛪</Text>
-            </View>
-            <Text style={styles.appName}>{t('appName') || 'Tankua'}</Text>
-            <Text style={styles.tagline}>Your Journey to Sacred Places</Text>
-          </Animated.View>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: contentPaddingTop, paddingBottom: contentPaddingBottom },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.body}>
+            <View style={styles.mainContent}>
+              <View style={styles.logoContainer}>
+                <PaperBoatLogo size={logoSize} />
+                <Text style={styles.brandName}>Tankua</Text>
+              </View>
 
-          {/* Animated Form */}
-          <Animated.View style={[styles.form, formAnimatedStyle]}>
-            {!otpPhone ? (
-              <>
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputIcon}>
-                    <Ionicons name="call-outline" size={20} color={COLORS.primary} />
+              <View style={styles.headlineContainer}>
+                <Text style={styles.headline}>Sign in now</Text>
+                <Text style={styles.subHeadline}>Please sign in to continue our app</Text>
+              </View>
+
+              <View style={styles.form}>
+                <View style={styles.phoneInput}>
+                  <View style={styles.flagSection}>
+                    <CountryPicker
+                      countryCode={countryCode}
+                      withFilter
+                      withFlag
+                      withEmoji
+                      withCallingCode
+                      onSelect={handleSelectCountry}
+                      containerButtonStyle={styles.flagButtonContainer}
+                      renderFlagButton={({ countryCode: code, onOpen }) => (
+                        <Pressable style={styles.flagButton} onPress={onOpen}>
+                          <Flag countryCode={code} withEmoji flagSize={24} />
+                          <Ionicons name="chevron-down" size={14} color={COLORS.grayDark} />
+                        </Pressable>
+                      )}
+                    />
                   </View>
                   <TextInput
-                    style={styles.input}
-                    placeholder="+251 9XX XXX XXX"
-                    placeholderTextColor={COLORS.gray}
+                    style={styles.phoneInputField}
+                    placeholder="Phone number"
+                    placeholderTextColor={COLORS.grayLight}
                     value={phoneNumber}
-                    onChangeText={setPhoneNumber}
+                    onChangeText={(value) => setPhoneNumber(value.replace(/[^\d]/g, ''))}
                     keyboardType="phone-pad"
-                    autoFocus
+                    textContentType="telephoneNumber"
+                    autoComplete="tel"
                   />
                 </View>
 
-                <ModernButton
-                  title={t('sendOTP') || 'Send OTP'}
-                  onPress={handleSendOTP}
-                  loading={loading}
-                  variant="primary"
-                  size="large"
-                  style={styles.button}
-                  icon="send"
-                  iconPosition="right"
-                />
-              </>
-            ) : (
-              <>
-                <View style={styles.otpHeader}>
-                  <Text style={styles.otpTitle}>Enter Verification Code</Text>
-                  <Text style={styles.otpSubtitle}>
-                    Sent to {otpPhone}
-                  </Text>
-                </View>
+                {renderPrimaryButton('Sign In', handleSendOTP)}
+              </View>
+            </View>
 
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputIcon}>
-                    <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} />
-                  </View>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="000000"
-                    placeholderTextColor={COLORS.gray}
-                    value={otp}
-                    onChangeText={setOtp}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    autoFocus
-                  />
-                </View>
-
-                <ModernButton
-                  title={t('verifyOTP') || 'Verify OTP'}
-                  onPress={handleVerifyOTP}
-                  loading={loading}
-                  variant="primary"
-                  size="large"
-                  style={styles.button}
-                  icon="checkmark-circle"
-                  iconPosition="right"
-                />
-
-                <ModernButton
-                  title={t('resendOTP') || 'Resend Code'}
-                  onPress={handleSendOTP}
-                  variant="ghost"
-                  size="medium"
-                  style={styles.resendButton}
-                />
-              </>
-            )}
-          </Animated.View>
-
-          <Text style={styles.footer}>
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </Text>
-        </View>
+            <Text style={styles.terms}>*Terms and conditions apply</Text>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -181,97 +224,139 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: COLORS.white,
   },
   keyboardView: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.xl,
+  wave: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  waveTop: {
+    top: 0,
+  },
+  waveBottom: {
+    bottom: 0,
+  },
+  backButton: {
+    position: 'absolute',
+    left: SPACING.lg,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.xl,
+  },
+  body: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  mainContent: {
+    alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: SPACING.xxl,
-  },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: SPACING.lg,
-    ...SHADOWS.primary,
   },
-  logoEmoji: {
-    fontSize: 60,
-  },
-  appName: {
+  brandName: {
+    marginTop: SPACING.sm,
     fontSize: FONTS.sizes.xxxl,
-    fontWeight: '800',
+    fontWeight: '900',
     color: COLORS.secondary,
-    marginBottom: SPACING.xs,
-    letterSpacing: -1,
+    fontFamily: Platform.select({
+      ios: 'Georgia',
+      android: 'serif',
+      default: 'serif',
+    }),
+    letterSpacing: -0.5,
   },
-  tagline: {
-    fontSize: FONTS.sizes.md,
-    color: COLORS.gray,
-    fontWeight: '500',
-  },
-  form: {
-    width: '100%',
-  },
-  otpHeader: {
-    marginBottom: SPACING.lg,
+  headlineContainer: {
     alignItems: 'center',
+    marginBottom: SPACING.xl,
   },
-  otpTitle: {
+  headline: {
     fontSize: FONTS.sizes.xl,
     fontWeight: '700',
     color: COLORS.secondary,
-    marginBottom: SPACING.xs,
   },
-  otpSubtitle: {
+  subHeadline: {
+    marginTop: SPACING.xs,
     fontSize: FONTS.sizes.sm,
     color: COLORS.gray,
+    textAlign: 'center',
   },
-  inputContainer: {
+  form: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  phoneInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
-    marginBottom: SPACING.md,
-    borderWidth: 2,
-    borderColor: COLORS.borderLight,
-    ...SHADOWS.medium,
+    width: '100%',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 22,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
   },
-  inputIcon: {
-    paddingLeft: SPACING.md,
+  flagSection: {
     paddingRight: SPACING.sm,
+    marginRight: SPACING.sm,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    justifyContent: 'center',
   },
-  input: {
+  flagButtonContainer: {
+    padding: 0,
+  },
+  flagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  phoneInputField: {
     flex: 1,
-    paddingVertical: SPACING.md,
-    paddingRight: SPACING.md,
     fontSize: FONTS.sizes.md,
     color: COLORS.secondary,
-    fontWeight: '500',
+    paddingVertical: 6,
   },
-  button: {
-    marginTop: SPACING.sm,
+  primaryButton: {
+    width: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  resendButton: {
-    marginTop: SPACING.md,
+  primaryButtonDisabled: {
+    opacity: 0.7,
   },
-  footer: {
+  primaryButtonText: {
+    color: COLORS.white,
+    fontSize: FONTS.sizes.md,
+    fontWeight: '700',
+  },
+  terms: {
     textAlign: 'center',
     fontSize: FONTS.sizes.xs,
-    color: COLORS.gray,
-    marginTop: SPACING.xl,
-    lineHeight: 18,
-    paddingHorizontal: SPACING.lg,
+    color: COLORS.grayLight,
+    marginTop: SPACING.lg,
   },
 });
 

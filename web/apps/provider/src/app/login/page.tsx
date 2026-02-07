@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Building2, AlertCircle, ArrowRight } from "lucide-react";
 import { Button, Card } from "@tankua/ui";
@@ -122,14 +123,14 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%23D4A017' fill-opacity='0.5'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%23FFB800' fill-opacity='0.5'/%3E%3C/svg%3E")`,
           backgroundSize: "60px 60px",
         }} />
 
         <div className="relative">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl">T</span>
+            <div className="w-12 h-12 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
+              <Image src="/favicon.png" alt="Tankua" width={32} height={32} className="object-contain" />
             </div>
             <div>
               <span className="text-2xl font-bold text-white">Tankua</span>
@@ -141,7 +142,7 @@ export default function LoginPage() {
         <div className="relative space-y-8">
           <h1 className="text-4xl font-bold text-white leading-tight">
             Grow Your Travel Business with{" "}
-            <span className="text-[#D4A017]">Tankua</span>
+            <span className="text-[#FFB800]">Tankua</span>
           </h1>
           <p className="text-xl text-white/70">
             Join Ethiopia's fastest-growing pilgrimage platform and reach thousands of travelers.
@@ -155,7 +156,7 @@ export default function LoginPage() {
               "Marketing support",
             ].map((item, index) => (
               <div key={index} className="flex items-center gap-3 text-white/80">
-                <div className="w-5 h-5 rounded-full bg-[#D4A017] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-[#FFB800] flex items-center justify-center">
                   <span className="text-white text-xs">✓</span>
                 </div>
                 {item}
@@ -174,8 +175,8 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg mb-4">
-              <span className="text-white font-bold text-3xl">T</span>
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg mb-4 overflow-hidden">
+              <Image src="/favicon.png" alt="Tankua" width={40} height={40} className="object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-white">Provider Portal</h1>
           </div>

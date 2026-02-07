@@ -53,7 +53,7 @@ const SelectSeatsScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>
           {isPrivateTrip ? t('selectVehicle') : t('selectSeats')}

@@ -11,6 +11,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Tankua Provider Portal",
   description: "Manage your travel business with Tankua - bookings, drivers, vehicles, and earnings.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
