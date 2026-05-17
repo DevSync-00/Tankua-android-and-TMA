@@ -81,7 +81,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
   return (
     <AuthScreenLayout onBack={handleBack}>
       <View style={styles.header}>
-        <TankuaLogo size={72} />
+        <TankuaLogo markSize={104} />
       </View>
 
       <Text style={authStyles.title}>{AUTH_COPY.otpHeadline}</Text>

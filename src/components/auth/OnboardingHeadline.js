@@ -1,42 +1,47 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { COLORS, FONTS, SPACING } from '../../config/theme';
+import { COLORS, FONTS } from '../../config/theme';
 import { AUTH_COLORS, SERIF_FONT } from './authTheme';
 
-const highlightUnderline = require('../../../assets/SplashScreenOnbordingLoginPages/Vector 255.png');
-
-const OnboardingHeadline = ({ prefix, highlight }) => (
+/** Headline + gold highlight + per-slide swoosh PNG (typography built in code). */
+const OnboardingHeadline = ({ prefix, highlight, underlineSource }) => (
   <View style={styles.container}>
-    <Text style={styles.prefix}>
-      {prefix}
-      {'\n'}
-      <Text style={styles.highlight}>{highlight}</Text>
-    </Text>
-    <Image source={highlightUnderline} style={styles.underline} resizeMode="contain" />
+    <Text style={styles.prefix}>{prefix}</Text>
+    <Text style={styles.highlight}>{highlight}</Text>
+    <Image source={underlineSource} style={styles.underline} resizeMode="contain" />
   </View>
 );
 
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
+    width: '100%',
+    maxWidth: 330,
+    alignSelf: 'center',
   },
   prefix: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: FONTS.weights.bold,
     fontFamily: SERIF_FONT,
     color: AUTH_COLORS.text,
     textAlign: 'center',
-    lineHeight: 36,
-    letterSpacing: -0.3,
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   highlight: {
+    marginTop: 2,
+    fontSize: 30,
+    fontWeight: FONTS.weights.bold,
+    fontFamily: SERIF_FONT,
     color: COLORS.primary,
+    textAlign: 'center',
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   underline: {
-    width: 120,
-    height: 12,
-    marginTop: 4,
+    width: 148,
+    height: 14,
+    marginTop: 6,
   },
 });
 

@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   Pressable,
   useWindowDimensions,
@@ -11,16 +10,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AUTH_COLORS, AUTH_LAYOUT } from './authTheme';
 import OnboardingHeadline from './OnboardingHeadline';
-import OnboardingPagination from './OnboardingPagination';
+import OnboardingProgress from './OnboardingProgress';
 import AuthPrimaryButton from './AuthPrimaryButton';
 
 const OnboardingSlide = ({
-  heroSource,
+  HeroImage,
   prefix,
   highlight,
   description,
-  slideIndex,
+  underlineSource,
   slideCount,
+  scrollX,
+  pageWidth,
   ctaLabel,
   onContinue,
   onSkip,
@@ -31,8 +32,12 @@ const OnboardingSlide = ({
 
   return (
     <View style={[styles.slide, { width }]}>
-      <View style={[styles.heroWrap, { height: heroHeight }]}>
-        <Image source={heroSource} style={styles.heroImage} resizeMode="cover" />
+      <View style={[styles.heroWrap, { height: heroHeight, width }]}>
+        <HeroImage
+          width={width}
+          height={heroHeight}
+          preserveAspectRatio="xMidYMid slice"
+        />
         <Pressable
           style={[styles.skipButton, { top: insets.top + 12 }]}
           onPress={onSkip}
@@ -45,9 +50,17 @@ const OnboardingSlide = ({
 
       <View style={styles.content}>
         <View style={styles.copyBlock}>
-          <OnboardingHeadline prefix={prefix} highlight={highlight} />
+          <OnboardingHeadline
+            prefix={prefix}
+            highlight={highlight}
+            underlineSource={underlineSource}
+          />
           <Text style={styles.description}>{description}</Text>
-          <OnboardingPagination count={slideCount} activeIndex={slideIndex} />
+          <OnboardingProgress
+            count={slideCount}
+            scrollX={scrollX}
+            pageWidth={pageWidth}
+          />
         </View>
         <AuthPrimaryButton label={ctaLabel} onPress={onContinue} />
       </View>
@@ -61,14 +74,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   heroWrap: {
-    width: '100%',
     overflow: 'hidden',
     borderBottomLeftRadius: AUTH_LAYOUT.heroRadius,
     borderBottomRightRadius: AUTH_LAYOUT.heroRadius,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#F3F3F3',
   },
   skipButton: {
     position: 'absolute',
@@ -89,20 +98,22 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: AUTH_LAYOUT.screenPadding,
-    paddingTop: 22,
+    paddingTop: 20,
     paddingBottom: 28,
     justifyContent: 'space-between',
   },
   copyBlock: {
     flexShrink: 1,
+    alignItems: 'center',
   },
   description: {
+    marginTop: 14,
     fontSize: 15,
     lineHeight: 24,
     color: AUTH_COLORS.textMuted,
     textAlign: 'center',
-    paddingHorizontal: 8,
-    marginTop: 12,
+    paddingHorizontal: 4,
+    maxWidth: 330,
   },
 });
 

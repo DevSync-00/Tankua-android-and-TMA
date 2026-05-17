@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -24,53 +25,68 @@ const AuthScreenLayout = ({
   const insets = useSafeAreaInsets();
 
   const topWaveHeight = Math.max(110, Math.min(height * 0.18, 150));
-  const bottomWaveHeight = Math.max(140, Math.min(height * 0.22, 190)) + insets.bottom;
+  const bottomWaveHeight = Math.max(140, Math.min(height * 0.22, 190));
 
   return (
-    <SafeAreaView style={authStyles.screen} edges={['left', 'right', 'bottom']}>
-      <StatusBar style="dark" />
-      <AuthWaves topHeight={topWaveHeight} bottomHeight={bottomWaveHeight} />
+    <View style={styles.root}>
+      <SafeAreaView style={authStyles.screen} edges={['left', 'right']}>
+        <StatusBar style="dark" />
 
-      {showBack && onBack ? (
-        <Pressable
-          style={[authStyles.backButton, styles.backPosition, { top: insets.top + 8 }]}
-          onPress={onBack}
-          accessibilityLabel="Back"
-        >
-          <Ionicons name="chevron-back" size={22} color={AUTH_COLORS.text} />
-        </Pressable>
-      ) : null}
+        {/* Decorative background — fixed, never moves with keyboard */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <AuthWaves topHeight={topWaveHeight} bottomHeight={bottomWaveHeight} />
+        </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            authStyles.scrollContent,
-            {
-              paddingTop: insets.top + topWaveHeight * 0.35,
-              paddingBottom: bottomWaveHeight + 28,
-            },
-            contentStyle,
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          {...scrollProps}
+        {showBack && onBack ? (
+          <Pressable
+            style={[authStyles.backButton, styles.backPosition, { top: insets.top + 8 }]}
+            onPress={onBack}
+            accessibilityLabel="Back"
+          >
+            <Ionicons name="chevron-back" size={22} color={AUTH_COLORS.text} />
+          </Pressable>
+        ) : null}
+
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
-          {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <ScrollView
+            contentContainerStyle={[
+              authStyles.scrollContent,
+              {
+                paddingTop: insets.top + topWaveHeight * 0.32,
+                paddingBottom: bottomWaveHeight * 0.55 + insets.bottom + 16,
+              },
+              contentStyle,
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            {...scrollProps}
+          >
+            {children}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  flex: {
+    flex: 1,
+    zIndex: 1,
+  },
   backPosition: {
     position: 'absolute',
     left: AUTH_LAYOUT.screenPadding,
+    zIndex: 3,
   },
 });
 
