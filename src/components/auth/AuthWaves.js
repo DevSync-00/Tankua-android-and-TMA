@@ -28,13 +28,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    zIndex: 0,
   },
   waveTop: {
     top: 0,
   },
   waveBottom: {
     bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
 

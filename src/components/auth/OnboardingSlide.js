@@ -6,38 +6,73 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AUTH_COLORS, AUTH_LAYOUT } from './authTheme';
 import OnboardingHeadline from './OnboardingHeadline';
-import OnboardingProgress from './OnboardingProgress';
-import AuthPrimaryButton from './AuthPrimaryButton';
 
 const OnboardingSlide = ({
+  slideIndex,
+  scrollX,
+  pageWidth,
   HeroImage,
   prefix,
   highlight,
   description,
   underlineSource,
-  slideCount,
-  scrollX,
-  pageWidth,
-  ctaLabel,
-  onContinue,
   onSkip,
 }) => {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const heroHeight = Math.round(height * 0.52);
 
+  const contentStyle = useAnimatedStyle(() => {
+    if (!pageWidth) return {};
+    const position = scrollX.value / pageWidth;
+    const distance = Math.abs(position - slideIndex);
+    return {
+      opacity: interpolate(distance, [0, 0.85, 1], [1, 0.5, 0.25], Extrapolation.CLAMP),
+      transform: [
+        {
+          translateY: interpolate(distance, [0, 1], [0, 14], Extrapolation.CLAMP),
+        },
+      ],
+    };
+  });
+
+  const heroStyle = useAnimatedStyle(() => {
+    if (!pageWidth) return {};
+    const position = scrollX.value / pageWidth;
+    const distance = position - slideIndex;
+    return {
+      transform: [
+        {
+          translateX: interpolate(
+            distance,
+            [-1, 0, 1],
+            [pageWidth * 0.08, 0, -pageWidth * 0.08],
+            Extrapolation.CLAMP
+          ),
+        },
+      ],
+    };
+  });
+
   return (
     <View style={[styles.slide, { width }]}>
       <View style={[styles.heroWrap, { height: heroHeight, width }]}>
-        <HeroImage
-          width={width}
-          height={heroHeight}
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <Animated.View style={[{ width, height: heroHeight }, heroStyle]}>
+          <HeroImage
+            width={width}
+            height={heroHeight}
+            preserveAspectRatio="xMidYMid slice"
+          />
+        </Animated.View>
         <Pressable
           style={[styles.skipButton, { top: insets.top + 12 }]}
           onPress={onSkip}
@@ -48,22 +83,14 @@ const OnboardingSlide = ({
         </Pressable>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.copyBlock}>
-          <OnboardingHeadline
-            prefix={prefix}
-            highlight={highlight}
-            underlineSource={underlineSource}
-          />
-          <Text style={styles.description}>{description}</Text>
-          <OnboardingProgress
-            count={slideCount}
-            scrollX={scrollX}
-            pageWidth={pageWidth}
-          />
-        </View>
-        <AuthPrimaryButton label={ctaLabel} onPress={onContinue} />
-      </View>
+      <Animated.View style={[styles.content, contentStyle]}>
+        <OnboardingHeadline
+          prefix={prefix}
+          highlight={highlight}
+          underlineSource={underlineSource}
+        />
+        <Text style={styles.description}>{description}</Text>
+      </Animated.View>
     </View>
   );
 };
@@ -99,11 +126,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: AUTH_LAYOUT.screenPadding,
     paddingTop: 20,
-    paddingBottom: 28,
-    justifyContent: 'space-between',
-  },
-  copyBlock: {
-    flexShrink: 1,
     alignItems: 'center',
   },
   description: {

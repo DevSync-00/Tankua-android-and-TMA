@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import CountryPicker, { Flag } from 'react-native-country-picker-modal';
-import { AUTH_COLORS, AUTH_LAYOUT } from './authTheme';
+import { Flag } from 'react-native-country-picker-modal';
+import { authStyles } from './authTheme';
+import CountryPickerSheet from './CountryPickerSheet';
 
 const PhoneCountryInput = ({
   countryCode,
@@ -12,94 +13,65 @@ const PhoneCountryInput = ({
   onChangeText,
   placeholder,
 }) => {
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={[styles.wrapper, focused && styles.wrapperFocused]}>
-      <CountryPicker
+    <>
+      <View style={[authStyles.phoneInput, focused && styles.focused]}>
+        <Pressable
+          style={styles.codeButton}
+          onPress={() => setPickerVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Choose country code"
+        >
+          <Flag countryCode={countryCode} withEmoji flagSize={22} />
+          <Text style={styles.callingCode}>+{callingCode}</Text>
+          <Ionicons name="chevron-down" size={14} color="#7D848D" />
+        </Pressable>
+
+        <View style={authStyles.phoneDivider} />
+
+        <TextInput
+          style={authStyles.phoneInputField}
+          placeholder={placeholder}
+          placeholderTextColor="#9CA3AF"
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType="phone-pad"
+          textContentType="telephoneNumber"
+          autoComplete="tel"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+      </View>
+
+      <CountryPickerSheet
+        visible={pickerVisible}
         countryCode={countryCode}
-        withFilter
-        withFlag
-        withEmoji
-        withCallingCode
+        onClose={() => setPickerVisible(false)}
         onSelect={onSelectCountry}
-        containerButtonStyle={styles.pickerContainer}
-        renderFlagButton={({ countryCode: code, onOpen }) => (
-          <Pressable
-            style={styles.countryButton}
-            onPress={onOpen}
-            accessibilityRole="button"
-            accessibilityLabel="Select country code"
-          >
-            <Flag countryCode={code} withEmoji flagSize={24} />
-            <Text style={styles.callingCode}>+{callingCode}</Text>
-            <Ionicons name="chevron-down" size={16} color={AUTH_COLORS.textMuted} />
-          </Pressable>
-        )}
       />
-
-      <View style={styles.divider} />
-
-      <TextInput
-        style={styles.input}
-        placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType="phone-pad"
-        textContentType="telephoneNumber"
-        autoComplete="tel"
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-      />
-    </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    height: AUTH_LAYOUT.inputHeight,
-    backgroundColor: AUTH_COLORS.inputBackground,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    paddingRight: 14,
-    marginTop: 24,
-  },
-  wrapperFocused: {
-    borderColor: 'rgba(255, 184, 0, 0.55)',
+  focused: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 184, 0, 0.45)',
   },
-  pickerContainer: {
-    padding: 0,
-  },
-  countryButton: {
+  codeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 14,
-    paddingRight: 10,
-    height: '100%',
     gap: 6,
+    paddingRight: 4,
   },
   callingCode: {
     fontSize: 16,
     fontWeight: '600',
-    color: AUTH_COLORS.text,
-  },
-  divider: {
-    width: 1,
-    height: 28,
-    backgroundColor: '#E5E7EB',
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: AUTH_COLORS.text,
-    paddingVertical: 0,
+    color: '#1B1E28',
   },
 });
 

@@ -1,11 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, {
-  Extrapolation,
-  interpolate,
-  interpolateColor,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { COLORS } from '../../config/theme';
 import { AUTH_COLORS } from './authTheme';
 
@@ -14,61 +9,59 @@ const DOT_RADIUS = 4;
 const INACTIVE_WIDTH = 13;
 const ACTIVE_WIDTH = 35;
 const DOT_GAP = 8;
+/** Distance between step centers (inactive dot + gap). */
+const STEP_OFFSET = INACTIVE_WIDTH + DOT_GAP;
 
-const ProgressDot = ({ index, scrollX, pageWidth }) => {
-  const animatedStyle = useAnimatedStyle(() => {
+/**
+ * One sliding gold pill over fixed inactive dots — single instance, smooth scroll-driven motion.
+ */
+const OnboardingProgress = ({ count, scrollX, pageWidth }) => {
+  const trackWidth = (count - 1) * STEP_OFFSET + ACTIVE_WIDTH;
+
+  const pillStyle = useAnimatedStyle(() => {
     const page = pageWidth > 0 ? scrollX.value / pageWidth : 0;
-    const distance = Math.abs(page - index);
-
-    const width = interpolate(
-      distance,
-      [0, 1],
-      [ACTIVE_WIDTH, INACTIVE_WIDTH],
-      Extrapolation.CLAMP
-    );
-
-    const backgroundColor = interpolateColor(
-      distance,
-      [0, 1],
-      [COLORS.primary, AUTH_COLORS.dotInactive]
-    );
-
     return {
-      width,
-      height: DOT_HEIGHT,
-      borderRadius: DOT_RADIUS,
-      backgroundColor,
+      transform: [{ translateX: page * STEP_OFFSET }],
     };
   });
 
-  return <Animated.View style={animatedStyle} />;
+  return (
+    <View style={[styles.wrap, { width: trackWidth }]} accessibilityRole="progressbar">
+      <View style={styles.dotsRow}>
+        {Array.from({ length: count }).map((_, index) => (
+          <View key={`dot-bg-${index}`} style={styles.inactiveDot} />
+        ))}
+      </View>
+      <Animated.View style={[styles.activePill, pillStyle]} />
+    </View>
+  );
 };
 
-/**
- * Single animated progress track — width & color interpolate with scroll position.
- */
-const OnboardingProgress = ({ count, scrollX, pageWidth }) => (
-  <View style={styles.track} accessibilityRole="progressbar">
-    {Array.from({ length: count }).map((_, index) => (
-      <ProgressDot
-        key={`onboarding-dot-${index}`}
-        index={index}
-        scrollX={scrollX}
-        pageWidth={pageWidth}
-      />
-    ))}
-  </View>
-);
-
 const styles = StyleSheet.create({
-  track: {
+  wrap: {
+    height: DOT_HEIGHT,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: DOT_GAP,
-    minHeight: DOT_HEIGHT,
-    marginTop: 22,
-    marginBottom: 4,
+  },
+  inactiveDot: {
+    width: INACTIVE_WIDTH,
+    height: DOT_HEIGHT,
+    borderRadius: DOT_RADIUS,
+    backgroundColor: AUTH_COLORS.dotInactive,
+  },
+  activePill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: ACTIVE_WIDTH,
+    height: DOT_HEIGHT,
+    borderRadius: DOT_RADIUS,
+    backgroundColor: COLORS.primary,
   },
 });
 

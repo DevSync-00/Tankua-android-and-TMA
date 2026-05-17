@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -29,14 +28,14 @@ const AuthScreenLayout = ({
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={authStyles.screen} edges={['left', 'right']}>
-        <StatusBar style="dark" />
+      <StatusBar style="dark" />
 
-        {/* Decorative background — fixed, never moves with keyboard */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <AuthWaves topHeight={topWaveHeight} bottomHeight={bottomWaveHeight} />
-        </View>
+      {/* Decorative waves — root-level, never inside keyboard-avoiding layout */}
+      <View style={styles.wavesLayer} pointerEvents="none">
+        <AuthWaves topHeight={topWaveHeight} bottomHeight={bottomWaveHeight} />
+      </View>
 
+      <SafeAreaView style={styles.safeContent} edges={['left', 'right', 'top']}>
         {showBack && onBack ? (
           <Pressable
             style={[authStyles.backButton, styles.backPosition, { top: insets.top + 8 }]}
@@ -47,28 +46,25 @@ const AuthScreenLayout = ({
           </Pressable>
         ) : null}
 
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            authStyles.scrollContent,
+            {
+              paddingTop: insets.top + topWaveHeight * 0.32,
+              paddingBottom: bottomWaveHeight * 0.55 + insets.bottom + 24,
+            },
+            contentStyle,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          {...scrollProps}
         >
-          <ScrollView
-            contentContainerStyle={[
-              authStyles.scrollContent,
-              {
-                paddingTop: insets.top + topWaveHeight * 0.32,
-                paddingBottom: bottomWaveHeight * 0.55 + insets.bottom + 16,
-              },
-              contentStyle,
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            {...scrollProps}
-          >
-            {children}
-          </ScrollView>
-        </KeyboardAvoidingView>
+          {children}
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -79,9 +75,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  flex: {
+  wavesLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  safeContent: {
     flex: 1,
     zIndex: 1,
+    backgroundColor: 'transparent',
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   backPosition: {
     position: 'absolute',
