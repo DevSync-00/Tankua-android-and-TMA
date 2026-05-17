@@ -26,22 +26,19 @@ const SelectTripScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadTrips();
-  }, [currentBooking.destination, currentBooking.church]);
+  }, [currentBooking.destination]);
 
   const loadTrips = async () => {
     try {
       setLoading(true);
       
-      // Support both destination and church (backward compatibility - church is deprecated)
-      const destination = currentBooking.destination || currentBooking.church;
-      
+      const destination = currentBooking.destination;
+
       if (!destination?.id) {
-        // Check if booking context was reset (all fields are null/empty)
-        // If so, silently exit - booking was completed and reset
-        const isBookingReset = !currentBooking.destination && 
-                              !currentBooking.church && 
-                              !currentBooking.provider && 
-                              !currentBooking.trip;
+        const isBookingReset =
+          !currentBooking.destination &&
+          !currentBooking.provider &&
+          !currentBooking.trip;
         
         if (isBookingReset) {
           // Booking was reset, navigate to main tabs silently
@@ -59,10 +56,7 @@ const SelectTripScreen = ({ navigation }) => {
         return;
       }
 
-      const filters = {
-        destinationId: destination.id,
-        churchId: destination.id, // Deprecated: kept for backward compatibility only
-      };
+      const filters = { destinationId: destination.id };
 
       const data = await getTrips(filters);
       setTrips(data);
@@ -160,8 +154,8 @@ const SelectTripScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Select Trip</Text>
         <Text style={styles.subtitle}>
-          {(currentBooking.destination || currentBooking.church)
-            ? `Available trips to ${(currentBooking.destination || currentBooking.church)?.name || 'this destination'}`
+          {currentBooking.destination
+            ? `Available trips to ${currentBooking.destination?.name || 'this destination'}`
             : 'Choose a trip for your journey'}
         </Text>
 
@@ -170,8 +164,8 @@ const SelectTripScreen = ({ navigation }) => {
             <Ionicons name="calendar-outline" size={64} color={COLORS.gray} />
             <Text style={styles.emptyText}>No trips available</Text>
             <Text style={styles.emptySubtext}>
-              {(currentBooking.destination || currentBooking.church)
-                ? `No trips are currently scheduled to ${(currentBooking.destination || currentBooking.church)?.name || 'this destination'}. Please check back later or try a different destination.`
+              {currentBooking.destination
+                ? `No trips are currently scheduled to ${currentBooking.destination?.name || 'this destination'}. Please check back later or try a different destination.`
                 : 'Please check back later or contact support'}
             </Text>
           </View>

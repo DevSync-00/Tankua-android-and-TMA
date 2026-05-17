@@ -74,7 +74,7 @@ const tourCategories = [
 const featuredTours = [
   {
     id: 1,
-    name: "Lalibela Rock-Hewn Churches Tour",
+    name: "Lalibela Rock-Hewn Heritage Tour",
     location: "Lalibela, Amhara",
     category: "Historical Sites",
     image: "/images/pexels-christian-alemu-127251395-30177512.jpg",
@@ -715,7 +715,7 @@ export default function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/churches" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
+                  <Link href="/destinations" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     Popular Destinations
                   </Link>
                 </li>

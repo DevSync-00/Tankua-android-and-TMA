@@ -1,6 +1,6 @@
 import { supabase } from './client';
 import type { 
-  User, Destination, Church, Provider, Trip, Booking, PickupStation, Driver,
+  User, Destination, Provider, Trip, Booking, PickupStation, Driver,
   BookingWithDetails, TripWithDetails, PaymentTransaction
 } from './types';
 
@@ -17,7 +17,6 @@ export interface DashboardStats {
   recentBookings: BookingWithDetails[];
   topProviders: (Provider & { bookingCount: number; revenue: number })[];
   topDestinations: (Destination & { bookingCount: number })[];
-  topChurches: (Church & { bookingCount: number })[]; // Keep for backward compatibility
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -48,7 +47,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
           departure_date,
           price,
           destination:destinations(id, name, city, category),
-          church:churches(id, name, city),
           provider:providers(id, name)
         ),
         pickup_station:pickup_stations(id, name)
@@ -68,7 +66,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalRevenue,
     recentBookings: (recentBookingsResult.data || []) as unknown as BookingWithDetails[],
     topProviders: [],
-    topChurches: [],
+    topDestinations: [],
   };
 }
 
@@ -137,7 +135,6 @@ export async function getDestinations(options?: {
   region?: string;
   category?: string;
 }) {
-  // Try destinations table first, fallback to churches for backward compatibility
   let query = supabase
     .from('destinations')
     .select('*', { count: 'exact' })
@@ -163,160 +160,52 @@ export async function getDestinations(options?: {
     query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
   }
 
-  let { data, error, count } = await query;
-  
-  // Fallback to churches table if destinations doesn't exist
-  if (error && error.message?.includes('destinations')) {
-    query = supabase
-      .from('churches')
-      .select('*', { count: 'exact' })
-      .order('name');
-
-    if (options?.search) {
-      query = query.or(`name.ilike.%${options.search}%,city.ilike.%${options.search}%`);
-    }
-
-    if (options?.region) {
-      query = query.eq('region', options.region);
-    }
-
-    if (options?.category) {
-      query = query.eq('category', options.category);
-    }
-
-    if (options?.limit) {
-      query = query.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
-    }
-
-    const result = await query;
-    data = result.data;
-    error = result.error;
-    count = result.count;
-  }
-
+  const { data, error, count } = await query;
   if (error) throw error;
   return { destinations: data as Destination[], total: count || 0 };
 }
 
 export async function getDestinationById(id: string) {
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from('destinations')
     .select('*')
     .eq('id', id)
     .single();
-
-  // Fallback to churches
-  if (error && error.message?.includes('destinations')) {
-    const result = await supabase
-      .from('churches')
-      .select('*')
-      .eq('id', id)
-      .single();
-    data = result.data;
-    error = result.error;
-  }
 
   if (error) throw error;
   return data as Destination;
 }
 
 export async function createDestination(destination: Omit<Destination, 'id' | 'created_at' | 'updated_at'>) {
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from('destinations')
     .insert(destination)
     .select()
     .single();
-
-  // Fallback to churches
-  if (error && error.message?.includes('destinations')) {
-    const result = await supabase
-      .from('churches')
-      .insert(destination)
-      .select()
-      .single();
-    data = result.data;
-    error = result.error;
-  }
 
   if (error) throw error;
   return data as Destination;
 }
 
 export async function updateDestination(id: string, updates: Partial<Destination>) {
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from('destinations')
     .update(updates)
     .eq('id', id)
     .select()
     .single();
 
-  // Fallback to churches
-  if (error && error.message?.includes('destinations')) {
-    const result = await supabase
-      .from('churches')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    data = result.data;
-    error = result.error;
-  }
-
   if (error) throw error;
   return data as Destination;
 }
 
 export async function deleteDestination(id: string) {
-  let { error } = await supabase
+  const { error } = await supabase
     .from('destinations')
     .delete()
     .eq('id', id);
 
-  // Fallback to churches
-  if (error && error.message?.includes('destinations')) {
-    const result = await supabase
-      .from('churches')
-      .delete()
-      .eq('id', id);
-    error = result.error;
-  }
-
   if (error) throw error;
-}
-
-// ============================================
-// CHURCHES (Backward Compatibility)
-// ============================================
-
-export async function getChurches(options?: {
-  limit?: number;
-  offset?: number;
-  search?: string;
-  region?: string;
-  category?: string;
-}) {
-  const result = await getDestinations({ ...options, category: options?.category || 'church' });
-  return { churches: result.destinations as unknown as Church[], total: result.total };
-}
-
-export async function getChurchById(id: string) {
-  return getDestinationById(id) as Promise<Church>;
-}
-
-export async function createChurch(church: Omit<Church, 'id' | 'created_at' | 'updated_at'>) {
-  return createDestination(church as unknown as Destination) as Promise<Church>;
-}
-
-export async function updateChurch(id: string, updates: Partial<Church>) {
-  return updateDestination(id, updates as Partial<Destination>) as Promise<Church>;
-}
-
-export async function deleteChurch(id: string) {
-  return deleteDestination(id);
 }
 
 // ============================================
@@ -401,7 +290,6 @@ export async function getBookings(options?: {
         price,
         trip_type,
         destination:destinations(id, name, city, category),
-        church:churches(id, name, city),
         provider:providers(id, name)
       ),
       pickup_station:pickup_stations(id, name)
@@ -439,7 +327,7 @@ export async function getBookingById(id: string) {
     .select(`
       *,
       user:users(*),
-      trip:trips(*, destination:destinations(*), church:churches(*), provider:providers(*)),
+      trip:trips(*, destination:destinations(*), provider:providers(*)),
       pickup_station:pickup_stations(*)
     `)
     .eq('id', id)
@@ -489,7 +377,6 @@ export async function getTrips(options?: {
   status?: string;
   providerId?: string;
   destinationId?: string;
-  churchId?: string; // Keep for backward compatibility
   category?: string;
   tourCategory?: string;
 }) {
@@ -498,7 +385,6 @@ export async function getTrips(options?: {
     .select(`
       *,
       destination:destinations(id, name, city, category, images),
-      church:churches(id, name, city, images),
       provider:providers(id, name, rating)
     `, { count: 'exact' })
     .order('departure_date', { ascending: true });
@@ -511,11 +397,8 @@ export async function getTrips(options?: {
     query = query.eq('provider_id', options.providerId);
   }
 
-  // Support both destination_id and church_id
   if (options?.destinationId) {
     query = query.eq('destination_id', options.destinationId);
-  } else if (options?.churchId) {
-    query = query.eq('church_id', options.churchId);
   }
 
   if (options?.category) {
@@ -544,7 +427,7 @@ export async function getTripById(id: string) {
     .from('trips')
     .select(`
       *,
-      church:churches(*),
+      destination:destinations(*),
       provider:providers(*),
       bookings(*)
     `)
@@ -572,7 +455,7 @@ export async function getPaymentTransactions(options?: {
       booking:bookings(
         id,
         user:users(id, name, phone_number),
-        trip:trips(destination:destinations(name), church:churches(name))
+        trip:trips(destination:destinations(name))
       )
     `, { count: 'exact' })
     .order('created_at', { ascending: false });

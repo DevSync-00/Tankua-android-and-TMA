@@ -12,10 +12,10 @@ import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar } from "@tankua/ui";
 
 const reviews = [
-  { id: 1, customer: "Yohannes T.", rating: 5, comment: "Amazing trip to Lalibela! The driver was very knowledgeable and the bus was comfortable. Highly recommend!", trip: "Lalibela Churches", date: "Jan 15, 2024", helpful: 12 },
+  { id: 1, customer: "Yohannes T.", rating: 5, comment: "Amazing trip to Lalibela! The driver was very knowledgeable and the bus was comfortable. Highly recommend!", trip: "Lalibela Heritage", date: "Jan 15, 2024", helpful: 12 },
   { id: 2, customer: "Sara M.", rating: 5, comment: "Smooth journey and on-time pickup. Will definitely use again for my next pilgrimage.", trip: "Lake Tana", date: "Jan 14, 2024", helpful: 8 },
   { id: 3, customer: "Daniel H.", rating: 4, comment: "Good experience overall. The trip was well organized. AC could be better.", trip: "Debre Damo", date: "Jan 12, 2024", helpful: 5 },
-  { id: 4, customer: "Hana T.", rating: 5, comment: "Best spiritual journey I've ever had. Thank you for the wonderful service!", trip: "Lalibela Churches", date: "Jan 10, 2024", helpful: 15 },
+  { id: 4, customer: "Hana T.", rating: 5, comment: "Best spiritual journey I've ever had. Thank you for the wonderful service!", trip: "Lalibela Heritage", date: "Jan 10, 2024", helpful: 15 },
   { id: 5, customer: "Abebe K.", rating: 4, comment: "Very professional service. The pickup was a bit delayed but the rest was perfect.", trip: "Gondar Castles", date: "Jan 8, 2024", helpful: 3 },
   { id: 6, customer: "Meron G.", rating: 5, comment: "Exceeded my expectations! Will recommend to all my friends and family.", trip: "Lake Tana", date: "Jan 5, 2024", helpful: 10 },
 ];

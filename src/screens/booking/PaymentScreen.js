@@ -3,15 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
-  Image,
   Alert,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
+import { isChapaKeyConfigured } from '../../config/payment';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,46 +18,24 @@ import { verifyBookingBeforePayment, getTimeRemaining, checkAndCancelExpiredBook
 import { validateProfile, getProfileIncompleteMessage } from '../../utils/profileValidation';
 import { supabase } from '../../config/supabase';
 import Button from '../../components/Button';
+import PaymentWebView from '../../components/PaymentWebView';
 
 const PaymentScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
   const { currentBooking, updateBooking, calculateTotalPrice, createBooking } = useBooking();
   const { user } = useAuth();
-  const [selectedMethod, setSelectedMethod] = useState(null);
+  const paymentMethod = 'chapa';
   const [loading, setLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [transactionRef, setTransactionRef] = useState(null);
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const [pendingTxRef, setPendingTxRef] = useState(null);
+  const [pendingBookingId, setPendingBookingId] = useState(null);
   const [booking, setBooking] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [bookingExpired, setBookingExpired] = useState(false);
   const intervalRef = useRef(null);
-
-  const paymentMethods = [
-    {
-      id: 'telebirr',
-      name: t('telebirr'),
-      icon: '📱',
-      description: 'Pay with Telebirr',
-    },
-    {
-      id: 'cbe',
-      name: t('cbeBirr'),
-      icon: '🏦',
-      description: 'Pay with CBE Birr',
-    },
-    {
-      id: 'amole',
-      name: t('amole'),
-      icon: '💳',
-      description: 'Pay with Amole',
-    },
-    {
-      id: 'chapa',
-      name: t('chapa'),
-      icon: '💰',
-      description: 'Pay with Chapa',
-    },
-  ];
+  const chapaReady = isChapaKeyConfigured();
 
   const price = calculateTotalPrice();
   const totalPrice = price.total;
@@ -180,8 +156,11 @@ const PaymentScreen = ({ navigation, route }) => {
   };
 
   const handlePayment = async () => {
-    if (!selectedMethod) {
-      Alert.alert('Error', 'Please select a payment method');
+    if (!chapaReady) {
+      Alert.alert(
+        'Payment Unavailable',
+        'Chapa Pay is not configured. Add EXPO_PUBLIC_CHAPA_SECRET_KEY to .env and restart the app.'
+      );
       return;
     }
 
@@ -191,18 +170,9 @@ const PaymentScreen = ({ navigation, route }) => {
       return;
     }
 
-    // Only support Chapa and Telebirr for now
-    if (selectedMethod !== 'chapa' && selectedMethod !== 'telebirr') {
-      Alert.alert(
-        'Coming Soon',
-        `${selectedMethod === 'cbe' ? 'CBE Birr' : 'Amole'} integration is coming soon. Please use Chapa or Telebirr.`
-      );
-      return;
-    }
-
     setLoading(true);
     setPaymentProcessing(true);
-    updateBooking({ paymentMethod: selectedMethod });
+    updateBooking({ paymentMethod });
 
     try {
       // Verify booking is still valid before processing payment
@@ -258,106 +228,24 @@ const PaymentScreen = ({ navigation, route }) => {
         customerEmail: customerEmail,
       };
 
-      // Initiate payment
-      const paymentResult = await processPayment(selectedMethod, paymentData);
+      const paymentResult = await processPayment(paymentMethod, paymentData);
 
-      if (paymentResult.success) {
-        setTransactionRef(paymentResult.transactionRef);
-
-        // Store transaction reference in booking context for verification
-        updateBooking({ 
+      if (paymentResult.success && paymentResult.checkoutUrl) {
+        updateBooking({
           transactionRef: paymentResult.transactionRef,
           paymentId: paymentResult.paymentId,
         });
 
-        // Development mode - simulate successful payment
-        if (paymentResult.isDevelopment) {
-          Alert.alert(
-            'Development Mode',
-            'Payment simulation successful. In production, this would process a real payment.',
-            [
-              {
-                text: 'Simulate Payment Success',
-                onPress: () => {
-                  // Simulate payment verification
-                  verifyPaymentStatus(paymentResult.transactionRef, bookingId, true);
-                },
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: () => {
-                  setLoading(false);
-                  setPaymentProcessing(false);
-                },
-              },
-            ]
-          );
-          return;
-        }
-
-        // Handle payment based on method
-        if (selectedMethod === 'chapa' && paymentResult.checkoutUrl) {
-          // Open Chapa checkout URL
-          const canOpen = await Linking.canOpenURL(paymentResult.checkoutUrl);
-          if (canOpen) {
-            await Linking.openURL(paymentResult.checkoutUrl);
-            // Show alert to user
-            Alert.alert(
-              'Payment Initiated',
-              'Please complete the payment in the browser. You will be redirected back to the app after payment.',
-              [
-                {
-                  text: 'I\'ve Completed Payment',
-                  onPress: () => verifyPaymentStatus(paymentResult.transactionRef, bookingId),
-                },
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
-                  onPress: () => {
-                    setLoading(false);
-                    setPaymentProcessing(false);
-                  },
-                },
-              ]
-            );
-          } else {
-            throw new Error('Cannot open payment URL');
-          }
-        } else if (selectedMethod === 'telebirr') {
-          // Telebirr might return a QR code or payment URL
-          if (paymentResult.paymentUrl) {
-            const canOpen = await Linking.canOpenURL(paymentResult.paymentUrl);
-            if (canOpen) {
-              await Linking.openURL(paymentResult.paymentUrl);
-            }
-          }
-          
-          // Show QR code if available or instructions
-          Alert.alert(
-            'Telebirr Payment',
-            paymentResult.qrCode 
-              ? 'Scan the QR code with your Telebirr app to complete payment'
-              : 'Please complete the payment using your Telebirr app. We will verify your payment shortly.',
-            [
-              {
-                text: 'I\'ve Completed Payment',
-                onPress: () => verifyPaymentStatus(paymentResult.transactionRef, bookingId),
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: () => {
-                  setLoading(false);
-                  setPaymentProcessing(false);
-                },
-              },
-            ]
-          );
-        }
-      } else {
-        throw new Error(paymentResult.message || 'Failed to initiate payment');
+        setPendingTxRef(paymentResult.transactionRef);
+        setPendingBookingId(bookingId);
+        setCheckoutUrl(paymentResult.checkoutUrl);
+        setCheckoutVisible(true);
+        setLoading(false);
+        setPaymentProcessing(false);
+        return;
       }
+
+      throw new Error(paymentResult.message || 'Failed to initiate payment');
     } catch (error) {
       console.error('Payment error:', error);
       
@@ -386,43 +274,24 @@ const PaymentScreen = ({ navigation, route }) => {
     }
   };
 
-  const verifyPaymentStatus = async (txRef, bookingId, isDevelopment = false) => {
+  const handleCheckoutSuccess = () => {
+    setCheckoutVisible(false);
+    if (pendingTxRef && pendingBookingId) {
+      verifyPaymentStatus(pendingTxRef, pendingBookingId);
+    }
+  };
+
+  const handleCheckoutCancel = () => {
+    setCheckoutVisible(false);
+    setLoading(false);
+    setPaymentProcessing(false);
+  };
+
+  const verifyPaymentStatus = async (txRef, bookingId) => {
     setLoading(true);
+    setPaymentProcessing(true);
     try {
-      // Development mode - simulate verification
-      if (isDevelopment) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const { error: updateError } = await supabase
-          .from('bookings')
-          .update({ 
-            payment_status: 'paid',
-            status: 'confirmed',
-          })
-          .eq('id', bookingId);
-
-        if (updateError) throw updateError;
-
-        // Fetch updated booking
-        const { data: updatedBooking, error: fetchError } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('id', bookingId)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        setLoading(false);
-        setPaymentProcessing(false);
-        Alert.alert('Success', 'Payment verified successfully! (Development Mode)', [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Confirmation', { booking: updatedBooking }),
-          },
-        ]);
-        return;
-      }
-
-      const verificationResult = await verifyPayment(selectedMethod, txRef);
+      const verificationResult = await verifyPayment(paymentMethod, txRef);
 
       if (verificationResult.success && verificationResult.verified) {
         // Payment successful - update booking status
@@ -497,13 +366,15 @@ const PaymentScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{t('payment')}</Text>
-        <Text style={styles.subtitle}>{t('selectPaymentMethod')}</Text>
+        <Text style={styles.subtitle}>Pay securely with Chapa Pay</Text>
 
         {/* Payment Deadline Warning */}
-        {booking?.payment_deadline && !bookingExpired && (
+        {booking?.payment_deadline && !bookingExpired ? (
           <View style={[
             styles.deadlineCard,
-            timeRemaining?.totalSeconds < 600 && styles.deadlineCardUrgent
+            timeRemaining != null && timeRemaining.totalSeconds < 600
+              ? styles.deadlineCardUrgent
+              : null,
           ]}>
             <Ionicons 
               name="time-outline" 
@@ -513,7 +384,9 @@ const PaymentScreen = ({ navigation, route }) => {
             <View style={styles.deadlineContent}>
               <Text style={[
                 styles.deadlineTitle,
-                timeRemaining?.totalSeconds < 600 && styles.deadlineTitleUrgent
+                timeRemaining != null && timeRemaining.totalSeconds < 600
+                  ? styles.deadlineTitleUrgent
+                  : null,
               ]}>
                 {timeRemaining?.totalSeconds < 600 
                   ? 'Payment Due Soon!' 
@@ -522,7 +395,7 @@ const PaymentScreen = ({ navigation, route }) => {
               {timeRemaining && !timeRemaining.isExpired ? (
                 <Text style={[
                   styles.deadlineTime,
-                  timeRemaining.totalSeconds < 600 && styles.deadlineTimeUrgent
+                  timeRemaining.totalSeconds < 600 ? styles.deadlineTimeUrgent : null,
                 ]}>
                   {String(timeRemaining.hours).padStart(2, '0')}:
                   {String(timeRemaining.minutes).padStart(2, '0')}:
@@ -533,16 +406,16 @@ const PaymentScreen = ({ navigation, route }) => {
               )}
             </View>
           </View>
-        )}
+        ) : null}
 
-        {bookingExpired && (
+        {bookingExpired ? (
           <View style={styles.expiredCard}>
             <Ionicons name="close-circle" size={24} color={COLORS.error} />
             <Text style={styles.expiredText}>
               Your booking has expired. Payment must be completed within 2 hours.
             </Text>
           </View>
-        )}
+        ) : null}
 
         {/* Price Summary */}
         <View style={styles.summaryCard}>
@@ -558,14 +431,14 @@ const PaymentScreen = ({ navigation, route }) => {
             <Text style={styles.summaryValue}>×{currentBooking.seats || 1}</Text>
           </View>
 
-          {currentBooking.pickupStation?.extraPrice > 0 && (
+          {Number(currentBooking.pickupStation?.extraPrice) > 0 ? (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Station Fee</Text>
               <Text style={styles.summaryValue}>
                 +{currentBooking.pickupStation.extraPrice} ETB
               </Text>
             </View>
-          )}
+          ) : null}
 
           <View style={styles.divider} />
 
@@ -582,27 +455,27 @@ const PaymentScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Payment Methods */}
+        {/* Chapa — sole payment provider */}
         <View style={styles.methodsContainer}>
-          {paymentMethods.map((method) => (
-            <TouchableOpacity
-              key={method.id}
-              style={[
-                styles.methodCard,
-                selectedMethod === method.id && styles.methodCardSelected,
-              ]}
-              onPress={() => setSelectedMethod(method.id)}
-            >
-              <Text style={styles.methodIcon}>{method.icon}</Text>
-              <View style={styles.methodContent}>
-                <Text style={styles.methodName}>{method.name}</Text>
-                <Text style={styles.methodDescription}>{method.description}</Text>
-              </View>
-              {selectedMethod === method.id && (
-                <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
+          <View style={[styles.methodCard, styles.methodCardSelected]}>
+            <Text style={styles.methodIcon}>💰</Text>
+            <View style={styles.methodContent}>
+              <Text style={styles.methodName}>{t('chapa') || 'Chapa'}</Text>
+              <Text style={styles.methodDescription}>
+                Card, mobile money and bank transfer via Chapa Pay
+              </Text>
+            </View>
+            <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+          </View>
+
+          {!chapaReady ? (
+            <View style={styles.configWarning}>
+              <Ionicons name="warning-outline" size={18} color={COLORS.warning} />
+              <Text style={styles.configWarningText}>
+                Chapa is not configured. Set EXPO_PUBLIC_CHAPA_SECRET_KEY in .env and restart Expo.
+              </Text>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -611,16 +484,32 @@ const PaymentScreen = ({ navigation, route }) => {
           title={
             bookingExpired
               ? 'Booking Expired'
-              : loading 
-                ? (paymentProcessing ? 'Processing Payment...' : 'Processing...') 
-                : `Pay ${totalPrice} ETB`
+              : loading
+                ? paymentProcessing
+                  ? 'Verifying payment...'
+                  : 'Opening Chapa checkout...'
+                : `Pay ${totalPrice} ETB with Chapa`
           }
           onPress={handlePayment}
-          disabled={!selectedMethod || loading || bookingExpired}
+          disabled={!chapaReady || loading || bookingExpired}
           loading={loading}
           style={styles.button}
         />
       </View>
+
+      <PaymentWebView
+        visible={checkoutVisible}
+        checkoutUrl={checkoutUrl}
+        providerName="Chapa"
+        onSuccess={handleCheckoutSuccess}
+        onCancel={handleCheckoutCancel}
+        onError={(message) => {
+          setCheckoutVisible(false);
+          setLoading(false);
+          setPaymentProcessing(false);
+          Alert.alert('Payment Error', message || 'Could not complete checkout.');
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -688,7 +577,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   methodsContainer: {
-    gap: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   methodCard: {
     flexDirection: 'row',
@@ -720,6 +609,21 @@ const styles = StyleSheet.create({
   methodDescription: {
     fontSize: FONTS.sizes.sm,
     color: COLORS.gray,
+  },
+  configWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: `${COLORS.warning}18`,
+  },
+  configWarningText: {
+    flex: 1,
+    marginLeft: SPACING.sm,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.secondary,
+    lineHeight: 20,
   },
   footer: {
     padding: SPACING.md,

@@ -9,7 +9,7 @@ Run these scripts **in order** in the Supabase SQL Editor:
 ### 1. Create Tables (`01_create_tables.sql`)
 **Required** - Creates all database tables and indexes
 - Users
-- Churches
+- Destinations (see migrations 15–16; legacy scripts may reference historical table names)
 - Trips
 - Pickup Stations
 - Trip-Station links (junction table)
@@ -21,7 +21,7 @@ Run these scripts **in order** in the Supabase SQL Editor:
 ### 2. Enable RLS (`02_enable_rls.sql`)
 **Required** - Enables Row Level Security and creates policies
 - Protects user data
-- Allows public reading of churches/trips/stations
+- Allows public reading of destinations/trips/stations
 - Restricts admin operations
 - Controls booking access
 
@@ -29,7 +29,7 @@ Run these scripts **in order** in the Supabase SQL Editor:
 
 ### 3. Seed Sample Data (`03_seed_data.sql`)
 **Required for testing** - Adds sample data
-- 5 Ethiopian churches (Addis Ababa, Lalibela, Axum, Bahir Dar, Gondar)
+- 5 Ethiopian destinations (Addis Ababa, Lalibela, Axum, Bahir Dar, Gondar)
 - 7 pickup stations in Addis Ababa
 - 5 sample drivers
 
@@ -66,7 +66,7 @@ After running all scripts:
 
 ### Tables Created (7)
 - ✅ `users` - User profiles
-- ✅ `churches` - Church information
+- ✅ `destinations` - Destination information (renamed from legacy schema)
 - ✅ `trips` - Available trips
 - ✅ `pickup_stations` - Pickup locations
 - ✅ `trip_pickup_stations` - Station-trip links
@@ -74,7 +74,7 @@ After running all scripts:
 - ✅ `drivers` - Driver information
 
 ### Sample Data
-- ✅ 5 Churches with real Ethiopian locations
+- ✅ 5 Destinations with real Ethiopian locations
 - ✅ 7 Pickup stations in Addis Ababa
 - ✅ 5 Drivers with vehicle info
 - ✅ 5 Sample trips (if you ran script 04)
@@ -84,7 +84,7 @@ After running all scripts:
 - ✅ Row Level Security enabled
 - ✅ Users can only see their own bookings
 - ✅ Admin-only operations protected
-- ✅ Public reading of churches/trips/stations
+- ✅ Public reading of destinations/trips/stations
 
 ## 🔍 Verify Your Setup
 

@@ -38,7 +38,7 @@ export default function NotFound() {
             <h3 className="font-semibold text-[#0A1A2F] mb-2">Popular Pages</h3>
             <ul className="space-y-1 text-sm text-[#0A1A2F]/70">
               <li><Link href="/tours" className="hover:text-[#D4A017]">Tours</Link></li>
-              <li><Link href="/churches" className="hover:text-[#D4A017]">Destinations</Link></li>
+              <li><Link href="/destinations" className="hover:text-[#D4A017]">Destinations</Link></li>
               <li><Link href="/providers" className="hover:text-[#D4A017]">For Providers</Link></li>
             </ul>
           </div>

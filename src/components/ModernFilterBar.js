@@ -11,7 +11,7 @@ import ModernButton from './ModernButton';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: 'apps-outline' },
-  { id: 'church', label: 'Churches', icon: 'location-outline' },
+  { id: 'religious', label: 'Religious Heritage', icon: 'book-outline' },
   { id: 'historical', label: 'Historical', icon: 'library-outline' },
   { id: 'nature', label: 'Nature', icon: 'leaf-outline' },
   { id: 'adventure', label: 'Adventure', icon: 'bicycle-outline' },

@@ -22,10 +22,10 @@ const monthlyData = [
 ];
 
 const tripPerformance = [
-  { church: "Lalibela Churches", trips: 45, revenue: 560000, avgOccupancy: 94 },
-  { church: "Lake Tana Monasteries", trips: 32, revenue: 234000, avgOccupancy: 87 },
-  { church: "Debre Damo", trips: 18, revenue: 189000, avgOccupancy: 78 },
-  { church: "Abuna Yemata Guh", trips: 12, revenue: 167000, avgOccupancy: 92 },
+  { destination: "Lalibela Heritage", trips: 45, revenue: 560000, avgOccupancy: 94 },
+  { destination: "Lake Tana Monasteries", trips: 32, revenue: 234000, avgOccupancy: 87 },
+  { destination: "Debre Damo", trips: 18, revenue: 189000, avgOccupancy: 78 },
+  { destination: "Abuna Yemata Guh", trips: 12, revenue: 167000, avgOccupancy: 92 },
 ];
 
 export default function ReportsPage() {
@@ -133,7 +133,7 @@ export default function ReportsPage() {
                   {tripPerformance.map((trip, index) => (
                     <tr key={index} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="py-4 px-6">
-                        <p className="font-medium text-sm">{trip.church}</p>
+                        <p className="font-medium text-sm">{trip.destination}</p>
                       </td>
                       <td className="py-4 px-6">
                         <p className="text-sm">{trip.trips} trips</p>

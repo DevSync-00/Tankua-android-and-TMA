@@ -1,38 +1,45 @@
 // Payment Gateway Configuration
-// IMPORTANT: In production, these API keys should be stored securely on your backend
-// and payment requests should be made through your server, not directly from the client
+// Chapa secret key: set EXPO_PUBLIC_CHAPA_SECRET_KEY (or legacy EXPO_PUBLIC_CHAPA_API_KEY)
+
+const resolveChapaApiKey = () => {
+  const secret = process.env.EXPO_PUBLIC_CHAPA_SECRET_KEY?.trim();
+  const legacy = process.env.EXPO_PUBLIC_CHAPA_API_KEY?.trim();
+  return secret || legacy || '';
+};
+
+const CHAPA_PLACEHOLDER = 'CHk_test_xxxxxxxxxxxxx';
+
+const resolveHttpsUrl = (value, fallback) => {
+  const url = value?.trim();
+  if (!url || url.includes('your-backend.com') || !/^https:\/\//i.test(url)) {
+    return fallback;
+  }
+  return url;
+};
+
+export const isChapaKeyConfigured = (key = resolveChapaApiKey()) => {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (!trimmed) return false;
+  if (trimmed.includes('xxxxx')) return false;
+  if (trimmed === CHAPA_PLACEHOLDER) return false;
+  if (trimmed === 'your_chapa_api_key_here') return false;
+  return true;
+};
 
 export const PAYMENT_CONFIG = {
-  // Chapa API Configuration
   chapa: {
-    // Get your API key from https://developer.chapa.co/
-    apiKey: process.env.EXPO_PUBLIC_CHAPA_API_KEY || 'CHk_test_xxxxxxxxxxxxx',
+    apiKey: resolveChapaApiKey() || CHAPA_PLACEHOLDER,
     baseUrl: 'https://api.chapa.co/v1',
-    // For production, use: 'https://api.chapa.co/v1'
-    // For testing, use: 'https://api.chapa.co/v1' (same URL, but test keys)
   },
 
-  // Telebirr API Configuration
-  telebirr: {
-    // Get your credentials from Telebirr Developer Portal
-    appId: process.env.EXPO_PUBLIC_TELEBIRR_APP_ID || 'your-app-id',
-    appKey: process.env.EXPO_PUBLIC_TELEBIRR_APP_KEY || 'your-app-key',
-    publicKey: process.env.EXPO_PUBLIC_TELEBIRR_PUBLIC_KEY || 'your-public-key',
-    baseUrl: process.env.EXPO_PUBLIC_TELEBIRR_BASE_URL || 'https://telebirr-api.com',
-    // For production, use the production URL provided by Telebirr
-    // For testing, use the sandbox URL
-  },
-
-  // Callback URLs (for webhook handling)
   callbacks: {
-    success: 'tankua://payment/success',
-    cancel: 'tankua://payment/cancel',
-    // For webhooks, you'll need a backend endpoint
-    webhook: process.env.EXPO_PUBLIC_WEBHOOK_URL || 'https://your-backend.com/api/payments/webhook',
+    // Chapa requires https return/callback URLs (custom schemes are rejected)
+    returnUrl: resolveHttpsUrl(process.env.EXPO_PUBLIC_CHAPA_RETURN_URL, 'https://chapa.co'),
+    webhook: resolveHttpsUrl(process.env.EXPO_PUBLIC_WEBHOOK_URL, 'https://chapa.co'),
   },
 };
 
-// Payment status constants
 export const PAYMENT_STATUS = {
   PENDING: 'pending',
   PROCESSING: 'processing',
@@ -41,11 +48,6 @@ export const PAYMENT_STATUS = {
   CANCELLED: 'cancelled',
 };
 
-// Payment method types
 export const PAYMENT_METHODS = {
   CHAPA: 'chapa',
-  TELEBIRR: 'telebirr',
-  CBE_BIRR: 'cbe',
-  AMOLE: 'amole',
 };
-

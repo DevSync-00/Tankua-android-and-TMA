@@ -6,15 +6,14 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS } from '../config/theme';
 
 /**
- * PaymentWebView - Handles in-app payment checkout
- * Supports Chapa and other web-based payment providers
+ * In-app Chapa checkout WebView
  */
 const PaymentWebView = ({
   visible,
@@ -22,96 +21,67 @@ const PaymentWebView = ({
   onSuccess,
   onCancel,
   onError,
-  successUrl = 'tankua://payment/success',
-  cancelUrl = 'tankua://payment/cancel',
   providerName = 'Payment',
 }) => {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const webViewRef = useRef(null);
 
-  // Handle navigation state changes to detect success/cancel
+  if (!visible || !checkoutUrl) {
+    return null;
+  }
+
   const handleNavigationStateChange = (navState) => {
     const { url } = navState;
-    
-    // Check for success callback
-    if (url.includes('payment/success') || 
-        url.includes('callback') && url.includes('success') ||
-        url.includes('status=success')) {
-      onSuccess && onSuccess(url);
+
+    if (
+      url.includes('payment/success') ||
+      url.includes('tx_ref=') ||
+      (url.includes('callback') && url.includes('success')) ||
+      url.includes('status=success')
+    ) {
+      onSuccess?.(url);
       return;
     }
-    
-    // Check for cancel callback
-    if (url.includes('payment/cancel') || 
-        url.includes('status=cancel') ||
-        url.includes('status=cancelled')) {
-      onCancel && onCancel();
+
+    if (url.includes('payment/cancel') || url.includes('status=cancel') || url.includes('status=cancelled')) {
+      onCancel?.();
       return;
     }
-    
-    // Check for failure
+
     if (url.includes('status=failed') || url.includes('status=error')) {
-      onError && onError('Payment failed');
-      return;
+      onError?.('Payment failed');
     }
   };
 
-  // Handle messages from the WebView
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'PAYMENT_SUCCESS') {
-        onSuccess && onSuccess(data);
+        onSuccess?.(data);
       } else if (data.type === 'PAYMENT_CANCELLED') {
-        onCancel && onCancel();
+        onCancel?.();
       } else if (data.type === 'PAYMENT_ERROR') {
-        onError && onError(data.message);
+        onError?.(data.message);
       }
-    } catch (e) {
-      // Not a JSON message, ignore
+    } catch {
+      // ignore non-JSON messages
     }
   };
 
-  // Inject JavaScript to intercept payment completion
   const injectedJavaScript = `
     (function() {
-      // Monitor for successful payment indicators
-      const observer = new MutationObserver(function(mutations) {
-        const successIndicators = [
-          'payment successful',
-          'transaction successful',
-          'payment complete',
-          'thank you for your payment'
-        ];
-        
+      const observer = new MutationObserver(function() {
         const bodyText = document.body.innerText.toLowerCase();
-        for (const indicator of successIndicators) {
-          if (bodyText.includes(indicator)) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'PAYMENT_SUCCESS',
-              message: 'Payment detected as successful'
-            }));
-            break;
-          }
+        if (
+          bodyText.includes('payment successful') ||
+          bodyText.includes('transaction successful') ||
+          bodyText.includes('payment complete')
+        ) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PAYMENT_SUCCESS' }));
         }
       });
-      
       observer.observe(document.body, { childList: true, subtree: true });
-      
-      // Also monitor URL changes
-      let lastUrl = window.location.href;
-      setInterval(function() {
-        if (window.location.href !== lastUrl) {
-          lastUrl = window.location.href;
-          if (lastUrl.includes('success')) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'PAYMENT_SUCCESS',
-              url: lastUrl
-            }));
-          }
-        }
-      }, 500);
     })();
     true;
   `;
@@ -123,32 +93,26 @@ const PaymentWebView = ({
       presentationStyle="pageSheet"
       onRequestClose={onCancel}
     >
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.closeButton} 
-            onPress={onCancel}
-          >
+          <TouchableOpacity style={styles.closeButton} onPress={onCancel}>
             <Ionicons name="close" size={24} color={COLORS.secondary} />
           </TouchableOpacity>
-          
+
           <View style={styles.titleContainer}>
             <Ionicons name="lock-closed" size={16} color={COLORS.success} />
             <Text style={styles.title}>Secure {providerName} Checkout</Text>
           </View>
-          
+
           <View style={styles.placeholder} />
         </View>
 
-        {/* Progress Bar */}
-        {loading && (
+        {loading ? (
           <View style={styles.progressContainer}>
-            <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
+            <View style={[styles.progressBar, { width: `${Math.max(progress, 0.05) * 100}%` }]} />
           </View>
-        )}
+        ) : null}
 
-        {/* WebView */}
         <WebView
           ref={webViewRef}
           source={{ uri: checkoutUrl }}
@@ -159,29 +123,23 @@ const PaymentWebView = ({
           onNavigationStateChange={handleNavigationStateChange}
           onMessage={handleMessage}
           injectedJavaScript={injectedJavaScript}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          scalesPageToFit={true}
+          javaScriptEnabled
+          domStorageEnabled
+          startInLoadingState
           renderLoading={() => (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingText}>Loading secure checkout...</Text>
             </View>
           )}
-          onError={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent;
-            console.error('WebView error:', nativeEvent);
-            onError && onError('Failed to load payment page');
+          onError={() => {
+            onError?.('Failed to load payment page');
           }}
         />
 
-        {/* Footer Security Info */}
         <View style={styles.footer}>
           <Ionicons name="shield-checkmark" size={16} color={COLORS.success} />
-          <Text style={styles.footerText}>
-            Your payment is secured with 256-bit encryption
-          </Text>
+          <Text style={styles.footerText}>Your payment is secured with 256-bit encryption</Text>
         </View>
       </SafeAreaView>
     </Modal>
@@ -209,9 +167,9 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
   },
   title: {
+    marginLeft: SPACING.xs,
     fontSize: FONTS.sizes.md,
     fontWeight: '600',
     color: COLORS.secondary,
@@ -249,18 +207,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.xs,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
   footerText: {
+    marginLeft: SPACING.xs,
     fontSize: FONTS.sizes.sm,
     color: COLORS.gray,
   },
 });
 
 export default PaymentWebView;
-
-

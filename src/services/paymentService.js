@@ -538,9 +538,9 @@ export const getPaymentHistory = async (userId) => {
           seats,
           status,
           trips (
-            church_id,
+            destination_id,
             departure_date,
-            churches (name, city)
+            destinations (name, city)
           )
         )
       `)

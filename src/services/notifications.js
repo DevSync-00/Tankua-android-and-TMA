@@ -206,7 +206,7 @@ export async function scheduleTripReminder(booking) {
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: '🚐 Trip Tomorrow!',
-        body: `Don't forget your trip to ${booking.destinationName || booking.churchName || 'your destination'}. Pickup at ${booking.pickupTime} from ${booking.pickupStation}.`,
+        body: `Don't forget your trip to ${booking.destinationName || booking.destination_name || 'your destination'}. Pickup at ${booking.pickupTime} from ${booking.pickupStation}.`,
         data: {
           type: 'trip_reminder',
           bookingId: booking.id,
@@ -254,7 +254,7 @@ export async function cancelTripReminder(bookingId) {
 export async function showBookingConfirmation(booking) {
   return scheduleLocalNotification({
     title: '✅ Booking Confirmed!',
-    body: `Your trip to ${booking.destinationName || booking.churchName || 'your destination'} is confirmed for ${booking.tripDate}. Check your tickets in the app.`,
+    body: `Your trip to ${booking.destinationName || booking.destination_name || 'your destination'} is confirmed for ${booking.tripDate}. Check your tickets in the app.`,
     data: {
       type: 'booking_confirmation',
       bookingId: booking.id,
@@ -284,7 +284,7 @@ export async function showPaymentSuccess(booking) {
 export async function showBookingCancellation(booking, reason) {
   return scheduleLocalNotification({
     title: '❌ Booking Cancelled',
-    body: reason || `Your booking for ${booking.destinationName || booking.churchName || 'your destination'} has been cancelled.`,
+    body: reason || `Your booking for ${booking.destinationName || booking.destination_name || 'your destination'} has been cancelled.`,
     data: {
       type: 'booking_cancelled',
       bookingId: booking.id,

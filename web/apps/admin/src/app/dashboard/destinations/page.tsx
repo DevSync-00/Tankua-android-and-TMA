@@ -27,7 +27,8 @@ import { supabase } from "@/lib/supabase";
 
 const CATEGORIES = [
   { value: "all", label: "All Categories", icon: "🌍" },
-  { value: "church", label: "Churches", icon: "⛪" },
+  { value: "religious", label: "Religious Heritage", icon: "🕌" },
+  { value: "sacred", label: "Sacred Sites", icon: "⭐" },
   { value: "historical", label: "Historical", icon: "🏛️" },
   { value: "nature", label: "Nature", icon: "🌲" },
   { value: "adventure", label: "Adventure", icon: "🚴" },

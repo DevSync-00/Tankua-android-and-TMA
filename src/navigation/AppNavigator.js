@@ -14,7 +14,6 @@ import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 // Main Screens
 import MainTabNavigator from './MainTabNavigator';
 import DestinationDetailScreen from '../screens/DestinationDetailScreen';
-import ChurchDetailScreen from '../screens/ChurchDetailScreen'; // Deprecated: kept for backward compatibility only - use DestinationDetailScreen instead
 import BookingFlowNavigator from './BookingFlowNavigator';
 import TicketScreen from '../screens/TicketScreen';
 
@@ -63,12 +62,6 @@ const AppNavigator = () => {
             name="DestinationDetail" 
             component={DestinationDetailScreen}
             options={{ headerShown: true, headerTitle: '' }}
-          />
-          <Stack.Screen 
-            name="ChurchDetail" 
-            component={ChurchDetailScreen}
-            options={{ headerShown: true, headerTitle: '' }}
-            // Deprecated: kept for backward compatibility only - use DestinationDetail instead
           />
           <Stack.Screen 
             name="BookingFlow" 

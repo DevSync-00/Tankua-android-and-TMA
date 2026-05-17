@@ -1,6 +1,6 @@
 # Tankua Web Platform
 
-This directory contains the web applications for Tankua - a complete ecosystem for church tourism in Ethiopia.
+This directory contains the web applications for Tankua — a complete ecosystem for travel and destination booking in Ethiopia.
 
 ## 🏗️ Structure
 
@@ -93,7 +93,7 @@ export function MyComponent() {
 
 Public-facing website for:
 - Landing page with hero, features, testimonials
-- Church discovery and search
+- Destination discovery and search
 - Provider registration CTA
 - App download links
 - SEO-optimized content

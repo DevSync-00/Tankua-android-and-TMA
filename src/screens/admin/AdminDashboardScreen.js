@@ -17,16 +17,16 @@ const AdminDashboardScreen = ({ navigation }) => {
   const stats = [
     { label: 'Total Bookings', value: '243', icon: 'calendar', color: COLORS.primary },
     { label: 'Active Trips', value: '12', icon: 'car', color: COLORS.secondary },
-    { label: 'Total Churches', value: '45', icon: 'business', color: COLORS.success },
+    { label: 'Total Destinations', value: '45', icon: 'business', color: COLORS.success },
     { label: 'Total Users', value: '1,234', icon: 'people', color: COLORS.warning },
   ];
 
   const adminMenuItems = [
     {
-      title: t('manageChurches'),
+      title: 'Manage Destinations',
       icon: 'business',
       color: COLORS.primary,
-      screen: 'ManageChurches',
+      screen: 'ManageDestinations',
     },
     {
       title: t('manageTrips'),
@@ -144,7 +144,7 @@ const AdminDashboardScreen = ({ navigation }) => {
                 <Ionicons name="business" size={20} color={COLORS.secondary} />
               </View>
               <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>Church Added</Text>
+                <Text style={styles.activityTitle}>Destination Added</Text>
                 <Text style={styles.activityTime}>1 hour ago</Text>
               </View>
             </View>

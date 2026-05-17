@@ -18,7 +18,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme'
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getDestinations } from '../services/database';
-import EnhancedDestinationCard from '../components/EnhancedDestinationCard';
+import EnhancedDestinationCard, { HOME_GRID_CARD } from '../components/EnhancedDestinationCard';
 import CategoryRibbon from '../components/CategoryRibbon';
 import { SkeletonCard } from '../components/SkeletonLoader';
 import { deduplicateDestinations, sortByDistance } from '../utils/destinationUtils';
@@ -115,6 +115,14 @@ const HomeScreen = ({ navigation }) => {
   const popularDestinations = filteredDestinations.slice(0, 6).filter(Boolean);
   const showPopularSkeletons = loading && popularDestinations.length === 0;
 
+  const gridGap = SPACING.md;
+  const gridPadding = SPACING.md;
+  const gridCardWidth = useMemo(() => {
+    const safeWidth = typeof width === 'number' && width > 0 ? width : 375;
+    const columnWidth = (safeWidth - gridPadding * 2 - gridGap) / 2;
+    return Math.min(columnWidth, HOME_GRID_CARD.maxWidth);
+  }, [width]);
+
   // Render featured card - simplified without complex animations
   const renderFeatured = ({ item, index }) => {
     const safeWidth = typeof width === 'number' && width > 0 ? width : 375;
@@ -169,7 +177,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.backgroundSecondary} />
       
       {/* Header */}
       <View style={styles.header}>
@@ -245,23 +253,20 @@ const HomeScreen = ({ navigation }) => {
           {/* Standard Grid */}
           <View style={styles.popularGrid}>
             {showPopularSkeletons ? (
-              Array.from({ length: 4 }).map((_, index) => {
-                const safeWidth = typeof width === 'number' && width > 0 ? width : 375;
-                return (
-                  <View key={`skeleton-${index}`} style={styles.gridItem}>
-                    <SkeletonCard width={(safeWidth - SPACING.md * 3) / 2} height={280} />
-                  </View>
-                );
-              })
+              Array.from({ length: 4 }).map((_, index) => (
+                <View key={`skeleton-${index}`} style={[styles.gridItem, { width: gridCardWidth }]}>
+                  <SkeletonCard width={gridCardWidth} height={HOME_GRID_CARD.height} borderRadius={HOME_GRID_CARD.radius} />
+                </View>
+              ))
             ) : popularDestinations.length > 0 ? (
               popularDestinations.map((item, index) => (
-                <View key={`popular-${item.id}-${index}`} style={styles.gridItem}>
+                <View key={`popular-${item.id}-${index}`} style={[styles.gridItem, { width: gridCardWidth }]}>
                   <EnhancedDestinationCard
                     destination={item}
                     onPress={() => handleDestinationPress(item)}
                     size="small"
                     index={index}
-                    containerWidth={width}
+                    cardWidth={gridCardWidth}
                   />
                 </View>
               ))
@@ -353,10 +358,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
   },
   scrollContent: {
-    paddingBottom: SPACING.xl + SPACING.xxl,
+    paddingBottom: 120,
   },
   header: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundSecondary,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
@@ -507,12 +512,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: SPACING.md,
+    columnGap: SPACING.md,
+    rowGap: SPACING.md,
     justifyContent: 'space-between',
   },
   gridItem: {
-    width: '48%',
-    minHeight: 280,
-    marginBottom: SPACING.md,
+    alignItems: 'center',
   },
   emptyState: {
     width: '100%',

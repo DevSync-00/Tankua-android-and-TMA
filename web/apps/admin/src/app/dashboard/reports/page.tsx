@@ -24,7 +24,7 @@ const monthlyData = [
 ];
 
 const topDestinations = [
-  { name: "Lalibela Churches", bookings: 1234, revenue: 4560000 },
+  { name: "Lalibela Heritage", bookings: 1234, revenue: 4560000 },
   { name: "Lake Tana Monasteries", bookings: 892, revenue: 2340000 },
   { name: "Debre Damo", bookings: 567, revenue: 1890000 },
   { name: "Abuna Yemata Guh", bookings: 445, revenue: 1670000 },

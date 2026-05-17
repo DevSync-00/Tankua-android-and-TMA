@@ -252,7 +252,7 @@ export default function NewTripPage() {
                   className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
                 >
                   <option value="all">All Categories</option>
-                  <option value="church">Churches</option>
+                  <option value="religious">Religious Heritage</option>
                   <option value="historical">Historical</option>
                   <option value="nature">Nature</option>
                   <option value="adventure">Adventure</option>

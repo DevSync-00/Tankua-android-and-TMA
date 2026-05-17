@@ -98,10 +98,10 @@ export async function cancelBooking(bookingId, userId, reason = null) {
         *,
         trips (
           id,
-          church_id,
+          destination_id,
           departure_date,
           available_seats,
-          churches (name)
+          destinations (name)
         )
       `)
       .eq('id', bookingId)
@@ -163,7 +163,7 @@ export async function cancelBooking(bookingId, userId, reason = null) {
     // 5. Send cancellation notification
     await showBookingCancellation({
       id: bookingId,
-      churchName: booking.trips?.churches?.name || 'Trip',
+      destinationName: booking.trips?.destinations?.name || 'Trip',
     });
 
     return {
@@ -221,9 +221,9 @@ export async function getAvailableTripsForReschedule(booking) {
       .from('trips')
       .select(`
         *,
-        churches (name, city)
+        destinations (name, city)
       `)
-      .eq('church_id', booking.church_id)
+      .eq('destination_id', booking.destination_id)
       .eq('status', 'upcoming')
       .gt('departure_date', new Date().toISOString())
       .gte('available_seats', booking.seats)
@@ -506,7 +506,7 @@ export async function getBookingHistory(bookingId) {
         *,
         trips (
           departure_date,
-          churches (name)
+          destinations (name)
         ),
         pickup_stations (name),
         refunds (*)

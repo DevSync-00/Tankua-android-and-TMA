@@ -88,7 +88,7 @@ const MapScreen = ({ navigation }) => {
   // Categories
   const categories = [
     { id: null, label: 'All', icon: 'apps-outline' },
-    { id: 'church', label: 'Churches', icon: 'location-outline' },
+    { id: 'religious', label: 'Religious Heritage', icon: 'book-outline' },
     { id: 'historical', label: 'Historical', icon: 'library-outline' },
     { id: 'nature', label: 'Nature', icon: 'leaf-outline' },
     { id: 'adventure', label: 'Adventure', icon: 'bicycle-outline' },
@@ -437,8 +437,8 @@ const MapScreen = ({ navigation }) => {
 
   const getMarkerColor = (category) => {
     const colors = {
-      church: COLORS.primary,
       religious: COLORS.primary,
+      sacred: COLORS.primary,
       historical: '#8B4513',
       nature: COLORS.success,
       adventure: COLORS.accent,
@@ -452,8 +452,8 @@ const MapScreen = ({ navigation }) => {
 
   const getMarkerIcon = (category) => {
     const icons = {
-      church: '⛪',
-      religious: '⛪',
+      religious: '🕌',
+      sacred: '⭐',
       historical: '🏛️',
       nature: '🌲',
       adventure: '🚴',

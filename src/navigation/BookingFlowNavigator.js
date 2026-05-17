@@ -67,7 +67,7 @@ const BookingFlowNavigator = () => {
       <Stack.Screen 
         name="Confirmation" 
         component={ConfirmationScreen}
-        options={{ title: 'Confirmation', headerLeft: () => null }}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
     </Stack.Navigator>
   );

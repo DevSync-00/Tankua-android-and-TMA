@@ -19,7 +19,7 @@ export interface DashboardStats {
 export interface RecentBooking {
   id: string;
   user: { name: string; phone_number: string } | null;
-  church: string;
+  destination: string;
   provider: string;
   amount: number;
   status: string;
@@ -33,7 +33,7 @@ export interface TopProvider {
   rating: number;
 }
 
-export interface TopChurch {
+export interface TopDestination {
   name: string;
   bookings: number;
   region: string;
@@ -233,7 +233,7 @@ export async function getRecentBookings(limit = 5): Promise<RecentBooking[]> {
       created_at,
       users (name, phone_number),
       trips (
-        churches (name),
+        destinations (name),
         providers (name)
       )
     `)
@@ -248,7 +248,7 @@ export async function getRecentBookings(limit = 5): Promise<RecentBooking[]> {
   return (data || []).map((booking: any) => ({
     id: booking.id,
     user: booking.users,
-    church: booking.trips?.churches?.name || 'Unknown',
+    destination: booking.trips?.destinations?.name || booking.destination_name || 'Unknown',
     provider: booking.trips?.providers?.name || 'Unknown',
     amount: booking.total_price || 0,
     status: booking.status,
@@ -290,36 +290,34 @@ export async function getTopProviders(limit = 4): Promise<TopProvider[]> {
   return providersWithStats;
 }
 
-export async function getTopChurches(limit = 4): Promise<TopChurch[]> {
-  // Get top destinations with category = 'church' (churches are just a category)
+export async function getTopDestinations(limit = 4): Promise<TopDestination[]> {
   const { data, error } = await supabase
     .from('destinations')
     .select('id, name, region')
-    .eq('category', 'church') // Filter by church category
-    .limit(limit);
+    .order('created_at', { ascending: false })
+    .limit(limit * 3);
 
   if (error) {
-    console.error('Error fetching top churches:', error);
+    console.error('Error fetching top destinations:', error);
     return [];
   }
 
-  // Get booking counts for each destination with church category (using destination_id)
-  const churchesWithStats = await Promise.all(
-    (data || []).map(async (church: any) => {
+  const destinationsWithStats = await Promise.all(
+    (data || []).map(async (destination: { id: string; name: string; region: string | null }) => {
       const { count } = await supabase
-        .from('trips')
+        .from('bookings')
         .select('id', { count: 'exact', head: true })
-        .eq('destination_id', church.id);
+        .eq('destination_id', destination.id);
 
       return {
-        name: church.name,
-        region: church.region || 'Unknown',
+        name: destination.name,
+        region: destination.region || 'Unknown',
         bookings: count || 0,
       };
     })
   );
 
-  return churchesWithStats.sort((a, b) => b.bookings - a.bookings);
+  return destinationsWithStats.sort((a, b) => b.bookings - a.bookings).slice(0, limit);
 }
 
 // ============================================
@@ -413,7 +411,6 @@ export interface BookingDetails {
   trip: {
     id: string;
     departure_date: string;
-    church: { id: string; name: string; city: string } | null; // Keep for backward compatibility
     destination: { id: string; name: string; city: string } | null;
     provider: { id: string; name: string } | null;
   } | null;
@@ -484,7 +481,6 @@ export async function getBookings(options?: {
       trip: b.trips ? {
         id: b.trips.id,
         departure_date: b.trips.departure_date,
-        church: b.trips.destinations, // Keep for backward compatibility
         destination: b.trips.destinations,
         provider: b.trips.providers,
       } : null,
@@ -646,79 +642,6 @@ export async function createProvider(provider: {
   }
 }
 
-// ============================================
-// CHURCHES MANAGEMENT
-// ============================================
-// Note: Churches are just one category of destinations (category = 'church')
-// These functions are convenience wrappers for managing destinations with category='church'
-
-export interface Church {
-  id: string;
-  name: string;
-  description: string | null;
-  region: string | null;
-  city: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  images: string[] | null;
-  tags: string[] | null;
-  created_at: string;
-}
-
-// Get destinations with category = 'church' (churches are just a category, not a separate entity)
-export async function getChurches(options?: {
-  limit?: number;
-  offset?: number;
-  search?: string;
-  region?: string;
-  category?: string;
-}): Promise<{ churches: Church[]; total: number }> {
-  let query = supabase
-    .from('destinations')
-    .select('*', { count: 'exact' })
-    .eq('category', 'church') // Only get churches
-    .order('name');
-
-  if (options?.search) {
-    query = query.or(`name.ilike.%${options.search}%,city.ilike.%${options.search}%,description.ilike.%${options.search}%`);
-  }
-
-  if (options?.region) {
-    query = query.eq('region', options.region);
-  }
-
-  if (options?.limit) {
-    query = query.limit(options.limit);
-  }
-
-  if (options?.offset) {
-    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
-  }
-
-  const { data, error, count } = await query;
-  
-  if (error) {
-    console.error('Error fetching churches:', error);
-    return { churches: [], total: 0 };
-  }
-  
-  // Map destinations to Church format
-  const churches = (data || []).map((d: any) => ({
-    id: d.id,
-    name: d.name,
-    description: d.description,
-    region: d.region,
-    city: d.city,
-    latitude: d.location?.coordinates?.[1] || d.location?.lat || null,
-    longitude: d.location?.coordinates?.[0] || d.location?.lng || null,
-    images: d.images || [],
-    tags: d.tags || [],
-    created_at: d.created_at,
-  }));
-  
-  return { churches, total: count || 0 };
-}
-
 export async function createDestination(destination: {
   name: string;
   description?: string;
@@ -799,107 +722,12 @@ export async function updateDestination(
   }
 }
 
-export async function createChurch(
-  church: Omit<Church, 'id' | 'created_at'>
-): Promise<Church | null> {
-  // Create a destination with category = 'church' (churches are just a category)
-  const location = church.latitude && church.longitude 
-    ? { lat: church.latitude, lng: church.longitude, coordinates: [church.longitude, church.latitude] }
-    : null;
-
-  const { data, error } = await supabase
-    .from('destinations')
-    .insert({
-      name: church.name,
-      description: church.description || null,
-      region: church.region || null,
-      city: church.city || null,
-      category: 'church',
-      images: church.images || [],
-      tags: church.tags || [],
-      location: location,
-    })
-    .select()
-    .single();
-
+export async function deleteDestination(id: string): Promise<boolean> {
+  const { error } = await supabase.from('destinations').delete().eq('id', id);
   if (error) {
-    console.error('Error creating church:', error);
-    return null;
-  }
-  
-  // Map back to Church format
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    region: data.region,
-    city: data.city,
-    latitude: data.location?.coordinates?.[1] || data.location?.lat || null,
-    longitude: data.location?.coordinates?.[0] || data.location?.lng || null,
-    images: data.images || [],
-    tags: data.tags || [],
-    created_at: data.created_at,
-  };
-}
-
-export async function updateChurch(
-  id: string,
-  updates: Partial<Church>
-): Promise<boolean> {
-  // Update destination, handling location separately
-  const updateData: any = {
-    name: updates.name,
-    description: updates.description,
-    region: updates.region,
-    city: updates.city,
-    images: updates.images,
-    tags: updates.tags,
-  };
-
-  // Handle location if latitude/longitude provided
-  if (updates.latitude !== undefined || updates.longitude !== undefined) {
-    const lat = updates.latitude ?? null;
-    const lng = updates.longitude ?? null;
-    if (lat !== null && lng !== null) {
-      updateData.location = { lat, lng, coordinates: [lng, lat] };
-    } else {
-      updateData.location = null;
-    }
-  }
-
-  // Remove undefined values
-  Object.keys(updateData).forEach(key => {
-    if (updateData[key] === undefined) {
-      delete updateData[key];
-    }
-  });
-
-  const { error } = await supabase
-    .from('destinations')
-    .update(updateData)
-    .eq('id', id)
-    .eq('category', 'church'); // Ensure we're only updating churches
-
-  if (error) {
-    console.error('Error updating church:', error);
+    console.error('Error deleting destination:', error);
     return false;
   }
-  
-  return true;
-}
-
-export async function deleteChurch(id: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('destinations')
-    .delete()
-    .eq('id', id)
-    .eq('category', 'church'); // Ensure we're only deleting churches
-
-  if (error) {
-    console.error('Error deleting church:', error);
-    return false;
-  }
-  
   return true;
 }
 
@@ -1135,7 +963,7 @@ export interface Promotion {
   per_user_limit: number;
   valid_from: string;
   valid_until: string;
-  applicable_churches: string[] | null;
+  applicable_destinations: string[] | null;
   applicable_providers: string[] | null;
   is_active: boolean;
   created_by: string | null;
@@ -1192,7 +1020,7 @@ export async function createPromotion(promotion: {
   per_user_limit?: number;
   valid_from: string;
   valid_until: string;
-  applicable_churches?: string[];
+  applicable_destinations?: string[];
   applicable_providers?: string[];
   is_active?: boolean;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -1215,7 +1043,7 @@ export async function createPromotion(promotion: {
         per_user_limit: promotion.per_user_limit || 1,
         valid_from: promotion.valid_from,
         valid_until: promotion.valid_until,
-        applicable_churches: promotion.applicable_churches || null,
+        applicable_destinations: promotion.applicable_destinations || null,
         applicable_providers: promotion.applicable_providers || null,
         is_active: promotion.is_active !== undefined ? promotion.is_active : true,
         created_by: adminUser?.id || null,
@@ -1246,7 +1074,7 @@ export async function updatePromotion(
     per_user_limit?: number;
     valid_from?: string;
     valid_until?: string;
-    applicable_churches?: string[];
+    applicable_destinations?: string[];
     applicable_providers?: string[];
     is_active?: boolean;
   }

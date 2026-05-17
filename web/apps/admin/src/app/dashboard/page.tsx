@@ -10,7 +10,6 @@ import {
   ArrowDownRight,
   Building2,
   MoreHorizontal,
-  Church,
   MapPin,
   Clock,
   CheckCircle2,
@@ -24,13 +23,13 @@ import {
   getDashboardStats,
   getRecentBookings,
   getTopProviders,
-  getTopChurches,
+  getTopDestinations,
   getBookingTrends,
   getRevenueAnalytics,
   type DashboardStats,
   type RecentBooking,
   type TopProvider,
-  type TopChurch,
+  type TopDestination,
 } from "@/lib/queries";
 
 export default function DashboardPage() {
@@ -39,7 +38,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [topProviders, setTopProviders] = useState<TopProvider[]>([]);
-  const [topChurches, setTopChurches] = useState<TopChurch[]>([]);
+  const [topDestinations, setTopDestinations] = useState<TopDestination[]>([]);
   const [bookingTrends, setBookingTrends] = useState<Array<{ date: string; bookings: number; revenue: number }>>([]);
   const [revenueAnalytics, setRevenueAnalytics] = useState<{
     totalRevenue: number;
@@ -55,11 +54,11 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, bookingsData, providersData, churchesData, trendsData, revenueData] = await Promise.all([
+      const [statsData, bookingsData, providersData, destinationsData, trendsData, revenueData] = await Promise.all([
         getDashboardStats(),
         getRecentBookings(5),
         getTopProviders(4),
-        getTopChurches(4),
+        getTopDestinations(4),
         getBookingTrends(30),
         getRevenueAnalytics(),
       ]);
@@ -67,7 +66,7 @@ export default function DashboardPage() {
       setStats(statsData);
       setRecentBookings(bookingsData);
       setTopProviders(providersData);
-      setTopChurches(churchesData);
+      setTopDestinations(destinationsData);
       setBookingTrends(trendsData);
       setRevenueAnalytics(revenueData);
     } catch (error) {
@@ -255,7 +254,7 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <p className="text-sm truncate max-w-[150px]">{booking.church}</p>
+                            <p className="text-sm truncate max-w-[150px]">{booking.destination}</p>
                           </td>
                           <td className="py-4 px-4">
                             <p className="text-sm text-muted-foreground">{booking.provider}</p>
@@ -412,23 +411,23 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm">View All</Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {topChurches.length === 0 ? (
+              {topDestinations.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No destinations yet</p>
                 </div>
               ) : (
-                topChurches.map((church, index) => (
+                topDestinations.map((destination, index) => (
                   <div key={index} className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/50 transition-colors">
                     <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
                       <MapPin className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{church.name}</p>
-                      <p className="text-xs text-muted-foreground">{church.region} Region</p>
+                      <p className="font-medium text-sm truncate">{destination.name}</p>
+                      <p className="text-xs text-muted-foreground">{destination.region} Region</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm">{church.bookings.toLocaleString()}</p>
+                      <p className="font-semibold text-sm">{destination.bookings.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">trips</p>
                     </div>
                   </div>

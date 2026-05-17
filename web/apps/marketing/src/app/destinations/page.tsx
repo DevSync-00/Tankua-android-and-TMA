@@ -17,19 +17,19 @@ import {
 import { Button, Card, Badge } from "@tankua/ui";
 
 const tourCategories = [
-  { id: "all", name: "All Categories", icon: "🌍" },
-  { id: "adventure", name: "Adventure Tours", icon: "🏔️" },
-  { id: "cultural", name: "Cultural Tours", icon: "🏛️" },
-  { id: "nature", name: "Nature & Wildlife", icon: "🦁" },
-  { id: "historical", name: "Historical Sites", icon: "⛪" },
-  { id: "city", name: "City Tours", icon: "🏙️" },
-  { id: "beach", name: "Beach & Lake", icon: "🏖️" },
+  { id: "all", name: "All Categories", icon: "≡ƒîì" },
+  { id: "adventure", name: "Adventure Tours", icon: "≡ƒÅö∩╕Å" },
+  { id: "cultural", name: "Cultural Tours", icon: "≡ƒÅ¢∩╕Å" },
+  { id: "nature", name: "Nature & Wildlife", icon: "≡ƒªü" },
+  { id: "historical", name: "Historical Sites", icon: "Γ¢¬" },
+  { id: "city", name: "City Tours", icon: "≡ƒÅÖ∩╕Å" },
+  { id: "beach", name: "Beach & Lake", icon: "≡ƒÅû∩╕Å" },
 ];
 
 const destinations = [
   {
     id: 1,
-    name: "Rock-Hewn Churches of Lalibela",
+    name: "Rock-Hewn Heritage of Lalibela",
     location: "Lalibela, Amhara",
     region: "Amhara",
     category: "historical",
@@ -37,7 +37,7 @@ const destinations = [
     rating: 4.9,
     reviews: 2847,
     price: 1500,
-    description: "Eleven medieval monolithic cave churches, carved from a single block of rock - a UNESCO World Heritage site.",
+    description: "Eleven medieval monolithic cave sites, carved from a single block of rock — a UNESCO World Heritage destination.",
     tags: ["UNESCO", "Rock-hewn", "Historical"],
   },
   {
@@ -192,7 +192,7 @@ export default function DestinationsPage() {
               <Link href="/about" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">About</Link>
               <Link href="/how-it-works" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">How It Works</Link>
               <Link href="/tours" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Tours</Link>
-              <Link href="/churches" className="text-[#D4A017] font-medium">Destinations</Link>
+              <Link href="/destinations" className="text-[#D4A017] font-medium">Destinations</Link>
               <Link href="/providers" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">For Providers</Link>
             </div>
             <Button>Download App</Button>
@@ -359,7 +359,7 @@ export default function DestinationsPage() {
                         <span className="text-lg font-bold text-[#D4A017]">{destination.price} ETB</span>
                         <span className="text-sm text-[#0A1A2F]/60"> /person</span>
                       </div>
-                      <Link href={`/churches/${destination.id}`}>
+                      <Link href={`/destinations/${destination.id}`}>
                       <Button size="sm">Book Now</Button>
                       </Link>
                     </div>
@@ -410,7 +410,7 @@ export default function DestinationsPage() {
                             <span className="text-2xl font-bold text-[#D4A017]">{destination.price} ETB</span>
                             <span className="text-[#0A1A2F]/60"> /person</span>
                           </div>
-                          <Link href={`/churches/${destination.id}`}>
+                          <Link href={`/destinations/${destination.id}`}>
                           <Button>
                             Book Now
                             <ArrowRight className="ml-2 h-4 w-4" />
@@ -453,7 +453,7 @@ export default function DestinationsPage() {
               <span className="text-white font-bold">Tankua</span>
             </div>
             <p className="text-white/50 text-sm">
-              © {new Date().getFullYear()} Tankua. All rights reserved.
+              ┬⌐ {new Date().getFullYear()} Tankua. All rights reserved.
             </p>
           </div>
         </div>

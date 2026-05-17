@@ -87,7 +87,7 @@ const SkeletonLoader = ({
 };
 
 // Grid card skeleton
-export const SkeletonCard = ({ width, height = 280 }) => {
+export const SkeletonCard = ({ width, height = 280, borderRadius = BORDER_RADIUS.lg }) => {
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export const SkeletonCard = ({ width, height = 280 }) => {
   });
 
   return (
-    <View style={[styles.cardContainer, { width, height }]}>
+    <View style={[styles.cardContainer, { width, height, borderRadius }]}>
       <View style={styles.shimmerContainer}>
         <Animated.View style={[styles.shimmer, animatedStyle]} />
       </View>

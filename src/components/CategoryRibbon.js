@@ -71,7 +71,8 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.sm,
   },
   scrollContent: {
-    paddingHorizontal: SPACING.lg,
+    paddingLeft: SPACING.sm,
+    paddingRight: SPACING.lg,
     paddingVertical: SPACING.xs,
   },
   categoryChip: {
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.sm,
     color: COLORS.secondary,
     fontWeight: FONTS.weights.medium,
+    marginLeft: SPACING.sm,
   },
 });
 

@@ -139,7 +139,7 @@ const ReviewScreen = ({ navigation, route }) => {
                 <Ionicons name="location" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.tripInfo}>
-                <Text style={styles.tripName}>{booking.churchName || 'Trip'}</Text>
+                <Text style={styles.tripName}>{booking.destination_name || booking.destinationName || 'Trip'}</Text>
                 <Text style={styles.tripDate}>
                   {booking.tripDate || 'Date not available'}
                 </Text>

@@ -54,7 +54,7 @@ export interface Database {
           description: string | null
           region: string | null
           city: string | null
-          category: 'church' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'religious' | 'monument' | 'park' | 'museum' | 'other'
+          category: 'religious' | 'sacred' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'city' | 'monument' | 'park' | 'museum' | 'other'
           location: Json | null
           images: string[] | null
           tags: string[] | null
@@ -68,7 +68,7 @@ export interface Database {
           description?: string | null
           region?: string | null
           city?: string | null
-          category?: 'church' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'religious' | 'monument' | 'park' | 'museum' | 'other'
+          category?: 'religious' | 'sacred' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'city' | 'monument' | 'park' | 'museum' | 'other'
           location?: Json | null
           images?: string[] | null
           tags?: string[] | null
@@ -82,52 +82,7 @@ export interface Database {
           description?: string | null
           region?: string | null
           city?: string | null
-          category?: 'church' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'religious' | 'monument' | 'park' | 'museum' | 'other'
-          location?: Json | null
-          images?: string[] | null
-          tags?: string[] | null
-          distance?: number | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      // Keep churches for backward compatibility
-      churches: {
-        Row: {
-          id: string
-          name: string
-          description: string | null
-          region: string | null
-          city: string | null
-          category?: 'church' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'religious' | 'monument' | 'park' | 'museum' | 'other'
-          location: Json | null
-          images: string[] | null
-          tags: string[] | null
-          distance?: number | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          region?: string | null
-          city?: string | null
-          category?: 'church' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'religious' | 'monument' | 'park' | 'museum' | 'other'
-          location?: Json | null
-          images?: string[] | null
-          tags?: string[] | null
-          distance?: number | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          region?: string | null
-          city?: string | null
-          category?: 'church' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'religious' | 'monument' | 'park' | 'museum' | 'other'
+          category?: 'religious' | 'sacred' | 'historical' | 'nature' | 'adventure' | 'cultural' | 'city' | 'monument' | 'park' | 'museum' | 'other'
           location?: Json | null
           images?: string[] | null
           tags?: string[] | null
@@ -181,7 +136,6 @@ export interface Database {
         Row: {
           id: string
           destination_id: string | null
-          church_id: string | null // Keep for backward compatibility
           provider_id: string | null
           trip_type: 'group' | 'private' | 'holiday'
           tour_category: 'day_trip' | 'multi_day' | 'weekend' | 'holiday' | 'custom' | null
@@ -197,7 +151,6 @@ export interface Database {
         Insert: {
           id?: string
           destination_id?: string | null
-          church_id?: string | null // Keep for backward compatibility
           provider_id?: string | null
           trip_type?: 'group' | 'private' | 'holiday'
           tour_category?: 'day_trip' | 'multi_day' | 'weekend' | 'holiday' | 'custom' | null
@@ -213,7 +166,6 @@ export interface Database {
         Update: {
           id?: string
           destination_id?: string | null
-          church_id?: string | null // Keep for backward compatibility
           provider_id?: string | null
           trip_type?: 'group' | 'private' | 'holiday'
           tour_category?: 'day_trip' | 'multi_day' | 'weekend' | 'holiday' | 'custom' | null
@@ -453,7 +405,6 @@ export type UpdateTables<T extends keyof Database['public']['Tables']> = Databas
 // Common types
 export type User = Tables<'users'>
 export type Destination = Tables<'destinations'>
-export type Church = Tables<'churches'> // Keep for backward compatibility
 export type Provider = Tables<'providers'>
 export type Trip = Tables<'trips'>
 export type Booking = Tables<'bookings'>
@@ -467,7 +418,6 @@ export type BookingWithDetails = Booking & {
   user?: User
   trip?: Trip & {
     destination?: Destination
-    church?: Church // Keep for backward compatibility
     provider?: Provider
   }
   pickup_station?: PickupStation
@@ -475,7 +425,6 @@ export type BookingWithDetails = Booking & {
 
 export type TripWithDetails = Trip & {
   destination?: Destination
-  church?: Church // Keep for backward compatibility
   provider?: Provider
   bookings?: Booking[]
 }

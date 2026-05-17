@@ -85,8 +85,7 @@ const TripsScreen = ({ navigation }) => {
   };
 
   const renderBookingCard = ({ item, index }) => {
-    // Use destination_name (new schema) or fall back to church_name (old schema) for backward compatibility
-    const destinationName = item.destination_name || item.church_name || item.churchName || 'Unknown Destination';
+    const destinationName = item.destination_name || item.destinationName || 'Unknown Destination';
     const status = item.status || 'confirmed';
     const pickupStation = item.pickup_station || item.pickupStation || {};
     const stationName = pickupStation.name || pickupStation.stationName || 'Pickup Station';
@@ -120,7 +119,7 @@ const TripsScreen = ({ navigation }) => {
               <Ionicons name="bus" size={26} color={COLORS.iconPrimary} />
             </View>
             <View style={styles.cardInfo}>
-              <Text style={styles.churchName} numberOfLines={1}>
+              <Text style={styles.destinationName} numberOfLines={1}>
                 {destinationName}
               </Text>
               <Text style={styles.dateText}>{date}</Text>
@@ -349,7 +348,7 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
   },
-  churchName: {
+  destinationName: {
     fontSize: FONTS.sizes.lg,
     fontWeight: FONTS.weights.black,
     color: COLORS.secondary,

@@ -292,7 +292,7 @@ const SearchScreen = ({ navigation, route }) => {
 
   const trendingSearches = [
     'Lake Tana', 'Simien Mountains', 'Danakil Depression', 'Bale Mountains',
-    'Lalibela Churches', 'Gondar Castles', 'Axum Obelisks'
+    'Lalibela Heritage', 'Gondar Castles', 'Axum Obelisks'
   ];
 
   return (

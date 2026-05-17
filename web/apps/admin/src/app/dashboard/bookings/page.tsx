@@ -171,7 +171,7 @@ export default function BookingsPage() {
                       </div>
                       <div>
                         <p className="font-medium text-sm truncate">
-                          {booking.trip?.destination?.name || booking.trip?.church?.name || booking.destination_name || "Unknown Destination"}
+                          {booking.trip?.destination?.name || booking.destination_name || "Unknown Destination"}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {booking.trip?.departure_date ? formatDate(booking.trip.departure_date) : "No date"} • {booking.seats} seats
@@ -267,7 +267,7 @@ export default function BookingsPage() {
                         <td className="py-4 px-6">
                           <div>
                             <p className="font-medium text-sm truncate max-w-[200px]">
-                              {booking.trip?.destination?.name || booking.trip?.church?.name || booking.destination_name || "Unknown Destination"}
+                              {booking.trip?.destination?.name || booking.destination_name || "Unknown Destination"}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {booking.trip?.departure_date

@@ -50,17 +50,12 @@ export const updateUser = async (userId, updates) => {
 // ============================================
 // DESTINATIONS
 // ============================================
-// Note: Churches are just one category of destinations, not a separate entity
 
-// Helper to get table name (supports both old and new schema)
-const getDestinationsTable = () => {
-  // Always use destinations table (churches table is deprecated)
-  return 'destinations';
-};
+const DESTINATIONS_TABLE = 'destinations';
 
 export const createDestination = async (destinationData) => {
   try {
-    const tableName = getDestinationsTable();
+    const tableName = DESTINATIONS_TABLE;
     const { data, error } = await supabase
       .from(tableName)
       .insert([destinationData])
@@ -74,12 +69,9 @@ export const createDestination = async (destinationData) => {
   }
 };
 
-// Deprecated: Alias for backward compatibility only - use createDestination instead
-export const createChurch = createDestination;
-
 export const getDestinations = async (filters = {}) => {
   try {
-    const tableName = getDestinationsTable();
+    const tableName = DESTINATIONS_TABLE;
     let query = supabase
       .from(tableName)
       .select('*');
@@ -111,14 +103,9 @@ export const getDestinations = async (filters = {}) => {
   }
 };
 
-// Deprecated: Alias for backward compatibility only - use getDestinations({ category: 'church' }) instead
-export const getChurches = async () => {
-  return getDestinations({ category: 'church' });
-};
-
 export const getDestination = async (destinationId) => {
   try {
-    const tableName = getDestinationsTable();
+    const tableName = DESTINATIONS_TABLE;
     const { data, error } = await supabase
       .from(tableName)
       .select('*')
@@ -132,12 +119,9 @@ export const getDestination = async (destinationId) => {
   }
 };
 
-// Deprecated: Alias for backward compatibility only - use getDestination instead
-export const getChurch = getDestination;
-
 export const updateDestination = async (destinationId, updates) => {
   try {
-    const tableName = getDestinationsTable();
+    const tableName = DESTINATIONS_TABLE;
     const { error } = await supabase
       .from(tableName)
       .update(updates)
@@ -149,12 +133,9 @@ export const updateDestination = async (destinationId, updates) => {
   }
 };
 
-// Alias for backward compatibility
-export const updateChurch = updateDestination;
-
 export const deleteDestination = async (destinationId) => {
   try {
-    const tableName = getDestinationsTable();
+    const tableName = DESTINATIONS_TABLE;
     const { error } = await supabase
       .from(tableName)
       .delete()
@@ -165,9 +146,6 @@ export const deleteDestination = async (destinationId) => {
     throw error;
   }
 };
-
-// Alias for backward compatibility
-export const deleteChurch = deleteDestination;
 
 // ============================================
 // TRIPS
@@ -190,11 +168,6 @@ export const createTrip = async (tripData) => {
 
 export const getTrips = async (filters = {}) => {
   try {
-    // Determine table names (support both old and new schema)
-    const destinationsTable = getDestinationsTable();
-    const destinationIdField = 'destination_id'; // Try new field first
-    
-    // Build query with provider and destination information
     let query = supabase
       .from('trips')
       .select(`
@@ -207,7 +180,7 @@ export const getTrips = async (filters = {}) => {
           phone,
           description
         ),
-        ${destinationsTable} (
+        destinations (
           id,
           name,
           city,
@@ -215,99 +188,45 @@ export const getTrips = async (filters = {}) => {
           category
         )
       `);
-    
-    // Support both destinationId and churchId for backward compatibility (churchId is deprecated)
-    if (filters.destinationId || filters.churchId) {
-      const idToUse = filters.destinationId || filters.churchId;
-      // Try destination_id first, fallback to church_id (deprecated column)
-      try {
-        query = query.eq('destination_id', idToUse);
-      } catch {
-        query = query.eq('church_id', idToUse); // Deprecated: church_id column is legacy
-      }
+
+    if (filters.destinationId) {
+      query = query.eq('destination_id', filters.destinationId);
     }
-    
-    // Additional filters
+
     if (filters.category) {
-      // Filter by destination category through join
-      query = query.eq(`${destinationsTable}.category`, filters.category);
+      query = query.eq('destinations.category', filters.category);
     }
-    
+
     if (filters.tourCategory) {
       query = query.eq('tour_category', filters.tourCategory);
     }
-    
+
     if (filters.region) {
-      query = query.eq(`${destinationsTable}.region`, filters.region);
+      query = query.eq('destinations.region', filters.region);
     }
-    
+
     if (filters.minPrice) {
       query = query.gte('price', filters.minPrice);
     }
-    
+
     if (filters.maxPrice) {
       query = query.lte('price', filters.maxPrice);
     }
-    
+
     if (filters.dateFrom) {
       query = query.gte('departure_date', filters.dateFrom);
     }
-    
+
     if (filters.dateTo) {
       query = query.lte('departure_date', filters.dateTo);
     }
-    
-    // Filter by status - only show upcoming/active trips with available seats
+
     query = query.in('status', ['upcoming', 'active']);
     query = query.gte('available_seats', 1);
-    
-    // Try ordering by departure_date, fallback to date
-    try {
-      query = query.order('departure_date', { ascending: true });
-    } catch {
-      query = query.order('date', { ascending: true });
-    }
+    query = query.order('departure_date', { ascending: true });
 
     const { data, error } = await query;
-
-    if (error) {
-      // If destination_id column doesn't exist, try with church_id (deprecated - old schema)
-      if (error.message?.includes('destination_id') || error.code === '42703') {
-        query = supabase
-          .from('trips')
-          .select(`
-            *,
-            providers (
-              id,
-              name,
-              logo_url,
-              rating,
-              phone,
-              description
-            ),
-            churches (
-              id,
-              name,
-              city,
-              region
-            )
-          `);
-        
-        if (filters.destinationId || filters.churchId) {
-          query = query.eq('church_id', filters.destinationId || filters.churchId); // Deprecated: church_id is legacy
-        }
-        
-        query = query.in('status', ['upcoming', 'active']);
-        query = query.gte('available_seats', 1);
-        query = query.order('date', { ascending: true });
-        
-        const { data: fallbackData, error: fallbackError } = await query;
-        if (fallbackError) throw fallbackError;
-        return fallbackData || [];
-      }
-      throw error;
-    }
-    
+    if (error) throw error;
     return data || [];
   } catch (error) {
     throw error;
@@ -555,66 +474,20 @@ export const createProvider = async (providerData) => {
 
 export const getProviders = async (filters = {}) => {
   try {
-    // Support both destinationId and churchId for backward compatibility (churchId is deprecated)
-    const destinationId = filters.destinationId || filters.churchId;
-    
-    // If destination and date filters are provided, find providers who have trips for that destination and date
+    const destinationId = filters.destinationId;
+
     if (destinationId && filters.date) {
-      // First, find all trips for this destination and date
-      // Try departure_date first, if it fails, fallback to date column
-      const dateStart = filters.date + 'T00:00:00';
-      const dateEnd = filters.date + 'T23:59:59';
-      
-      let trips = [];
-      let tripsError = null;
-      
-      // Try with destination_id and departure_date column first (new schema)
-      let query1 = supabase
+      const dateStart = `${filters.date}T00:00:00`;
+      const dateEnd = `${filters.date}T23:59:59`;
+
+      const { data: trips, error: tripsError } = await supabase
         .from('trips')
         .select('provider_id')
         .in('status', ['upcoming', 'active'])
         .gte('available_seats', 1)
         .gte('departure_date', dateStart)
-        .lte('departure_date', dateEnd);
-      
-      // Try destination_id first, fallback to church_id (deprecated)
-      try {
-        query1 = query1.eq('destination_id', destinationId);
-      } catch {
-        query1 = query1.eq('church_id', destinationId); // Deprecated: church_id is legacy
-      }
-      
-      const { data: tripsWithDeparture, error: error1 } = await query1;
-      
-      // If departure_date column doesn't exist, fallback to date column (old schema)
-      if (error1 && (error1.message?.includes('departure_date') || error1.code === '42703')) {
-        // Fallback to date column (for older schema)
-        let query2 = supabase
-          .from('trips')
-          .select('provider_id')
-          .in('status', ['upcoming', 'active'])
-          .gte('available_seats', 1)
-          .eq('date', filters.date);
-        
-        // Try destination_id first, fallback to church_id (deprecated)
-        try {
-          query2 = query2.eq('destination_id', destinationId);
-        } catch {
-          query2 = query2.eq('church_id', destinationId); // Deprecated: church_id is legacy
-        }
-        
-        const { data: tripsWithDate, error: error2 } = await query2;
-        
-        if (error2) {
-          tripsError = error2;
-        } else {
-          trips = tripsWithDate || [];
-        }
-      } else if (error1) {
-        tripsError = error1;
-      } else {
-        trips = tripsWithDeparture || [];
-      }
+        .lte('departure_date', dateEnd)
+        .eq('destination_id', destinationId);
 
       if (tripsError) throw tripsError;
 

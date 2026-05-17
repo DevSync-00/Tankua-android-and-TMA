@@ -29,7 +29,7 @@ const tourCategories = [
 const tours = [
   {
     id: 1,
-    name: "Lalibela Rock-Hewn Churches Tour",
+    name: "Lalibela Rock-Hewn Heritage Tour",
     location: "Lalibela, Amhara",
     region: "Amhara",
     category: "historical",
@@ -37,7 +37,7 @@ const tours = [
     rating: 4.9,
     reviews: 2847,
     price: 1500,
-    description: "Explore the 11 medieval monolithic cave churches, carved from a single block of rock - a UNESCO World Heritage site.",
+    description: "Explore the 11 medieval monolithic cave sites, carved from a single block of rock — a UNESCO World Heritage destination.",
     tags: ["UNESCO", "Historical", "Cultural"],
   },
   {

@@ -12,8 +12,8 @@ const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
   // Get category icon
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'church':
       case 'religious':
+      case 'sacred':
         return 'star-outline';
       case 'historical':
         return 'library-outline';

@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@tankua/ui"],
+  async redirects() {
+    return [
+      { source: "/churches", destination: "/destinations", permanent: true },
+      { source: "/churches/:path*", destination: "/destinations/:path*", permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {

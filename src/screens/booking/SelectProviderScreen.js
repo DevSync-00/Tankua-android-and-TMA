@@ -26,18 +26,17 @@ const SelectProviderScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadProviders();
-  }, [currentBooking.destination, currentBooking.church, currentBooking.date]);
+  }, [currentBooking.destination, currentBooking.date]);
 
   const loadProviders = async () => {
     try {
       setLoading(true);
       
       // Filter providers based on selected destination and date
-      const destination = currentBooking.destination || currentBooking.church; // Support backward compatibility
+      const destination = currentBooking.destination;
       const filters = {};
       if (destination?.id) {
         filters.destinationId = destination.id;
-        filters.churchId = destination.id; // Keep for backward compatibility
       }
       if (currentBooking.date) {
         filters.date = currentBooking.date;
@@ -47,7 +46,7 @@ const SelectProviderScreen = ({ navigation }) => {
       setProviders(data);
       
       // If no providers found and we have filters, show a helpful message
-      if (data.length === 0 && (filters.destinationId || filters.churchId || filters.date)) {
+      if (data.length === 0 && (filters.destinationId || filters.date)) {
         // Don't show alert, just show empty state in UI
       }
     } catch (error) {
@@ -104,8 +103,8 @@ const SelectProviderScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Select Travel Provider</Text>
         <Text style={styles.subtitle}>
-          {(currentBooking.destination || currentBooking.church) && currentBooking.date
-            ? `Available providers for ${(currentBooking.destination || currentBooking.church)?.name || 'this destination'} on ${typeof currentBooking.date === 'string' ? currentBooking.date : new Date(currentBooking.date).toLocaleDateString()}`
+          {currentBooking.destination && currentBooking.date
+            ? `Available providers for ${currentBooking.destination?.name || 'this destination'} on ${typeof currentBooking.date === 'string' ? currentBooking.date : new Date(currentBooking.date).toLocaleDateString()}`
             : 'Choose a travel company for your trip'}
         </Text>
 
@@ -114,8 +113,8 @@ const SelectProviderScreen = ({ navigation }) => {
             <Ionicons name="business-outline" size={64} color={COLORS.gray} />
             <Text style={styles.emptyText}>No providers available</Text>
             <Text style={styles.emptySubtext}>
-              {(currentBooking.destination || currentBooking.church) && currentBooking.date
-                ? `No travel providers have scheduled trips to ${(currentBooking.destination || currentBooking.church)?.name || 'this destination'} on ${typeof currentBooking.date === 'string' ? currentBooking.date : new Date(currentBooking.date).toLocaleDateString()}. Please try a different date or check back later.`
+              {currentBooking.destination && currentBooking.date
+                ? `No travel providers have scheduled trips to ${currentBooking.destination?.name || 'this destination'} on ${typeof currentBooking.date === 'string' ? currentBooking.date : new Date(currentBooking.date).toLocaleDateString()}. Please try a different date or check back later.`
                 : 'Please check back later or contact support'}
             </Text>
           </View>

@@ -176,7 +176,7 @@ export const AuthProvider = ({ children }) => {
             email: '',
             emergency_contact: '',
             location: '',
-            saved_churches: [],
+            saved_destinations: [],
             saved_stations: [],
             is_admin: false,
             created_at: new Date().toISOString(),

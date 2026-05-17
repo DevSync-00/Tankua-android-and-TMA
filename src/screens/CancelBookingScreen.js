@@ -103,7 +103,7 @@ const CancelBookingScreen = ({ navigation, route }) => {
           <Text style={styles.cardTitle}>Booking Details</Text>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Trip</Text>
-            <Text style={styles.detailValue}>{booking.churchName || 'Trip'}</Text>
+            <Text style={styles.detailValue}>{booking.destination_name || booking.destinationName || 'Trip'}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Date</Text>
