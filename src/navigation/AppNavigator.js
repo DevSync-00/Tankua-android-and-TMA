@@ -6,6 +6,7 @@ import Loader from '../components/Loader';
 import { COLORS } from '../config/theme';
 
 // Auth Screens
+import SplashScreen from '../screens/SplashScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
@@ -50,6 +51,7 @@ const AppNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <>
+          <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
