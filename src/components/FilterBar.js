@@ -2,17 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS } from '../config/theme';
+import { DESTINATION_FILTER_CATEGORIES } from '../constants/placeMarkerConfig';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: 'apps-outline' },
-  { id: 'religious', label: 'Religious Heritage', icon: 'book-outline' },
-  { id: 'historical', label: 'Historical', icon: 'library-outline' },
-  { id: 'nature', label: 'Nature', icon: 'leaf-outline' },
-  { id: 'adventure', label: 'Adventure', icon: 'bicycle-outline' },
-  { id: 'cultural', label: 'Cultural', icon: 'people-outline' },
-  { id: 'monument', label: 'Monuments', icon: 'location-outline' },
-  { id: 'park', label: 'Parks', icon: 'tree-outline' },
-  { id: 'museum', label: 'Museums', icon: 'library-outline' },
+  ...DESTINATION_FILTER_CATEGORIES,
 ];
 
 const FilterBar = ({ selectedCategory, onCategoryChange, regions = [], selectedRegion, onRegionChange, showFilters, onToggleFilters }) => {

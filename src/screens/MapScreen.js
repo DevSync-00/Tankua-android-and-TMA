@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker, PROVIDER_GOOGLE, Callout } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import Animated, {
   useSharedValue,
@@ -33,11 +33,28 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../c
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
-import { getDestinations } from '../services/database';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
 import AnimatedCard from '../components/AnimatedCard';
 import ModernButton from '../components/ModernButton';
-import CategoryRibbon from '../components/CategoryRibbon';
+import { MAP_SCREEN_CATEGORIES, getCategoryIconName } from '../constants/destinationCategories';
+import { resolvePlaceMarker, getPlaceTypeLabel } from '../utils/placeTypeResolver';
+import DestinationMapMarker from '../components/map/DestinationMapMarker';
+import PlaceTypeIcon from '../components/map/PlaceTypeIcon';
+import GooglePlaceIcon from '../components/map/GooglePlaceIcon';
+import {
+  searchNearbyPlaces,
+  searchPlacesByText,
+  fetchPlaceDetails,
+} from '../services/googlePlaces';
+import { isGoogleMapsConfigured } from '../config/googleMaps';
+import { buildGooglePhotoUrl } from '../utils/googlePlaceMapper';
+import { GOOGLE_MAPS_API_KEY } from '../config/googleMaps';
+
+const getPlacePhotoUri = (place) => {
+  if (place?.images?.length) return place.images[0];
+  if (place?.photoName) return buildGooglePhotoUrl(place.photoName, GOOGLE_MAPS_API_KEY, 320);
+  return null;
+};
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -77,6 +94,9 @@ const MapScreen = ({ navigation }) => {
   const [viewMode, setViewMode] = useState('map'); // 'map' or 'list'
   const [showFilters, setShowFilters] = useState(false);
   const [nearbyDestinations, setNearbyDestinations] = useState([]);
+  const [mapReady, setMapReady] = useState(false);
+  const [placesError, setPlacesError] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Animation values
   const cardTranslateY = useSharedValue(400);
@@ -85,54 +105,85 @@ const MapScreen = ({ navigation }) => {
   const searchBarOpacity = useSharedValue(1);
   const scrollY = useSharedValue(0);
 
-  // Categories
-  const categories = [
-    { id: null, label: 'All', icon: 'apps-outline' },
-    { id: 'religious', label: 'Religious Heritage', icon: 'book-outline' },
-    { id: 'historical', label: 'Historical', icon: 'library-outline' },
-    { id: 'nature', label: 'Nature', icon: 'leaf-outline' },
-    { id: 'adventure', label: 'Adventure', icon: 'bicycle-outline' },
-    { id: 'cultural', label: 'Cultural', icon: 'people-outline' },
-    { id: 'monument', label: 'Monuments', icon: 'location-outline' },
-    { id: 'park', label: 'Parks', icon: 'tree-outline' },
-    { id: 'museum', label: 'Museums', icon: 'library-outline' },
-  ];
+  const categories = MAP_SCREEN_CATEGORIES;
 
-  // Memoize filtered destinations to avoid circular dependencies
-  const filteredDestinations = useMemo(() => {
-    let filtered = [...destinations];
+  const selectedMarkerConfig = useMemo(
+    () => (selectedDestination ? resolvePlaceMarker(selectedDestination) : null),
+    [selectedDestination]
+  );
 
-    // Filter by category (only if a category is explicitly selected)
-    if (selectedCategory !== null && selectedCategory !== undefined) {
-      filtered = filtered.filter(d => d.category === selectedCategory);
-    }
+  // Places are filtered server-side via Google Places API
+  const filteredDestinations = destinations;
 
-    // Filter by search query
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        d =>
-          (d.name && d.name.toLowerCase().includes(query)) ||
-          (d.city && d.city.toLowerCase().includes(query)) ||
-          (d.region && d.region.toLowerCase().includes(query)) ||
-          (d.description && d.description.toLowerCase().includes(query)) ||
-          (d.tags && Array.isArray(d.tags) && d.tags.some(tag => tag && tag.toLowerCase().includes(query)))
-      );
-    }
+  const loadGooglePlaces = useCallback(
+    async (mapRegion, query, categoryFilter) => {
+      if (!isGoogleMapsConfigured()) {
+        setPlacesError('Add EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to your .env file and enable Places API (New).');
+        setLoading(false);
+        return;
+      }
 
-    return filtered;
-  }, [destinations, selectedCategory, searchQuery]);
+      try {
+        setLoading(true);
+        setPlacesError(null);
+
+        const center = {
+          latitude: mapRegion.latitude,
+          longitude: mapRegion.longitude,
+          latitudeDelta: mapRegion.latitudeDelta,
+        };
+
+        let places = [];
+        if (query?.trim()) {
+          places = await searchPlacesByText({
+            query: query.trim(),
+            latitude: center.latitude,
+            longitude: center.longitude,
+            categoryFilter,
+          });
+        } else {
+          places = await searchNearbyPlaces({
+            latitude: center.latitude,
+            longitude: center.longitude,
+            latitudeDelta: center.latitudeDelta,
+            categoryFilter,
+          });
+        }
+
+        setDestinations(places);
+      } catch (error) {
+        console.error('Google Places error:', error);
+        setPlacesError(error.message || 'Failed to load places from Google.');
+        setDestinations([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    // Load destinations and request location in parallel
-    const loadData = async () => {
-      await Promise.all([
-        loadDestinations(),
-        requestLocationPermission(),
-      ]);
-    };
-    loadData();
-  }, [loadDestinations, requestLocationPermission]);
+    requestLocationPermission();
+  }, [requestLocationPermission]);
+
+  useEffect(() => {
+    if (!isGoogleMapsConfigured()) {
+      setLoading(false);
+      setPlacesError('Google Maps API key is not configured.');
+      return;
+    }
+    const delay = searchQuery?.trim() ? 450 : 650;
+    const timer = setTimeout(() => {
+      loadGooglePlaces(region, searchQuery, selectedCategory);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategory, region.latitude, region.longitude, region.latitudeDelta, loadGooglePlaces]);
+
+  // Fallback if native map never fires onMapReady (e.g. missing API key)
+  useEffect(() => {
+    const timer = setTimeout(() => setMapReady(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (selectedDestination) {
@@ -181,70 +232,11 @@ const MapScreen = ({ navigation }) => {
     }, [userLocation])
   );
 
-  const loadDestinations = useCallback(async () => {
-    try {
-      setLoading(true);
-      // Explicitly load ALL destinations without any category filter
-      // Pass empty object to ensure no filters are applied
-      const data = await getDestinations({});
-      
-      if (!data || !Array.isArray(data)) {
-        console.warn('getDestinations returned invalid data:', data);
-        setDestinations([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Transform destinations efficiently - include ALL categories
-      const transformedDestinations = data
-        .filter(destination => {
-          // Only include destinations with valid coordinates
-          if (!destination.location || typeof destination.location !== 'object') {
-            return false;
-          }
-          const lat = destination.location?.lat || destination.location?.coordinates?.[1];
-          const lng = destination.location?.lng || destination.location?.coordinates?.[0];
-          return lat && lng && lat !== 0 && lng !== 0;
-        })
-        .map(destination => ({
-          id: destination.id,
-          name: destination.name,
-          city: destination.city || '',
-          region: destination.region || '',
-          category: destination.category || 'other', // Preserve original category
-          lat: destination.location?.lat || destination.location?.coordinates?.[1] || 0,
-          lng: destination.location?.lng || destination.location?.coordinates?.[0] || 0,
-          images: destination.images || [],
-          description: destination.description || '',
-          rating: destination.rating || 4.5,
-          review_count: destination.review_count || 0,
-          price: destination.price || null,
-          tags: destination.tags || [],
-          fullData: destination,
-          distance: null, // Will be calculated lazily
-        }));
-      
-      // Log for debugging - remove in production
-      const categoryCounts = transformedDestinations.reduce((acc, d) => {
-        acc[d.category] = (acc[d.category] || 0) + 1;
-        return acc;
-      }, {});
-      console.log('Loaded destinations by category:', categoryCounts);
-      
-      setDestinations(transformedDestinations);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading destinations:', error);
-      setDestinations([]);
-      setLoading(false);
-    }
-  }, []);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadDestinations();
+    await loadGooglePlaces(region, searchQuery, selectedCategory);
     setRefreshing(false);
-  }, [loadDestinations]);
+  }, [loadGooglePlaces, region, searchQuery, selectedCategory]);
 
   const requestLocationPermission = useCallback(async () => {
     try {
@@ -252,7 +244,8 @@ const MapScreen = ({ navigation }) => {
       if (status === 'granted') {
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
-          maximumAge: 60000, // Use cached location if less than 1 minute old
+          maximumAge: 60000,
+          timeout: 15000,
         });
         const loc = {
           latitude: location.coords.latitude,
@@ -265,16 +258,18 @@ const MapScreen = ({ navigation }) => {
           latitudeDelta: 0.5,
           longitudeDelta: 0.5,
         };
-        setRegion(prev => ({ ...prev, ...newRegion }));
-        // Animate to user location
+        setRegion(newRegion);
         if (mapRef.current) {
           mapRef.current.animateToRegion(newRegion, 500);
+        }
+        if (isGoogleMapsConfigured()) {
+          loadGooglePlaces(newRegion, searchQuery, selectedCategory);
         }
       }
     } catch (error) {
       console.log('Error getting location:', error);
     }
-  }, []);
+  }, [loadGooglePlaces, searchQuery, selectedCategory]);
 
   // Memoize distance calculation function
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
@@ -291,49 +286,38 @@ const MapScreen = ({ navigation }) => {
     return R * c; // Distance in km
   }, []);
 
-  // Optimized distance calculation - only update when userLocation changes
+  // Distance calculation uses functional setState to avoid depending on destinations array
   const calculateDistances = useCallback(() => {
-    if (!userLocation || destinations.length === 0) {
-      setNearbyDestinations([]);
+    if (!userLocation) {
       return;
     }
 
-    // Use setTimeout to defer heavy calculations
     const timeoutId = setTimeout(() => {
-      // Calculate distances for all destinations (only if not already calculated)
-      const destinationsWithDistance = destinations
-        .filter(dest => dest.lat && dest.lng && dest.lat !== 0 && dest.lng !== 0)
-        .map(dest => {
-          // Only calculate if distance hasn't been calculated yet
-          if (dest.distance !== null && dest.distance !== undefined) {
+      setDestinations((prev) => {
+        if (prev.length === 0) return prev;
+
+        let hasChanges = false;
+        const updated = prev.map((dest) => {
+          if (!dest.lat || !dest.lng || dest.distance != null) {
             return dest;
           }
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            dest.lat,
-            dest.lng
-          );
-          return { ...dest, distance };
-        });
-
-      // Batch state update - only update if distances actually changed
-      setDestinations(prev => {
-        let hasChanges = false;
-        const updated = prev.map(dest => {
-          const updatedDest = destinationsWithDistance.find(d => d.id === dest.id);
-          if (updatedDest && updatedDest.distance !== dest.distance) {
-            hasChanges = true;
-            return { ...dest, distance: updatedDest.distance };
-          }
-          return dest;
+          hasChanges = true;
+          return {
+            ...dest,
+            distance: calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              dest.lat,
+              dest.lng
+            ),
+          };
         });
         return hasChanges ? updated : prev;
       });
-    }, 100); // Small delay to batch updates
+    }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [userLocation, destinations, calculateDistance]);
+  }, [userLocation, calculateDistance]);
 
   // Separate effect for nearby destinations - updates when filteredDestinations changes
   useEffect(() => {
@@ -355,24 +339,45 @@ const MapScreen = ({ navigation }) => {
 
 
 
-  const handleMarkerPress = useCallback((destination) => {
+  const handleMarkerPress = useCallback(async (destination) => {
     setSelectedDestination(destination);
-    // Animate map to destination
     if (mapRef.current) {
       mapRef.current.animateToRegion({
         latitude: destination.lat,
         longitude: destination.lng,
-        latitudeDelta: 0.1,
-        longitudeDelta: 0.1,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
       }, 500);
+    }
+
+    if (destination.source === 'google' && destination.googlePlaceId) {
+      try {
+        setLoadingDetails(true);
+        const detailed = await fetchPlaceDetails(destination.googlePlaceId);
+        setSelectedDestination((prev) =>
+          prev?.id === destination.id ? { ...prev, ...detailed, distance: prev.distance } : prev
+        );
+      } catch (err) {
+        console.warn('Place details:', err.message);
+      } finally {
+        setLoadingDetails(false);
+      }
     }
   }, []);
 
-  const handleViewDetails = useCallback(() => {
-    if (selectedDestination && selectedDestination.fullData) {
-      navigation.navigate('DestinationDetail', { destination: selectedDestination.fullData });
+  const handleViewDetails = useCallback(async () => {
+    if (!selectedDestination) return;
+    if (selectedDestination.googleMapsUri) {
+      try {
+        await Linking.openURL(selectedDestination.googleMapsUri);
+      } catch (error) {
+        Alert.alert('Error', 'Unable to open Google Maps');
+      }
+      return;
     }
-  }, [selectedDestination, navigation]);
+    const url = `https://www.google.com/maps/search/?api=1&query=${selectedDestination.lat},${selectedDestination.lng}`;
+    await Linking.openURL(url);
+  }, [selectedDestination]);
 
   const handleGetDirections = useCallback(async () => {
     if (selectedDestination) {
@@ -398,7 +403,24 @@ const MapScreen = ({ navigation }) => {
   const handleBookTrip = useCallback(() => {
     if (!selectedDestination) return;
 
-    // Validate profile before allowing booking
+    if (selectedDestination.source === 'google') {
+      Alert.alert(
+        'Explore on Google Maps',
+        'Trip booking uses Tankua catalog destinations. Open this verified Google place for directions and details.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open in Google Maps',
+            onPress: () => {
+              const uri = selectedDestination.googleMapsUri;
+              if (uri) Linking.openURL(uri);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     const validation = validateProfile(user);
     if (!validation.isValid) {
       Alert.alert(
@@ -406,16 +428,15 @@ const MapScreen = ({ navigation }) => {
         getProfileIncompleteMessage(validation.missingFields),
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Update Profile', 
-            onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' })
+          {
+            text: 'Update Profile',
+            onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }),
           },
         ]
       );
       return;
     }
 
-    // Set destination in booking context and navigate to booking flow
     updateBooking({ destination: selectedDestination.fullData || selectedDestination });
     navigation.navigate('BookingFlow', { screen: 'SelectTrip' });
   }, [selectedDestination, user, updateBooking, navigation]);
@@ -431,39 +452,9 @@ const MapScreen = ({ navigation }) => {
   }, [userLocation]);
 
   const handleCategoryChange = useCallback((categoryId) => {
-    // categoryId can be null for "All" category - this shows all destinations
     setSelectedCategory(categoryId);
+    setSelectedDestination(null);
   }, []);
-
-  const getMarkerColor = (category) => {
-    const colors = {
-      religious: COLORS.primary,
-      sacred: COLORS.primary,
-      historical: '#8B4513',
-      nature: COLORS.success,
-      adventure: COLORS.accent,
-      cultural: '#9B59B6',
-      monument: '#34495E',
-      park: COLORS.success,
-      museum: '#3498DB',
-    };
-    return colors[category] || COLORS.primary;
-  };
-
-  const getMarkerIcon = (category) => {
-    const icons = {
-      religious: '🕌',
-      sacred: '⭐',
-      historical: '🏛️',
-      nature: '🌲',
-      adventure: '🚴',
-      cultural: '🎭',
-      monument: '🗿',
-      park: '🌳',
-      museum: '🏛️',
-    };
-    return icons[category] || '📍';
-  };
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: cardTranslateY.value }],
@@ -496,37 +487,52 @@ const MapScreen = ({ navigation }) => {
     opacity: searchBarOpacity.value,
   }));
 
+  if (!isGoogleMapsConfigured()) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="map-outline" size={48} color={COLORS.primary} />
+        <Text style={styles.loadingText}>Google Maps API key required</Text>
+        <Text style={styles.errorHint}>
+          Add EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to .env and enable Places API (New) in Google Cloud Console.
+        </Text>
+      </View>
+    );
+  }
+
   if (loading && destinations.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading destinations...</Text>
+        <Text style={styles.loadingText}>Loading places from Google...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {placesError && (
+        <View style={[styles.errorBanner, { top: headerHeight + SPACING.sm }]}>
+          <Ionicons name="warning-outline" size={18} color={COLORS.error} />
+          <Text style={styles.errorBannerText} numberOfLines={2}>{placesError}</Text>
+        </View>
+      )}
+
       {/* Map View */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
-        region={region}
+        initialRegion={region}
         onRegionChangeComplete={setRegion}
+        onMapReady={() => setMapReady(true)}
         showsUserLocation={true}
         showsMyLocationButton={false}
         showsCompass={true}
         mapType="standard"
-        customMapStyle={[]}
-        loadingEnabled={true}
+        loadingEnabled={!mapReady}
         loadingIndicatorColor={COLORS.primary}
         moveOnMarkerPress={false}
         pitchEnabled={false}
         rotateEnabled={false}
-        cacheEnabled={true}
-        maxZoomLevel={18}
-        minZoomLevel={5}
       >
         {/* User Location Marker */}
         {userLocation && (
@@ -550,8 +556,7 @@ const MapScreen = ({ navigation }) => {
           .slice(0, 100) // Limit markers for performance
           .map((destination) => {
             const isSelected = selectedDestination?.id === destination.id;
-            const markerColor = getMarkerColor(destination.category);
-            
+
             return (
               <Marker
                 key={destination.id}
@@ -560,28 +565,9 @@ const MapScreen = ({ navigation }) => {
                 description={destination.city}
                 onPress={() => handleMarkerPress(destination)}
                 identifier={destination.id}
+                tracksViewChanges={false}
               >
-                <Animated.View
-                  style={[
-                    styles.markerContainer,
-                    isSelected && styles.markerContainerSelected,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.markerBackground,
-                      { backgroundColor: markerColor },
-                      isSelected && styles.markerBackgroundSelected,
-                    ]}
-                  >
-                    <Text style={styles.markerIcon}>
-                      {getMarkerIcon(destination.category)}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <View style={[styles.markerPulse, { borderColor: markerColor }]} />
-                  )}
-                </Animated.View>
+                <DestinationMapMarker destination={destination} isSelected={isSelected} />
               </Marker>
             );
           })}
@@ -725,7 +711,7 @@ const MapScreen = ({ navigation }) => {
                     </View>
                   ) : (
                     displayDestinations.map((destination, index) => {
-                      const markerColor = getMarkerColor(destination.category);
+                      const markerColor = resolvePlaceMarker(destination).color;
                       return (
                         <TouchableOpacity
                           key={destination.id}
@@ -737,19 +723,19 @@ const MapScreen = ({ navigation }) => {
                           activeOpacity={0.7}
                         >
                           <View style={[styles.listItemImageContainer, { borderColor: markerColor + '30' }]}>
-                            {destination.images && destination.images.length > 0 ? (
+                            {getPlacePhotoUri(destination) ? (
                               <Image
-                                source={{ uri: destination.images[0] }}
+                                source={{ uri: getPlacePhotoUri(destination) }}
                                 style={styles.listItemImage}
                               />
                             ) : (
                               <View style={[styles.listItemImage, styles.listItemImagePlaceholder, { backgroundColor: markerColor + '15' }]}>
-                                <Text style={styles.listItemImageIcon}>{getMarkerIcon(destination.category)}</Text>
+                                <GooglePlaceIcon destination={destination} size={36} />
                               </View>
                             )}
                             <View style={[styles.listItemCategoryBadge, { backgroundColor: markerColor }]}>
                               <Ionicons 
-                                name={categories.find(c => c.id === destination.category)?.icon || 'location-outline'} 
+                                name={getCategoryIconName(destination.category)} 
                                 size={12} 
                                 color={COLORS.white} 
                               />
@@ -839,11 +825,11 @@ const MapScreen = ({ navigation }) => {
                 style={styles.nearbyCard}
                 onPress={() => handleMarkerPress(dest)}
               >
-                {dest.images && dest.images.length > 0 ? (
-                  <Image source={{ uri: dest.images[0] }} style={styles.nearbyCardImage} />
+                {getPlacePhotoUri(dest) ? (
+                  <Image source={{ uri: getPlacePhotoUri(dest) }} style={styles.nearbyCardImage} />
                 ) : (
                   <View style={[styles.nearbyCardImage, styles.nearbyCardImagePlaceholder]}>
-                    <Text style={styles.nearbyCardIcon}>{getMarkerIcon(dest.category)}</Text>
+                    <GooglePlaceIcon destination={dest} size={32} />
                   </View>
                 )}
                 <View style={styles.nearbyCardContent}>
@@ -874,16 +860,14 @@ const MapScreen = ({ navigation }) => {
             >
               <View style={styles.cardContent}>
                 {/* Image */}
-                {selectedDestination.images && selectedDestination.images.length > 0 ? (
+                {getPlacePhotoUri(selectedDestination) ? (
                   <Image
-                    source={{ uri: selectedDestination.images[0] }}
+                    source={{ uri: getPlacePhotoUri(selectedDestination) }}
                     style={styles.cardImage}
                   />
                 ) : (
                   <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-                    <Text style={styles.cardImageIcon}>
-                      {getMarkerIcon(selectedDestination.category)}
-                    </Text>
+                    <GooglePlaceIcon destination={selectedDestination} size={56} selected />
                   </View>
                 )}
 
@@ -891,9 +875,7 @@ const MapScreen = ({ navigation }) => {
                 <View style={styles.cardHeader}>
                   <View style={styles.cardHeaderLeft}>
                     <View style={styles.cardIcon}>
-                      <Text style={styles.cardIconText}>
-                        {getMarkerIcon(selectedDestination.category)}
-                      </Text>
+                      <GooglePlaceIcon destination={selectedDestination} size={40} selected />
                     </View>
                     <View style={styles.cardHeaderText}>
                       <Text style={styles.cardTitle} numberOfLines={2}>
@@ -934,7 +916,7 @@ const MapScreen = ({ navigation }) => {
                   {selectedDestination.category && (
                     <View style={styles.cardCategoryBadge}>
                       <Text style={styles.cardCategoryText}>
-                        {selectedDestination.category}
+                        {getPlaceTypeLabel(selectedDestination)}
                       </Text>
                     </View>
                   )}
@@ -950,22 +932,22 @@ const MapScreen = ({ navigation }) => {
                 {/* Actions */}
                 <View style={styles.cardActions}>
                   <ModernButton
-                    title="Book Trip"
+                    title={selectedDestination.source === 'google' ? 'Google Maps' : 'Book Trip'}
                     onPress={handleBookTrip}
                     variant="primary"
                     size="medium"
                     style={styles.cardActionButton}
-                    icon="bus"
+                    icon={selectedDestination.source === 'google' ? 'map' : 'bus'}
                     iconPosition="left"
                   />
                   <View style={styles.cardActionRow}>
                     <ModernButton
-                      title="View Details"
+                      title={selectedDestination.source === 'google' ? 'Open in Google Maps' : 'View Details'}
                       onPress={handleViewDetails}
                       variant="outline"
                       size="medium"
                       style={styles.cardActionButtonSecondary}
-                      icon="information-circle"
+                      icon="map"
                       iconPosition="left"
                     />
                     {userLocation && (
@@ -1019,6 +1001,32 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     fontSize: FONTS.sizes.md,
     color: COLORS.gray,
+    textAlign: 'center',
+  },
+  errorHint: {
+    marginTop: SPACING.sm,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.gray,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.xl,
+    lineHeight: 20,
+  },
+  errorBanner: {
+    position: 'absolute',
+    left: SPACING.md,
+    right: SPACING.md,
+    zIndex: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.sm,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.error,
   },
   map: {
     flex: 1,
@@ -1226,9 +1234,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  listItemImageIcon: {
-    fontSize: 40,
-  },
   listItemCategoryBadge: {
     position: 'absolute',
     top: SPACING.xs,
@@ -1346,9 +1351,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  nearbyCardIcon: {
-    fontSize: 32,
-  },
   nearbyCardContent: {
     padding: SPACING.sm,
     minHeight: 50,
@@ -1388,40 +1390,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.white,
     ...SHADOWS.medium,
   },
-  markerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerContainerSelected: {
-    zIndex: 1000,
-  },
-  markerBackground: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.white,
-    ...SHADOWS.large,
-  },
-  markerBackgroundSelected: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 4,
-  },
-  markerPulse: {
-    position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-  },
-  markerIcon: {
-    fontSize: 24,
-  },
   selectedCard: {
     position: 'absolute',
     left: SPACING.md,
@@ -1446,9 +1414,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardImageIcon: {
-    fontSize: 64,
-  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1468,9 +1433,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
-  },
-  cardIconText: {
-    fontSize: 28,
   },
   cardHeaderText: {
     flex: 1,
