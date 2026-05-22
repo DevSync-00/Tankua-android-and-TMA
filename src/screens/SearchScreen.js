@@ -196,12 +196,8 @@ const SearchScreen = ({ navigation, route }) => {
     try {
       setLoading(true);
       const data = await getDestinations({});
-      const popular = data
-        .filter(d => d.rating >= 4.0)
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 20);
       
-      let transformedDestinations = popular.map(destination => ({
+      let transformedDestinations = data.map(destination => ({
         id: destination.id,
         name: destination.name,
         description: destination.description || '',
@@ -221,6 +217,13 @@ const SearchScreen = ({ navigation, route }) => {
       }));
       
       transformedDestinations = deduplicateDestinations(transformedDestinations);
+      transformedDestinations = transformedDestinations
+        .sort((a, b) => {
+          const ratingDiff = (b.rating || 0) - (a.rating || 0);
+          if (ratingDiff !== 0) return ratingDiff;
+          return (b.review_count || 0) - (a.review_count || 0);
+        })
+        .slice(0, 20);
       setDestinations(transformedDestinations);
       setLoading(false);
     } catch (err) {

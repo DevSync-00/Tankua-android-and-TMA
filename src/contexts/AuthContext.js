@@ -1,7 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
-import { registerForPushNotifications, savePushToken } from '../services/notifications';
+import {
+  cancelAllNotifications,
+  dismissAllNotifications,
+  registerForPushNotifications,
+  savePushToken,
+  setBadgeCount,
+} from '../services/notifications';
 
 const AuthContext = createContext();
 
@@ -214,6 +220,63 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const clearLocalAccountData = async () => {
+    const keys = await AsyncStorage.getAllKeys();
+    const accountKeys = keys.filter((key) => (
+      key === 'user' ||
+      key === 'pushToken' ||
+      key === 'notification_preferences' ||
+      key === 'favorite_destinations' ||
+      key === 'recentSearches' ||
+      key.startsWith('tripReminder_') ||
+      key.startsWith('sb-')
+    ));
+
+    if (accountKeys.length > 0) {
+      await AsyncStorage.multiRemove(accountKeys);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (!user?.id) {
+      throw new Error('No signed-in user found.');
+    }
+
+    const { error } = await supabase.rpc('delete_current_user_account');
+
+    if (error) {
+      if (
+        error.message?.includes('delete_current_user_account') ||
+        error.message?.includes('function') ||
+        error.code === 'PGRST202'
+      ) {
+        throw new Error('Account deletion is not enabled on the server yet. Please apply the latest database migration and try again.');
+      }
+
+      throw error;
+    }
+
+    try {
+      await Promise.all([
+        cancelAllNotifications(),
+        dismissAllNotifications(),
+        setBadgeCount(0),
+      ]);
+    } catch (notificationError) {
+      console.log('Error clearing notifications:', notificationError);
+    }
+
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (signOutError) {
+      console.log('Error clearing local auth session:', signOutError);
+    }
+
+    await clearLocalAccountData();
+    setUser(null);
+    setIsAdmin(false);
+  };
+
   const updateProfile = async (updates) => {
     try {
       const { error } = await supabase
@@ -239,6 +302,7 @@ export const AuthProvider = ({ children }) => {
         sendOTP,
         verifyOTP,
         logout,
+        deleteAccount,
         updateProfile,
       }}
     >

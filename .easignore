@@ -1,0 +1,48 @@
+# Dependencies installed by EAS
+node_modules/
+
+# Expo and Metro local state
+.expo/
+.expo-shared/
+.metro-cache/
+.cache/
+
+# Generated native/build output
+android/
+ios/
+web-build/
+dist/
+build/
+
+# Web workspace is not needed for the mobile EAS build archive
+web/
+
+# Local environment and credentials
+.env
+.env.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Logs and diagnostics
+logs/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# IDE/OS/editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Project docs and database migration files are not required to compile the app
+doc/
+database/
+*.md
+!assets/**/*.md

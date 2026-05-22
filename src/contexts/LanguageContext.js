@@ -1,5 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext } from 'react';
 import { translations } from '../config/translations';
 
 const LanguageContext = createContext();
@@ -13,34 +12,14 @@ export const useLanguage = () => {
 };
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('am'); // Default to Amharic
+  const language = 'en';
 
-  useEffect(() => {
-    loadLanguage();
-  }, []);
-
-  const loadLanguage = async () => {
-    try {
-      const savedLanguage = await AsyncStorage.getItem('language');
-      if (savedLanguage) {
-        setLanguage(savedLanguage);
-      }
-    } catch (error) {
-      console.log('Error loading language:', error);
-    }
-  };
-
-  const changeLanguage = async (lang) => {
-    try {
-      await AsyncStorage.setItem('language', lang);
-      setLanguage(lang);
-    } catch (error) {
-      console.log('Error saving language:', error);
-    }
+  const changeLanguage = async () => {
+    // Tankua is English-only for now. Keep this no-op so existing screens stay compatible.
   };
 
   const t = (key) => {
-    return translations[language][key] || key;
+    return translations.en[key] || key;
   };
 
   return (

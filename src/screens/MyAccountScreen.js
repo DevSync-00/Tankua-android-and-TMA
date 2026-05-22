@@ -15,8 +15,9 @@ import { useAuth } from '../contexts/AuthContext';
 import ModernButton from '../components/ModernButton';
 
 const MyAccountScreen = ({ navigation }) => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, deleteAccount } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -41,6 +42,51 @@ const MyAccountScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your Tankua account, profile, saved payment methods, bookings, rewards, reviews, and notification data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: confirmDeleteAccount,
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Are you absolutely sure?',
+      'Your account and related data will be permanently removed. You will be signed out after deletion.',
+      [
+        { text: 'Keep Account', style: 'cancel' },
+        {
+          text: 'Delete Forever',
+          style: 'destructive',
+          onPress: performDeleteAccount,
+        },
+      ]
+    );
+  };
+
+  const performDeleteAccount = async () => {
+    try {
+      setDeleting(true);
+      await deleteAccount();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      Alert.alert(
+        'Delete Account Failed',
+        error.message || 'We could not delete your account right now. Please try again or contact support.'
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -182,6 +228,31 @@ const MyAccountScreen = ({ navigation }) => {
           <Text style={styles.infoText}>
             Fields marked with * are required. Your information is kept secure and private.
           </Text>
+        </View>
+
+        {/* Account Deletion Section */}
+        <View style={styles.dangerSection}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="warning-outline" size={20} color={COLORS.error} />
+            <Text style={[styles.sectionTitle, styles.dangerTitle]}>Danger Zone</Text>
+          </View>
+          <View style={styles.dangerCard}>
+            <Text style={styles.dangerHeading}>Delete Account</Text>
+            <Text style={styles.dangerText}>
+              Permanently remove your account and related data from Tankua. You will lose access to your trips, tickets, saved payment methods, rewards, and profile.
+            </Text>
+            <ModernButton
+              title="Delete Account"
+              onPress={handleDeleteAccount}
+              variant="danger"
+              size="medium"
+              loading={deleting}
+              disabled={loading}
+              fullWidth
+              icon="trash-outline"
+              style={styles.deleteButton}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -361,6 +432,36 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     marginLeft: SPACING.sm,
     lineHeight: 18,
+  },
+  dangerSection: {
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  dangerTitle: {
+    color: COLORS.error,
+  },
+  dangerCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: `${COLORS.error}30`,
+    ...SHADOWS.small,
+  },
+  dangerHeading: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.error,
+    marginBottom: SPACING.xs,
+  },
+  dangerText: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.gray,
+    lineHeight: 20,
+    marginBottom: SPACING.md,
+  },
+  deleteButton: {
+    alignSelf: 'stretch',
   },
   footer: {
     padding: SPACING.md,

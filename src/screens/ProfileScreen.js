@@ -10,11 +10,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
-  const { t, language, changeLanguage } = useLanguage();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
   
@@ -26,11 +24,11 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleLogout = () => {
     Alert.alert(
-      t('logout') || 'Sair',
-      t('logoutConfirm') || 'Tem certeza que deseja sair?',
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
-        { text: t('cancel') || 'Cancelar', style: 'cancel' },
-        { text: t('logout') || 'Sair', onPress: logout, style: 'destructive' },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', onPress: logout, style: 'destructive' },
       ]
     );
   };

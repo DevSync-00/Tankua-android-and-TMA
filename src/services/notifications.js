@@ -3,7 +3,6 @@
  * Handles registration, permissions, and sending local/push notifications
  */
 
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -14,14 +13,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // CONFIGURATION
 // ============================================
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+const isExpoGo = Constants.appOwnership === 'expo';
+const noopSubscription = { remove: () => {} };
+let notificationsModule = null;
+
+const getNotifications = () => {
+  if (isExpoGo) {
+    return null;
+  }
+
+  if (!notificationsModule) {
+    notificationsModule = require('expo-notifications');
+    notificationsModule.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  }
+
+  return notificationsModule;
+};
 
 // ============================================
 // PUSH TOKEN REGISTRATION
@@ -32,6 +45,12 @@ Notifications.setNotificationHandler({
  */
 export async function registerForPushNotifications() {
   let token = null;
+
+  const Notifications = getNotifications();
+  if (!Notifications) {
+    console.log('Remote push notifications are skipped in Expo Go. Use a development build to test push notifications.');
+    return null;
+  }
   
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device');
@@ -153,6 +172,11 @@ export async function savePushToken(userId, token) {
     if (error) throw error;
     return true;
   } catch (error) {
+    if (error?.code === 'PGRST204' || error?.message?.includes('push_token')) {
+      console.warn('Push token was not saved because the users.push_token columns are missing. Apply the push token database migration.');
+      return false;
+    }
+
     console.error('Error saving push token:', error);
     return false;
   }
@@ -172,6 +196,11 @@ export async function scheduleLocalNotification({
   trigger = null, // null = immediate, or { seconds: 60 } etc.
   channelId = 'default',
 }) {
+  const Notifications = getNotifications();
+  if (!Notifications) {
+    return null;
+  }
+
   try {
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
@@ -194,6 +223,11 @@ export async function scheduleLocalNotification({
  * Schedule a trip reminder notification
  */
 export async function scheduleTripReminder(booking) {
+  const Notifications = getNotifications();
+  if (!Notifications) {
+    return null;
+  }
+
   const tripDate = new Date(booking.tripDate);
   const reminderDate = new Date(tripDate.getTime() - 24 * 60 * 60 * 1000); // 24 hours before
   
@@ -233,10 +267,14 @@ export async function scheduleTripReminder(booking) {
  * Cancel a scheduled trip reminder
  */
 export async function cancelTripReminder(bookingId) {
+  const Notifications = getNotifications();
+
   try {
     const notificationId = await AsyncStorage.getItem(`tripReminder_${bookingId}`);
     if (notificationId) {
-      await Notifications.cancelScheduledNotificationAsync(notificationId);
+      if (Notifications) {
+        await Notifications.cancelScheduledNotificationAsync(notificationId);
+      }
       await AsyncStorage.removeItem(`tripReminder_${bookingId}`);
     }
   } catch (error) {
@@ -317,21 +355,28 @@ export async function showPromotion(promo) {
  * Add listener for received notifications (when app is foregrounded)
  */
 export function addNotificationReceivedListener(callback) {
-  return Notifications.addNotificationReceivedListener(callback);
+  const Notifications = getNotifications();
+  return Notifications
+    ? Notifications.addNotificationReceivedListener(callback)
+    : noopSubscription;
 }
 
 /**
  * Add listener for notification responses (when user taps notification)
  */
 export function addNotificationResponseListener(callback) {
-  return Notifications.addNotificationResponseReceivedListener(callback);
+  const Notifications = getNotifications();
+  return Notifications
+    ? Notifications.addNotificationResponseReceivedListener(callback)
+    : noopSubscription;
 }
 
 /**
  * Get the last notification response (for handling cold starts)
  */
 export async function getLastNotificationResponse() {
-  return Notifications.getLastNotificationResponseAsync();
+  const Notifications = getNotifications();
+  return Notifications ? Notifications.getLastNotificationResponseAsync() : null;
 }
 
 // ============================================
@@ -342,35 +387,40 @@ export async function getLastNotificationResponse() {
  * Get all scheduled notifications
  */
 export async function getScheduledNotifications() {
-  return Notifications.getAllScheduledNotificationsAsync();
+  const Notifications = getNotifications();
+  return Notifications ? Notifications.getAllScheduledNotificationsAsync() : [];
 }
 
 /**
  * Cancel all scheduled notifications
  */
 export async function cancelAllNotifications() {
-  return Notifications.cancelAllScheduledNotificationsAsync();
+  const Notifications = getNotifications();
+  return Notifications ? Notifications.cancelAllScheduledNotificationsAsync() : undefined;
 }
 
 /**
  * Dismiss all delivered notifications
  */
 export async function dismissAllNotifications() {
-  return Notifications.dismissAllNotificationsAsync();
+  const Notifications = getNotifications();
+  return Notifications ? Notifications.dismissAllNotificationsAsync() : undefined;
 }
 
 /**
  * Get notification badge count
  */
 export async function getBadgeCount() {
-  return Notifications.getBadgeCountAsync();
+  const Notifications = getNotifications();
+  return Notifications ? Notifications.getBadgeCountAsync() : 0;
 }
 
 /**
  * Set notification badge count
  */
 export async function setBadgeCount(count) {
-  return Notifications.setBadgeCountAsync(count);
+  const Notifications = getNotifications();
+  return Notifications ? Notifications.setBadgeCountAsync(count) : undefined;
 }
 
 // ============================================

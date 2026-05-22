@@ -10,7 +10,6 @@ import { LanguageProvider } from './src/contexts/LanguageContext';
 import { BookingProvider } from './src/contexts/BookingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
-import * as Notifications from 'expo-notifications';
 import { addNotificationReceivedListener, addNotificationResponseListener, setBadgeCount } from './src/services/notifications';
 import { supabase } from './src/config/supabase';
 

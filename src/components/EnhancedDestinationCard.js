@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,14 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
-import { isFavorited, toggleFavorite } from '../services/favorites';
 
 /** Compact home-grid card — fixed size so nothing stretches. */
 export const HOME_GRID_CARD = {
-  maxWidth: 158,
-  imageHeight: 142,
+  maxWidth: 200,
+  imageHeight: 170,
   bodyHeight: 90,
-  radius: 24,
+  radius: 36,
   get height() {
     return this.imageHeight + this.bodyHeight;
   },
@@ -34,7 +33,6 @@ const EnhancedDestinationCard = ({
   cardWidth: cardWidthProp,
 }) => {
   const windowDimensions = useWindowDimensions();
-  const [favorited, setFavorited] = useState(false);
 
   const screenWidth = useMemo(() => {
     if (containerWidth && typeof containerWidth === 'number' && containerWidth > 0) {
@@ -63,7 +61,6 @@ const EnhancedDestinationCard = ({
   }, [cardWidthProp, screenWidth]);
 
   const {
-    id,
     name,
     images = [],
     city = '',
@@ -77,23 +74,6 @@ const EnhancedDestinationCard = ({
   } = destination;
 
   const imageUri = images?.length > 0 ? images[0] : null;
-
-  useEffect(() => {
-    const loadFavoriteStatus = async () => {
-      if (id) {
-        const status = await isFavorited(id);
-        setFavorited(status);
-      }
-    };
-    loadFavoriteStatus();
-  }, [id]);
-
-  const handleFavorite = async (e) => {
-    e?.stopPropagation?.();
-    if (!id) return;
-    const next = await toggleFavorite(id);
-    setFavorited(next);
-  };
 
   const handleShare = async () => {
     try {
@@ -161,17 +141,6 @@ const EnhancedDestinationCard = ({
           )}
 
           <View style={styles.gridActions}>
-            <TouchableOpacity
-              style={styles.gridActionBtn}
-              onPress={handleFavorite}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons
-                name={favorited ? 'heart' : 'heart-outline'}
-                size={18}
-                color={favorited ? COLORS.accent : COLORS.white}
-              />
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.gridActionBtn}
               onPress={handleShare}
@@ -263,14 +232,7 @@ const EnhancedDestinationCard = ({
         />
 
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleFavorite}>
-            <Ionicons
-              name={favorited ? 'heart' : 'heart-outline'}
-              size={20}
-              color={favorited ? COLORS.accent : COLORS.white}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, { marginLeft: SPACING.xs }]} onPress={handleShare}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Ionicons name="share-outline" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
