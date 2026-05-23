@@ -1,41 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
+import { getPlaceTypeLabel, resolvePlaceMarker } from '../utils/placeTypeResolver';
+import PlaceTypeIcon from './map/PlaceTypeIcon';
 
 const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
-  // Get first image or use placeholder
-  const imageUri = destination.images && destination.images.length > 0 
-    ? destination.images[0] 
+  const imageUri = destination.images && destination.images.length > 0
+    ? destination.images[0]
     : 'https://via.placeholder.com/400x300?text=Destination';
 
-  // Get category icon
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'religious':
-      case 'sacred':
-        return 'star-outline';
-      case 'historical':
-        return 'library-outline';
-      case 'nature':
-        return 'leaf-outline';
-      case 'adventure':
-        return 'bicycle-outline';
-      case 'cultural':
-        return 'people-outline';
-      case 'monument':
-        return 'location-outline';
-      case 'park':
-        return 'tree-outline';
-      case 'museum':
-        return 'library-outline';
-      default:
-        return 'location-outline';
-    }
-  };
-
-  const category = destination.category || 'other';
-  const categoryIcon = getCategoryIcon(category);
+  const markerConfig = useMemo(() => resolvePlaceMarker(destination), [destination]);
+  const placeLabel = useMemo(() => getPlaceTypeLabel(destination), [destination]);
 
   if (variant === 'grid') {
     return (
@@ -43,8 +19,8 @@ const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
         <Image source={{ uri: imageUri }} style={styles.gridImage} />
         <View style={styles.gridContent}>
           <View style={styles.gridHeader}>
-            <Ionicons name={categoryIcon} size={14} color={COLORS.primary} />
-            <Text style={styles.gridCategory}>{category}</Text>
+            <PlaceTypeIcon destination={destination} size={14} color={markerConfig.color} markerConfig={markerConfig} />
+            <Text style={styles.gridCategory}>{placeLabel}</Text>
           </View>
           <Text style={styles.gridName} numberOfLines={2}>{destination.name}</Text>
           <View style={styles.gridFooter}>
@@ -61,9 +37,9 @@ const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
       <Image source={{ uri: imageUri }} style={styles.listImage} />
       <View style={styles.listContent}>
         <View style={styles.listHeader}>
-          <View style={styles.categoryBadge}>
-            <Ionicons name={categoryIcon} size={12} color={COLORS.primary} />
-            <Text style={styles.categoryText}>{category}</Text>
+          <View style={[styles.categoryBadge, { backgroundColor: `${markerConfig.color}18` }]}>
+            <PlaceTypeIcon destination={destination} size={12} color={markerConfig.color} markerConfig={markerConfig} />
+            <Text style={[styles.categoryText, { color: markerConfig.color }]}>{placeLabel}</Text>
           </View>
         </View>
         <Text style={styles.listName} numberOfLines={1}>{destination.name}</Text>
@@ -85,7 +61,6 @@ const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
 };
 
 const styles = StyleSheet.create({
-  // List variant
   listCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
@@ -114,17 +89,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: `${COLORS.primary}15`,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 2,
     borderRadius: BORDER_RADIUS.sm,
   },
   categoryText: {
     fontSize: FONTS.sizes.xs,
-    color: COLORS.primary,
     fontWeight: '600',
     marginLeft: SPACING.xs,
-    textTransform: 'capitalize',
   },
   listName: {
     fontSize: FONTS.sizes.lg,
@@ -157,8 +129,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
-
-  // Grid variant
   gridCard: {
     flex: 1,
     backgroundColor: COLORS.white,
@@ -184,10 +154,9 @@ const styles = StyleSheet.create({
   },
   gridCategory: {
     fontSize: FONTS.sizes.xs,
-    color: COLORS.primary,
+    color: COLORS.gray,
     fontWeight: '600',
     marginLeft: SPACING.xs,
-    textTransform: 'capitalize',
   },
   gridName: {
     fontSize: FONTS.sizes.md,
