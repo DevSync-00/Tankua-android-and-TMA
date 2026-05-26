@@ -533,4 +533,42 @@ export async function getPickupStations() {
   return data as PickupStation[];
 }
 
+// ============================================
+// IN-APP NOTIFICATIONS
+// ============================================
+
+export interface InAppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  created_at: string;
+  action_url?: string | null;
+}
+
+export async function getInAppNotifications(
+  recipientType: 'admin' | 'provider',
+  limit = 10
+): Promise<InAppNotification[]> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, title, message, type, is_read, created_at, action_url')
+    .eq('recipient_type', recipientType)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []) as InAppNotification[];
+}
+
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq('id', notificationId);
+
+  if (error) throw error;
+}
+
 

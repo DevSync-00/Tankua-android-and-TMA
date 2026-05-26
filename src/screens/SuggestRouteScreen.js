@@ -26,6 +26,11 @@ const SuggestRouteScreen = ({ navigation }) => {
   });
 
   const handleSubmit = async () => {
+    if (!user?.id) {
+      Alert.alert('Sign in required', 'Please sign in to suggest a trip.');
+      return;
+    }
+
     if (!formData.origin || !formData.destination) {
       Alert.alert('Error', 'Please fill in origin and destination');
       return;
@@ -33,10 +38,16 @@ const SuggestRouteScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      
-      // In a real app, save to a route_suggestions table
-      // For now, we'll just show success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const { error } = await supabase.from('route_suggestions').insert({
+        user_id: user.id,
+        origin: formData.origin.trim(),
+        destination: formData.destination.trim(),
+        frequency: formData.frequency,
+        description: formData.description.trim() || null,
+      });
+
+      if (error) throw error;
       
       Alert.alert(
         'Thank You!',

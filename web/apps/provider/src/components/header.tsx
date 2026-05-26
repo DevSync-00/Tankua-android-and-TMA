@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Bell, 
@@ -11,6 +12,12 @@ import {
   Calendar,
 } from "lucide-react";
 import { Button, Badge, Avatar } from "@tankua/ui";
+import {
+  getInAppNotifications,
+  markNotificationRead,
+  formatNotificationTime,
+  type InAppNotification,
+} from "@tankua/database";
 
 interface HeaderProps {
   title: string;
@@ -19,8 +26,29 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, actions }: HeaderProps) {
+  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const data = await getInAppNotifications("provider");
+      setNotifications(data);
+    } catch (error) {
+      console.error("Failed to load provider notifications:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (showNotifications) {
+      loadNotifications();
+    }
+  }, [showNotifications, loadNotifications]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -36,11 +64,27 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
     }
   }, [showNotifications]);
 
-  const notifications = [
-    { id: 1, title: "New Booking", message: "Yohannes T. booked Lalibela trip", time: "5m ago", unread: true },
-    { id: 2, title: "Payment Received", message: "ETB 2,500 credited to your account", time: "1h ago", unread: true },
-    { id: 3, title: "Review Posted", message: "Sara M. left a 5-star review", time: "3h ago", unread: false },
-  ];
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const handleNotificationClick = async (notification: InAppNotification) => {
+    if (!notification.is_read) {
+      try {
+        await markNotificationRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, is_read: true } : n
+          )
+        );
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+      }
+    }
+
+    if (notification.action_url) {
+      setShowNotifications(false);
+      router.push(notification.action_url);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -75,38 +119,46 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              )}
             </button>
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-slide-down z-50">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h3 className="font-semibold">Notifications</h3>
-                  <Badge variant="default">2 new</Badge>
+                  {unreadCount > 0 && (
+                    <Badge variant="default">{unreadCount} new</Badge>
+                  )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer ${
-                        notification.unread ? "bg-primary/5" : ""
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 mt-2 rounded-full ${notification.unread ? "bg-primary" : "bg-transparent"}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{notification.title}</p>
-                          <p className="text-sm text-muted-foreground truncate">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                  {notifications.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground text-center">
+                      No notifications yet
+                    </p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
+                        className={`p-4 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer ${
+                          !notification.is_read ? "bg-primary/5" : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2 h-2 mt-2 rounded-full ${!notification.is_read ? "bg-primary" : "bg-transparent"}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{notification.title}</p>
+                            <p className="text-sm text-muted-foreground truncate">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatNotificationTime(notification.created_at)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 border-t border-border">
-                  <Button variant="ghost" className="w-full" size="sm">
-                    View All Notifications
-                  </Button>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -125,4 +177,3 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
     </header>
   );
 }
-
