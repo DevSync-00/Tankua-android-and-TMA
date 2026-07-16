@@ -6,6 +6,7 @@ import {
   sanitizeNearbyTypes,
   buildGooglePhotoUrl,
 } from '../utils/googlePlaceMapper';
+import { ensureDestinationImages } from './database';
 
 const PLACES_BASE = 'https://places.googleapis.com/v1';
 
@@ -105,7 +106,7 @@ export async function searchNearbyPlaces({
   }
 
   const data = await placesRequest('/places:searchNearby', body, NEARBY_FIELD_MASK);
-  const places = (data.places || []).map(normalizeGooglePlace);
+  const places = (data.places || []).map(normalizeGooglePlace).map(ensureDestinationImages);
 
   return dedupePlaces(places);
 }
@@ -146,7 +147,8 @@ export async function searchPlacesByText({
   }
 
   const data = await placesRequest('/places:searchText', body, NEARBY_FIELD_MASK);
-  return dedupePlaces((data.places || []).map(normalizeGooglePlace));
+  const places = (data.places || []).map(normalizeGooglePlace).map(ensureDestinationImages);
+  return dedupePlaces(places);
 }
 
 /**
@@ -172,7 +174,7 @@ export async function fetchPlaceDetails(placeId) {
     const photoUrl = buildGooglePhotoUrl(normalized.photoName, GOOGLE_MAPS_API_KEY);
     if (photoUrl) normalized.images = [photoUrl];
   }
-  return normalized;
+  return ensureDestinationImages(normalized);
 }
 
 function dedupePlaces(places) {

@@ -21,7 +21,7 @@ const tourCategories = [
   { id: "adventure", name: "Adventure Tours", icon: "🏔️" },
   { id: "cultural", name: "Cultural Tours", icon: "🏛️" },
   { id: "nature", name: "Nature & Wildlife", icon: "🦁" },
-  { id: "historical", name: "Historical Sites", icon: "⛪" },
+  { id: "historical", name: "Historical Sites", icon: "🏰" },
   { id: "city", name: "City Tours", icon: "🏙️" },
   { id: "beach", name: "Beach & Lake", icon: "🏖️" },
 ];

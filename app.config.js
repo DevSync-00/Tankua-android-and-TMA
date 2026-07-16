@@ -68,6 +68,15 @@ export default ({ config }) => {
             android: { imageWidth: 288 },
           },
         ],
+        [
+          'expo-build-properties',
+          {
+            android: {
+              enableMinifyInReleaseBuilds: true,
+              enableShrinkResourcesInReleaseBuilds: true,
+            },
+          },
+        ],
       ],
       extra: {
         eas: {

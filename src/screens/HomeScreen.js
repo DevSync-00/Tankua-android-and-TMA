@@ -17,8 +17,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { getDestinations } from '../services/database';
-import EnhancedDestinationCard, { HOME_GRID_CARD } from '../components/EnhancedDestinationCard';
+import { getDestinations, getPlaceholderImage } from '../services/database';
+import EnhancedDestinationCard from '../components/EnhancedDestinationCard';
 import CategoryRibbon from '../components/CategoryRibbon';
 import { SkeletonCard } from '../components/SkeletonLoader';
 import { deduplicateDestinations, sortByDistance } from '../utils/destinationUtils';
@@ -27,14 +27,14 @@ const HomeScreen = ({ navigation }) => {
   const windowDimensions = useWindowDimensions();
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  
+
   // Safely get width with multiple fallbacks - ensure we always have a valid number
   const width = useMemo(() => {
     const wdWidth = windowDimensions?.width;
     if (wdWidth && typeof wdWidth === 'number' && wdWidth > 0 && !isNaN(wdWidth)) {
       return wdWidth;
     }
-    
+
     try {
       const dims = Dimensions.get('window');
       const dimsWidth = dims?.width;
@@ -44,10 +44,10 @@ const HomeScreen = ({ navigation }) => {
     } catch (error) {
       // Silently fall through to default
     }
-    
-    return 375; // Default iPhone width
+
+    return 375; // Default width
   }, [windowDimensions]);
-  
+
   const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +61,7 @@ const HomeScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const data = await getDestinations({});
-      
+
       let transformedDestinations = data.map(destination => ({
         id: destination.id,
         name: destination.name,
@@ -80,7 +80,7 @@ const HomeScreen = ({ navigation }) => {
         price_range: destination.price_range || (destination.price ? `$${Math.floor(destination.price / 100)}` : null),
         is_verified: destination.is_verified || Math.random() > 0.3,
       }));
-      
+
       transformedDestinations = deduplicateDestinations(transformedDestinations);
       setDestinations(transformedDestinations);
       setLoading(false);
@@ -115,14 +115,6 @@ const HomeScreen = ({ navigation }) => {
   const popularDestinations = filteredDestinations.slice(0, 6).filter(Boolean);
   const showPopularSkeletons = loading && popularDestinations.length === 0;
 
-  const gridGap = SPACING.md;
-  const gridPadding = SPACING.md;
-  const gridCardWidth = useMemo(() => {
-    const safeWidth = typeof width === 'number' && width > 0 ? width : 375;
-    const columnWidth = (safeWidth - gridPadding * 2 - gridGap) / 2;
-    return Math.min(columnWidth, HOME_GRID_CARD.maxWidth);
-  }, [width]);
-
   // Render featured card - simplified without complex animations
   const renderFeatured = ({ item, index }) => {
     const safeWidth = typeof width === 'number' && width > 0 ? width : 375;
@@ -136,13 +128,14 @@ const HomeScreen = ({ navigation }) => {
           activeOpacity={0.9}
         >
           <View style={styles.featuredImageContainer}>
-            {item.images && item.images.length > 0 ? (
-              <Image source={{ uri: item.images[0] }} style={styles.featuredImage} />
-            ) : (
-              <View style={styles.featuredImagePlaceholder}>
-                <Ionicons name="image-outline" size={64} color={COLORS.grayLight} />
-              </View>
-            )}
+            <Image
+              source={{
+                uri: (item.images && item.images.length > 0)
+                  ? item.images[0]
+                  : getPlaceholderImage(item.id, item.name, item.category)
+              }}
+              style={styles.featuredImage}
+            />
             <LinearGradient
               colors={['transparent', 'transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.7)']}
               locations={[0, 0.4, 0.7, 1]}
@@ -177,14 +170,14 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.backgroundSecondary} />
-      
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>
-              Explore from <Text style={styles.headerLocation}>Addis Ababa</Text>
+              Explore <Text style={styles.headerLocation}>Ethiopia</Text>
             </Text>
             <Text style={styles.headerDate}>
               {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -253,20 +246,23 @@ const HomeScreen = ({ navigation }) => {
           {/* Standard Grid */}
           <View style={styles.popularGrid}>
             {showPopularSkeletons ? (
-              Array.from({ length: 4 }).map((_, index) => (
-                <View key={`skeleton-${index}`} style={[styles.gridItem, { width: gridCardWidth }]}>
-                  <SkeletonCard width={gridCardWidth} height={HOME_GRID_CARD.height} borderRadius={HOME_GRID_CARD.radius} />
-                </View>
-              ))
+              Array.from({ length: 4 }).map((_, index) => {
+                const safeWidth = typeof width === 'number' && width > 0 ? width : 375;
+                return (
+                  <View key={`skeleton-${index}`} style={styles.gridItem}>
+                    <SkeletonCard width={(safeWidth - SPACING.md * 3) / 2} height={210} />
+                  </View>
+                );
+              })
             ) : popularDestinations.length > 0 ? (
               popularDestinations.map((item, index) => (
-                <View key={`popular-${item.id}-${index}`} style={[styles.gridItem, { width: gridCardWidth }]}>
+                <View key={`popular-${item.id}-${index}`} style={styles.gridItem}>
                   <EnhancedDestinationCard
                     destination={item}
                     onPress={() => handleDestinationPress(item)}
                     size="small"
                     index={index}
-                    cardWidth={gridCardWidth}
+                    containerWidth={width}
                   />
                 </View>
               ))
@@ -279,11 +275,11 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         {/* How It Works Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.howItWorksSection]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>How It Works</Text>
           </View>
-          
+
           <View style={styles.howItWorksContainer}>
             <View style={styles.howItWorksStep}>
               <View style={styles.stepNumber}>
@@ -358,10 +354,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: SPACING.xl + SPACING.xxl,
   },
   header: {
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
@@ -392,6 +388,9 @@ const styles = StyleSheet.create({
   section: {
     marginTop: SPACING.xl,
     marginBottom: SPACING.xl,
+  },
+  howItWorksSection: {
+    marginTop: -32,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -512,12 +511,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: SPACING.md,
-    columnGap: SPACING.md,
-    rowGap: SPACING.md,
     justifyContent: 'space-between',
   },
   gridItem: {
-    alignItems: 'center',
+    width: '48%',
+    height: 210,
+    marginBottom: SPACING.md,
   },
   emptyState: {
     width: '100%',

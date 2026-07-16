@@ -4,11 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { getPlaceTypeLabel, resolvePlaceMarker } from '../utils/placeTypeResolver';
 import PlaceTypeIcon from './map/PlaceTypeIcon';
+import { getPlaceholderImage } from '../services/database';
 
 const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
   const imageUri = destination.images && destination.images.length > 0
     ? destination.images[0]
-    : 'https://via.placeholder.com/400x300?text=Destination';
+    : getPlaceholderImage(destination.id, destination.name, destination.category);
 
   const markerConfig = useMemo(() => resolvePlaceMarker(destination), [destination]);
   const placeLabel = useMemo(() => getPlaceTypeLabel(destination), [destination]);

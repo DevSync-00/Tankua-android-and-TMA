@@ -11,3 +11,15 @@ export const GOOGLE_MAPS_API_KEY =
 
 export const isGoogleMapsConfigured = () =>
   Boolean(GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY.length > 10);
+
+export const GOOGLE_MAPS_STYLE = [
+  {
+    featureType: 'poi.place_of_worship',
+    elementType: 'all',
+    stylers: [
+      {
+        visibility: 'off',
+      },
+    ],
+  },
+];

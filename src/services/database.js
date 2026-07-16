@@ -53,6 +53,77 @@ export const updateUser = async (userId, updates) => {
 
 const DESTINATIONS_TABLE = 'destinations';
 
+// A set of beautiful Unsplash travel/nature placeholders for Ethiopian destinations
+export const PLACEHOLDER_IMAGES = {
+  nature: [
+    'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800', // Simien Mountains landscape (Nature)
+    'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800', // Rift Valley Safari (Nature / Wildlife)
+    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800', // Lush green highlands (Nature)
+    'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800', // Blue Nile Falls / waterfall (Scenic)
+  ],
+  adventure: [
+    'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800', // Danakil Depression / desert (Adventure)
+  ],
+  historical: [
+    'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800', // Gondar Castle / Historic (Historical/Monument/Museum/Cultural)
+  ],
+  religious: [
+    'https://images.unsplash.com/photo-1585208798174-6cedd86e019a?w=800', // Axum St. Mary / Church (Religious/Sacred)
+    'https://images.unsplash.com/photo-1605106901227-991bd663255c?w=800', // Bahir Dar Lake Tana Church
+  ],
+  city: [
+    'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800', // Addis Ababa city life (City)
+  ],
+  other: [
+    'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800', // Default Rift Valley Safari
+  ]
+};
+
+export const getPlaceholderImage = (id, name, category) => {
+  let list = PLACEHOLDER_IMAGES.other;
+  if (category) {
+    const cat = String(category).toLowerCase();
+    if (cat.includes('nature') || cat.includes('park')) {
+      list = PLACEHOLDER_IMAGES.nature;
+    } else if (cat.includes('adventure')) {
+      list = PLACEHOLDER_IMAGES.adventure;
+    } else if (cat.includes('historical') || cat.includes('monument') || cat.includes('museum') || cat.includes('cultural')) {
+      list = PLACEHOLDER_IMAGES.historical;
+    } else if (cat.includes('religious') || cat.includes('sacred') || cat.includes('church')) {
+      list = PLACEHOLDER_IMAGES.religious;
+    } else if (cat.includes('city')) {
+      list = PLACEHOLDER_IMAGES.city;
+    }
+  }
+
+  // Fallback to deterministic selection using id or name hash
+  let hash = 0;
+  const str = String(id || name || '');
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % list.length;
+  return list[index];
+};
+
+export const ensureDestinationImages = (dest) => {
+  if (!dest) return dest;
+  const images = dest.images;
+  const hasValidImage = Array.isArray(images) && images.length > 0 && images.some(img => 
+    typeof img === 'string' && 
+    img.trim().length > 0 && 
+    !img.includes('wikimedia.org') && 
+    !img.includes('wikipedia.org')
+  );
+  if (!hasValidImage) {
+    return {
+      ...dest,
+      images: [getPlaceholderImage(dest.id, dest.name, dest.category)],
+    };
+  }
+  return dest;
+};
+
 export const createDestination = async (destinationData) => {
   try {
     const tableName = DESTINATIONS_TABLE;
@@ -63,7 +134,7 @@ export const createDestination = async (destinationData) => {
       .single();
 
     if (error) throw error;
-    return data;
+    return ensureDestinationImages(data);
   } catch (error) {
     throw error;
   }
@@ -97,7 +168,7 @@ export const getDestinations = async (filters = {}) => {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []).map(ensureDestinationImages);
   } catch (error) {
     throw error;
   }
@@ -113,7 +184,7 @@ export const getDestination = async (destinationId) => {
       .single();
 
     if (error) throw error;
-    return data;
+    return ensureDestinationImages(data);
   } catch (error) {
     throw error;
   }
@@ -185,7 +256,8 @@ export const getTrips = async (filters = {}) => {
           name,
           city,
           region,
-          category
+          category,
+          images
         )
       `);
 
@@ -227,7 +299,16 @@ export const getTrips = async (filters = {}) => {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    
+    // Ensure nested destination images are populated with fallback placeholders
+    const processedTrips = (data || []).map(trip => {
+      if (trip.destinations) {
+        trip.destinations = ensureDestinationImages(trip.destinations);
+      }
+      return trip;
+    });
+
+    return processedTrips;
   } catch (error) {
     throw error;
   }

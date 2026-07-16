@@ -145,9 +145,17 @@ const MainTabNavigator = () => {
   return (
     <Tab.Navigator
       tabBar={(props) => <LiquidGlassTabBar {...props} />}
+      sceneContainerStyle={{ backgroundColor: COLORS.backgroundSecondary }}
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
+        tabBarTransparent: true,
+        tabBarStyle: {
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+        },
       }}
     >
       <Tab.Screen 

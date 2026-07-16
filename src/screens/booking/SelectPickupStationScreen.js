@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { GOOGLE_MAPS_STYLE } from '../../config/googleMaps';
 import ModernPickupStationCard from '../../components/ModernPickupStationCard';
 import ModernButton from '../../components/ModernButton';
 
@@ -188,6 +189,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
             style={styles.map}
             region={region}
             onRegionChangeComplete={setRegion}
+            customMapStyle={GOOGLE_MAPS_STYLE}
           >
             {stations.map((station) => (
               <Marker
