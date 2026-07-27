@@ -1,6 +1,19 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/dashboard/notifications/page": "app/dashboard/notifications/page.js",
+  "/dashboard/bookings/page": "app/dashboard/bookings/page.js",
   "/dashboard/destinations/page": "app/dashboard/destinations/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/admins/page": "app/dashboard/admins/page.js",
+  "/dashboard/provider-applications/page": "app/dashboard/provider-applications/page.js",
+  "/dashboard/payments/page": "app/dashboard/payments/page.js",
   "/dashboard/providers/page": "app/dashboard/providers/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/dashboard/payouts/page": "app/dashboard/payouts/page.js",
+  "/dashboard/reports/page": "app/dashboard/reports/page.js",
+  "/dashboard/promotions/page": "app/dashboard/promotions/page.js",
+  "/dashboard/support/page": "app/dashboard/support/page.js",
+  "/dashboard/users/page": "app/dashboard/users/page.js",
+  "/dashboard/settings/page": "app/dashboard/settings/page.js"
 }

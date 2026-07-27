@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -135,8 +136,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-white/10 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">T</span>
+          <div className="w-10 h-10 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
+            <Image src="/favicon.png" alt="Tankua" width={28} height={28} className="object-contain" priority />
           </div>
           <div>
             <span className="text-xl font-bold text-white">Tankua</span>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Shield, AlertCircle } from "lucide-react";
 import { Button, Input, Card } from "@tankua/ui";
@@ -76,8 +77,8 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg shadow-[#D4A017]/30 mb-4">
-            <span className="text-white font-bold text-3xl">T</span>
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg shadow-[#D4A017]/30 mb-4 overflow-hidden">
+            <Image src="/favicon.png" alt="Tankua" width={48} height={48} className="object-contain" priority />
           </div>
           <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
           <p className="text-white/60 mt-2">Sign in to manage Tankua platform</p>

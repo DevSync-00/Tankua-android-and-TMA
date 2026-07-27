@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app\\\\login\\\\page.tsx -> @/lib/supabase\":{\"id\":\"app\\\\login\\\\page.tsx -> @/lib/supabase\",\"files\":[\"static/chunks/_app-pages-browser_src_lib_supabase_ts.js\"]},\"lib\\\\queries.ts -> @/lib/supabase\":{\"id\":\"lib\\\\queries.ts -> @/lib/supabase\",\"files\":[]}}"

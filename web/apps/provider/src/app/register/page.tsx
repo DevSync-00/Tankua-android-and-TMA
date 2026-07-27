@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { 
   Building2, 
@@ -286,8 +287,8 @@ Description: ${formData.description || "N/A"}
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl">T</span>
+            <div className="w-12 h-12 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
+              <Image src="/favicon.png" alt="Tankua" width={34} height={34} className="object-contain" priority />
             </div>
             <span className="text-2xl font-bold text-white">Tankua</span>
           </Link>
