@@ -3,8 +3,15 @@
  * Fully open-source mapping stack with zero API keys or billing constraints.
  */
 
-// CartoDB Voyager High-DPI Retina Tile Server (Powered by OpenStreetMap Data)
-export const OSM_TILE_URL = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
+// CartoDB Voyager No-Labels High-DPI Retina Tile Server
+// Purges background commercial POIs (cafes, shops, schools) so platform destinations stand out.
+export const OSM_TILE_URL = 'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}@2x.png';
+
+// Clean CartoDB Positron No-Labels Tile Server (Ultra-minimal alternative)
+export const OSM_POSITRON_NO_LABELS = 'https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png';
+
+// Standard Voyager Tile Server (Includes background labels)
+export const OSM_TILE_URL_WITH_LABELS = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
 
 // Fallback OpenStreetMap Standard Tile Server
 export const OSM_FALLBACK_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';

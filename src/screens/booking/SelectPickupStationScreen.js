@@ -40,6 +40,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
     latitudeDelta: 0.15,
     longitudeDelta: 0.15,
   });
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
   // Tamed subtle animation values
   const mapCardTranslateY = useSharedValue(120);
@@ -48,6 +49,12 @@ const SelectPickupStationScreen = ({ navigation }) => {
   useEffect(() => {
     loadStations();
   }, []);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const timer = setTimeout(() => setTracksViewChanges(false), 600);
+    return () => clearTimeout(timer);
+  }, [stations, selectedStation, viewMode]);
 
   useEffect(() => {
     if (selectedStation && viewMode === 'map') {
@@ -252,26 +259,40 @@ const SelectPickupStationScreen = ({ navigation }) => {
               maximumZ={19}
               flipY={false}
             />
-            {stations.map((station) => (
-              <Marker
-                key={station.id}
-                coordinate={{ latitude: station.lat, longitude: station.lng }}
-                title={station.name}
-                description={`Pickup: ${station.pickupTime}`}
-                onPress={() => handleStationSelect(station)}
-              >
-                <View style={[
-                  styles.markerContainer,
-                  selectedStation?.id === station.id && styles.markerSelected,
-                ]}>
-                  <Ionicons 
-                    name="location" 
-                    size={20} 
-                    color={selectedStation?.id === station.id ? COLORS.white : COLORS.secondary} 
-                  />
-                </View>
-              </Marker>
-            ))}
+            {stations.map((station) => {
+              const isSelected = selectedStation?.id === station.id;
+              return (
+                <Marker
+                  key={station.id}
+                  coordinate={{ latitude: station.lat, longitude: station.lng }}
+                  onPress={() => handleStationSelect(station)}
+                  tracksViewChanges={tracksViewChanges}
+                >
+                  <View style={[styles.markerCanvasBuffer, isSelected && styles.markerCanvasBufferSelected]}>
+                    <View style={[styles.unifiedStationPill, isSelected && styles.unifiedStationPillSelected]}>
+                      <View style={[styles.stationIconCircle, isSelected && styles.stationIconCircleSelected]}>
+                        <Ionicons 
+                          name="bus" 
+                          size={12} 
+                          color={isSelected ? COLORS.white : COLORS.secondary} 
+                        />
+                      </View>
+                      <View style={styles.stationTextCol}>
+                        <Text style={[styles.stationTitleText, isSelected && styles.stationTitleTextSelected]} numberOfLines={1}>
+                          {station.name}
+                        </Text>
+                        {station.pickupTime ? (
+                          <Text style={[styles.stationTimeText, isSelected && styles.stationTimeTextSelected]}>
+                            Pickup: {station.pickupTime}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                    <View style={[styles.pillPointerStem, { borderTopColor: isSelected ? COLORS.secondary : COLORS.white }]} />
+                  </View>
+                </Marker>
+              );
+            })}
           </MapView>
 
           {selectedStation && (
@@ -550,6 +571,86 @@ const styles = StyleSheet.create({
   },
   customHeaderRight: {
     width: 36,
+  },
+  markerCanvasBuffer: {
+    width: 190,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  markerCanvasBufferSelected: {
+    zIndex: 1000,
+    width: 210,
+    height: 64,
+  },
+  unifiedStationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    maxWidth: 180,
+    gap: 6,
+    ...SHADOWS.medium,
+  },
+  unifiedStationPillSelected: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+    maxWidth: 200,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    ...SHADOWS.large,
+  },
+  stationIconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: `${COLORS.secondary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stationIconCircleSelected: {
+    backgroundColor: COLORS.primary,
+  },
+  stationTextCol: {
+    justifyContent: 'center',
+  },
+  stationTitleText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    includeFontPadding: false,
+  },
+  stationTitleTextSelected: {
+    color: COLORS.primary,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
+  },
+  stationTimeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.gray,
+  },
+  stationTimeTextSelected: {
+    color: COLORS.white,
+  },
+  pillPointerStem: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    alignSelf: 'center',
+    marginTop: -1,
   },
 });
 

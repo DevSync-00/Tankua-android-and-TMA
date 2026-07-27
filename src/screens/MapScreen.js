@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
@@ -58,6 +59,13 @@ const MapScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [nearbyDestinations, setNearbyDestinations] = useState([]);
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const timer = setTimeout(() => setTracksViewChanges(false), 600);
+    return () => clearTimeout(timer);
+  }, [destinations, selectedDestination, selectedCategory]);
 
   // Animation values
   const cardTranslateY = useSharedValue(400);
@@ -111,19 +119,19 @@ const MapScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (selectedDestination) {
-      cardTranslateY.value = withSpring(0, ANIMATIONS.spring);
-      cardOpacity.value = withTiming(1, { duration: ANIMATIONS.normal });
+      cardTranslateY.value = withTiming(0, { duration: 250 });
+      cardOpacity.value = withTiming(1, { duration: 250 });
     } else {
-      cardTranslateY.value = withSpring(400, ANIMATIONS.spring);
-      cardOpacity.value = withTiming(0, { duration: ANIMATIONS.normal });
+      cardTranslateY.value = withTiming(400, { duration: 200 });
+      cardOpacity.value = withTiming(0, { duration: 180 });
     }
   }, [selectedDestination]);
 
   useEffect(() => {
     if (showFilters) {
-      filterPanelHeight.value = withSpring(200, ANIMATIONS.spring);
+      filterPanelHeight.value = withTiming(200, { duration: 220 });
     } else {
-      filterPanelHeight.value = withSpring(0, ANIMATIONS.spring);
+      filterPanelHeight.value = withTiming(0, { duration: 180 });
     }
   }, [showFilters]);
 
@@ -133,19 +141,10 @@ const MapScreen = ({ navigation }) => {
     }
   }, [userLocation, filteredDestinations]);
 
-  // Recenter map to user location when tab is focused
+  // Request location permission on focus if not granted yet
   useFocusEffect(
     React.useCallback(() => {
-      if (userLocation && mapRef.current) {
-        // Small delay to ensure map is ready
-        setTimeout(() => {
-          mapRef.current?.animateCamera({
-            center: userLocation,
-            zoom: 11,
-          }, { duration: 600 });
-        }, 100);
-      } else if (!userLocation) {
-        // Request location if we don't have it yet
+      if (!userLocation) {
         requestLocationPermission();
       }
     }, [userLocation])
@@ -406,31 +405,25 @@ const MapScreen = ({ navigation }) => {
               key={destination.id}
               coordinate={{ latitude: destination.lat, longitude: destination.lng }}
               onPress={() => handleMarkerPress(destination)}
-              identifier={destination.id}
+              identifier={String(destination.id)}
+              tracksViewChanges={tracksViewChanges}
             >
-              <Animated.View
-                style={[
-                  styles.markerContainer,
-                  isSelected && styles.markerContainerSelected,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.markerBackground,
-                    { backgroundColor: markerColor },
-                    isSelected && styles.markerBackgroundSelected,
-                  ]}
-                >
-                  <Ionicons
-                    name={getMarkerIcon(destination.category)}
-                    size={isSelected ? 22 : 18}
-                    color={COLORS.white}
-                  />
+              {/* Explicit Canvas Buffer (190x56) preventing Android bitmap cropping */}
+              <View style={[styles.markerCanvasBuffer, isSelected && styles.markerCanvasBufferSelected]}>
+                <View style={[styles.unifiedPill, isSelected && styles.unifiedPillSelected]}>
+                  <View style={[styles.pillIconCircle, { backgroundColor: markerColor }]}>
+                    <Ionicons
+                      name={getMarkerIcon(destination.category)}
+                      size={12}
+                      color={COLORS.white}
+                    />
+                  </View>
+                  <Text style={[styles.pillTitleText, isSelected && styles.pillTitleTextSelected]} numberOfLines={1}>
+                    {destination.name}
+                  </Text>
                 </View>
-                {isSelected && (
-                  <View style={[styles.markerPulse, { borderColor: markerColor }]} />
-                )}
-              </Animated.View>
+                <View style={[styles.pillPointerStem, { borderTopColor: isSelected ? COLORS.secondary : COLORS.white }]} />
+              </View>
             </Marker>
           );
         })}
@@ -933,38 +926,72 @@ const styles = StyleSheet.create({
     borderColor: COLORS.white,
     ...SHADOWS.medium,
   },
-  markerContainer: {
-    width: 64,
-    height: 64,
-    alignItems: 'center',
+  markerCanvasBuffer: {
+    width: 190,
+    height: 56,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  markerContainerSelected: {
+  markerCanvasBufferSelected: {
     zIndex: 1000,
+    width: 210,
+    height: 64,
   },
-  markerBackground: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  unifiedPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.white,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    maxWidth: 180,
+    gap: 6,
+    ...SHADOWS.medium,
+  },
+  unifiedPillSelected: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+    maxWidth: 200,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     ...SHADOWS.large,
   },
-  markerBackgroundSelected: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 4,
+  pillIconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  markerPulse: {
-    position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderStyle: 'dashed',
+  pillTitleText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    includeFontPadding: false,
+    maxWidth: 135,
+  },
+  pillTitleTextSelected: {
+    color: COLORS.primary,
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    maxWidth: 145,
+  },
+  pillPointerStem: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    alignSelf: 'center',
+    marginTop: -1,
   },
   markerIcon: {
     fontSize: 24,
