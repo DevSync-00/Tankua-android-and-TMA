@@ -113,19 +113,19 @@ export default function ResetPasswordPage() {
 
   if (isValidToken === null) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1A2F] via-[#0d2341] to-[#0A1A2F] flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="auth-surface flex min-h-screen items-center justify-center">
+        <div className="text-stone-600">Loading...</div>
       </div>
     );
   }
 
   if (isValidToken === false) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1A2F] via-[#0d2341] to-[#0A1A2F] flex items-center justify-center p-6">
+      <div className="auth-surface flex min-h-screen items-center justify-center p-6">
         <Card className="bg-white p-8 max-w-md w-full">
           <div className="text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
-            <h2 className="text-2xl font-bold text-[#0A1A2F]">Invalid or Expired Link</h2>
+            <h2 className="text-2xl font-bold text-stone-950">Invalid or Expired Link</h2>
             <p className="text-muted-foreground">
               This password reset link is invalid or has expired. Please request a new one.
             </p>
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A2F] via-[#0d2341] to-[#0A1A2F] flex">
+    <div className="auth-surface flex min-h-screen">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
         {/* Background pattern */}
@@ -162,22 +162,22 @@ export default function ResetPasswordPage() {
               <Image src="/favicon.png" alt="Tankua" width={34} height={34} className="object-contain" priority />
             </div>
             <div>
-              <span className="text-2xl font-bold text-white">Tankua</span>
-              <span className="block text-sm text-white/50">Provider Portal</span>
+              <span className="text-2xl font-bold text-stone-950">Tankua</span>
+              <span className="block text-sm text-stone-500">Provider Portal</span>
             </div>
           </Link>
         </div>
 
         <div className="relative space-y-8">
-          <h1 className="text-4xl font-bold text-white leading-tight">
+          <h1 className="text-4xl font-bold leading-tight text-stone-950">
             Set New Password
           </h1>
-          <p className="text-xl text-white/70">
+          <p className="text-xl text-stone-600">
             Choose a strong password to secure your provider account.
           </p>
         </div>
 
-        <div className="relative text-white/40 text-sm">
+        <div className="relative text-sm text-stone-400">
           © 2024 Tankua. All rights reserved.
         </div>
       </div>
@@ -190,7 +190,7 @@ export default function ResetPasswordPage() {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg mb-4 overflow-hidden">
               <Image src="/favicon.png" alt="Tankua" width={48} height={48} className="object-contain" priority />
             </div>
-            <h1 className="text-2xl font-bold text-white">Provider Portal</h1>
+            <h1 className="text-2xl font-bold text-stone-950">Provider Portal</h1>
           </div>
 
           <Card className="bg-white p-8">
@@ -214,7 +214,7 @@ export default function ResetPasswordPage() {
             ) : (
               <>
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-[#0A1A2F]">Reset Password</h2>
+                  <h2 className="text-2xl font-bold text-stone-950">Reset Password</h2>
                   <p className="text-muted-foreground mt-2">Enter your new password below</p>
                 </div>
 

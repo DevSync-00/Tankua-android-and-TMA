@@ -8,26 +8,26 @@
     --color-gold-light: 45 100% 60%;
     --color-gold-dark: 45 100% 35%;
     
-    --color-navy: 216 67% 11%;
-    --color-navy-light: 216 50% 20%;
+    --color-navy: 24 10% 10%;
+    --color-navy-light: 30 7% 22%;
     
-    --background: 220 14% 96%;
-    --foreground: 216 67% 11%;
+    --background: 40 20% 97%;
+    --foreground: 24 10% 10%;
     
     --card: 0 0% 100%;
-    --card-foreground: 216 67% 11%;
+    --card-foreground: 24 10% 10%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 216 67% 11%;
+    --popover-foreground: 24 10% 10%;
     
     --primary: 45 91% 46%;
-    --primary-foreground: 216 67% 11%;
+    --primary-foreground: 24 10% 10%;
     
-    --secondary: 216 67% 11%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 35 14% 91%;
+    --secondary-foreground: 24 10% 10%;
     
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 36 14% 94%;
+    --muted-foreground: 30 5% 43%;
     
     --accent: 45 100% 95%;
     --accent-foreground: 45 91% 35%;
@@ -35,16 +35,28 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 35 12% 87%;
+    --input: 35 12% 87%;
     --ring: 45 91% 46%;
     
-    --radius: 0.75rem;
+    --radius: 0.9rem;
     
-    --sidebar-background: 216 67% 11%;
-    --sidebar-foreground: 0 0% 100%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 24 10% 10%;
     --sidebar-primary: 45 91% 46%;
-    --sidebar-accent: 216 50% 20%;
+    --sidebar-accent: 36 14% 94%;
+  }
+
+  body {
+    background: hsl(var(--background));
+  }
+}
+
+@layer components {
+  .auth-surface {
+    background:
+      radial-gradient(circle at 15% 10%, hsl(var(--primary) / 0.1), transparent 28rem),
+      hsl(var(--background));
   }
 }
 
@@ -73,10 +85,10 @@
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 100% / 0.1);
+  background: hsl(24 10% 10% / 0.1);
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 0% 100% / 0.2);
+  background: hsl(24 10% 10% / 0.2);
 }
 

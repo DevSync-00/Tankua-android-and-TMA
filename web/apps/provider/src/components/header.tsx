@@ -29,6 +29,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const [currentUser, setCurrentUser] = useState({ name: "Provider", role: "Owner" });
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const loadNotifications = useCallback(async () => {
@@ -42,6 +43,15 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
   useEffect(() => {
     loadNotifications();
+    try {
+      const stored = JSON.parse(localStorage.getItem("provider_user") || "{}");
+      setCurrentUser({
+        name: stored.name || stored.full_name || stored.email || "Provider",
+        role: stored.role || "Owner",
+      });
+    } catch {
+      // Keep the neutral fallback for legacy sessions.
+    }
   }, [loadNotifications]);
 
   useEffect(() => {
@@ -87,11 +97,11 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
+    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-xl">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left side - Title */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">{title}</h1>
+          <h1 className="truncate text-lg font-semibold tracking-tight text-stone-950 sm:text-xl">{title}</h1>
           {subtitle && <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>}
         </div>
 
@@ -166,10 +176,10 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
           {/* User */}
           <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-border">
-            <Avatar name="Abebe K." size="sm" />
+            <Avatar name={currentUser.name} size="sm" />
             <div className="hidden lg:block text-left">
-              <p className="text-sm font-medium">Abebe K.</p>
-              <p className="text-xs text-muted-foreground">Owner</p>
+              <p className="max-w-36 truncate text-sm font-medium">{currentUser.name}</p>
+              <p className="text-xs capitalize text-muted-foreground">{currentUser.role}</p>
             </div>
           </div>
         </div>

@@ -95,8 +95,8 @@ export function Sidebar() {
         className={cn(
           "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
           isActive
-            ? "bg-[#D4A017] text-[#0A1A2F]"
-            : "text-white/70 hover:bg-white/10 hover:text-white"
+            ? "bg-amber-50 text-stone-950 shadow-sm ring-1 ring-amber-200"
+            : "text-stone-600 hover:bg-stone-100 hover:text-stone-950"
         )}
       >
         <item.icon className="h-5 w-5" />
@@ -111,7 +111,7 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-[#0A1A2F] text-white rounded-lg shadow-lg"
+        className="fixed left-4 top-4 z-50 rounded-lg border border-stone-200 bg-white p-2 text-stone-900 shadow-lg lg:hidden"
         aria-label="Open menu"
       >
         <LayoutDashboard className="h-6 w-6" />
@@ -128,25 +128,25 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 bottom-0 w-64 bg-[#0A1A2F] flex flex-col z-50 transition-transform duration-300",
+          "fixed bottom-0 left-0 top-0 z-50 flex w-64 flex-col border-r border-stone-200 bg-white transition-transform duration-300",
           "lg:translate-x-0",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
       {/* Logo */}
-      <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-stone-200 p-6">
         <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
           <div className="w-10 h-10 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
             <Image src="/favicon.png" alt="Tankua" width={28} height={28} className="object-contain" priority />
           </div>
           <div>
-            <span className="text-xl font-bold text-white">Tankua</span>
-            <span className="block text-xs text-white/50">Admin Panel</span>
+            <span className="text-xl font-bold text-stone-950">Tankua</span>
+            <span className="block text-xs text-stone-500">Admin workspace</span>
           </div>
         </Link>
         <button
           onClick={() => setIsMobileMenuOpen(false)}
-          className="lg:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+          className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-950 lg:hidden"
           aria-label="Close menu"
         >
           <X className="h-5 w-5" />
@@ -157,7 +157,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto sidebar-scroll p-4 space-y-6">
         {/* Main */}
         <div>
-          <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+          <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400">
             Main
           </p>
           <div className="space-y-1">
@@ -169,7 +169,7 @@ export function Sidebar() {
 
         {/* Finance */}
         <div>
-          <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+          <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400">
             Finance
           </p>
           <div className="space-y-1">
@@ -181,7 +181,7 @@ export function Sidebar() {
 
         {/* System */}
         <div>
-          <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+          <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400">
             System
           </p>
           <div className="space-y-1">
@@ -194,7 +194,7 @@ export function Sidebar() {
         {/* Admin Management (Super Admin Only) */}
         {isSuperAdmin && (
           <div>
-            <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+            <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400">
               Administration
             </p>
             <div className="space-y-1">
@@ -207,17 +207,25 @@ export function Sidebar() {
       </nav>
 
       {/* User */}
-      <div className="p-4 border-t border-white/10">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-          <div className="w-10 h-10 rounded-full bg-[#D4A017] flex items-center justify-center text-white font-semibold">
-            A
+      <div className="border-t border-stone-200 p-4">
+        <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 font-semibold text-amber-950">
+            {(currentAdmin?.name || currentAdmin?.email || "A").charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Admin User</p>
-            <p className="text-xs text-white/50 truncate">admin@tankua.et</p>
+            <p className="truncate text-sm font-semibold text-stone-900">{currentAdmin?.name || "Administrator"}</p>
+            <p className="truncate text-xs text-stone-500">{currentAdmin?.email || "Tankua admin"}</p>
           </div>
         </div>
-        <button className="w-full mt-3 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-all">
+        <button
+          onClick={async () => {
+            const { supabase } = await import("@/lib/supabase");
+            await supabase.auth.signOut();
+            localStorage.removeItem("admin_user");
+            window.location.href = "/login";
+          }}
+          className="mt-3 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950"
+        >
           <LogOut className="h-5 w-5" />
           <span>Sign Out</span>
         </button>

@@ -158,7 +158,7 @@ BEGIN
     p_seats, p_passengers, 'chapa',
     v_base_price, v_service_fee, ROUND(v_base_price * 0.05), v_total,
     'confirmed', 'pending', NOW() + INTERVAL '2 hours',
-    'TANKUA-' || upper(substr(replace(uuid_generate_v4()::TEXT, '-', ''), 1, 16)),
+    'TANKUA-' || upper(substr(replace(p_idempotency_key::TEXT, '-', ''), 1, 16)),
     p_idempotency_key, 'telegram_mini_app'
   )
   RETURNING * INTO v_booking;

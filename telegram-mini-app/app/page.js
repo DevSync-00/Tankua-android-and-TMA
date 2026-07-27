@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
   Building2, Clock3, Compass, CreditCard, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
@@ -9,12 +9,13 @@ import {
 } from 'lucide-react';
 
 const fallbackDestinations = [
-  { id: 1, name: 'Fasil Ghebbi', city: 'Gondar', region: 'Amhara', category: 'Historical', rating: 4.9, reviews: 328, price: 2400, duration: '2 days', image: '/destinations/onboarding-fasil-ghebbi.png', description: 'Walk through the royal enclosure of Ethiopia’s emperors, where palaces, castles and history meet in the heart of Gondar.' },
-  { id: 2, name: 'Blue Nile Falls', city: 'Bahir Dar', region: 'Amhara', category: 'Nature', rating: 4.8, reviews: 216, price: 1800, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'Feel the mist and power of one of Ethiopia’s most iconic natural wonders, locally known as Tis Abay — the smoking water.' },
-  { id: 3, name: 'Danakil Depression', city: 'Dallol', region: 'Afar', category: 'Adventure', rating: 4.7, reviews: 184, price: 7200, duration: '3 days', image: '/destinations/onboarding-dallol.png', description: 'Explore a surreal landscape of salt flats, sulfur springs and volcanic terrain in one of Earth’s most extraordinary places.' },
-  { id: 4, name: 'Lalibela Churches', city: 'Lalibela', region: 'Amhara', category: 'Religious', rating: 4.9, reviews: 492, price: 3200, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'Discover eleven medieval rock-hewn churches carved from living stone, a spiritual landmark unlike anywhere else.' },
-  { id: 5, name: 'Simien Mountains', city: 'Debark', region: 'Amhara', category: 'Hiking', rating: 4.8, reviews: 267, price: 4800, duration: '3 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'Trek dramatic escarpments, spot gelada baboons and wake to vast highland views in Ethiopia’s rooftop wilderness.' },
-  { id: 6, name: 'Harar Jugol', city: 'Harar', region: 'Harari', category: 'Cultural', rating: 4.7, reviews: 201, price: 2800, duration: '2 days', image: '/destinations/pexels-lovetosmile-5034469.jpg', description: 'Get lost in the colorful alleys, markets and living traditions of this ancient walled city.' },
+  { id: 1, name: 'Sof Umar Cave', city: 'Sof Omar', region: 'Oromia', category: 'Adventure', rating: 4.5, reviews: 142, price: 3500, duration: '2 days', image: '/destinations/onboarding-dallol.png', description: 'Explore one of the world’s largest subterranean cavern networks, carved by the Web River through limestone cliffs.' },
+  { id: 2, name: 'Fasil Ghebbi', city: 'Gondar', region: 'Amhara', category: 'Historical', rating: 4.9, reviews: 328, price: 2400, duration: '2 days', image: '/destinations/onboarding-fasil-ghebbi.png', description: 'Walk through the royal enclosure of Ethiopia’s emperors, where palaces, castles and history meet in the heart of Gondar.' },
+  { id: 3, name: 'Blue Nile Falls', city: 'Bahir Dar', region: 'Amhara', category: 'Nature', rating: 4.8, reviews: 216, price: 1800, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'Feel the mist and power of one of Ethiopia’s most iconic natural wonders, locally known as Tis Abay — the smoking water.' },
+  { id: 4, name: 'Danakil Depression', city: 'Dallol', region: 'Afar', category: 'Adventure', rating: 4.7, reviews: 184, price: 7200, duration: '3 days', image: '/destinations/onboarding-dallol.png', description: 'Explore a surreal landscape of salt flats, sulfur springs and volcanic terrain in one of Earth’s most extraordinary places.' },
+  { id: 5, name: 'Church of St. George', city: 'Lalibela', region: 'Amhara', category: 'Religious', rating: 4.9, reviews: 492, price: 3200, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'Discover eleven medieval rock-hewn churches carved from living stone, a spiritual landmark unlike anywhere else.' },
+  { id: 6, name: 'Simien Mountains', city: 'Debark', region: 'Amhara', category: 'Hiking', rating: 4.8, reviews: 267, price: 4800, duration: '3 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'Trek dramatic escarpments, spot gelada baboons and wake to vast highland views in Ethiopia’s rooftop wilderness.' },
+  { id: 7, name: 'Harar Jugol', city: 'Harar', region: 'Harari', category: 'Cultural', rating: 4.7, reviews: 201, price: 2800, duration: '2 days', image: '/destinations/pexels-lovetosmile-5034469.jpg', description: 'Get lost in the colorful alleys, markets and living traditions of this ancient walled city.' },
 ];
 
 const categories = ['All', 'Historical', 'Nature', 'Adventure', 'Religious', 'Hiking', 'Cultural'];
@@ -25,6 +26,28 @@ const tabs = [
 
 function money(n) { return `ETB ${Number(n).toLocaleString()}`; }
 function vibrate(type = 'light') { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type); }
+
+const cityCoordinates = {
+  'addis ababa': [9.03, 38.74], lalibela: [12.03, 39.04], gondar: [12.61, 37.47],
+  'bahir dar': [11.59, 37.39], harar: [9.31, 42.13], debark: [13.15, 37.9],
+  dallol: [14.24, 40.3], 'sof omar': [6.91, 40.84], axum: [14.13, 38.72],
+  hawassa: [7.06, 38.48], arbaminch: [6.04, 37.55],
+};
+
+function destinationCoordinates(destination) {
+  const location = destination?.location;
+  if (Array.isArray(location?.coordinates) && location.coordinates.length >= 2) {
+    return [Number(location.coordinates[1]), Number(location.coordinates[0])];
+  }
+  if (Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng))) {
+    return [Number(location.lat), Number(location.lng)];
+  }
+  if (typeof location === 'string') {
+    const point = location.match(/POINT\s*\(\s*(-?[\d.]+)\s+(-?[\d.]+)\s*\)/i);
+    if (point) return [Number(point[2]), Number(point[1])];
+  }
+  return cityCoordinates[String(destination?.city || '').toLowerCase()] || [9.03, 38.74];
+}
 
 export default function App() {
   const [tab, setTab] = useState('home');
@@ -56,7 +79,14 @@ export default function App() {
       headers: { 'content-type': 'application/json', ...(options.headers || {}) },
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+    if (!response.ok) {
+      const errorMessage = typeof data.error === 'string'
+        ? data.error
+        : data.error && typeof data.error === 'object'
+          ? Object.values(data.error).flat().map(String).join(', ')
+          : `Request failed (${response.status})`;
+      throw new Error(errorMessage || `Request failed (${response.status})`);
+    }
     return data;
   };
 
@@ -67,12 +97,28 @@ export default function App() {
     return { catalogData, bookings: bookingsData.bookings || [] };
   };
 
+  const refreshCatalog = async () => {
+    const catalogData = await api(`/api/catalog?refresh=${Date.now()}`);
+    setCatalog(catalogData);
+    return catalogData;
+  };
+
   const authenticate = async () => {
     try {
       setAuthStatus('loading');
       setAuthError('');
       const tg = window.Telegram?.WebApp;
       if (!tg?.initData) {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+          setUser({ id: 'dev', name: 'ber.bir' });
+          try {
+            await loadProductionData();
+          } catch (e) {
+            setCatalog({ destinations: fallbackDestinations, trips: [], providers: [], stations: [], trip_pickup_stations: [] });
+          }
+          setAuthStatus('authenticated');
+          return;
+        }
         setAuthStatus('telegram-required');
         return;
       }
@@ -119,11 +165,16 @@ export default function App() {
     vibrate();
   };
   const liveDestinations = catalog.destinations.map(normalizeDestination);
-  const startBooking = () => {
-    const available = catalog.trips.some(trip => trip.destination_id === selected.id);
-    if (!available) return notify('No scheduled trips are currently available');
-    setBooking({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'chapa' });
-    setScreen('trip');
+  const startBooking = async () => {
+    try {
+      const freshCatalog = await refreshCatalog();
+      const available = freshCatalog.trips.some(trip => trip.destination_id === selected.id);
+      if (!available) return notify('No scheduled trips are currently available');
+      setBooking({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'chapa' });
+      setScreen('trip');
+    } catch (error) {
+      notify(error.message || 'Could not refresh pickup stations');
+    }
   };
   const finishBooking = async () => {
     if (submitting) return;
@@ -181,7 +232,7 @@ export default function App() {
     if (screen === 'notifications') return <SimplePage title="Notifications" back={goBack} icon={Bell} text="You’re all caught up. Booking confirmations and trip updates will appear here." />;
     if (screen === 'rewards') return <SimplePage title="Rewards" back={goBack} icon={Gift} text="You have 1,240 Tankua points. Keep exploring to unlock your next travel reward." />;
     if (screen === 'help') return <SimplePage title="Help Center" back={goBack} icon={CircleHelp} text="Find answers about bookings, payment, refunds and your Tankua account." />;
-    if (tab === 'home') return <HomeView user={user} destinations={liveDestinations} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} />;
+    if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
     if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} open={openTrip} explore={() => goTab('home')} />;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} />;
@@ -211,6 +262,7 @@ function normalizeDestination(destination) {
     price: Number(destination.price || 0),
     duration: destination.estimated_duration ? `${destination.estimated_duration} days` : destination.duration || '',
     image: destination.images?.[0] || fallbackDestinations[Math.abs(String(destination.id).length) % fallbackDestinations.length].image,
+    coordinates: destinationCoordinates(destination),
   };
 }
 
@@ -256,16 +308,28 @@ function AuthGate({ status, error, retry }) {
   </main>;
 }
 
-function HomeView({ user, destinations, category, setCategory, open, goSearch }) {
+function HomeView({ user, destinations, category, setCategory, open, goSearch, openNotifications }) {
   const filtered = category === 'All' ? destinations : destinations.filter(d => d.category === category);
+  const firstName = (user?.name || 'ber.bir').split(' ')[0];
   return <div className="page home-page">
-    <div className="home-brand"><div><img src="/tankua-logo.png" alt=""/><span><b>TANKUA</b><small>Explore Ethiopia</small></span></div><button className="icon-button" aria-label="Notifications"><Bell size={20}/><i/></button></div>
     <header className="home-header">
-      <div><p className="eyebrow">Welcome, {(user.name || 'Traveler').split(' ')[0]} 👋</p><h1>Explore <em>Ethiopia</em></h1><p className="muted">Handpicked Ethiopian journeys, ready to book.</p></div>
+      <div>
+        <p className="greeting">Where to next, {firstName}? 👋</p>
+        <h1>Explore <em>Ethiopia</em></h1>
+      </div>
+      <button className="icon-button" aria-label="Notifications" onClick={openNotifications}>
+        <Bell size={20}/>
+        <i/>
+      </button>
     </header>
-    <button className="search-bar" onClick={goSearch}><span className="search-icon"><Search size={18}/></span><span><b>Find a destination</b><small>Search places, cities and experiences</small></span><i className="search-go"><ChevronRight/></i></button>
-    <div className="home-proof"><span><ShieldCheck/><b>Verified trips</b></span><span><MapPin/><b>{destinations.length} places to explore</b></span></div>
-    <div className="chips">{categories.map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}</div>
+    <button className="search-bar" onClick={goSearch}>
+      <span className="search-icon"><Search size={18}/></span>
+      <span><b>Find a destination</b><small>Search places, cities and experiences</small></span>
+      <i className="search-go"><ChevronRight/></i>
+    </button>
+    <div className="chips">
+      {categories.map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}
+    </div>
     <SectionHeader title="Featured" />
     <div className="featured-row">{filtered.slice(0,4).map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
     <SectionHeader title="Popular destinations" action="See all" onAction={goSearch}/>
@@ -278,7 +342,7 @@ function HomeView({ user, destinations, category, setCategory, open, goSearch })
 }
 
 function SectionHeader({ title, action, onAction }) { return <div className="section-head"><h2>{title}</h2>{action&&<button onClick={onAction}>{action}</button>}</div>; }
-function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 30%,rgba(5,15,28,.82)),url("${d.image}")`}}><span className="rating"><Star size={13} fill="currentColor"/> {d.rating}</span><div><h3>{d.name}</h3><p><MapPin size={14}/>{d.city}</p><b>From {money(d.price)}</b></div></button>; }
+function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(5,15,28,.88) 100%),url("${d.image}")`}}><div className="hero-content"><h3>{d.name}</h3><p className="hero-location"><MapPin size={13}/>{d.city}</p><div className="hero-meta"><span className="hero-rating"><Star size={13} fill="#ffb800" color="#ffb800"/> {d.rating}</span>{d.price ? <b className="hero-price">From {money(d.price)}</b> : null}</div></div></button>; }
 function DestinationCard({d,open}) { return <button className="destination-card" onClick={()=>open(d)}><div className="card-image" style={{backgroundImage:`url("${d.image}")`}}><span>{d.category}</span><Heart size={18}/></div><div className="card-copy"><h3>{d.name}</h3><p><MapPin size={13}/>{d.city}</p><div><span><Star size={13} fill="currentColor"/> {d.rating}</span><b>{money(d.price)}</b></div></div></button>; }
 
 function Detail({ destination:d, catalog, back, book, notify }) {
@@ -293,7 +357,7 @@ function Detail({ destination:d, catalog, back, book, notify }) {
       <div className="quick-facts"><div><Star/><b>{d.rating}</b><span>{d.reviews} reviews</span></div><div><Clock3/><b>{d.duration}</b><span>Duration</span></div><div><ShieldCheck/><b>Verified</b><span>Tankua partner</span></div></div>
       <h2>About this place</h2><p className="body-copy">{d.description}</p>
       <h2>What’s included</h2><div className="included"><span><Check/>Round-trip transport</span><span><Check/>Professional guide</span><span><Check/>Entrance fees</span><span><Check/>24/7 trip support</span></div>
-      {provider&&<div className="provider">{provider.logo_url?<img className="provider-logo-image" src={provider.logo_url} alt=""/>:<div className="provider-logo"><Building2/></div>}<div><b>{provider.name}</b><p>{Number(provider.rating||0).toFixed(1)} ★ · Verified provider</p></div><ChevronRight/></div>}
+      {provider&&<div className="provider">{provider.logo_url?<img className="provider-logo-image" src={provider.logo_url} alt={`${provider.name} logo`}/>:<div className="provider-logo"><Building2/></div>}<div><small>OPERATED BY</small><b>{provider.name}</b><p>{Number(provider.rating||0).toFixed(1)} ★ · Verified provider</p></div><ChevronRight/></div>}
     </div>
     <div className="sticky-cta"><div><span>Starting from</span><b>{money(d.price)}</b><small>per person</small></div><button onClick={book}>Book this trip <ChevronRight size={18}/></button></div>
   </div>;
@@ -338,7 +402,7 @@ function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
       const provider=providerById.get(trip.provider_id);
       const selected=booking.trip?.id===trip.id;
       return <button key={trip.id} className={`mobile-trip-card ${selected?'selected':''}`} onClick={()=>setBooking({...booking,trip,pickup:null,seats:1,passengers:[]})}>
-        {provider&&<div className="trip-provider">{provider.logo_url?<img src={provider.logo_url} alt=""/>:<span><Building2/></span>}<div><b>{provider.name}</b><small><Star fill="currentColor"/>{Number(provider.rating||0).toFixed(1)} · Verified provider</small></div>{selected&&<Check/>}</div>}
+        {provider&&<div className="trip-provider">{provider.logo_url?<img src={provider.logo_url} alt={`${provider.name} logo`}/>:<span><Building2/></span>}<div><small className="provider-eyebrow">OPERATED BY</small><b>{provider.name}</b><small><Star fill="currentColor"/>{Number(provider.rating||0).toFixed(1)} · Verified provider</small></div>{selected&&<Check/>}</div>}
         <div className="trip-schedule"><div><span>DEPARTURE</span><b>{trip.date}</b><small>{trip.time}</small></div><i><Bus/><span>{String(trip.trip_type||'scheduled').split('_').join(' ')}</span></i>{trip.return_date?<div><span>RETURN</span><b>{new Date(trip.return_date).toLocaleDateString([],{month:'short',day:'numeric'})}</b><small>{trip.arrival}</small></div>:<div><span>TRIP</span><b>One way</b><small>Scheduled</small></div>}</div>
         <div className="trip-card-foot"><span><UsersRound/>{trip.left} seats available</span><b>{money(trip.price)} <small>/ seat</small></b></div>
       </button>;
@@ -379,7 +443,7 @@ function PassengerForm({step,back,booking,setBooking,next}) {
 }
 function Payment({step,back,d,booking,finish,submitting}) {
   const perSeat=Number(booking.trip?.price||d.price), base=perSeat*booking.seats+Number(booking.pickup?.extraPrice||0), total=base+Math.round(base*.05);
-  return <FlowPage step={step} back={back} title="Secure payment" sub="You’ll continue to Chapa’s encrypted checkout."><div className="secure-note"><ShieldCheck/><span><b>Server-verified checkout</b>Price and seat availability are checked again before payment.</span></div><Choice selected><div className="pay-logo chapa">C</div><div className="pay-copy"><b>Chapa Pay</b><p>Card, bank or mobile money</p></div></Choice><PriceSummary d={d} booking={booking}/><Continue disabled={submitting} onClick={finish} label={submitting?'Creating secure checkout…':`Continue · ${money(total)}`}/></FlowPage>;
+  return <FlowPage step={step} back={back} title="Secure payment" sub="You’ll continue to Chapa’s encrypted checkout."><div className="secure-note"><ShieldCheck/><span><b>Server-verified checkout</b>Price and seat availability are checked again before payment.</span></div><Choice selected><div className="pay-logo chapa"><img src="/chapa-logo.svg" alt="Chapa"/></div><div className="pay-copy"><b>Chapa</b><p>Card, bank or mobile money</p></div></Choice><PriceSummary d={d} booking={booking}/><Continue disabled={submitting} onClick={finish} label={submitting?'Creating secure checkout…':`Continue · ${money(total)}`}/></FlowPage>;
 }
 
 function Confirmation({booking,home,ticket}) { return <div className="confirmation"><div className="success-orbit"><span><Check/></span></div><p className="eyebrow">BOOKING CONFIRMED</p><h1>You’re going to<br/>{booking.destination.name}!</h1><p>Your trip is reserved. We’ve added your ticket to the Trips tab.</p><div className="confirmation-card"><img src={booking.destination.image}/><div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div><strong>{booking.id}</strong></div><button className="continue" onClick={ticket}>View QR ticket <Ticket/></button><button className="text-button" onClick={home}>Back to home</button></div>; }
@@ -389,14 +453,112 @@ function SearchView({destinations,query,setQuery,open}) {
   const cleanQuery=query.trim().toLowerCase();
   const list=destinations.filter(d=>(d.name+d.city+d.category).toLowerCase().includes(cleanQuery));
   return <div className="page search-page">
-    <header className="search-hero"><img src="/tankua-logo.png" alt=""/><div><p className="eyebrow">DISCOVER ETHIOPIA</p><h1>Find a place<br/>you’ll <em>love.</em></h1></div></header>
-    <label className="search-input"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search places or cities" autoComplete="off" enterKeyHint="search"/>{query&&<button type="button" aria-label="Clear search" onClick={()=>setQuery('')}><X/></button>}</label>
-    {!cleanQuery&&<div className="search-suggestions"><span>Try</span>{['Lalibela','Gondar','Nature'].map(item=><button key={item} onClick={()=>setQuery(item)}>{item}</button>)}</div>}
+    <header className="search-hero">
+      <div>
+        <p className="eyebrow">DISCOVER ETHIOPIA</p>
+        <h1 className="search-title">Find a place you’ll <em>love.</em></h1>
+      </div>
+    </header>
+    <label className="search-input">
+      <Search size={18}/>
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search places or cities" autoComplete="off" enterKeyHint="search"/>
+      {query&&<button type="button" aria-label="Clear search" onClick={()=>setQuery('')}><X size={15}/></button>}
+    </label>
+    {!cleanQuery&&<div className="search-suggestions"><span>Try</span>{['Lalibela','Gondar','Nature','Adventure'].map(item=><button key={item} onClick={()=>setQuery(item)}>{item}</button>)}</div>}
     <div className="result-head"><b>{cleanQuery?`${list.length} match${list.length===1?'':'es'}`:'Places for you'}</b><span>{cleanQuery?'Live results':'Handpicked by Tankua'}</span></div>
-    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin/>{d.city}</p><div><span><Star fill="currentColor"/>{d.rating||'New'}</span><b>From {money(d.price)}</b></div></div><i><ChevronRight/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>setQuery('')}>Show all places</button></div>}
+    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image} alt={d.name}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin size={12}/>{d.city}</p><div><span><Star size={12} fill="#ffb800" color="#ffb800"/>{d.rating||'New'}</span><b>From {money(d.price)}</b></div></div><i><ChevronRight size={16}/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>setQuery('')}>Show all places</button></div>}
   </div>;
 }
-function TripsView({trips,destinations,open,explore}) { return <div className="page"><header className="page-head"><div><p className="eyebrow">YOUR JOURNEYS</p><h1>Trips</h1></div></header><div className="segmented"><button className="active">Upcoming</button><button>Completed</button><button>Cancelled</button></div>{trips.length?trips.map(raw=>{const t=normalizeBookingForUi(raw,destinations);return <button className="booked-card" onClick={()=>open(raw)} key={t.id}><img src={t.destination.image}/><div><span>{t.payment_status==='paid'?'Paid · confirmed':'Payment pending'}</span><h3>{t.destination.name}</h3><p><CalendarDays/>{t.trip.date} · {t.trip.time}</p><p><MapPin/>{t.pickup.name}</p><b>{t.payment_status==='paid'?'View ticket':'Complete payment'} <ChevronRight/></b></div></button>}):<div className="empty"><span><Bus/></span><h2>No upcoming trips</h2><p>Your next adventure is waiting. Book a trip and it will show up here.</p><button onClick={explore}>Explore destinations</button></div>}</div>; }
-function MapView({destinations,open}) { const featured=destinations[1]||destinations[0]; return <div className="map-page"><div className="fake-map"><div className="map-roads"/><header><label><Search/><span>Search this area</span></label><button><LocateFixed/></button></header>{destinations.slice(0,5).map((d,i)=><button key={d.id} className="marker" style={{left:`${15+(i*17)%70}%`,top:`${22+(i*19)%55}%`}} onClick={()=>open(d)}><MapPin fill="currentColor"/><span>{money(d.price).replace('ETB ','')}</span></button>)}{featured&&<div className="map-preview"><img src={featured.image}/><div><span>POPULAR NEARBY</span><h3>{featured.name}</h3><p><Star fill="currentColor"/>{featured.rating} · {featured.city}</p></div><button onClick={()=>open(featured)}><ChevronRight/></button></div>}</div></div>; }
+function TripsView({trips,destinations,open,explore}) {
+  const [filter,setFilter]=useState('upcoming');
+  const filtered=trips.filter(trip=>{
+    const status=String(trip.status||'pending').toLowerCase();
+    if(filter==='completed') return status==='completed';
+    if(filter==='cancelled') return status==='cancelled'||status==='canceled';
+    return !['completed','cancelled','canceled'].includes(status);
+  });
+  const labels={upcoming:'upcoming',completed:'completed',cancelled:'cancelled'};
+  return <div className="page"><header className="page-head"><div><p className="eyebrow">YOUR JOURNEYS</p><h1>Trips</h1></div></header>
+    <div className="segmented">
+      {['upcoming','completed','cancelled'].map(item=><button key={item} className={filter===item?'active':''} onClick={()=>{setFilter(item);vibrate();}}>{item[0].toUpperCase()+item.slice(1)}</button>)}
+    </div>
+    {filtered.length?filtered.map(raw=>{const t=normalizeBookingForUi(raw,destinations);return <button className="booked-card" onClick={()=>open(raw)} key={t.id}><img src={t.destination.image}/><div><span>{filter==='cancelled'?'Cancelled':filter==='completed'?'Trip completed':t.payment_status==='paid'?'Paid · confirmed':'Payment pending'}</span><h3>{t.destination.name}</h3><p><CalendarDays/>{t.trip.date} · {t.trip.time}</p><p><MapPin/>{t.pickup.name}</p><b>{filter==='completed'?'View trip':filter==='cancelled'?'View details':t.payment_status==='paid'?'View ticket':'Complete payment'} <ChevronRight/></b></div></button>}):<div className="empty"><span><Bus/></span><h2>No {labels[filter]} trips</h2><p>{filter==='upcoming'?'Your next adventure is waiting. Book a trip and it will show up here.':`Your ${labels[filter]} journeys will appear here.`}</p>{filter==='upcoming'&&<button onClick={explore}>Explore destinations</button>}</div>}
+  </div>;
+}
+
+function MapView({destinations,open}) {
+  const mapElement=useRef(null);
+  const mapInstance=useRef(null);
+  const markers=useRef([]);
+  const userMarker=useRef(null);
+  const [selected,setSelected]=useState(destinations[0]||null);
+  const [query,setQuery]=useState('');
+  const [locating,setLocating]=useState(false);
+  const [mapReady,setMapReady]=useState(false);
+
+  useEffect(()=>{
+    let disposed=false;
+    import('leaflet').then(({default:L})=>{
+      if(disposed||!mapElement.current||mapInstance.current) return;
+      const map=L.map(mapElement.current,{zoomControl:false,attributionControl:true}).setView([9.03,38.74],6);
+      L.control.zoom({position:'bottomright'}).addTo(map);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        maxZoom:19,
+        attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      mapInstance.current=map;
+      setMapReady(true);
+      setTimeout(()=>map.invalidateSize(),100);
+    });
+    return()=>{disposed=true;if(mapInstance.current){mapInstance.current.remove();mapInstance.current=null;}};
+  },[]);
+
+  useEffect(()=>{
+    if(!mapInstance.current) return;
+    let active=true;
+    import('leaflet').then(({default:L})=>{
+      if(!active||!mapInstance.current)return;
+      markers.current.forEach(marker=>marker.remove());
+      markers.current=destinations.map(destination=>{
+        const marker=L.marker(destination.coordinates,{icon:L.divIcon({
+          className:'tankua-map-marker-wrap',
+          html:`<span class="tankua-map-marker"><i></i>${destination.price?Number(destination.price).toLocaleString():''}</span>`,
+          iconSize:[58,38],iconAnchor:[29,36],
+        })}).addTo(mapInstance.current);
+        marker.on('click',()=>{setSelected(destination);vibrate();});
+        return marker;
+      });
+      if(destinations.length>1){
+        mapInstance.current.fitBounds(L.latLngBounds(destinations.map(item=>item.coordinates)),{padding:[44,44],maxZoom:8});
+      }else if(destinations[0]){
+        mapInstance.current.setView(destinations[0].coordinates,10);
+      }
+    });
+    return()=>{active=false;};
+  },[destinations,mapReady]);
+
+  const searchMap=(event)=>{
+    event.preventDefault();
+    const match=destinations.find(destination=>`${destination.name} ${destination.city} ${destination.region}`.toLowerCase().includes(query.trim().toLowerCase()));
+    if(match&&mapInstance.current){setSelected(match);mapInstance.current.flyTo(match.coordinates,11,{duration:.7});}
+  };
+  const locate=()=>{
+    if(!navigator.geolocation||!mapInstance.current)return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(async position=>{
+      const L=(await import('leaflet')).default;
+      const coordinates=[position.coords.latitude,position.coords.longitude];
+      mapInstance.current.flyTo(coordinates,12,{duration:.7});
+      userMarker.current?.remove();
+      userMarker.current=L.circleMarker(coordinates,{radius:8,color:'#fff',weight:3,fillColor:'#1687bd',fillOpacity:1}).addTo(mapInstance.current);
+      setLocating(false);
+    },()=>setLocating(false),{enableHighAccuracy:true,timeout:10000});
+  };
+
+  return <div className="map-page"><div ref={mapElement} className="osm-map"/>
+    <div className="map-controls"><form onSubmit={searchMap}><Search/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search destinations"/><button type="submit"><ChevronRight/></button></form><button className={locating?'locating':''} onClick={locate} aria-label="Use my location"><LocateFixed/></button></div>
+    {selected&&<div className="map-preview"><img src={selected.image}/><div><span>EXPLORE ETHIOPIA</span><h3>{selected.name}</h3><p><Star fill="currentColor"/>{selected.rating||'New'} · {selected.city}</p></div><button onClick={()=>open(selected)}><ChevronRight/></button></div>}
+  </div>;
+}
 function ProfileView({user,open}) { const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join(''); return <div className="page profile"><p className="eyebrow">YOUR SPACE</p><h1>Profile</h1><div className="profile-hero"><div className="avatar">{initials}</div><div><h2>{user.name||'Telegram Traveler'}</h2><p>@{user.telegram_username||'telegram_user'}</p><span>✈ Verified Telegram traveler</span></div></div><section><small>ACCOUNT</small><div><button onClick={()=>open('help')}><span><ShieldCheck/></span><b>Telegram-secured account</b><ChevronRight/></button></div></section><section><small>SUPPORT</small><div><button onClick={()=>open('help')}><span><CircleHelp/></span><b>Help center</b><ChevronRight/></button></div></section><p className="version">Tankua for Telegram · v1.0</p></div>; }
 function SimplePage({title,back,icon:Icon,text}) { return <div className="simple-page"><header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>{title}</h1><span/></header><div className="empty"><span><Icon/></span><h2>{title}</h2><p>{text}</p></div></div>; }

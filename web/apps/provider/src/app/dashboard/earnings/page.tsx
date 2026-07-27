@@ -299,7 +299,7 @@ export default function EarningsPage() {
                   <CardTitle>Bank Account</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="p-4 bg-gradient-to-br from-[#0A1A2F] to-[#1a3a5c] rounded-xl text-white">
+                  <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-950">
                     <div className="flex items-center justify-between mb-6">
                       <Building2 className="h-8 w-8" />
                       <span className="text-sm opacity-70">Primary</span>

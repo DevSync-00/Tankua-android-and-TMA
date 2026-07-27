@@ -61,7 +61,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A1A2F] flex items-center justify-center p-4">
+    <div className="auth-surface flex min-h-screen items-center justify-center p-4">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -80,11 +80,11 @@ export default function LoginPage() {
           <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg shadow-[#D4A017]/30 mb-4 overflow-hidden">
             <Image src="/favicon.png" alt="Tankua" width={48} height={48} className="object-contain" priority />
           </div>
-          <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-white/60 mt-2">Sign in to manage Tankua platform</p>
+          <h1 className="text-2xl font-bold text-stone-950">Admin workspace</h1>
+          <p className="mt-2 text-stone-600">Sign in to manage the Tankua platform</p>
         </div>
 
-        <Card className="bg-white/10 backdrop-blur-xl border border-white/20 p-8">
+        <Card className="border border-stone-200 bg-white p-8 shadow-xl shadow-stone-200/50">
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
               <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
@@ -95,29 +95,29 @@ export default function LoginPage() {
 
             <div className="space-y-4">
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
                 <input
                   type="email"
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-12 pl-12 pr-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[#D4A017] focus:ring-2 focus:ring-[#D4A017]/20 transition-all"
+                  className="h-12 w-full rounded-xl border border-stone-200 bg-stone-50 pl-12 pr-4 text-stone-950 placeholder:text-stone-400 transition-all focus:border-[#D4A017] focus:outline-none focus:ring-2 focus:ring-[#D4A017]/20"
                 />
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 pl-12 pr-12 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[#D4A017] focus:ring-2 focus:ring-[#D4A017]/20 transition-all"
+                  className="h-12 w-full rounded-xl border border-stone-200 bg-stone-50 pl-12 pr-12 text-stone-950 placeholder:text-stone-400 transition-all focus:border-[#D4A017] focus:outline-none focus:ring-2 focus:ring-[#D4A017]/20"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition-colors hover:text-stone-700"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -127,7 +127,7 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#D4A017] focus:ring-[#D4A017]/20" />
-                <span className="text-sm text-white/60">Remember me</span>
+                <span className="text-sm text-stone-600">Remember me</span>
               </label>
               <Link href="/forgot-password" className="text-sm text-[#D4A017] hover:underline">
                 Forgot password?
@@ -140,14 +140,14 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-center text-sm text-white/40">
+          <div className="mt-6 border-t border-stone-200 pt-6">
+            <p className="text-center text-sm text-stone-400">
               Protected admin area. Unauthorized access is prohibited.
             </p>
           </div>
         </Card>
 
-        <p className="text-center text-white/40 text-sm mt-8">
+        <p className="mt-8 text-center text-sm text-stone-500">
           Need help? Contact{" "}
           <a href="mailto:support@tankua.et" className="text-[#D4A017] hover:underline">
             support@tankua.et

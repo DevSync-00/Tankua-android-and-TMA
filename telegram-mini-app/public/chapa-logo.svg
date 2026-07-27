@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 461.79 395.08" role="img" aria-labelledby="title">
+  <title id="title">Chapa</title>
+  <defs>
+    <linearGradient id="chapa-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#86bd4c"/>
+      <stop offset=".4" stop-color="#72bb71"/>
+      <stop offset="1" stop-color="#2eb8b4"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#chapa-gradient)" d="M290.22 136.04l-27.66 38.27.28.57h-.7l-37.19 51.13c-5.69 6.64-14.11 10.87-23.54 10.87-17.12 0-31-13.88-31-31 0-16.69 13.2-30.26 29.72-30.93v-.06h62.01l.42-.58c-11.45-22.12-34.52-37.25-61.15-37.25-38.01 0-68.83 30.82-68.83 68.83s30.82 68.83 68.83 68.83c22.09 0 41.73-10.41 54.32-26.59l87.3-120.57c-16.92-12.25-40.57-8.45-52.81 8.48z"/>
+  <path fill="url(#chapa-gradient)" opacity=".6" d="M299.97 224.8h-98.72c-10.52 0-19.04-8.52-19.04-19.04 0-10.38 8.41-18.79 18.79-18.79h136.8c0 20.89-16.94 37.83-37.83 37.83z"/>
+</svg>

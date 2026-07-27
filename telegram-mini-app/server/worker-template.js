@@ -16,6 +16,22 @@ function json(data, status = 200, extraHeaders = {}) {
   });
 }
 
+function readableError(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(readableError).filter(Boolean).join(', ');
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .map(([field, detail]) => {
+        const message = readableError(detail);
+        return message ? `${field}: ${message}` : '';
+      })
+      .filter(Boolean)
+      .join('; ');
+  }
+  return String(value);
+}
+
 function base64url(bytes) {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -208,7 +224,7 @@ async function getCatalog(env) {
     supabase(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location&order=name.asc'),
     supabase(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,itinerary,status&status=in.(active,upcoming)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc`),
     supabase(env, 'providers?select=id,name,description,logo_url,rating,total_trips&status=eq.active&order=name.asc'),
-    supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,lat,lng&order=name.asc'),
+    supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,is_active&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
   ]);
   const catalogDestinations = destinations.map(destination => {
@@ -222,7 +238,32 @@ async function getCatalog(env) {
       is_verified: true,
     };
   });
-  return json({ destinations: catalogDestinations, trips, providers, stations, trip_pickup_stations: links });
+  const catalogProviders = providers.map(provider => ({
+    ...provider,
+    logo_url: provider.logo_url ? `/api/providers/${provider.id}/logo` : null,
+  }));
+  return json({ destinations: catalogDestinations, trips, providers: catalogProviders, stations, trip_pickup_stations: links });
+}
+
+async function getProviderLogo(providerId, env) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(providerId)) {
+    return json({ error: 'Invalid provider' }, 400);
+  }
+  const providers = await supabase(env, `providers?select=logo_url&id=eq.${providerId}&limit=1`);
+  const logoUrl = providers?.[0]?.logo_url;
+  if (!logoUrl) return json({ error: 'Provider logo not found' }, 404);
+  const logoResponse = await fetch(logoUrl);
+  if (!logoResponse.ok) return json({ error: 'Provider logo unavailable' }, 502);
+  const contentType = logoResponse.headers.get('content-type') || '';
+  if (!contentType.startsWith('image/')) return json({ error: 'Invalid provider logo' }, 502);
+  return new Response(logoResponse.body, {
+    status: 200,
+    headers: {
+      'content-type': contentType,
+      'cache-control': 'public, max-age=3600, stale-while-revalidate=86400',
+      'x-content-type-options': 'nosniff',
+    },
+  });
 }
 
 async function getBookings(session, env) {
@@ -279,7 +320,7 @@ async function initializePayment(request, session, env) {
     body: JSON.stringify({
       amount: Number(booking.total_price).toFixed(2),
       currency: 'ETB',
-      email: `telegram-${session.tid}@tankua.app`,
+      email: 'payments@tankua.co',
       first_name: 'Tankua',
       last_name: 'Traveler',
       tx_ref: txRef,
@@ -290,7 +331,15 @@ async function initializePayment(request, session, env) {
   });
   const result = await response.json();
   if (!response.ok || result.status !== 'success' || !result.data?.checkout_url) {
-    throw new Error(result.message || 'Unable to initialize payment');
+    const details = readableError(result.message || result.errors || result.data);
+    console.error(JSON.stringify({
+      event: 'chapa_initialize_failed',
+      status: response.status,
+      details: details || 'No error details returned',
+    }));
+    const error = new Error(details || 'Unable to initialize payment');
+    error.status = response.status >= 500 ? 502 : 400;
+    throw error;
   }
   await supabase(env, 'payment_transactions', {
     method: 'POST',
@@ -353,6 +402,8 @@ async function handleApi(request, env, requestId) {
   if (request.method === 'POST') assertSameOrigin(request, env);
   if (url.pathname === '/api/auth/telegram' && request.method === 'POST') return authenticate(request, env);
   if (url.pathname === '/api/catalog' && request.method === 'GET') return getCatalog(env);
+  const providerLogoMatch = url.pathname.match(/^\/api\/providers\/([0-9a-f-]+)\/logo$/i);
+  if (providerLogoMatch && request.method === 'GET') return getProviderLogo(providerLogoMatch[1], env);
   if (url.pathname === '/api/webhooks/chapa' && ['GET', 'POST'].includes(request.method)) {
     const payload = request.method === 'POST' ? await request.json() : Object.fromEntries(url.searchParams);
     const txRef = payload.tx_ref || payload.trx_ref || payload.reference;

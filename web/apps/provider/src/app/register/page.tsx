@@ -276,7 +276,7 @@ Description: ${formData.description || "N/A"}
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A2F] via-[#0d2341] to-[#0A1A2F] py-12 px-4">
+    <div className="auth-surface min-h-screen px-4 py-12">
       {/* Background pattern */}
       <div className="fixed inset-0 opacity-10 pointer-events-none" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%23D4A017' fill-opacity='0.5'/%3E%3C/svg%3E")`,
@@ -290,10 +290,10 @@ Description: ${formData.description || "N/A"}
             <div className="w-12 h-12 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
               <Image src="/favicon.png" alt="Tankua" width={34} height={34} className="object-contain" priority />
             </div>
-            <span className="text-2xl font-bold text-white">Tankua</span>
+            <span className="text-2xl font-bold text-stone-950">Tankua</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Register Your Company</h1>
-          <p className="text-white/60">Join Ethiopia's leading pilgrimage platform</p>
+          <h1 className="mb-2 text-3xl font-bold text-stone-950">Register Your Company</h1>
+          <p className="text-stone-600">Join Ethiopia&apos;s travel marketplace</p>
         </div>
 
         {/* Progress Steps */}
@@ -303,8 +303,8 @@ Description: ${formData.description || "N/A"}
               <div className="flex flex-col items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
                   currentStep >= step.id 
-                    ? "bg-[#D4A017] text-[#0A1A2F]" 
-                    : "bg-white/10 text-white/50"
+                    ? "bg-[#D4A017] text-stone-950"
+                    : "bg-stone-200 text-stone-500"
                 }`}>
                   {currentStep > step.id ? (
                     <CheckCircle2 className="h-5 w-5" />
@@ -313,15 +313,15 @@ Description: ${formData.description || "N/A"}
                   )}
                 </div>
                 <div className="mt-2 text-center">
-                  <p className={`text-xs sm:text-sm font-medium ${currentStep >= step.id ? "text-white" : "text-white/50"}`}>
+                  <p className={`text-xs sm:text-sm font-medium ${currentStep >= step.id ? "text-stone-950" : "text-stone-500"}`}>
                     {step.title}
                   </p>
-                  <p className="text-xs text-white/40 hidden sm:block">{step.description}</p>
+                  <p className="hidden text-xs text-stone-500 sm:block">{step.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (
                 <div className={`w-8 sm:w-16 h-0.5 mx-2 sm:mx-4 transition-colors ${
-                  currentStep > step.id ? "bg-[#D4A017]" : "bg-white/10"
+                  currentStep > step.id ? "bg-[#D4A017]" : "bg-stone-200"
                 }`} />
               )}
             </div>
@@ -341,7 +341,7 @@ Description: ${formData.description || "N/A"}
             {/* Step 1: Company Info */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#0A1A2F] mb-6">Company Information</h2>
+                <h2 className="mb-6 text-xl font-semibold text-stone-950">Company Information</h2>
                 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -427,7 +427,7 @@ Description: ${formData.description || "N/A"}
             {/* Step 2: Contact Info */}
             {currentStep === 2 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#0A1A2F] mb-6">Contact Information</h2>
+                <h2 className="mb-6 text-xl font-semibold text-stone-950">Contact Information</h2>
                 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -526,7 +526,7 @@ Description: ${formData.description || "N/A"}
             {/* Step 3: Documents */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#0A1A2F] mb-6">Verification Documents</h2>
+                <h2 className="mb-6 text-xl font-semibold text-stone-950">Verification Documents</h2>
                 
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
                   <p className="text-sm text-amber-800">
