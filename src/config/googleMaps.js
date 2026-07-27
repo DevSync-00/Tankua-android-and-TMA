@@ -1,25 +1,11 @@
-import Constants from 'expo-constants';
-
 /**
- * Google Maps Platform key (Places API New + Maps SDK).
- * Enable "Places API (New)" in Google Cloud Console.
+ * DEPRECATED: Google Maps API has been migrated to OpenStreetMap (OSM).
+ * Please import tile configuration from src/config/osm.js instead.
  */
-export const GOOGLE_MAPS_API_KEY =
-  process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
-  Constants.expoConfig?.extra?.googleMapsApiKey ||
-  '';
+import { OSM_TILE_URL, OSM_ATTRIBUTION, getOsmDirectionsUrl, getOsmSearchUrl } from './osm';
 
-export const isGoogleMapsConfigured = () =>
-  Boolean(GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY.length > 10);
+export const GOOGLE_MAPS_API_KEY = '';
+export const isGoogleMapsConfigured = () => false;
+export const GOOGLE_MAPS_STYLE = [];
 
-export const GOOGLE_MAPS_STYLE = [
-  {
-    featureType: 'poi.place_of_worship',
-    elementType: 'all',
-    stylers: [
-      {
-        visibility: 'off',
-      },
-    ],
-  },
-];
+export { OSM_TILE_URL, OSM_ATTRIBUTION, getOsmDirectionsUrl, getOsmSearchUrl };

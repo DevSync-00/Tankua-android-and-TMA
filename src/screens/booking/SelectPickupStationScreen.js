@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
-import { GOOGLE_MAPS_STYLE } from '../../config/googleMaps';
+import { OSM_TILE_URL } from '../../config/osm';
 import ModernPickupStationCard from '../../components/ModernPickupStationCard';
 import ModernButton from '../../components/ModernButton';
 import { getTripStations, getProviderPickupStations } from '../../services/database';
@@ -243,12 +243,15 @@ const SelectPickupStationScreen = ({ navigation }) => {
       ) : (
         <View style={styles.mapContainer}>
           <MapView
-            provider={PROVIDER_GOOGLE}
             style={styles.map}
             region={region}
             onRegionChangeComplete={setRegion}
-            customMapStyle={GOOGLE_MAPS_STYLE}
           >
+            <UrlTile
+              urlTemplate={OSM_TILE_URL}
+              maximumZ={19}
+              flipY={false}
+            />
             {stations.map((station) => (
               <Marker
                 key={station.id}

@@ -10,10 +10,11 @@ import {
   Image,
   Dimensions,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import Animated, {
   useSharedValue,
@@ -29,7 +30,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getDestinations, getPlaceholderImage } from '../services/database';
-import { GOOGLE_MAPS_STYLE } from '../config/googleMaps';
+import { OSM_TILE_URL, getOsmDirectionsUrl } from '../config/osm';
 import AnimatedCard from '../components/AnimatedCard';
 import ModernButton from '../components/ModernButton';
 
@@ -278,9 +279,13 @@ const MapScreen = ({ navigation }) => {
 
   const handleGetDirections = () => {
     if (selectedDestination && userLocation) {
-      const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.latitude},${userLocation.longitude}&destination=${selectedDestination.lat},${selectedDestination.lng}`;
-      // You can use Linking.openURL(url) here if needed
-      console.log('Directions URL:', url);
+      const url = getOsmDirectionsUrl(
+        userLocation.latitude,
+        userLocation.longitude,
+        selectedDestination.lat,
+        selectedDestination.lng
+      );
+      Linking.openURL(url).catch((err) => console.error('Could not open directions:', err));
     }
   };
 
@@ -364,15 +369,17 @@ const MapScreen = ({ navigation }) => {
       {/* Map View */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
         showsUserLocation={true}
         showsMyLocationButton={false}
         showsCompass={true}
-        mapType="standard"
-        customMapStyle={GOOGLE_MAPS_STYLE}
       >
+        <UrlTile
+          urlTemplate={OSM_TILE_URL}
+          maximumZ={19}
+          flipY={false}
+        />
         {/* User Location Marker */}
         {userLocation && (
           <Marker

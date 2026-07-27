@@ -28,6 +28,7 @@ import Animated, {
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBooking } from '../contexts/BookingContext';
+import { getOsmSearchUrl } from '../config/osm';
 import { useAuth } from '../contexts/AuthContext';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
 import ModernButton from '../components/ModernButton';
@@ -136,8 +137,8 @@ const DestinationDetailScreen = ({ route, navigation }) => {
   };
 
   const handleGetDirections = () => {
-    const query = encodeURIComponent(`${name} ${city || region || 'Ethiopia'}`);
-    const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    const searchQuery = `${name} ${city || region || 'Ethiopia'}`;
+    const url = getOsmSearchUrl(searchQuery);
     Linking.openURL(url).catch((err) => {
       console.error('Could not open maps:', err);
       Alert.alert('Error', 'Unable to open map directions application.');
