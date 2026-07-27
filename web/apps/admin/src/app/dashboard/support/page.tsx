@@ -313,7 +313,7 @@ export default function SupportPage() {
                         className="flex-1"
                         onClick={() => handleStatusUpdate(selectedTicket.id, "in_progress")}
                       >
-                        {selectedTicket.status === "in_progress" ? "In Progress" : "Start Working"}
+                        Start Working
                       </Button>
                     )}
                   </div>

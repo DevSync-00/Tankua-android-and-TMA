@@ -240,9 +240,6 @@ export default function PromotionsPage() {
                     );
                   })}
                 </div>
-              </>
-            )}
-
                 {/* Desktop Table View */}
                 {!loading && promotions.length > 0 && (
                   <div className="hidden lg:block overflow-x-auto">

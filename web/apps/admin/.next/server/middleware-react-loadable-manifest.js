@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"app\\\\login\\\\page.tsx -> @/lib/supabase":{"id":5041,"files":["static/chunks/845-697b2c1abd1d661f.js","static/chunks/41.87bee780d527092b.js"]},"lib\\\\queries.ts -> @/lib/supabase":{"id":5041,"files":[]}}';

@@ -99,8 +99,10 @@ export default function DestinationsPage() {
       setTotal(result.total);
       
       // Extract unique regions
-      const uniqueRegions = [...new Set(result.destinations.map(d => d.region).filter(Boolean))];
-      setRegions(uniqueRegions.sort() as string[]);
+      const uniqueRegions = Array.from(
+        new Set(result.destinations.map(d => d.region).filter((region): region is string => Boolean(region)))
+      );
+      setRegions(uniqueRegions.sort());
     } catch (error) {
       console.error("Error loading destinations:", error);
     } finally {
@@ -254,12 +256,13 @@ export default function DestinationsPage() {
         if (uploadError) {
           // Provide more detailed error messages
           let errorMessage = uploadError.message || "Unknown upload error";
+          const statusCode = Number((uploadError as { statusCode?: number | string }).statusCode);
           
-          if (uploadError.message?.includes("Bucket not found") || uploadError.statusCode === 404) {
+          if (uploadError.message?.includes("Bucket not found") || statusCode === 404) {
             errorMessage = `Storage bucket '${bucket}' not found. Please create it in Supabase Storage dashboard.`;
-          } else if (uploadError.statusCode === 400 || uploadError.message?.includes("row-level security")) {
+          } else if (statusCode === 400 || uploadError.message?.includes("row-level security")) {
             errorMessage = `Upload blocked by security policy. Please run the SQL script 'database/26_fix_image_upload_storage_policies.sql' in Supabase SQL Editor to fix this.`;
-          } else if (uploadError.statusCode === 401 || uploadError.statusCode === 403) {
+          } else if (statusCode === 401 || statusCode === 403) {
             errorMessage = `Authentication failed. Please log in again.`;
           } else if (uploadError.message?.includes("File size")) {
             errorMessage = `File too large. Maximum size is 5MB.`;

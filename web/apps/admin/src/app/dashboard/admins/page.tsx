@@ -17,6 +17,7 @@ import {
   X,
   Eye,
   EyeOff,
+  Lock,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input } from "@tankua/ui";
