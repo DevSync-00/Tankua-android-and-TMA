@@ -68,7 +68,7 @@ const AppNavigator = () => {
           <Stack.Screen 
             name="Ticket" 
             component={TicketScreen}
-            options={{ headerShown: true, headerTitle: 'Ticket' }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen 
             name="MyAccount" 
