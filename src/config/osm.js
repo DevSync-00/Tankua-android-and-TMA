@@ -29,3 +29,32 @@ export const getOsmSearchUrl = (query) => {
   const encodedQuery = encodeURIComponent(query);
   return `https://www.openstreetmap.org/search?query=${encodedQuery}`;
 };
+
+/**
+ * Fetches turn-by-turn road route coordinates using free OSRM (Open Source Routing Machine) API.
+ * Returns array of { latitude, longitude } for react-native-maps <Polyline />, plus distance & duration.
+ */
+export const fetchOsmRoute = async (startLat, startLng, endLat, endLng) => {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.routes && data.routes.length > 0) {
+      const route = data.routes[0];
+      const coordinates = route.geometry.coordinates.map(coord => ({
+        latitude: coord[1],
+        longitude: coord[0],
+      }));
+      return {
+        coordinates,
+        distanceKm: (route.distance / 1000).toFixed(1),
+        durationMin: Math.round(route.duration / 60),
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching OSRM route:', error);
+    return null;
+  }
+};
