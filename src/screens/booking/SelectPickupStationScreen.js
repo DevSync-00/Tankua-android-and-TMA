@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
-import { GOOGLE_MAPS_STYLE } from '../../config/googleMaps';
+import { OSM_TILE_URL } from '../../config/osm';
 import ModernPickupStationCard from '../../components/ModernPickupStationCard';
 import ModernButton from '../../components/ModernButton';
 import { getTripStations, getProviderPickupStations } from '../../services/database';
@@ -40,8 +40,10 @@ const SelectPickupStationScreen = ({ navigation }) => {
     latitudeDelta: 0.15,
     longitudeDelta: 0.15,
   });
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
-  const mapCardTranslateY = useSharedValue(300);
+  // Tamed subtle animation values
+  const mapCardTranslateY = useSharedValue(120);
   const mapCardOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -49,12 +51,18 @@ const SelectPickupStationScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
+    setTracksViewChanges(true);
+    const timer = setTimeout(() => setTracksViewChanges(false), 600);
+    return () => clearTimeout(timer);
+  }, [stations, selectedStation, viewMode]);
+
+  useEffect(() => {
     if (selectedStation && viewMode === 'map') {
-      mapCardTranslateY.value = withSpring(0, ANIMATIONS.spring);
-      mapCardOpacity.value = withTiming(1, { duration: ANIMATIONS.normal });
+      mapCardTranslateY.value = withTiming(0, { duration: 250 });
+      mapCardOpacity.value = withTiming(1, { duration: 250 });
     } else {
-      mapCardTranslateY.value = withSpring(300, ANIMATIONS.spring);
-      mapCardOpacity.value = withTiming(0, { duration: ANIMATIONS.normal });
+      mapCardTranslateY.value = withTiming(120, { duration: 200 });
+      mapCardOpacity.value = withTiming(0, { duration: 200 });
     }
   }, [selectedStation, viewMode]);
 
@@ -64,11 +72,11 @@ const SelectPickupStationScreen = ({ navigation }) => {
       let rows = currentBooking.trip?.id
         ? await getTripStations(currentBooking.trip.id)
         : await getProviderPickupStations(currentBooking.provider?.id);
-      // Until a provider customizes stations for a particular trip, offer all
-      // active stations belonging to that provider.
+      
       if (rows.length === 0 && currentBooking.provider?.id) {
         rows = await getProviderPickupStations(currentBooking.provider.id);
       }
+      
       const normalized = rows.map((row) => {
         const station = row.pickup_stations || row;
         return {
@@ -79,6 +87,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
           extraPrice: Number(row.extra_price ?? station.extra_price ?? 0),
         };
       }).filter((station) => Number.isFinite(station.lat) && Number.isFinite(station.lng));
+      
       setStations(normalized);
       if (normalized.length) {
         setRegion((previous) => ({
@@ -119,32 +128,94 @@ const SelectPickupStationScreen = ({ navigation }) => {
     opacity: mapCardOpacity.value,
   }));
 
+  // Step Progress Header
+  const renderStepHeader = () => {
+    const steps = [
+      { key: 'trips', label: 'Trips' },
+      { key: 'pickup', label: 'Pickup' },
+      { key: 'seats', label: 'Seats' },
+      { key: 'payment', label: 'Payment' }
+    ];
+    return (
+      <View style={stepStyles.progressContainer}>
+        {steps.map((step, idx) => {
+          const isActive = step.key === 'pickup';
+          const isCompleted = idx < 1;
+          return (
+            <React.Fragment key={step.key}>
+              <View style={stepStyles.stepWrapper}>
+                <View style={[
+                  stepStyles.stepCircle,
+                  isActive && stepStyles.stepCircleActive,
+                  isCompleted && stepStyles.stepCircleCompleted
+                ]}>
+                  {isCompleted ? (
+                    <Ionicons name="checkmark" size={12} color={COLORS.white} />
+                  ) : (
+                    <Text style={[
+                      stepStyles.stepNumber,
+                      isActive && stepStyles.stepNumberActive,
+                    ]}>{idx + 1}</Text>
+                  )}
+                </View>
+                <Text style={[
+                  stepStyles.stepLabel,
+                  isActive && stepStyles.stepLabelActive
+                ]}>{step.label}</Text>
+              </View>
+              {idx < steps.length - 1 && (
+                <View style={[
+                  stepStyles.stepDivider,
+                  isCompleted && stepStyles.stepDividerCompleted
+                ]} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Back Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.customBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
+        </TouchableOpacity>
+        <Text style={styles.customHeaderTitle}>Pickup Station</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
+      {renderStepHeader()}
+
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>{t('selectPickupStation') || 'Select Pickup Station'}</Text>
-          <Text style={styles.subtitle}>Choose your preferred pickup location</Text>
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.subtitle}>Choose your preferred departure station</Text>
         </View>
-        <View style={styles.viewToggle}>
-          <ModernButton
-            title=""
+        
+        {/* Toggle Switcher */}
+        <View style={styles.switcherContainer}>
+          <TouchableOpacity
+            style={[styles.switchButton, viewMode === 'list' && styles.switchButtonActive]}
             onPress={() => setViewMode('list')}
-            variant={viewMode === 'list' ? 'primary' : 'ghost'}
-            size="small"
-            style={styles.toggleButton}
-            icon={viewMode === 'list' ? 'list' : 'list-outline'}
-            iconPosition="left"
-          />
-          <ModernButton
-            title=""
+            activeOpacity={0.8}
+          >
+            <Ionicons name="list" size={16} color={viewMode === 'list' ? COLORS.white : COLORS.secondary} />
+            <Text style={[styles.switchText, viewMode === 'list' && styles.switchTextActive]}>List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.switchButton, viewMode === 'map' && styles.switchButtonActive]}
             onPress={() => setViewMode('map')}
-            variant={viewMode === 'map' ? 'primary' : 'ghost'}
-            size="small"
-            style={styles.toggleButton}
-            icon={viewMode === 'map' ? 'map' : 'map-outline'}
-            iconPosition="left"
-          />
+            activeOpacity={0.8}
+          >
+            <Ionicons name="map" size={16} color={viewMode === 'map' ? COLORS.white : COLORS.secondary} />
+            <Text style={[styles.switchText, viewMode === 'map' && styles.switchTextActive]}>Map</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -155,20 +226,22 @@ const SelectPickupStationScreen = ({ navigation }) => {
         </View>
       ) : stations.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="location-outline" size={48} color={COLORS.gray} />
-          <Text style={styles.emptyTitle}>No pickup stations available</Text>
-          <Text style={styles.subtitle}>This provider has not added pickup stations for this trip yet.</Text>
+          <Ionicons name="location-outline" size={48} color={COLORS.grayLight} />
+          <Text style={styles.emptyTitle}>No pickup stations found</Text>
+          <Text style={styles.subtitle}>No stations scheduled for this trip.</Text>
         </View>
       ) : viewMode === 'list' ? (
         <FlatList
           data={stations}
           renderItem={({ item, index }) => (
-            <ModernPickupStationCard
-              station={item}
-              onPress={() => handleStationSelect(item)}
-              selected={selectedStation?.id === item.id}
-              index={index}
-            />
+            <View style={styles.cardPadding}>
+              <ModernPickupStationCard
+                station={item}
+                onPress={() => handleStationSelect(item)}
+                selected={selectedStation?.id === item.id}
+                index={index}
+              />
+            </View>
           )}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -177,39 +250,49 @@ const SelectPickupStationScreen = ({ navigation }) => {
       ) : (
         <View style={styles.mapContainer}>
           <MapView
-            provider={PROVIDER_GOOGLE}
             style={styles.map}
             region={region}
             onRegionChangeComplete={setRegion}
-            customMapStyle={GOOGLE_MAPS_STYLE}
           >
-            {stations.map((station) => (
-              <Marker
-                key={station.id}
-                coordinate={{ latitude: station.lat, longitude: station.lng }}
-                title={station.name}
-                description={`Pickup: ${station.pickupTime}`}
-                onPress={() => handleStationSelect(station)}
-              >
-                <View style={[
-                  styles.markerContainer,
-                  selectedStation?.id === station.id && styles.markerSelected,
-                  station.isNearest && styles.markerNearest,
-                ]}>
-                  <Ionicons 
-                    name="location" 
-                    size={24} 
-                    color={
-                      selectedStation?.id === station.id
-                        ? COLORS.white
-                        : station.isNearest
-                        ? COLORS.primary
-                        : COLORS.gray
-                    } 
-                  />
-                </View>
-              </Marker>
-            ))}
+            <UrlTile
+              urlTemplate={OSM_TILE_URL}
+              maximumZ={19}
+              flipY={false}
+            />
+            {stations.map((station) => {
+              const isSelected = selectedStation?.id === station.id;
+              return (
+                <Marker
+                  key={station.id}
+                  coordinate={{ latitude: station.lat, longitude: station.lng }}
+                  onPress={() => handleStationSelect(station)}
+                  tracksViewChanges={tracksViewChanges}
+                >
+                  <View style={[styles.markerCanvasBuffer, isSelected && styles.markerCanvasBufferSelected]}>
+                    <View style={[styles.unifiedStationPill, isSelected && styles.unifiedStationPillSelected]}>
+                      <View style={[styles.stationIconCircle, isSelected && styles.stationIconCircleSelected]}>
+                        <Ionicons 
+                          name="bus" 
+                          size={12} 
+                          color={isSelected ? COLORS.white : COLORS.secondary} 
+                        />
+                      </View>
+                      <View style={styles.stationTextCol}>
+                        <Text style={[styles.stationTitleText, isSelected && styles.stationTitleTextSelected]} numberOfLines={1}>
+                          {station.name}
+                        </Text>
+                        {station.pickupTime ? (
+                          <Text style={[styles.stationTimeText, isSelected && styles.stationTimeTextSelected]}>
+                            Pickup: {station.pickupTime}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                    <View style={[styles.pillPointerStem, { borderTopColor: isSelected ? COLORS.secondary : COLORS.white }]} />
+                  </View>
+                </Marker>
+              );
+            })}
           </MapView>
 
           {selectedStation && (
@@ -224,17 +307,18 @@ const SelectPickupStationScreen = ({ navigation }) => {
         </View>
       )}
 
+      {/* Sticky Bottom Footer */}
       <View style={styles.footer}>
         {selectedStation && (
           <View style={styles.selectedInfo}>
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+            <View style={styles.checkedCircle}>
+              <Ionicons name="checkmark" size={14} color={COLORS.success} />
+            </View>
             <View style={styles.selectedTextContainer}>
-              <Text style={styles.selectedText}>
-                {selectedStation.name}
-              </Text>
+              <Text style={styles.selectedText}>{selectedStation.name}</Text>
               <Text style={styles.selectedSubtext}>
-                {selectedStation.pickupTime} • {selectedStation.distance} km
-                {selectedStation.extraPrice > 0 && ` • +${selectedStation.extraPrice} ETB`}
+                Departs {selectedStation.pickupTime}
+                {selectedStation.extraPrice > 0 ? ` • +ETB ${selectedStation.extraPrice}` : ''}
               </Text>
             </View>
           </View>
@@ -254,40 +338,126 @@ const SelectPickupStationScreen = ({ navigation }) => {
   );
 };
 
+const stepStyles = StyleSheet.create({
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  stepWrapper: {
+    alignItems: 'center',
+    width: 60,
+  },
+  stepCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.backgroundGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  stepCircleActive: {
+    backgroundColor: COLORS.primary,
+  },
+  stepCircleCompleted: {
+    backgroundColor: COLORS.secondary,
+  },
+  stepNumber: {
+    fontSize: 11,
+    color: COLORS.gray,
+    fontWeight: '700',
+  },
+  stepNumberActive: {
+    color: COLORS.secondary,
+  },
+  stepLabel: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '500',
+  },
+  stepLabelActive: {
+    color: COLORS.secondary,
+    fontWeight: 'bold',
+  },
+  stepDivider: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.borderLight,
+    maxWidth: 40,
+    marginTop: -14,
+  },
+  stepDividerCompleted: {
+    backgroundColor: COLORS.secondary,
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
-    padding: SPACING.md,
-    paddingTop: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
-  },
-  title: {
-    fontSize: FONTS.sizes.xxxl,
-    fontWeight: '800',
-    color: COLORS.secondary,
-    marginBottom: SPACING.xs,
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.gray,
-    fontWeight: '500',
-  },
-  viewToggle: {
     flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  toggleButton: {
+  headerTextWrap: {
     flex: 1,
   },
+  title: {
+    fontSize: FONTS.sizes.xl,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  switcherContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.backgroundGray,
+    padding: 3,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  switchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  switchButtonActive: {
+    backgroundColor: COLORS.secondary,
+    ...SHADOWS.small,
+  },
+  switchText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '700',
+    color: COLORS.secondary,
+    marginLeft: 4,
+  },
+  switchTextActive: {
+    color: COLORS.white,
+  },
+  cardPadding: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+  },
   listContent: {
-    paddingBottom: SPACING.xxl,
+    paddingBottom: SPACING.xl,
   },
   mapContainer: {
     flex: 1,
@@ -298,43 +468,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,
-    gap: SPACING.md,
   },
   emptyTitle: {
     fontSize: FONTS.sizes.lg,
     fontWeight: '700',
     color: COLORS.secondary,
+    marginTop: SPACING.md,
   },
   map: {
     width: '100%',
     height: '100%',
   },
   markerContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: COLORS.primary,
-    ...SHADOWS.large,
+    ...SHADOWS.medium,
   },
   markerSelected: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.white,
   },
-  markerNearest: {
-    borderColor: COLORS.secondary,
-  },
   mapStationCard: {
     position: 'absolute',
     bottom: SPACING.md,
-    left: 0,
-    right: 0,
+    left: SPACING.md,
+    right: SPACING.md,
   },
   footer: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,
@@ -345,9 +512,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.md,
     padding: SPACING.md,
-    backgroundColor: `${COLORS.success}10`,
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
     gap: SPACING.sm,
+  },
+  checkedCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: `${COLORS.success}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectedTextContainer: {
     flex: 1,
@@ -360,10 +537,120 @@ const styles = StyleSheet.create({
   selectedSubtext: {
     fontSize: FONTS.sizes.xs,
     color: COLORS.gray,
+    fontWeight: '500',
     marginTop: 2,
   },
   button: {
     width: '100%',
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
+  },
+  markerCanvasBuffer: {
+    width: 190,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  markerCanvasBufferSelected: {
+    zIndex: 1000,
+    width: 210,
+    height: 64,
+  },
+  unifiedStationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    maxWidth: 180,
+    gap: 6,
+    ...SHADOWS.medium,
+  },
+  unifiedStationPillSelected: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+    maxWidth: 200,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    ...SHADOWS.large,
+  },
+  stationIconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: `${COLORS.secondary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stationIconCircleSelected: {
+    backgroundColor: COLORS.primary,
+  },
+  stationTextCol: {
+    justifyContent: 'center',
+  },
+  stationTitleText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    includeFontPadding: false,
+  },
+  stationTitleTextSelected: {
+    color: COLORS.primary,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
+  },
+  stationTimeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.gray,
+  },
+  stationTimeTextSelected: {
+    color: COLORS.white,
+  },
+  pillPointerStem: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    alignSelf: 'center',
+    marginTop: -1,
   },
 });
 

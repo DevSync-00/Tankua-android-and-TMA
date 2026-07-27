@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SPACING, SHADOWS } from '../../config/theme';
+import { COLORS, FONTS, SPACING, SHADOWS, BORDER_RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -79,13 +79,21 @@ const ConfirmationScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Confirmation Header */}
+      <View style={styles.customHeader}>
+        <View style={styles.customHeaderLeft} />
+        <Text style={styles.customHeaderTitle}>Confirmation</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
+      {/* Sleek Success Header Banner */}
       <View style={styles.successBanner}>
-        <View style={styles.successIcon}>
-          <Ionicons name="checkmark" size={28} color={COLORS.white} />
+        <View style={styles.successIconCircle}>
+          <Ionicons name="checkmark-circle" size={32} color={COLORS.success} />
         </View>
         <View style={styles.successCopy}>
-          <Text style={styles.title}>{t('bookingConfirmed') || 'Booking confirmed!'}</Text>
-          <Text style={styles.subtitle}>Your ticket is ready below</Text>
+          <Text style={styles.title}>{t('bookingConfirmed') || 'Booking Secured!'}</Text>
+          <Text style={styles.subtitle}>Your digital travel ticket is ready below</Text>
         </View>
       </View>
 
@@ -94,12 +102,15 @@ const ConfirmationScreen = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <TripTicketCard ref={ticketRef} booking={booking} showInstructions={false} />
+        <View style={styles.ticketWrapper}>
+          <TripTicketCard ref={ticketRef} booking={booking} showInstructions={false} />
+        </View>
       </ScrollView>
 
+      {/* Balanced Sticky Footer Action Buttons */}
       <View style={styles.footer}>
         <ModernButton
-          title={sharing ? 'Preparing image...' : 'Share ticket'}
+          title={sharing ? 'Preparing...' : 'Share Ticket'}
           onPress={handleShareTicket}
           variant="outline"
           size="large"
@@ -137,37 +148,40 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     fontSize: FONTS.sizes.md,
     color: COLORS.gray,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   successBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
     paddingBottom: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    ...SHADOWS.xs,
   },
-  successIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.success,
+  successIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${COLORS.success}10`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.md,
-    ...SHADOWS.medium,
   },
   successCopy: {
     flex: 1,
   },
   title: {
-    fontSize: FONTS.sizes.xl,
+    fontSize: FONTS.sizes.lg,
     fontWeight: '800',
     color: COLORS.secondary,
     letterSpacing: -0.5,
   },
   subtitle: {
     marginTop: 2,
-    fontSize: FONTS.sizes.sm,
+    fontSize: FONTS.sizes.xs,
     color: COLORS.gray,
     fontWeight: '500',
   },
@@ -176,21 +190,50 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
     justifyContent: 'center',
+  },
+  ticketWrapper: {
+    alignSelf: 'stretch',
+    borderRadius: BORDER_RADIUS.xl,
+    overflow: 'hidden',
+    ...SHADOWS.medium,
   },
   footer: {
     flexDirection: 'row',
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,
     ...SHADOWS.large,
+    gap: SPACING.sm,
   },
   footerButton: {
     flex: 1,
-    marginHorizontal: SPACING.xs,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customHeaderLeft: {
+    width: 36,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
   },
 });
 

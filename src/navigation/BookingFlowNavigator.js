@@ -17,11 +17,7 @@ const BookingFlowNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: '#0A1A2F',
-        },
-        headerTintColor: '#fff',
+        headerShown: false,
       }}
     >
       <Stack.Screen 

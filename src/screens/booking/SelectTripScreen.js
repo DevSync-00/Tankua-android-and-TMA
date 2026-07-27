@@ -15,7 +15,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/the
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { getTrips } from '../../services/database';
-import Button from '../../components/Button';
+import ModernButton from '../../components/ModernButton';
 
 const SelectTripScreen = ({ navigation }) => {
   const { t } = useLanguage();
@@ -31,7 +31,6 @@ const SelectTripScreen = ({ navigation }) => {
   const loadTrips = async () => {
     try {
       setLoading(true);
-      
       const destination = currentBooking.destination;
 
       if (!destination?.id) {
@@ -41,12 +40,10 @@ const SelectTripScreen = ({ navigation }) => {
           !currentBooking.trip;
         
         if (isBookingReset) {
-          // Booking was reset, navigate to main tabs silently
           navigation.getParent()?.navigate('MainTabs', { screen: 'Home' });
           return;
         }
         
-        // Otherwise, show alert and navigate back
         Alert.alert('Error', 'Please select a destination first');
         if (navigation.canGoBack()) {
           navigation.goBack();
@@ -57,13 +54,8 @@ const SelectTripScreen = ({ navigation }) => {
       }
 
       const filters = { destinationId: destination.id };
-
       const data = await getTrips(filters);
       setTrips(data);
-      
-      if (data.length === 0) {
-        // Show empty state in UI
-      }
     } catch (error) {
       console.error('Error loading trips:', error);
       Alert.alert('Error', 'Failed to load available trips. Please try again.');
@@ -74,7 +66,6 @@ const SelectTripScreen = ({ navigation }) => {
 
   const handleContinue = () => {
     if (selectedTrip) {
-      // Store trip and provider info
       updateBooking({ 
         trip: selectedTrip,
         provider: selectedTrip.providers,
@@ -110,7 +101,6 @@ const SelectTripScreen = ({ navigation }) => {
         hour12: true,
       });
     } catch {
-      // If it's just a date string, return default time
       return '6:00 AM';
     }
   };
@@ -122,20 +112,55 @@ const SelectTripScreen = ({ navigation }) => {
 
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
-        stars.push(
-          <Ionicons key={i} name="star" size={14} color={COLORS.primary} />
-        );
+        stars.push(<Ionicons key={i} name="star" size={12} color={COLORS.primary} />);
       } else if (i === fullStars && hasHalfStar) {
-        stars.push(
-          <Ionicons key={i} name="star-half" size={14} color={COLORS.primary} />
-        );
+        stars.push(<Ionicons key={i} name="star-half" size={12} color={COLORS.primary} />);
       } else {
-        stars.push(
-          <Ionicons key={i} name="star-outline" size={14} color={COLORS.gray} />
-        );
+        stars.push(<Ionicons key={i} name="star-outline" size={12} color={COLORS.grayLight} />);
       }
     }
     return stars;
+  };
+
+  // Step Progress Header
+  const renderStepHeader = () => {
+    const steps = [
+      { key: 'trips', label: 'Trips' },
+      { key: 'pickup', label: 'Pickup' },
+      { key: 'seats', label: 'Seats' },
+      { key: 'payment', label: 'Payment' }
+    ];
+    return (
+      <View style={stepStyles.progressContainer}>
+        {steps.map((step, idx) => {
+          const isActive = step.key === 'trips';
+          const isCompleted = false;
+          return (
+            <React.Fragment key={step.key}>
+              <View style={stepStyles.stepWrapper}>
+                <View style={[
+                  stepStyles.stepCircle,
+                  isActive && stepStyles.stepCircleActive,
+                  isCompleted && stepStyles.stepCircleCompleted
+                ]}>
+                  <Text style={[
+                    stepStyles.stepNumber,
+                    isActive && stepStyles.stepNumberActive,
+                  ]}>{idx + 1}</Text>
+                </View>
+                <Text style={[
+                  stepStyles.stepLabel,
+                  isActive && stepStyles.stepLabelActive
+                ]}>{step.label}</Text>
+              </View>
+              {idx < steps.length - 1 && (
+                <View style={stepStyles.stepDivider} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </View>
+    );
   };
 
   if (loading) {
@@ -150,23 +175,40 @@ const SelectTripScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Select Trip</Text>
-        <Text style={styles.subtitle}>
-          {currentBooking.destination
-            ? `Available trips to ${currentBooking.destination?.name || 'this destination'}`
-            : 'Choose a trip for your journey'}
-        </Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Back Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.customBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
+        </TouchableOpacity>
+        <Text style={styles.customHeaderTitle}>Select Trip</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
+      {renderStepHeader()}
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Select Trip</Text>
+          <Text style={styles.subtitle}>
+            {currentBooking.destination
+              ? `Available trips to ${currentBooking.destination?.name || 'this destination'}`
+              : 'Choose a trip for your journey'}
+          </Text>
+        </View>
 
         {trips.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="calendar-outline" size={64} color={COLORS.gray} />
-            <Text style={styles.emptyText}>No trips available</Text>
+            <Ionicons name="calendar-outline" size={60} color={COLORS.grayLight} />
+            <Text style={styles.emptyText}>No trips scheduled</Text>
             <Text style={styles.emptySubtext}>
               {currentBooking.destination
-                ? `No trips are currently scheduled to ${currentBooking.destination?.name || 'this destination'}. Please check back later or try a different destination.`
-                : 'Please check back later or contact support'}
+                ? `No trips are currently scheduled to ${currentBooking.destination?.name}. Please check back later.`
+                : 'Please check back later or contact support.'}
             </Text>
           </View>
         ) : (
@@ -176,90 +218,77 @@ const SelectTripScreen = ({ navigation }) => {
               const departureDate = trip.departure_date || trip.date;
               const returnDate = trip.return_date;
               const isRoundTrip = trip.trip_type === 'round_trip' || returnDate;
+              const isSelected = selectedTrip?.id === trip.id;
               
               return (
                 <TouchableOpacity
                   key={trip.id}
+                  activeOpacity={0.9}
                   style={[
                     styles.tripCard,
-                    selectedTrip?.id === trip.id && styles.tripCardSelected,
+                    isSelected && styles.tripCardSelected,
                   ]}
                   onPress={() => setSelectedTrip(trip)}
                 >
-                  {/* Provider Info */}
+                  {/* Provider Brand Info */}
                   <View style={styles.providerHeader}>
                     {provider?.logo_url ? (
-                      <Image
-                        source={{ uri: provider.logo_url }}
-                        style={styles.providerLogo}
-                      />
+                      <Image source={{ uri: provider.logo_url }} style={styles.providerLogo} />
                     ) : (
                       <View style={styles.providerLogoPlaceholder}>
-                        <Ionicons name="business" size={20} color={COLORS.primary} />
+                        <Ionicons name="bus" size={18} color={COLORS.iconPrimary} />
                       </View>
                     )}
                     <View style={styles.providerInfo}>
-                      <Text style={styles.providerName}>
-                        {provider?.name || 'Travel Provider'}
-                      </Text>
+                      <Text style={styles.providerName}>{provider?.name || 'Travel Provider'}</Text>
                       {provider?.rating && (
-                        <View style={styles.ratingContainer}>
-                          <View style={styles.starsContainer}>
-                            {renderStars(provider.rating)}
-                          </View>
-                          <Text style={styles.ratingText}>
-                            {provider.rating.toFixed(1)}
-                          </Text>
+                        <View style={styles.ratingRow}>
+                          <View style={styles.starsRow}>{renderStars(provider.rating)}</View>
+                          <Text style={styles.ratingText}>{provider.rating.toFixed(1)}</Text>
                         </View>
                       )}
                     </View>
-                    {selectedTrip?.id === trip.id && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={24}
-                        color={COLORS.primary}
-                      />
-                    )}
+                    <View style={[styles.selectIndicator, isSelected && styles.selectIndicatorActive]}>
+                      {isSelected && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+                    </View>
                   </View>
 
-                  {/* Trip Details */}
+                  {/* Route & Times */}
                   <View style={styles.tripDetails}>
-                    {/* Departure */}
-                    <View style={styles.dateTimeRow}>
-                      <View style={styles.dateTimeContainer}>
-                        <View style={styles.dateTimeHeader}>
-                          <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
-                          <Text style={styles.dateTimeLabel}>Departure</Text>
+                    <View style={styles.itineraryContainer}>
+                      <View style={styles.itineraryPoint}>
+                        <View style={styles.pointIndicator} />
+                        <View style={styles.pointContent}>
+                          <Text style={styles.pointLabel}>Departure</Text>
+                          <Text style={styles.pointDate}>{formatDate(departureDate)}</Text>
+                          <Text style={styles.pointTime}>{formatTime(departureDate)}</Text>
                         </View>
-                        <Text style={styles.dateText}>{formatDate(departureDate)}</Text>
-                        <Text style={styles.timeText}>{formatTime(departureDate)}</Text>
                       </View>
 
-                      {/* Return (if round trip) */}
                       {isRoundTrip && returnDate && (
-                        <View style={styles.dateTimeContainer}>
-                          <View style={styles.dateTimeHeader}>
-                            <Ionicons name="arrow-back" size={16} color={COLORS.secondary} />
-                            <Text style={styles.dateTimeLabel}>Return</Text>
+                        <View style={[styles.itineraryPoint, { marginTop: SPACING.md }]}>
+                          <View style={[styles.pointIndicator, { backgroundColor: COLORS.secondary }]} />
+                          <View style={styles.pointContent}>
+                            <Text style={styles.pointLabel}>Return</Text>
+                            <Text style={styles.pointDate}>{formatDate(returnDate)}</Text>
+                            <Text style={styles.pointTime}>{formatTime(returnDate)}</Text>
                           </View>
-                          <Text style={styles.dateText}>{formatDate(returnDate)}</Text>
-                          <Text style={styles.timeText}>{formatTime(returnDate)}</Text>
                         </View>
                       )}
                     </View>
 
-                    {/* Trip Info */}
-                    <View style={styles.tripInfoRow}>
-                      <View style={styles.infoItem}>
-                        <Ionicons name="people-outline" size={16} color={COLORS.gray} />
-                        <Text style={styles.infoItemText}>
-                          {trip.available_seats || 0} seats available
-                        </Text>
+                    {/* Divider */}
+                    <View style={styles.cardDivider} />
+
+                    {/* Trip Badges Footer */}
+                    <View style={styles.tripBadgesRow}>
+                      <View style={styles.badgeItem}>
+                        <Ionicons name="people-outline" size={14} color={COLORS.gray} />
+                        <Text style={styles.badgeText}>{trip.available_seats || 0} seats left</Text>
                       </View>
-                      <View style={styles.infoItem}>
-                        <Ionicons name="cash-outline" size={16} color={COLORS.gray} />
-                        <Text style={styles.priceText}>
-                          {trip.price ? `${trip.price} ETB` : 'Price TBD'}
+                      <View style={styles.pricePill}>
+                        <Text style={styles.pricePillText}>
+                          {trip.price ? `ETB ${trip.price}` : 'Price TBD'}
                         </Text>
                       </View>
                     </View>
@@ -270,19 +299,25 @@ const SelectTripScreen = ({ navigation }) => {
           </View>
         )}
 
+        {/* Info Fee Card */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+          <Ionicons name="information-circle-outline" size={20} color={COLORS.iconSecondary} />
           <Text style={styles.infoText}>
-            Tankua charges a 5% service fee. The provider receives 95% of the base price.
+            Tankua platform charges a 5% service fee included in the final price summary.
           </Text>
         </View>
       </ScrollView>
 
+      {/* Sticky Bottom Actions */}
       <View style={styles.footer}>
-        <Button
-          title={t('continue')}
+        <ModernButton
+          title={t('continue') || 'Continue'}
           onPress={handleContinue}
           disabled={!selectedTrip}
+          variant="primary"
+          size="large"
+          icon="arrow-forward"
+          iconPosition="right"
           style={styles.button}
         />
       </View>
@@ -290,13 +325,68 @@ const SelectTripScreen = ({ navigation }) => {
   );
 };
 
+const stepStyles = StyleSheet.create({
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  stepWrapper: {
+    alignItems: 'center',
+    width: 60,
+  },
+  stepCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.backgroundGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  stepCircleActive: {
+    backgroundColor: COLORS.primary,
+  },
+  stepCircleCompleted: {
+    backgroundColor: COLORS.secondary,
+  },
+  stepNumber: {
+    fontSize: 11,
+    color: COLORS.gray,
+    fontWeight: '700',
+  },
+  stepNumberActive: {
+    color: COLORS.secondary,
+  },
+  stepLabel: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '500',
+  },
+  stepLabelActive: {
+    color: COLORS.secondary,
+    fontWeight: 'bold',
+  },
+  stepDivider: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.borderLight,
+    maxWidth: 40,
+    marginTop: -14,
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   content: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
   },
   loadingContainer: {
     flex: 1,
@@ -307,177 +397,243 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     fontSize: FONTS.sizes.md,
     color: COLORS.gray,
+    fontWeight: '500',
+  },
+  header: {
+    marginBottom: SPACING.lg,
   },
   title: {
     fontSize: FONTS.sizes.xxl,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: COLORS.secondary,
-    marginBottom: SPACING.sm,
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: FONTS.sizes.md,
+    fontSize: FONTS.sizes.sm,
     color: COLORS.gray,
-    marginBottom: SPACING.xl,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyText: {
+    fontSize: FONTS.sizes.lg,
+    fontWeight: '700',
+    color: COLORS.secondary,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xs,
+  },
+  emptySubtext: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   tripsList: {
     gap: SPACING.md,
   },
   tripCard: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    ...SHADOWS.medium,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    ...SHADOWS.small,
   },
   tripCardSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: `${COLORS.primary}05`,
+    backgroundColor: COLORS.cardBackground,
+    ...SHADOWS.medium,
   },
   providerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.md,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   providerLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: COLORS.lightGray,
-    marginRight: SPACING.sm,
+    width: 38,
+    height: 38,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.backgroundGray,
   },
   providerLogoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: `${COLORS.primary}20`,
+    width: 38,
+    height: 38,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.backgroundTertiary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm,
   },
   providerInfo: {
     flex: 1,
+    marginLeft: SPACING.sm,
   },
   providerName: {
     fontSize: FONTS.sizes.md,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.secondary,
-    marginBottom: SPACING.xs,
   },
-  ratingContainer: {
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    marginTop: 2,
   },
-  starsContainer: {
+  starsRow: {
     flexDirection: 'row',
-    gap: 2,
+    marginRight: 4,
   },
   ratingText: {
     fontSize: FONTS.sizes.xs,
     fontWeight: '600',
     color: COLORS.secondary,
   },
-  tripDetails: {
-    gap: SPACING.md,
-  },
-  dateTimeRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  dateTimeContainer: {
-    flex: 1,
-    backgroundColor: COLORS.lightGray,
-    padding: SPACING.sm,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  dateTimeHeader: {
-    flexDirection: 'row',
+  selectIndicator: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.borderDark,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
   },
-  dateTimeLabel: {
+  selectIndicatorActive: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.secondary,
+  },
+  tripDetails: {
+    marginTop: SPACING.xs,
+  },
+  itineraryContainer: {
+    marginLeft: 4,
+  },
+  itineraryPoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  pointIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    marginTop: 5,
+    marginRight: SPACING.md,
+  },
+  pointContent: {
+    flex: 1,
+  },
+  pointLabel: {
     fontSize: FONTS.sizes.xs,
-    fontWeight: '600',
     color: COLORS.gray,
-    textTransform: 'uppercase',
-  },
-  dateText: {
-    fontSize: FONTS.sizes.sm,
     fontWeight: '600',
-    color: COLORS.secondary,
-    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  timeText: {
+  pointDate: {
     fontSize: FONTS.sizes.md,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+    fontWeight: '700',
+    color: COLORS.secondary,
+    marginTop: 1,
   },
-  tripInfoRow: {
+  pointTime: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: COLORS.borderLight,
+    marginVertical: SPACING.md,
+  },
+  tripBadgesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  infoItem: {
+  badgeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
   },
-  infoItemText: {
+  badgeText: {
     fontSize: FONTS.sizes.sm,
-    color: COLORS.gray,
+    color: COLORS.grayDark,
+    fontWeight: '500',
+    marginLeft: 4,
   },
-  priceText: {
+  pricePill: {
+    backgroundColor: COLORS.backgroundTertiary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 5,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  pricePillText: {
     fontSize: FONTS.sizes.md,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xxl,
-  },
-  emptyText: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.secondary,
-    marginTop: SPACING.md,
-  },
-  emptySubtext: {
-    fontSize: FONTS.sizes.md,
-    color: COLORS.gray,
-    marginTop: SPACING.sm,
-    textAlign: 'center',
-    paddingHorizontal: SPACING.lg,
+    fontWeight: '800',
+    color: COLORS.iconSecondary,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: `${COLORS.primary}10`,
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBackground,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginTop: SPACING.xl,
+    gap: SPACING.sm,
   },
   infoText: {
     flex: 1,
-    marginLeft: SPACING.md,
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.secondary,
-    lineHeight: 20,
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.charcoal,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   footer: {
     padding: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: COLORS.borderLight,
+    ...SHADOWS.large,
   },
   button: {
     width: '100%',
   },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
+  },
 });
 
 export default SelectTripScreen;
-

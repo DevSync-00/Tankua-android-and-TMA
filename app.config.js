@@ -1,7 +1,5 @@
 /** @type {import('expo/config').ExpoConfig} */
 export default ({ config }) => {
-  const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-
   return {
     ...config,
     expo: {
@@ -25,9 +23,6 @@ export default ({ config }) => {
           dark: './assets/ios-dark.png',
           tinted: './assets/ios-tinted.png',
         },
-        config: googleMapsApiKey
-          ? { googleMapsApiKey }
-          : undefined,
       },
       android: {
         softwareKeyboardLayoutMode: 'pan',
@@ -37,9 +32,6 @@ export default ({ config }) => {
         },
         package: 'com.tankua.co',
         permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'CAMERA'],
-        config: googleMapsApiKey
-          ? { googleMaps: { apiKey: googleMapsApiKey } }
-          : undefined,
       },
       web: {
         favicon: './assets/favicon.png',
@@ -82,7 +74,6 @@ export default ({ config }) => {
         eas: {
           projectId: 'c3026ea0-7f03-4a03-ad0a-6dda9f747582',
         },
-        googleMapsApiKey,
       },
     },
   };

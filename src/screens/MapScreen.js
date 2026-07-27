@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
@@ -10,10 +11,12 @@ import {
   Image,
   Dimensions,
   RefreshControl,
+  Linking,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import Animated, {
   useSharedValue,
@@ -29,7 +32,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getDestinations, getPlaceholderImage } from '../services/database';
-import { GOOGLE_MAPS_STYLE } from '../config/googleMaps';
+import { OSM_TILE_URL, getOsmDirectionsUrl, fetchOsmRoute } from '../config/osm';
 import AnimatedCard from '../components/AnimatedCard';
 import ModernButton from '../components/ModernButton';
 
@@ -57,6 +60,16 @@ const MapScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [nearbyDestinations, setNearbyDestinations] = useState([]);
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [loadingRoute, setLoadingRoute] = useState(false);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const timer = setTimeout(() => setTracksViewChanges(false), 600);
+    return () => clearTimeout(timer);
+  }, [destinations, selectedDestination, selectedCategory]);
 
   // Animation values
   const cardTranslateY = useSharedValue(400);
@@ -110,19 +123,19 @@ const MapScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (selectedDestination) {
-      cardTranslateY.value = withSpring(0, ANIMATIONS.spring);
-      cardOpacity.value = withTiming(1, { duration: ANIMATIONS.normal });
+      cardTranslateY.value = withTiming(0, { duration: 250 });
+      cardOpacity.value = withTiming(1, { duration: 250 });
     } else {
-      cardTranslateY.value = withSpring(400, ANIMATIONS.spring);
-      cardOpacity.value = withTiming(0, { duration: ANIMATIONS.normal });
+      cardTranslateY.value = withTiming(400, { duration: 200 });
+      cardOpacity.value = withTiming(0, { duration: 180 });
     }
   }, [selectedDestination]);
 
   useEffect(() => {
     if (showFilters) {
-      filterPanelHeight.value = withSpring(200, ANIMATIONS.spring);
+      filterPanelHeight.value = withTiming(200, { duration: 220 });
     } else {
-      filterPanelHeight.value = withSpring(0, ANIMATIONS.spring);
+      filterPanelHeight.value = withTiming(0, { duration: 180 });
     }
   }, [showFilters]);
 
@@ -132,19 +145,10 @@ const MapScreen = ({ navigation }) => {
     }
   }, [userLocation, filteredDestinations]);
 
-  // Recenter map to user location when tab is focused
+  // Request location permission on focus if not granted yet
   useFocusEffect(
     React.useCallback(() => {
-      if (userLocation && mapRef.current) {
-        // Small delay to ensure map is ready
-        setTimeout(() => {
-          mapRef.current?.animateCamera({
-            center: userLocation,
-            zoom: 11,
-          }, { duration: 600 });
-        }, 100);
-      } else if (!userLocation) {
-        // Request location if we don't have it yet
+      if (!userLocation) {
         requestLocationPermission();
       }
     }, [userLocation])
@@ -258,15 +262,13 @@ const MapScreen = ({ navigation }) => {
 
   const handleMarkerPress = (destination) => {
     setSelectedDestination(destination);
-    // Animate map smoothly to destination
-    if (mapRef.current) {
-      mapRef.current.animateCamera({
-        center: {
-          latitude: destination.lat,
-          longitude: destination.lng,
-        },
-        zoom: 13,
-      }, { duration: 600 });
+    if (mapRef.current && destination.lat && destination.lng) {
+      mapRef.current.animateToRegion({
+        latitude: destination.lat,
+        longitude: destination.lng,
+        latitudeDelta: 0.2,
+        longitudeDelta: 0.2,
+      }, 300);
     }
   };
 
@@ -276,12 +278,44 @@ const MapScreen = ({ navigation }) => {
     }
   };
 
-  const handleGetDirections = () => {
+  const handleGetDirections = async () => {
     if (selectedDestination && userLocation) {
-      const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.latitude},${userLocation.longitude}&destination=${selectedDestination.lat},${selectedDestination.lng}`;
-      // You can use Linking.openURL(url) here if needed
-      console.log('Directions URL:', url);
+      try {
+        setLoadingRoute(true);
+        const routeData = await fetchOsmRoute(
+          userLocation.latitude,
+          userLocation.longitude,
+          selectedDestination.lat,
+          selectedDestination.lng
+        );
+        setLoadingRoute(false);
+
+        if (routeData && routeData.coordinates.length > 0) {
+          setRouteCoordinates(routeData.coordinates);
+          setRouteInfo({
+            destinationName: selectedDestination.name,
+            distanceKm: routeData.distanceKm,
+            durationMin: routeData.durationMin,
+          });
+
+          // Automatically fit camera bounds to show entire route
+          if (mapRef.current) {
+            mapRef.current.fitToCoordinates(routeData.coordinates, {
+              edgePadding: { top: 140, right: 60, bottom: 220, left: 60 },
+              animated: true,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching in-app route:', error);
+        setLoadingRoute(false);
+      }
     }
+  };
+
+  const handleClearRoute = () => {
+    setRouteCoordinates([]);
+    setRouteInfo(null);
   };
 
   const handleRecenter = () => {
@@ -364,15 +398,34 @@ const MapScreen = ({ navigation }) => {
       {/* Map View */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
         showsUserLocation={true}
         showsMyLocationButton={false}
         showsCompass={true}
-        mapType="standard"
-        customMapStyle={GOOGLE_MAPS_STYLE}
+        onPress={() => setSelectedDestination(null)}
       >
+        <UrlTile
+          urlTemplate={OSM_TILE_URL}
+          maximumZ={19}
+          flipY={false}
+        />
+
+        {/* In-App Route Polyline (High Contrast Dual-Layer Electric Blue) */}
+        {routeCoordinates.length > 0 && (
+          <>
+            <Polyline
+              coordinates={routeCoordinates}
+              strokeColor="#1A1A2E"
+              strokeWidth={8}
+            />
+            <Polyline
+              coordinates={routeCoordinates}
+              strokeColor="#2563EB"
+              strokeWidth={5}
+            />
+          </>
+        )}
         {/* User Location Marker */}
         {userLocation && (
           <Marker
@@ -399,31 +452,25 @@ const MapScreen = ({ navigation }) => {
               key={destination.id}
               coordinate={{ latitude: destination.lat, longitude: destination.lng }}
               onPress={() => handleMarkerPress(destination)}
-              identifier={destination.id}
+              identifier={String(destination.id)}
+              tracksViewChanges={tracksViewChanges}
             >
-              <Animated.View
-                style={[
-                  styles.markerContainer,
-                  isSelected && styles.markerContainerSelected,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.markerBackground,
-                    { backgroundColor: markerColor },
-                    isSelected && styles.markerBackgroundSelected,
-                  ]}
-                >
-                  <Ionicons
-                    name={getMarkerIcon(destination.category)}
-                    size={isSelected ? 22 : 18}
-                    color={COLORS.white}
-                  />
+              {/* Explicit Canvas Buffer (190x56) preventing Android bitmap cropping */}
+              <View style={[styles.markerCanvasBuffer, isSelected && styles.markerCanvasBufferSelected]}>
+                <View style={[styles.unifiedPill, isSelected && styles.unifiedPillSelected]}>
+                  <View style={[styles.pillIconCircle, { backgroundColor: markerColor }]}>
+                    <Ionicons
+                      name={getMarkerIcon(destination.category)}
+                      size={12}
+                      color={COLORS.white}
+                    />
+                  </View>
+                  <Text style={[styles.pillTitleText, isSelected && styles.pillTitleTextSelected]} numberOfLines={1}>
+                    {destination.name}
+                  </Text>
                 </View>
-                {isSelected && (
-                  <View style={[styles.markerPulse, { borderColor: markerColor }]} />
-                )}
-              </Animated.View>
+                <View style={[styles.pillPointerStem, { borderTopColor: isSelected ? COLORS.secondary : COLORS.white }]} />
+              </View>
             </Marker>
           );
         })}
@@ -434,12 +481,14 @@ const MapScreen = ({ navigation }) => {
         <Animated.View style={[styles.header, searchBarAnimatedStyle]}>
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color={COLORS.gray} style={styles.searchIcon} />
-            <Text
+            <TextInput
               style={styles.searchInput}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              {searchQuery || 'Search destinations...'}
-            </Text>
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search destinations..."
+              placeholderTextColor={COLORS.gray}
+              returnKeyType="search"
+            />
             {searchQuery ? (
               <TouchableOpacity
                 onPress={() => setSearchQuery('')}
@@ -447,9 +496,18 @@ const MapScreen = ({ navigation }) => {
               >
                 <Ionicons name="close-circle" size={20} color={COLORS.gray} />
               </TouchableOpacity>
-            ) : (
-              <Ionicons name="options-outline" size={20} color={COLORS.gray} />
-            )}
+            ) : null}
+            <TouchableOpacity
+              onPress={() => setShowFilters(!showFilters)}
+              style={styles.filterIconButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={showFilters ? "options" : "options-outline"}
+                size={20}
+                color={showFilters ? COLORS.primary : COLORS.gray}
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Category Filter Chips */}
@@ -485,6 +543,33 @@ const MapScreen = ({ navigation }) => {
           </ScrollView>
         </Animated.View>
       </SafeAreaView>
+
+      {/* Active Route Info Banner */}
+      {routeInfo && (
+        <View style={styles.routeBannerCard}>
+          <View style={styles.routeBannerLeft}>
+            <View style={styles.routeIconCircle}>
+              <Ionicons name="navigate" size={16} color={COLORS.white} />
+            </View>
+            <View style={styles.routeBannerTextCol}>
+              <Text style={styles.routeBannerTitle} numberOfLines={1}>
+                Route to {routeInfo.destinationName}
+              </Text>
+              <Text style={styles.routeBannerSubtitle}>
+                {routeInfo.distanceKm} km • Approx {routeInfo.durationMin} mins drive
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.clearRouteBtn}
+            onPress={handleClearRoute}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={16} color={COLORS.secondary} />
+            <Text style={styles.clearRouteText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Nearby Destinations Panel */}
       {nearbyDestinations.length > 0 && !selectedDestination && (
@@ -523,106 +608,83 @@ const MapScreen = ({ navigation }) => {
       {selectedDestination && (
         <Animated.View style={[styles.selectedCard, cardAnimatedStyle]}>
           <AnimatedCard variant="glass">
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              style={styles.cardScrollView}
-            >
-              <View style={styles.cardContent}>
-                {/* Image */}
-                 <Image
-                    source={{
-                      uri: (selectedDestination.images && selectedDestination.images.length > 0)
-                        ? selectedDestination.images[0]
-                        : getPlaceholderImage(selectedDestination.id, selectedDestination.name, selectedDestination.category)
-                    }}
-                    style={styles.cardImage}
-                  />
+            <View style={styles.compactCardContent}>
+              {/* Header Row */}
+              <View style={styles.compactHeaderRow}>
+                {/* Thumbnail Image */}
+                <Image
+                  source={{
+                    uri: (selectedDestination.images && selectedDestination.images.length > 0)
+                      ? selectedDestination.images[0]
+                      : getPlaceholderImage(selectedDestination.id, selectedDestination.name, selectedDestination.category)
+                  }}
+                  style={styles.compactCardImage}
+                />
 
-                {/* Header */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderLeft}>
-                    <View style={styles.cardIcon}>
-                      <Ionicons
-                        name={getMarkerIcon(selectedDestination.category)}
-                        size={28}
-                        color={COLORS.primary}
-                      />
-                    </View>
-                    <View style={styles.cardHeaderText}>
-                      <Text style={styles.cardTitle} numberOfLines={2}>
-                        {selectedDestination.name}
-                      </Text>
-                      <Text style={styles.cardSubtitle}>
-                        {selectedDestination.city}
-                        {selectedDestination.region && ` • ${selectedDestination.region}`}
-                      </Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setSelectedDestination(null)}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons name="close-circle" size={28} color={COLORS.gray} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Info Row */}
-                <View style={styles.cardInfoRow}>
-                  {typeof selectedDestination.rating === 'number' && selectedDestination.rating > 0 && (
-                    <View style={styles.cardInfoItem}>
-                      <Ionicons name="star" size={16} color={COLORS.primary} />
-                      <Text style={styles.cardInfoText}>
-                        {selectedDestination.rating.toFixed(1)}
-                      </Text>
-                    </View>
-                  )}
-                  {selectedDestination.distance !== null && (
-                    <View style={styles.cardInfoItem}>
-                      <Ionicons name="location" size={16} color={COLORS.primary} />
-                      <Text style={styles.cardInfoText}>
-                        {selectedDestination.distance.toFixed(1)} km
-                      </Text>
-                    </View>
-                  )}
-                  {selectedDestination.category && (
-                    <View style={styles.cardCategoryBadge}>
-                      <Text style={styles.cardCategoryText}>
-                        {selectedDestination.category}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Description */}
-                {selectedDestination.description && (
-                  <Text style={styles.cardDescription} numberOfLines={3}>
-                    {selectedDestination.description}
+                {/* Details Col */}
+                <View style={styles.compactDetailsCol}>
+                  <Text style={styles.compactTitle} numberOfLines={1}>
+                    {selectedDestination.name}
                   </Text>
-                )}
-
-                {/* Actions */}
-                <View style={styles.cardActions}>
-                  <ModernButton
-                    title="View Details"
-                    onPress={handleViewDetails}
-                    variant="primary"
-                    size="medium"
-                    style={styles.cardActionButton}
-                    icon="arrow-forward"
-                    iconPosition="right"
-                  />
-                  {userLocation && (
-                    <TouchableOpacity
-                      style={styles.directionsButton}
-                      onPress={handleGetDirections}
-                    >
-                      <Ionicons name="navigate" size={20} color={COLORS.primary} />
-                      <Text style={styles.directionsButtonText}>Directions</Text>
-                    </TouchableOpacity>
-                  )}
+                  <Text style={styles.compactSubtitle} numberOfLines={1}>
+                    {selectedDestination.city}
+                    {selectedDestination.region && ` • ${selectedDestination.region}`}
+                  </Text>
+                  
+                  {/* Meta Badges Row */}
+                  <View style={styles.compactMetaRow}>
+                    {typeof selectedDestination.rating === 'number' && selectedDestination.rating > 0 && (
+                      <View style={styles.compactBadge}>
+                        <Ionicons name="star" size={12} color={COLORS.primary} />
+                        <Text style={styles.compactBadgeText}>
+                          {selectedDestination.rating.toFixed(1)}
+                        </Text>
+                      </View>
+                    )}
+                    {selectedDestination.distance !== null && (
+                      <View style={styles.compactBadge}>
+                        <Ionicons name="location-outline" size={12} color={COLORS.primary} />
+                        <Text style={styles.compactBadgeText}>
+                          {selectedDestination.distance.toFixed(1)} km
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
+
+                {/* Close Button */}
+                <TouchableOpacity
+                  onPress={() => setSelectedDestination(null)}
+                  style={styles.compactCloseButton}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close-circle" size={24} color={COLORS.gray} />
+                </TouchableOpacity>
               </View>
-            </ScrollView>
+
+              {/* Action Buttons Row */}
+              <View style={styles.compactActionsRow}>
+                <ModernButton
+                  title="View Details"
+                  onPress={handleViewDetails}
+                  variant="primary"
+                  size="small"
+                  style={styles.compactActionButton}
+                  icon="arrow-forward"
+                  iconPosition="right"
+                />
+                {userLocation && (
+                  <TouchableOpacity
+                    style={styles.compactDirectionsButton}
+                    onPress={handleGetDirections}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="navigate" size={16} color={COLORS.secondary} />
+                    <Text style={styles.compactDirectionsText}>Directions</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
           </AnimatedCard>
         </Animated.View>
       )}
@@ -673,6 +735,66 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
+  routeBannerCard: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 140 : 130,
+    left: SPACING.md,
+    right: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    ...SHADOWS.medium,
+  },
+  routeBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  routeIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  routeBannerTextCol: {
+    flex: 1,
+  },
+  routeBannerTitle: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
+    color: COLORS.secondary,
+  },
+  routeBannerSubtitle: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: '600',
+  },
+  clearRouteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BORDER_RADIUS.full,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  clearRouteText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
   header: {
     backgroundColor: COLORS.white,
     paddingTop: SPACING.sm,
@@ -700,10 +822,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONTS.sizes.md,
     color: COLORS.secondary,
-    paddingVertical: SPACING.xs,
+    paddingVertical: Platform.OS === 'ios' ? SPACING.xs : 0,
+    height: 38,
   },
   clearButton: {
-    marginLeft: SPACING.xs,
+    padding: 2,
+    marginRight: 4,
+  },
+  filterIconButton: {
+    padding: 4,
+    marginLeft: 2,
   },
   categoryContainer: {
     paddingHorizontal: SPACING.md,
@@ -926,163 +1054,161 @@ const styles = StyleSheet.create({
     borderColor: COLORS.white,
     ...SHADOWS.medium,
   },
-  markerContainer: {
-    width: 64,
-    height: 64,
-    alignItems: 'center',
+  markerCanvasBuffer: {
+    width: 190,
+    height: 56,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  markerContainerSelected: {
+  markerCanvasBufferSelected: {
     zIndex: 1000,
+    width: 210,
+    height: 64,
   },
-  markerBackground: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  unifiedPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.white,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    maxWidth: 180,
+    gap: 6,
+    ...SHADOWS.medium,
+  },
+  unifiedPillSelected: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+    maxWidth: 200,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     ...SHADOWS.large,
   },
-  markerBackgroundSelected: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 4,
+  pillIconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  markerPulse: {
-    position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderStyle: 'dashed',
+  pillTitleText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    includeFontPadding: false,
+    maxWidth: 135,
+  },
+  pillTitleTextSelected: {
+    color: COLORS.primary,
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    maxWidth: 145,
+  },
+  pillPointerStem: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    alignSelf: 'center',
+    marginTop: -1,
   },
   markerIcon: {
     fontSize: 24,
   },
   selectedCard: {
     position: 'absolute',
-    bottom: SPACING.md,
+    bottom: 95,
     left: SPACING.md,
     right: SPACING.md,
-    maxHeight: SCREEN_HEIGHT * 0.6,
     zIndex: 20,
   },
-  cardScrollView: {
-    maxHeight: SCREEN_HEIGHT * 0.6,
+  compactCardContent: {
+    padding: SPACING.md,
   },
-  cardContent: {
-    padding: SPACING.lg,
+  compactHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
-  cardImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
+  compactCardImage: {
+    width: 70,
+    height: 70,
+    borderRadius: BORDER_RADIUS.md,
     backgroundColor: COLORS.backgroundSecondary,
-  },
-  cardImagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardImageIcon: {
-    fontSize: 64,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  cardIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: `${COLORS.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: SPACING.md,
   },
-  cardIconText: {
-    fontSize: 28,
-  },
-  cardHeaderText: {
+  compactDetailsCol: {
     flex: 1,
+    justifyContent: 'center',
   },
-  cardTitle: {
-    fontSize: FONTS.sizes.xl,
+  compactTitle: {
+    fontSize: FONTS.sizes.md,
     fontWeight: '800',
     color: COLORS.secondary,
-    marginBottom: SPACING.xs,
-    letterSpacing: -0.5,
+    marginBottom: 2,
   },
-  cardSubtitle: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.gray,
-    fontWeight: '500',
-  },
-  closeButton: {
-    padding: SPACING.xs,
-  },
-  cardInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-    gap: SPACING.md,
-  },
-  cardInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs / 2,
-  },
-  cardInfoText: {
-    fontSize: FONTS.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.secondary,
-  },
-  cardCategoryBadge: {
-    backgroundColor: `${COLORS.primary}15`,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  cardCategoryText: {
+  compactSubtitle: {
     fontSize: FONTS.sizes.xs,
-    color: COLORS.primary,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  cardDescription: {
-    fontSize: FONTS.sizes.sm,
     color: COLORS.gray,
-    lineHeight: 20,
-    marginBottom: SPACING.md,
+    marginBottom: 6,
   },
-  cardActions: {
+  compactMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.sm,
   },
-  cardActionButton: {
-    width: '100%',
+  compactBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.sm,
   },
-  directionsButton: {
+  compactBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  compactCloseButton: {
+    padding: 2,
+    alignSelf: 'flex-start',
+  },
+  compactActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginTop: 4,
+  },
+  compactActionButton: {
+    flex: 1,
+  },
+  compactDirectionsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    gap: SPACING.xs,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: BORDER_RADIUS.md,
+    gap: 4,
   },
-  directionsButtonText: {
-    fontSize: FONTS.sizes.md,
-    fontWeight: '600',
-    color: COLORS.primary,
+  compactDirectionsText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '700',
+    color: COLORS.secondary,
   },
   actionButtons: {
     position: 'absolute',

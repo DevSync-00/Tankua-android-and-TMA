@@ -5,19 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
-import Button from '../../components/Button';
+import ModernButton from '../../components/ModernButton';
 
 const PassengerDetailsScreen = ({ navigation }) => {
   const { t } = useLanguage();
   const { currentBooking, updateBooking } = useBooking();
   const [passengers, setPassengers] = useState([]);
+  const [activeField, setActiveField] = useState(null); // tracking focus
 
   useEffect(() => {
-    // Initialize passengers array based on number of seats
     const seats = currentBooking.seats || 1;
     const initialPassengers = Array.from({ length: seats }, (_, index) => ({
       id: index + 1,
-      name: index === 0 ? '' : '', // First passenger can be the user
+      name: '',
       age: '',
     }));
     setPassengers(initialPassengers);
@@ -54,79 +54,160 @@ const PassengerDetailsScreen = ({ navigation }) => {
       return;
     }
 
-    // Store passenger details in booking context
     updateBooking({ passengers });
     navigation.navigate('Payment');
   };
 
+  // Step Progress Header
+  const renderStepHeader = () => {
+    const steps = [
+      { key: 'trips', label: 'Trips' },
+      { key: 'pickup', label: 'Pickup' },
+      { key: 'seats', label: 'Seats' },
+      { key: 'payment', label: 'Payment' }
+    ];
+    return (
+      <View style={stepStyles.progressContainer}>
+        {steps.map((step, idx) => {
+          const isActive = step.key === 'seats';
+          const isCompleted = idx < 2;
+          return (
+            <React.Fragment key={step.key}>
+              <View style={stepStyles.stepWrapper}>
+                <View style={[
+                  stepStyles.stepCircle,
+                  isActive && stepStyles.stepCircleActive,
+                  isCompleted && stepStyles.stepCircleCompleted
+                ]}>
+                  {isCompleted ? (
+                    <Ionicons name="checkmark" size={12} color={COLORS.white} />
+                  ) : (
+                    <Text style={[
+                      stepStyles.stepNumber,
+                      isActive && stepStyles.stepNumberActive,
+                    ]}>{idx + 1}</Text>
+                  )}
+                </View>
+                <Text style={[
+                  stepStyles.stepLabel,
+                  isActive && stepStyles.stepLabelActive
+                ]}>{step.label}</Text>
+              </View>
+              {idx < steps.length - 1 && (
+                <View style={[
+                  stepStyles.stepDivider,
+                  isCompleted && stepStyles.stepDividerCompleted
+                ]} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Back Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.customBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
+        </TouchableOpacity>
+        <Text style={styles.customHeaderTitle}>Passenger Details</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
+      {renderStepHeader()}
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Passenger Details</Text>
           <Text style={styles.subtitle}>
-            Please enter name and age for each passenger ({passengers.length} {passengers.length === 1 ? 'person' : 'people'})
+            Please enter the full name and age for each passenger seat reserved
           </Text>
         </View>
 
         <View style={styles.passengersList}>
-          {passengers.map((passenger, index) => (
-            <View key={passenger.id} style={styles.passengerCard}>
-              <View style={styles.passengerHeader}>
-                <View style={styles.passengerNumber}>
-                  <Text style={styles.passengerNumberText}>{index + 1}</Text>
-                </View>
-                <Text style={styles.passengerLabel}>
-                  {index === 0 ? 'Primary Passenger' : `Passenger ${index + 1}`}
-                </Text>
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Full Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter full name"
-                    placeholderTextColor={COLORS.grayLight}
-                    value={passenger.name}
-                    onChangeText={(text) => updatePassenger(index, 'name', text)}
-                    autoCapitalize="words"
-                  />
+          {passengers.map((passenger, index) => {
+            const isPrimary = index === 0;
+            return (
+              <View key={passenger.id} style={styles.passengerCard}>
+                <View style={styles.passengerHeader}>
+                  <View style={[styles.passengerNumber, isPrimary && styles.passengerNumberPrimary]}>
+                    <Text style={styles.passengerNumberText}>{index + 1}</Text>
+                  </View>
+                  <Text style={styles.passengerLabel}>
+                    {isPrimary ? 'Primary Passenger (User)' : `Passenger ${index + 1}`}
+                  </Text>
                 </View>
 
-                <View style={[styles.inputContainer, styles.ageInput]}>
-                  <Text style={styles.inputLabel}>Age *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Age"
-                    placeholderTextColor={COLORS.grayLight}
-                    value={passenger.age}
-                    onChangeText={(text) => {
-                      // Only allow numbers
-                      const numericValue = text.replace(/[^0-9]/g, '');
-                      updatePassenger(index, 'age', numericValue);
-                    }}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                  />
+                <View style={styles.formRow}>
+                  {/* Name Input */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Full Name *</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        activeField === `name-${index}` && styles.inputFocused,
+                      ]}
+                      placeholder="Enter full name"
+                      placeholderTextColor={COLORS.grayLight}
+                      value={passenger.name}
+                      onFocus={() => setActiveField(`name-${index}`)}
+                      onBlur={() => setActiveField(null)}
+                      onChangeText={(text) => updatePassenger(index, 'name', text)}
+                      autoCapitalize="words"
+                    />
+                  </View>
+
+                  {/* Age Input */}
+                  <View style={[styles.inputContainer, styles.ageInput]}>
+                    <Text style={styles.inputLabel}>Age *</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        activeField === `age-${index}` && styles.inputFocused,
+                      ]}
+                      placeholder="Age"
+                      placeholderTextColor={COLORS.grayLight}
+                      value={passenger.age}
+                      onFocus={() => setActiveField(`age-${index}`)}
+                      onBlur={() => setActiveField(null)}
+                      onChangeText={(text) => {
+                        const numericValue = text.replace(/[^0-9]/g, '');
+                        updatePassenger(index, 'age', numericValue);
+                      }}
+                      keyboardType="number-pad"
+                      maxLength={3}
+                    />
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
+        {/* Info Disclaimer Card */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+          <Ionicons name="information-circle-outline" size={22} color={COLORS.iconSecondary} />
           <Text style={styles.infoText}>
-            All passenger information is required for booking confirmation and trip management.
+            Accurate passenger names and ages are required for travel ticketing, verification, and insurance compliance.
           </Text>
         </View>
       </ScrollView>
 
+      {/* Sticky Bottom Actions */}
       <View style={styles.footer}>
-        <Button
+        <ModernButton
           title={t('continue') || 'Continue'}
           onPress={handleContinue}
+          variant="primary"
+          size="large"
+          icon="arrow-forward"
+          iconPosition="right"
           style={styles.button}
         />
       </View>
@@ -134,36 +215,96 @@ const PassengerDetailsScreen = ({ navigation }) => {
   );
 };
 
+const stepStyles = StyleSheet.create({
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  stepWrapper: {
+    alignItems: 'center',
+    width: 60,
+  },
+  stepCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.backgroundGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  stepCircleActive: {
+    backgroundColor: COLORS.primary,
+  },
+  stepCircleCompleted: {
+    backgroundColor: COLORS.secondary,
+  },
+  stepNumber: {
+    fontSize: 11,
+    color: COLORS.gray,
+    fontWeight: '700',
+  },
+  stepNumberActive: {
+    color: COLORS.secondary,
+  },
+  stepLabel: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '500',
+  },
+  stepLabelActive: {
+    color: COLORS.secondary,
+    fontWeight: 'bold',
+  },
+  stepDivider: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.borderLight,
+    maxWidth: 40,
+    marginTop: -14,
+  },
+  stepDividerCompleted: {
+    backgroundColor: COLORS.secondary,
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   content: {
-    padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
+    padding: SPACING.lg,
   },
   header: {
     marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: FONTS.sizes.xxl,
-    fontWeight: 'bold',
+    fontSize: FONTS.sizes.xl,
+    fontWeight: '800',
     color: COLORS.secondary,
-    marginBottom: SPACING.sm,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: FONTS.sizes.md,
+    fontSize: FONTS.sizes.sm,
     color: COLORS.gray,
+    fontWeight: '500',
+    marginTop: 2,
   },
   passengersList: {
     gap: SPACING.md,
   },
   passengerCard: {
     backgroundColor: COLORS.white,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xl,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
     ...SHADOWS.small,
   },
   passengerHeader: {
@@ -172,22 +313,25 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   passengerNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.backgroundGray,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
   },
+  passengerNumberPrimary: {
+    backgroundColor: COLORS.primary,
+  },
   passengerNumberText: {
-    color: COLORS.white,
-    fontSize: FONTS.sizes.md,
-    fontWeight: 'bold',
+    color: COLORS.secondary,
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '700',
   },
   passengerLabel: {
     fontSize: FONTS.sizes.md,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.secondary,
   },
   formRow: {
@@ -198,45 +342,86 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ageInput: {
-    flex: 0.4,
+    flex: 0.35,
   },
   inputLabel: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.secondary,
-    marginBottom: SPACING.xs,
-    fontWeight: '500',
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.grayDark,
+    marginBottom: 6,
+    fontWeight: '600',
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundSecondary,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.sm,
-    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     fontSize: FONTS.sizes.md,
     color: COLORS.secondary,
+    fontWeight: '500',
+  },
+  inputFocused: {
+    borderColor: COLORS.secondary,
+    borderWidth: 2,
+    backgroundColor: COLORS.white,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: `${COLORS.primary}10`,
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBackground,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: SPACING.xl,
+    gap: SPACING.sm,
   },
   infoText: {
     flex: 1,
-    marginLeft: SPACING.md,
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.secondary,
-    lineHeight: 20,
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.charcoal,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   footer: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: COLORS.borderLight,
+    ...SHADOWS.large,
   },
   button: {
     width: '100%',
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
   },
 });
 
