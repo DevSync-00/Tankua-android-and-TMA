@@ -1,8 +1,29 @@
 {
-  "app\\login\\page.tsx -> @/lib/supabase": {
-    "id": "app\\login\\page.tsx -> @/lib/supabase",
+  "app\\dashboard\\trips\\new\\page.tsx -> @/lib/queries": {
+    "id": 5482,
     "files": [
-      "static/chunks/_app-pages-browser_src_lib_supabase_ts.js"
+      "static/chunks/482-a6f2ccd46eda2e1b.js"
+    ]
+  },
+  "app\\forgot-password\\page.tsx -> @/lib/supabase": {
+    "id": 5041,
+    "files": [
+      "static/chunks/818-ec240ed223521698.js",
+      "static/chunks/41.87bee780d527092b.js"
+    ]
+  },
+  "app\\login\\page.tsx -> @/lib/supabase": {
+    "id": 5041,
+    "files": [
+      "static/chunks/818-ec240ed223521698.js",
+      "static/chunks/41.87bee780d527092b.js"
+    ]
+  },
+  "app\\reset-password\\page.tsx -> @/lib/supabase": {
+    "id": 5041,
+    "files": [
+      "static/chunks/818-ec240ed223521698.js",
+      "static/chunks/41.87bee780d527092b.js"
     ]
   }
 }

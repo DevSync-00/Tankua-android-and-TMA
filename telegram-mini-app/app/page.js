@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
-  Clock3, Compass, CreditCard, Gift, Heart, Home, Info, LocateFixed, Map,
+  Building2, Clock3, Compass, CreditCard, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
   MapPin, Minus, Navigation, Plus, Search, Share2, ShieldCheck, Star,
   Tag, Ticket, UserRound, UsersRound, X
 } from 'lucide-react';
@@ -20,7 +20,7 @@ const fallbackDestinations = [
 const categories = ['All', 'Historical', 'Nature', 'Adventure', 'Religious', 'Hiking', 'Cultural'];
 const tabs = [
   ['home', Home, 'Home'], ['search', Search, 'Search'], ['trips', Bus, 'Trips'],
-  ['map', Map, 'Map'], ['profile', UserRound, 'Profile']
+  ['map', MapIcon, 'Map'], ['profile', UserRound, 'Profile']
 ];
 
 function money(n) { return `ETB ${Number(n).toLocaleString()}`; }
@@ -37,7 +37,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authStatus, setAuthStatus] = useState('loading');
   const [authError, setAuthError] = useState('');
-  const [catalog, setCatalog] = useState({ destinations: [], trips: [], stations: [], trip_pickup_stations: [] });
+  const [catalog, setCatalog] = useState({ destinations: [], trips: [], providers: [], stations: [], trip_pickup_stations: [] });
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -173,7 +173,7 @@ export default function App() {
   };
 
   const content = () => {
-    if (screen === 'detail') return <Detail destination={selected} back={goBack} book={startBooking} notify={notify} />;
+    if (screen === 'detail') return <Detail destination={selected} catalog={catalog} back={goBack} book={startBooking} notify={notify} />;
     if (['trip','pickup','seats','passengers','payment'].includes(screen))
       return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
     if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => setScreen('ticket')} />;
@@ -234,25 +234,37 @@ function normalizeBookingForUi(item, destinations) {
 
 function AuthGate({ status, error, retry }) {
   const loading = status === 'loading';
+  const telegramRequired = status === 'telegram-required';
   return <main className="auth-gate">
-    <img src="/icon.png" alt="Tankua"/>
-    <p className="eyebrow">TANKUA · TELEGRAM</p>
-    <h1>{loading ? 'Securing your journey…' : status === 'telegram-required' ? 'Open Tankua in Telegram' : 'We couldn’t sign you in'}</h1>
-    <p>{loading ? 'Verifying your Telegram session and loading live trips.' : status === 'telegram-required' ? 'This production Mini App only accepts verified launches from the official Tankua Telegram bot.' : error}</p>
-    {status === 'telegram-required' && <a href="https://t.me/" target="_blank" rel="noreferrer">Open Telegram</a>}
-    {status === 'error' && <button onClick={retry}>Try again</button>}
-    <small><ShieldCheck/> Verified Telegram authentication</small>
+    <div className="auth-brand">
+      <img src="/tankua-logo.png" alt="Tankua"/>
+      <div><strong>TANKUA</strong><span>Explore Ethiopia</span></div>
+    </div>
+    <section className="auth-panel">
+      <p className="eyebrow">{loading ? 'CONNECTING SECURELY' : telegramRequired ? 'TELEGRAM MINI APP' : 'SIGN-IN INTERRUPTED'}</p>
+      <h1>{loading ? 'Getting your journey ready…' : telegramRequired ? 'Continue in Telegram' : 'Let’s get you back in'}</h1>
+      <p>{loading ? 'Confirming your Telegram account and loading live trips.' : telegramRequired ? 'Launch Tankua from the official bot to sign in securely—no password needed.' : error}</p>
+      {loading && <div className="auth-loader"><i/><i/><i/></div>}
+      {telegramRequired && <a href="https://t.me/tankua_tma_bot" target="_blank" rel="noreferrer">Open @tankua_tma_bot</a>}
+      {status === 'error' && <button onClick={retry}>Try secure sign-in again</button>}
+      <div className={`auth-trust ${status === 'error' ? 'error' : ''}`}>
+        <ShieldCheck/>
+        <span><b>{status === 'error' ? 'Your account is safe' : 'Protected by Telegram'}</b>{status === 'error' ? 'No account data was accepted.' : 'Password-free, verified access.'}</span>
+      </div>
+    </section>
+    <p className="auth-foot">Travel farther. Feel at home.</p>
   </main>;
 }
 
 function HomeView({ user, destinations, category, setCategory, open, goSearch }) {
   const filtered = category === 'All' ? destinations : destinations.filter(d => d.category === category);
   return <div className="page home-page">
+    <div className="home-brand"><div><img src="/tankua-logo.png" alt=""/><span><b>TANKUA</b><small>Explore Ethiopia</small></span></div><button className="icon-button" aria-label="Notifications"><Bell size={20}/><i/></button></div>
     <header className="home-header">
-      <div><p className="eyebrow">Welcome, {(user.name || 'Traveler').split(' ')[0]} 👋</p><h1>Explore <em>Ethiopia</em></h1><p className="muted">{new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p></div>
-      <button className="icon-button"><Bell size={21}/><i/></button>
+      <div><p className="eyebrow">Welcome, {(user.name || 'Traveler').split(' ')[0]} 👋</p><h1>Explore <em>Ethiopia</em></h1><p className="muted">Handpicked Ethiopian journeys, ready to book.</p></div>
     </header>
-    <button className="search-bar" onClick={goSearch}><Search size={19}/><span>Where do you want to go?</span></button>
+    <button className="search-bar" onClick={goSearch}><span className="search-icon"><Search size={18}/></span><span><b>Find a destination</b><small>Search places, cities and experiences</small></span><i className="search-go"><ChevronRight/></i></button>
+    <div className="home-proof"><span><ShieldCheck/><b>Verified trips</b></span><span><MapPin/><b>{destinations.length} places to explore</b></span></div>
     <div className="chips">{categories.map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}</div>
     <SectionHeader title="Featured" />
     <div className="featured-row">{filtered.slice(0,4).map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
@@ -269,7 +281,9 @@ function SectionHeader({ title, action, onAction }) { return <div className="sec
 function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 30%,rgba(5,15,28,.82)),url("${d.image}")`}}><span className="rating"><Star size={13} fill="currentColor"/> {d.rating}</span><div><h3>{d.name}</h3><p><MapPin size={14}/>{d.city}</p><b>From {money(d.price)}</b></div></button>; }
 function DestinationCard({d,open}) { return <button className="destination-card" onClick={()=>open(d)}><div className="card-image" style={{backgroundImage:`url("${d.image}")`}}><span>{d.category}</span><Heart size={18}/></div><div className="card-copy"><h3>{d.name}</h3><p><MapPin size={13}/>{d.city}</p><div><span><Star size={13} fill="currentColor"/> {d.rating}</span><b>{money(d.price)}</b></div></div></button>; }
 
-function Detail({ destination:d, back, book, notify }) {
+function Detail({ destination:d, catalog, back, book, notify }) {
+  const destinationTrip=(catalog.trips||[]).find(trip=>trip.destination_id===d.id);
+  const provider=(catalog.providers||[]).find(item=>item.id===destinationTrip?.provider_id);
   return <div className="detail-page">
     <div className="detail-hero" style={{backgroundImage:`linear-gradient(180deg,rgba(0,0,0,.16),transparent 38%,rgba(5,15,28,.78)),url("${d.image}")`}}>
       <div className="floating-head"><button onClick={back}><ArrowLeft/></button><div><button onClick={()=>notify('Saved to favorites')}><Heart/></button><button onClick={()=>{navigator.share?.({title:d.name,text:d.description});notify('Ready to share')}}><Share2/></button></div></div>
@@ -279,7 +293,7 @@ function Detail({ destination:d, back, book, notify }) {
       <div className="quick-facts"><div><Star/><b>{d.rating}</b><span>{d.reviews} reviews</span></div><div><Clock3/><b>{d.duration}</b><span>Duration</span></div><div><ShieldCheck/><b>Verified</b><span>Tankua partner</span></div></div>
       <h2>About this place</h2><p className="body-copy">{d.description}</p>
       <h2>What’s included</h2><div className="included"><span><Check/>Round-trip transport</span><span><Check/>Professional guide</span><span><Check/>Entrance fees</span><span><Check/>24/7 trip support</span></div>
-      <div className="provider"><div className="provider-logo">TA</div><div><b>Tankua Adventures</b><p>Trusted tour operator · 4.9 ★</p></div><ChevronRight/></div>
+      {provider&&<div className="provider">{provider.logo_url?<img className="provider-logo-image" src={provider.logo_url} alt=""/>:<div className="provider-logo"><Building2/></div>}<div><b>{provider.name}</b><p>{Number(provider.rating||0).toFixed(1)} ★ · Verified provider</p></div><ChevronRight/></div>}
     </div>
     <div className="sticky-cta"><div><span>Starting from</span><b>{money(d.price)}</b><small>per person</small></div><button onClick={book}>Book this trip <ChevronRight size={18}/></button></div>
   </div>;
@@ -307,15 +321,53 @@ function BookingFlow({ step, destination, catalog, booking, setBooking, back, ne
     const link = linkByStation.get(station.id);
     return { ...station, sub: station.address || station.city || '', time: link.pickup_time, extraPrice: Number(link.extra_price || 0) };
   });
-  if(step==='trip') return <FlowPage step={step} back={back} title={`Trips to ${destination.name}`} sub="Live availability from Tankua providers.">{trips.map((t)=><Choice key={t.id} selected={booking.trip?.id===t.id} onClick={()=>setBooking({...booking,trip:t,pickup:null})}><div className="trip-date"><CalendarDays/><b>{t.date}</b></div><div className="route-time"><b>{t.time}</b><span><i/>{t.trip_type}<i/></span><b>{t.arrival}</b></div><div className="choice-meta"><span>{t.label} · {money(t.price)}</span><em>{t.left} seats left</em></div></Choice>)}<Continue disabled={!booking.trip} onClick={()=>next('pickup')}/></FlowPage>;
-  if(step==='pickup') return <FlowPage step={step} back={back} title="Where should we pick you up?" sub="All times are local. Please arrive 15 minutes early.">{pickups.map((p)=><Choice key={p.id} selected={booking.pickup?.id===p.id} onClick={()=>setBooking({...booking,pickup:p})}><div className="pickup"><span><Navigation/></span><div><b>{p.name}</b><p>{p.sub}</p></div><strong>{p.time}</strong></div></Choice>)}<Continue disabled={!booking.pickup} onClick={()=>next('seats')}/></FlowPage>;
-  if(step==='seats') return <FlowPage step={step} back={back} title="How many travelers?" sub={`Seats are ${money(destination.price)} per person.`}><div className="seat-picker"><div className="people-art"><UsersRound/></div><p>Number of seats</p><div className="counter"><button disabled={booking.seats<=1} onClick={()=>setBooking({...booking,seats:booking.seats-1})}><Minus/></button><b>{booking.seats}</b><button disabled={booking.seats>=8} onClick={()=>setBooking({...booking,seats:booking.seats+1})}><Plus/></button></div><span>Maximum 8 seats per booking</span></div><PriceSummary d={destination} booking={booking}/><Continue onClick={()=>next('passengers')}/></FlowPage>;
+  if(step==='trip') return <TripStep destination={destination} trips={trips} providers={catalog.providers||[]} booking={booking} setBooking={setBooking} back={back} next={()=>next('pickup')}/>;
+  if(step==='pickup') return <PickupStep pickups={pickups} booking={booking} setBooking={setBooking} back={back} next={()=>next('seats')}/>;
+  if(step==='seats') return <SeatStep destination={destination} booking={booking} setBooking={setBooking} back={back} next={()=>next('passengers')}/>;
   if(step==='passengers') return <PassengerForm step={step} back={back} booking={booking} setBooking={setBooking} next={()=>next('payment')}/>;
   return <Payment step={step} back={back} d={destination} booking={booking} setBooking={setBooking} finish={finish} submitting={submitting}/>;
 }
 function FlowPage({step,back,title,sub,children}) { return <div className="flow-page"><FlowHeader step={step} back={back}/><div className="flow-body"><h1>{title}</h1><p className="lead">{sub}</p>{children}</div></div>; }
 function Choice({selected,onClick,children}) { return <button className={`choice ${selected?'selected':''}`} onClick={onClick}>{children}<i className="radio">{selected&&<Check/>}</i></button>; }
 function Continue({disabled,onClick,label='Continue'}) { return <button className="continue" disabled={disabled} onClick={onClick}>{label}<ChevronRight/></button>; }
+
+function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
+  const providerById=new Map(providers.map(provider=>[provider.id,provider]));
+  return <FlowPage step="trip" back={back} title="Select Trip" sub={`Available trips to ${destination.name}`}>
+    <div className="mobile-trip-list">{trips.map(trip=>{
+      const provider=providerById.get(trip.provider_id);
+      const selected=booking.trip?.id===trip.id;
+      return <button key={trip.id} className={`mobile-trip-card ${selected?'selected':''}`} onClick={()=>setBooking({...booking,trip,pickup:null,seats:1,passengers:[]})}>
+        {provider&&<div className="trip-provider">{provider.logo_url?<img src={provider.logo_url} alt=""/>:<span><Building2/></span>}<div><b>{provider.name}</b><small><Star fill="currentColor"/>{Number(provider.rating||0).toFixed(1)} · Verified provider</small></div>{selected&&<Check/>}</div>}
+        <div className="trip-schedule"><div><span>DEPARTURE</span><b>{trip.date}</b><small>{trip.time}</small></div><i><Bus/><span>{String(trip.trip_type||'scheduled').split('_').join(' ')}</span></i>{trip.return_date?<div><span>RETURN</span><b>{new Date(trip.return_date).toLocaleDateString([],{month:'short',day:'numeric'})}</b><small>{trip.arrival}</small></div>:<div><span>TRIP</span><b>One way</b><small>Scheduled</small></div>}</div>
+        <div className="trip-card-foot"><span><UsersRound/>{trip.left} seats available</span><b>{money(trip.price)} <small>/ seat</small></b></div>
+      </button>;
+    })}</div>
+    {!trips.length&&<div className="flow-empty"><CalendarDays/><h3>No trips available</h3><p>Please check back later or choose another destination.</p></div>}
+    <div className="flow-info"><Info/><span><b>Transparent pricing</b>Tankua adds a 5% service fee at checkout.</span></div>
+    <div className="flow-sticky"><Continue disabled={!booking.trip} onClick={next}/></div>
+  </FlowPage>;
+}
+
+function PickupStep({pickups,booking,setBooking,back,next}) {
+  const [view,setView]=useState('list');
+  return <FlowPage step="pickup" back={back} title="Select Pickup Station" sub="Choose your preferred pickup location">
+    <div className="view-toggle"><button className={view==='list'?'active':''} onClick={()=>setView('list')}><Navigation/>List</button><button className={view==='map'?'active':''} onClick={()=>setView('map')}><MapIcon/>Map</button></div>
+    {view==='list'?<div className="pickup-list">{pickups.map(p=><button key={p.id} className={`pickup-card ${booking.pickup?.id===p.id?'selected':''}`} onClick={()=>setBooking({...booking,pickup:p})}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice)}`:' · Included'}</small></div>{booking.pickup?.id===p.id&&<Check/>}</button>)}</div>:<div className="pickup-map"><div className="map-grid"/>{pickups.map((p,index)=><button key={p.id} className={`pickup-pin ${booking.pickup?.id===p.id?'selected':''}`} style={{left:`${18+(index*23)%65}%`,top:`${19+(index*29)%62}%`}} onClick={()=>setBooking({...booking,pickup:p})}><MapPin fill="currentColor"/><span>{p.name}</span></button>)}</div>}
+    {!pickups.length&&<div className="flow-empty"><MapPin/><h3>No pickup stations</h3><p>This provider has not added pickup stations for this trip yet.</p></div>}
+    <div className="flow-sticky">{booking.pickup&&<div className="selected-pickup"><Check/><span><b>{booking.pickup.name}</b><small>{booking.pickup.time}{booking.pickup.extraPrice>0?` · +${money(booking.pickup.extraPrice)}`:''}</small></span></div>}<Continue disabled={!booking.pickup} onClick={next}/></div>
+  </FlowPage>;
+}
+
+function SeatStep({destination,booking,setBooking,back,next}) {
+  const limit=Math.min(8,Number(booking.trip?.left||booking.trip?.available_seats||8));
+  return <FlowPage step="seats" back={back} title="Select Seats" sub="How many seats do you need?">
+    <div className="seat-picker mobile"><div className="people-art"><UsersRound/></div><div className="counter"><button disabled={booking.seats<=1} onClick={()=>setBooking({...booking,seats:booking.seats-1,passengers:[]})}><Minus/></button><div><b>{booking.seats}</b><span>{booking.seats===1?'seat':'seats'}</span></div><button disabled={booking.seats>=limit} onClick={()=>setBooking({...booking,seats:booking.seats+1,passengers:[]})}><Plus/></button></div><p>{limit} currently available · {money(booking.trip?.price||destination.price)} each</p></div>
+    <PriceSummary d={destination} booking={booking}/>
+    <div className="flow-info"><Info/><span><b>Passenger details come next</b>We need a name and age for every traveler.</span></div>
+    <div className="flow-sticky"><Continue onClick={next}/></div>
+  </FlowPage>;
+}
 function PriceSummary({d,booking}) { const perSeat=Number(booking.trip?.price || d.price), base=perSeat*booking.seats+Number(booking.pickup?.extraPrice||0), fee=Math.round(base*.05); return <div className="summary"><h3>Estimated price</h3><p><span>{money(perSeat)} × {booking.seats}</span><b>{money(perSeat*booking.seats)}</b></p>{booking.pickup?.extraPrice>0&&<p><span>Pickup supplement</span><b>{money(booking.pickup.extraPrice)}</b></p>}<p><span>Service fee</span><b>{money(fee)}</b></p><hr/><p className="total"><span>Total</span><b>{money(base+fee)}</b></p><small>Final price is recalculated securely when you book.</small></div>; }
 
 function PassengerForm({step,back,booking,setBooking,next}) {
@@ -331,9 +383,19 @@ function Payment({step,back,d,booking,finish,submitting}) {
 }
 
 function Confirmation({booking,home,ticket}) { return <div className="confirmation"><div className="success-orbit"><span><Check/></span></div><p className="eyebrow">BOOKING CONFIRMED</p><h1>You’re going to<br/>{booking.destination.name}!</h1><p>Your trip is reserved. We’ve added your ticket to the Trips tab.</p><div className="confirmation-card"><img src={booking.destination.image}/><div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div><strong>{booking.id}</strong></div><button className="continue" onClick={ticket}>View QR ticket <Ticket/></button><button className="text-button" onClick={home}>Back to home</button></div>; }
-function TicketView({booking,back}) { return <div className="ticket-page"><header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Your ticket</h1><span/></header><div className="ticket-card"><div className="ticket-top"><img src="/icon.png"/><span><b>TANKUA</b><small>EXPLORE ETHIOPIA</small></span></div><div className="ticket-destination" style={{backgroundImage:`linear-gradient(180deg,transparent,rgba(5,15,28,.85)),url("${booking.destination.image}")`}}><h2>{booking.destination.name}</h2><p>{booking.trip.date}</p></div><div className="ticket-info"><p><span>DEPARTURE<b>{booking.trip.time}</b></span><span>SEATS<b>{booking.seats}</b></span></p><p><span>PICKUP<b>{booking.pickup.name}</b></span><span>BOOKING<b>{booking.id}</b></span></p><div className="qr"><div className="qr-pattern">{Array.from({length:81},(_,i)=><i key={i} className={(i*7+i%5)%3===0?'on':''}/>)}</div><small>Present this code at pickup</small></div></div></div><div className="info-note"><Info/><p><b>Ready for your trip?</b>Arrive 15 minutes before departure with a valid ID.</p></div></div>; }
+function TicketView({booking,back}) { return <div className="ticket-page"><header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Your ticket</h1><span/></header><div className="ticket-card"><div className="ticket-top"><img src="/tankua-logo.png"/><span><b>TANKUA</b><small>EXPLORE ETHIOPIA</small></span></div><div className="ticket-destination" style={{backgroundImage:`linear-gradient(180deg,transparent,rgba(5,15,28,.85)),url("${booking.destination.image}")`}}><h2>{booking.destination.name}</h2><p>{booking.trip.date}</p></div><div className="ticket-info"><p><span>DEPARTURE<b>{booking.trip.time}</b></span><span>SEATS<b>{booking.seats}</b></span></p><p><span>PICKUP<b>{booking.pickup.name}</b></span><span>BOOKING<b>{booking.id}</b></span></p><div className="qr"><div className="qr-pattern">{Array.from({length:81},(_,i)=><i key={i} className={(i*7+i%5)%3===0?'on':''}/>)}</div><small>Present this code at pickup</small></div></div></div><div className="info-note"><Info/><p><b>Ready for your trip?</b>Arrive 15 minutes before departure with a valid ID.</p></div></div>; }
 
-function SearchView({destinations,query,setQuery,open}) { const list=destinations.filter(d=>(d.name+d.city+d.category).toLowerCase().includes(query.toLowerCase())); return <div className="page"><header className="page-head"><div><p className="eyebrow">DISCOVER</p><h1>Find your next trip</h1></div><Bell/></header><label className="search-input"><Search/><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search destinations, cities..."/>{query&&<button onClick={()=>setQuery('')}><X/></button>}</label><div className="result-head"><b>{query?`${list.length} results`:'Explore all destinations'}</b><span>Sorted by popularity</span></div><div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><img src={d.image}/><div><span>{d.category}</span><h3>{d.name}</h3><p><MapPin/>{d.city} · <Star fill="currentColor"/>{d.rating}</p><b>From {money(d.price)}</b></div><ChevronRight/></button>)}</div></div>; }
+function SearchView({destinations,query,setQuery,open}) {
+  const cleanQuery=query.trim().toLowerCase();
+  const list=destinations.filter(d=>(d.name+d.city+d.category).toLowerCase().includes(cleanQuery));
+  return <div className="page search-page">
+    <header className="search-hero"><img src="/tankua-logo.png" alt=""/><div><p className="eyebrow">DISCOVER ETHIOPIA</p><h1>Find a place<br/>you’ll <em>love.</em></h1></div></header>
+    <label className="search-input"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search places or cities" autoComplete="off" enterKeyHint="search"/>{query&&<button type="button" aria-label="Clear search" onClick={()=>setQuery('')}><X/></button>}</label>
+    {!cleanQuery&&<div className="search-suggestions"><span>Try</span>{['Lalibela','Gondar','Nature'].map(item=><button key={item} onClick={()=>setQuery(item)}>{item}</button>)}</div>}
+    <div className="result-head"><b>{cleanQuery?`${list.length} match${list.length===1?'':'es'}`:'Places for you'}</b><span>{cleanQuery?'Live results':'Handpicked by Tankua'}</span></div>
+    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin/>{d.city}</p><div><span><Star fill="currentColor"/>{d.rating||'New'}</span><b>From {money(d.price)}</b></div></div><i><ChevronRight/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>setQuery('')}>Show all places</button></div>}
+  </div>;
+}
 function TripsView({trips,destinations,open,explore}) { return <div className="page"><header className="page-head"><div><p className="eyebrow">YOUR JOURNEYS</p><h1>Trips</h1></div></header><div className="segmented"><button className="active">Upcoming</button><button>Completed</button><button>Cancelled</button></div>{trips.length?trips.map(raw=>{const t=normalizeBookingForUi(raw,destinations);return <button className="booked-card" onClick={()=>open(raw)} key={t.id}><img src={t.destination.image}/><div><span>{t.payment_status==='paid'?'Paid · confirmed':'Payment pending'}</span><h3>{t.destination.name}</h3><p><CalendarDays/>{t.trip.date} · {t.trip.time}</p><p><MapPin/>{t.pickup.name}</p><b>{t.payment_status==='paid'?'View ticket':'Complete payment'} <ChevronRight/></b></div></button>}):<div className="empty"><span><Bus/></span><h2>No upcoming trips</h2><p>Your next adventure is waiting. Book a trip and it will show up here.</p><button onClick={explore}>Explore destinations</button></div>}</div>; }
 function MapView({destinations,open}) { const featured=destinations[1]||destinations[0]; return <div className="map-page"><div className="fake-map"><div className="map-roads"/><header><label><Search/><span>Search this area</span></label><button><LocateFixed/></button></header>{destinations.slice(0,5).map((d,i)=><button key={d.id} className="marker" style={{left:`${15+(i*17)%70}%`,top:`${22+(i*19)%55}%`}} onClick={()=>open(d)}><MapPin fill="currentColor"/><span>{money(d.price).replace('ETB ','')}</span></button>)}{featured&&<div className="map-preview"><img src={featured.image}/><div><span>POPULAR NEARBY</span><h3>{featured.name}</h3><p><Star fill="currentColor"/>{featured.rating} · {featured.city}</p></div><button onClick={()=>open(featured)}><ChevronRight/></button></div>}</div></div>; }
 function ProfileView({user,open}) { const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join(''); return <div className="page profile"><p className="eyebrow">YOUR SPACE</p><h1>Profile</h1><div className="profile-hero"><div className="avatar">{initials}</div><div><h2>{user.name||'Telegram Traveler'}</h2><p>@{user.telegram_username||'telegram_user'}</p><span>✈ Verified Telegram traveler</span></div></div><section><small>ACCOUNT</small><div><button onClick={()=>open('help')}><span><ShieldCheck/></span><b>Telegram-secured account</b><ChevronRight/></button></div></section><section><small>SUPPORT</small><div><button onClick={()=>open('help')}><span><CircleHelp/></span><b>Help center</b><ChevronRight/></button></div></section><p className="version">Tankua for Telegram · v1.0</p></div>; }

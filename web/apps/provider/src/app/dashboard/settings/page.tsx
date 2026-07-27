@@ -1,283 +1,100 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Settings,
-  Building2,
-  User,
-  Lock,
-  Bell,
-  CreditCard,
-  Save,
-  Upload,
-} from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { Building2, Camera, Save } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar } from "@tankua/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@tankua/ui";
+import { supabase } from "@/lib/supabase";
 
-const settingsSections = [
-  { id: "company", label: "Company", icon: Building2 },
-  { id: "account", label: "Account", icon: User },
-  { id: "security", label: "Security", icon: Lock },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "banking", label: "Banking", icon: CreditCard },
-];
+type ProviderProfile = {
+  id: string; name: string; description: string | null; phone: string | null;
+  email: string | null; logo_url: string | null;
+};
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState("company");
-  const [saving, setSaving] = useState(false);
+  const inputRef=useRef<HTMLInputElement>(null);
+  const [provider,setProvider]=useState<ProviderProfile|null>(null);
+  const [form,setForm]=useState({name:"",description:"",phone:"",email:""});
+  const [logoFile,setLogoFile]=useState<File|null>(null);
+  const [preview,setPreview]=useState("");
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [message,setMessage]=useState("");
+  const [error,setError]=useState("");
 
-  const handleSave = async () => {
-    setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  useEffect(()=>{
+    const stored=localStorage.getItem("provider_user");
+    if(!stored){setError("Please sign in again.");setLoading(false);return;}
+    const parsed=JSON.parse(stored);
+    const providerId=parsed?.provider_id||parsed?.provider?.id;
+    if(!providerId){setError("Provider account not found.");setLoading(false);return;}
+    void (async () => {
+      try {
+        const { data, error } = await supabase.from("providers").select("id,name,description,phone,email,logo_url").eq("id",providerId).single();
+        if(error){setError(error.message);return;}
+        const profile=data as ProviderProfile; setProvider(profile);
+        setForm({name:profile.name||"",description:profile.description||"",phone:profile.phone||"",email:profile.email||""});
+        setPreview(profile.logo_url||"");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  },[]);
+
+  function chooseLogo(event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0]; if(!file)return;
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type)){setError("Use a JPG, PNG, or WebP image.");return;}
+    if(file.size>2*1024*1024){setError("Logo must be 2MB or smaller.");return;}
+    setError(""); setLogoFile(file); setPreview(URL.createObjectURL(file));
+  }
+
+  async function save(event:FormEvent){
+    event.preventDefault(); if(!provider)return; setSaving(true); setError(""); setMessage("");
+    let logoUrl=provider.logo_url;
+    if(logoFile){
+      const extension=logoFile.name.split(".").pop()?.toLowerCase()||"png";
+      const path=`${provider.id}/profile-${Date.now()}.${extension}`;
+      const upload=await supabase.storage.from("provider-logos").upload(path,logoFile,{upsert:true,cacheControl:"3600"});
+      if(upload.error){setError(upload.error.message);setSaving(false);return;}
+      logoUrl=supabase.storage.from("provider-logos").getPublicUrl(path).data.publicUrl;
+    }
+    const update=await supabase.from("providers").update({
+      name:form.name.trim(),description:form.description.trim()||null,phone:form.phone.trim()||null,
+      email:form.email.trim()||null,logo_url:logoUrl,updated_at:new Date().toISOString(),
+    }).eq("id",provider.id);
+    if(update.error){setError(update.error.message);setSaving(false);return;}
+    const stored=localStorage.getItem("provider_user");
+    if(stored){const parsed=JSON.parse(stored);parsed.provider={...(parsed.provider||{}),...form,logo_url:logoUrl};localStorage.setItem("provider_user",JSON.stringify(parsed));}
+    setProvider({...provider,...form,logo_url:logoUrl}); setLogoFile(null); setMessage("Provider profile saved.");
     setSaving(false);
-  };
+  }
 
-  return (
-    <div className="min-h-screen">
-      <Header
-        title="Settings"
-        subtitle="Manage your account and preferences"
-        actions={
-          <Button size="sm" leftIcon={<Save className="h-4 w-4" />} onClick={handleSave} isLoading={saving}>
-            Save Changes
-          </Button>
-        }
-      />
-
-      <div className="p-6">
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <Card className="lg:col-span-1 h-fit">
-            <CardContent className="p-4">
-              <nav className="space-y-1">
-                {settingsSections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                      activeSection === section.id
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <section.icon className="h-5 w-5" />
-                    {section.label}
-                  </button>
-                ))}
-              </nav>
-            </CardContent>
-          </Card>
-
-          {/* Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {activeSection === "company" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Company Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-6 pb-6 border-b border-border">
-                    <div className="w-24 h-24 rounded-2xl bg-primary flex items-center justify-center text-white text-3xl font-bold">
-                      A
-                    </div>
-                    <div>
-                      <Button variant="outline" size="sm" leftIcon={<Upload className="h-4 w-4" />}>
-                        Upload Logo
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">JPG, PNG. Max 2MB</p>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Company Name</label>
-                      <input
-                        type="text"
-                        defaultValue="Abyssinia Tours"
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Business Type</label>
-                      <select className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background">
-                        <option value="tour_operator">Tour Operator</option>
-                        <option value="travel_agency">Travel Agency</option>
-                        <option value="transport_company">Transport Company</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Phone Number</label>
-                      <input
-                        type="tel"
-                        defaultValue="+251 911 123 456"
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Email</label>
-                      <input
-                        type="email"
-                        defaultValue="info@abyssiniatours.com"
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-2">Description</label>
-                      <textarea
-                        rows={3}
-                        defaultValue="Leading tour operator specializing in religious and cultural tourism in Ethiopia."
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === "account" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Owner</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-6 pb-6 border-b border-border">
-                    <Avatar name="Abebe Kebede" size="xl" />
-                    <div>
-                      <Button variant="outline" size="sm">Change Photo</Button>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Full Name</label>
-                      <input
-                        type="text"
-                        defaultValue="Abebe Kebede"
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Email</label>
-                      <input
-                        type="email"
-                        defaultValue="abebe@abyssiniatours.com"
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Phone</label>
-                      <input
-                        type="tel"
-                        defaultValue="+251 911 123 456"
-                        className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Role</label>
-                      <input
-                        type="text"
-                        defaultValue="Owner"
-                        disabled
-                        className="w-full px-4 py-2 rounded-xl border border-border bg-muted/50 text-muted-foreground"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === "security" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Change Password</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Current Password</label>
-                    <input
-                      type="password"
-                      placeholder="Enter current password"
-                      className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">New Password</label>
-                    <input
-                      type="password"
-                      placeholder="Enter new password"
-                      className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Confirm New Password</label>
-                    <input
-                      type="password"
-                      placeholder="Confirm new password"
-                      className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
-                  </div>
-                  <Button className="mt-4">Update Password</Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === "notifications" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {[
-                    { label: "New bookings", description: "When customers book your trips", enabled: true },
-                    { label: "Booking cancellations", description: "When bookings are cancelled", enabled: true },
-                    { label: "New reviews", description: "When customers leave reviews", enabled: true },
-                    { label: "Payout notifications", description: "Weekly payout updates", enabled: true },
-                    { label: "Marketing updates", description: "Tips and platform news", enabled: false },
-                  ].map((setting, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
-                      <div>
-                        <p className="font-medium">{setting.label}</p>
-                        <p className="text-sm text-muted-foreground">{setting.description}</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" defaultChecked={setting.enabled} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                      </label>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === "banking" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bank Account Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="p-6 bg-gradient-to-br from-[#0A1A2F] to-[#1a3a5c] rounded-2xl text-white">
-                    <div className="flex items-center justify-between mb-6">
-                      <Building2 className="h-8 w-8" />
-                      <Badge className="bg-emerald-500">Verified</Badge>
-                    </div>
-                    <p className="text-lg font-mono tracking-wider mb-2">•••• •••• •••• 4521</p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs opacity-70">Account Holder</p>
-                        <p className="font-medium">Abyssinia Tours PLC</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs opacity-70">Bank</p>
-                        <p className="font-medium">Commercial Bank of Ethiopia</p>
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="outline">Update Bank Details</Button>
-                </CardContent>
-              </Card>
-            )}
+  return <div className="min-h-screen">
+    <Header title="Provider Profile" subtitle="This information appears to travelers during booking"/>
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+      <Card><CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary"/>Company profile</CardTitle></CardHeader>
+        <CardContent>{loading?<p>Loading profile…</p>:<form onSubmit={save} className="space-y-6">
+          {error&&<div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>}
+          {message&&<div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm">{message}</div>}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b">
+            <div className="w-28 h-28 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center border">
+              {preview?<img src={preview} alt="Provider logo" className="w-full h-full object-cover"/>:<Building2 className="h-10 w-10 text-primary"/>}
+            </div>
+            <div><input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={chooseLogo} className="hidden"/>
+              <Button type="button" variant="outline" size="sm" leftIcon={<Camera className="h-4 w-4"/>} onClick={()=>inputRef.current?.click()}>Choose profile image</Button>
+              <p className="text-xs text-muted-foreground mt-2">Square JPG, PNG, or WebP. Maximum 2MB.</p>
+              <p className="text-xs text-muted-foreground">Displayed on trip selection and provider details.</p>
+            </div>
           </div>
-        </div>
-      </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            <label className="text-sm font-medium">Company name *<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-2 w-full px-4 py-3 rounded-xl border"/></label>
+            <label className="text-sm font-medium">Phone<input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} className="mt-2 w-full px-4 py-3 rounded-xl border"/></label>
+            <label className="text-sm font-medium">Public email<input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="mt-2 w-full px-4 py-3 rounded-xl border"/></label>
+            <label className="md:col-span-2 text-sm font-medium">Description<textarea rows={4} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-2 w-full px-4 py-3 rounded-xl border resize-none" placeholder="Tell travelers about your company and experience."/></label>
+          </div>
+          <div className="flex justify-end"><Button type="submit" isLoading={saving} leftIcon={<Save className="h-4 w-4"/>}>Save profile</Button></div>
+        </form>}</CardContent>
+      </Card>
     </div>
-  );
+  </div>;
 }
-

@@ -1,4 +1,4 @@
-const files = new Map(__ASSET_MANIFEST__);
+const files = new Map(globalThis.__TANKUA_ASSET_MANIFEST__ || []);
 const SESSION_COOKIE = 'tankua_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const TELEGRAM_MAX_AGE_SECONDS = 5 * 60;
@@ -63,7 +63,6 @@ async function verifyTelegramInitData(initData, botToken) {
   const age = Math.floor(Date.now() / 1000) - authDate;
   if (age < -30 || age > TELEGRAM_MAX_AGE_SECONDS) throw new Error('Telegram launch data has expired');
   params.delete('hash');
-  params.delete('signature');
   const dataCheckString = [...params.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `${key}=${value}`)
@@ -205,10 +204,11 @@ async function authenticate(request, env) {
 }
 
 async function getCatalog(env) {
-  const [destinations, trips, stations, links] = await Promise.all([
-    supabase(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,place_type&order=name.asc'),
+  const [destinations, trips, providers, stations, links] = await Promise.all([
+    supabase(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location&order=name.asc'),
     supabase(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,itinerary,status&status=in.(active,upcoming)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc`),
-    supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,lat,lng,is_active&is_active=eq.true&order=name.asc'),
+    supabase(env, 'providers?select=id,name,description,logo_url,rating,total_trips&status=eq.active&order=name.asc'),
+    supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,lat,lng&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
   ]);
   const catalogDestinations = destinations.map(destination => {
@@ -222,7 +222,7 @@ async function getCatalog(env) {
       is_verified: true,
     };
   });
-  return json({ destinations: catalogDestinations, trips, stations, trip_pickup_stations: links });
+  return json({ destinations: catalogDestinations, trips, providers, stations, trip_pickup_stations: links });
 }
 
 async function getBookings(session, env) {

@@ -1,4 +1,4 @@
-// File: C:\Users\Bereket\tankua\web\apps\provider\src\app\dashboard\earnings\page.tsx
+// File: C:\Users\HP\Tankua-android\web\apps\provider\src\app\dashboard\earnings\page.tsx
 import * as entry from '../../../../../src/app/dashboard/earnings/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

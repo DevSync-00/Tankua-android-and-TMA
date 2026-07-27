@@ -645,3 +645,16 @@ export const deleteProvider = async (providerId) => {
     throw error;
   }
 };
+
+export const getProviderPickupStations = async (providerId) => {
+  if (!providerId) return [];
+  const { data, error } = await supabase
+    .from('pickup_stations')
+    .select('*')
+    .eq('provider_id', providerId)
+    .eq('is_active', true)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};

@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   useWindowDimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -22,68 +24,16 @@ import { useBooking } from '../../contexts/BookingContext';
 import { GOOGLE_MAPS_STYLE } from '../../config/googleMaps';
 import ModernPickupStationCard from '../../components/ModernPickupStationCard';
 import ModernButton from '../../components/ModernButton';
-
-const MOCK_STATIONS = [
-  {
-    id: '1',
-    name: 'Meskel Square',
-    city: 'Addis Ababa',
-    lat: 9.0092,
-    lng: 38.7635,
-    pickupTime: '6:00 AM',
-    extraPrice: 0,
-    distance: 2.3,
-    isNearest: true,
-  },
-  {
-    id: '2',
-    name: 'Bole Airport',
-    city: 'Addis Ababa',
-    lat: 8.9806,
-    lng: 38.7991,
-    pickupTime: '6:30 AM',
-    extraPrice: 50,
-    distance: 8.5,
-  },
-  {
-    id: '3',
-    name: 'Piazza',
-    city: 'Addis Ababa',
-    lat: 9.0339,
-    lng: 38.7507,
-    pickupTime: '5:45 AM',
-    extraPrice: 0,
-    distance: 3.7,
-  },
-  {
-    id: '4',
-    name: 'Mexico Square',
-    city: 'Addis Ababa',
-    lat: 9.0158,
-    lng: 38.7573,
-    pickupTime: '6:15 AM',
-    extraPrice: 25,
-    distance: 4.2,
-  },
-  {
-    id: '5',
-    name: 'Kality',
-    city: 'Addis Ababa',
-    lat: 8.9183,
-    lng: 38.7317,
-    pickupTime: '5:30 AM',
-    extraPrice: 100,
-    distance: 15.8,
-  },
-];
+import { getTripStations, getProviderPickupStations } from '../../services/database';
 
 const SelectPickupStationScreen = ({ navigation }) => {
   const { width, height } = useWindowDimensions();
   const { t } = useLanguage();
-  const { updateBooking } = useBooking();
+  const { currentBooking, updateBooking } = useBooking();
   const [selectedStation, setSelectedStation] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [region, setRegion] = useState({
     latitude: 9.0320,
     longitude: 38.7469,
@@ -109,9 +59,40 @@ const SelectPickupStationScreen = ({ navigation }) => {
   }, [selectedStation, viewMode]);
 
   const loadStations = async () => {
-    setTimeout(() => {
-      setStations(MOCK_STATIONS);
-    }, 500);
+    try {
+      setLoading(true);
+      let rows = currentBooking.trip?.id
+        ? await getTripStations(currentBooking.trip.id)
+        : await getProviderPickupStations(currentBooking.provider?.id);
+      // Until a provider customizes stations for a particular trip, offer all
+      // active stations belonging to that provider.
+      if (rows.length === 0 && currentBooking.provider?.id) {
+        rows = await getProviderPickupStations(currentBooking.provider.id);
+      }
+      const normalized = rows.map((row) => {
+        const station = row.pickup_stations || row;
+        return {
+          ...station,
+          lat: Number(station.lat ?? station.latitude),
+          lng: Number(station.lng ?? station.longitude),
+          pickupTime: row.pickup_time || station.pickup_time || 'TBD',
+          extraPrice: Number(row.extra_price ?? station.extra_price ?? 0),
+        };
+      }).filter((station) => Number.isFinite(station.lat) && Number.isFinite(station.lng));
+      setStations(normalized);
+      if (normalized.length) {
+        setRegion((previous) => ({
+          ...previous,
+          latitude: normalized[0].lat,
+          longitude: normalized[0].lng,
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading pickup stations:', error);
+      Alert.alert('Error', 'Failed to load pickup stations. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleContinue = () => {
@@ -167,7 +148,18 @@ const SelectPickupStationScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {viewMode === 'list' ? (
+      {loading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.subtitle}>Loading pickup stations...</Text>
+        </View>
+      ) : stations.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="location-outline" size={48} color={COLORS.gray} />
+          <Text style={styles.emptyTitle}>No pickup stations available</Text>
+          <Text style={styles.subtitle}>This provider has not added pickup stations for this trip yet.</Text>
+        </View>
+      ) : viewMode === 'list' ? (
         <FlatList
           data={stations}
           renderItem={({ item, index }) => (
@@ -300,6 +292,18 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xl,
+    gap: SPACING.md,
+  },
+  emptyTitle: {
+    fontSize: FONTS.sizes.lg,
+    fontWeight: '700',
+    color: COLORS.secondary,
   },
   map: {
     width: '100%',

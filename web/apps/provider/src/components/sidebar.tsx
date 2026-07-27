@@ -19,6 +19,7 @@ import {
   HelpCircle,
   BarChart3,
   X,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@tankua/ui";
 
@@ -26,6 +27,7 @@ const mainNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
   { label: "My Trips", href: "/dashboard/trips", icon: Route },
+  { label: "Pickup Stations", href: "/dashboard/pickup-stations", icon: MapPin },
   { label: "Drivers", href: "/dashboard/drivers", icon: Users },
   { label: "Vehicles", href: "/dashboard/vehicles", icon: Car },
 ];

@@ -111,14 +111,14 @@ export default function EarningsPage() {
       );
 
       // Calculate earnings by trip
-      const tripMap = new Map<string, { destination: string; date: string; earnings: number; bookings: number }>();
+      const tripMap = new Map<string, { tripId: string; destination: string; date: string; earnings: number; bookings: number }>();
       bookings
         .filter(b => b.payment_status === 'paid' && b.trip)
         .forEach(b => {
           const tripId = b.trip!.id;
           const destName = b.trip!.destination?.name || b.destination_name || 'Unknown';
           const tripDate = b.trip!.departure_date || b.created_at;
-          const existing = tripMap.get(tripId) || { destination: destName, date: tripDate, earnings: 0, bookings: 0 };
+          const existing = tripMap.get(tripId) || { tripId, destination: destName, date: tripDate, earnings: 0, bookings: 0 };
           tripMap.set(tripId, {
             ...existing,
             earnings: existing.earnings + b.total_price,

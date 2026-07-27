@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import test from 'node:test';
 
-const worker = (await import('../dist/server/index.js')).default;
+const worker = (await import('../server/worker-template.js')).default;
 const botToken = '123456:test-bot-token';
 const sessionSecret = 'a-production-session-secret-with-more-than-32-bytes';
 const userId = '7864c70e-43e8-4ded-85b5-63395076899a';
@@ -11,6 +11,7 @@ function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
   const params = new URLSearchParams({
     auth_date: String(authDate),
     query_id: 'AAHdF6IQAAAAAN0XohDhrOrc',
+    signature: 'telegram-third-party-signature',
     user: JSON.stringify(user),
   });
   const check = [...params.entries()]

@@ -50,6 +50,7 @@ export interface Database {
       destinations: {
         Row: {
           id: string
+          provider_id: string | null
           name: string
           description: string | null
           region: string | null
@@ -226,32 +227,38 @@ export interface Database {
       pickup_stations: {
         Row: {
           id: string
+          provider_id: string | null
           name: string
           address: string | null
-          latitude: number | null
-          longitude: number | null
+          lat: number
+          lng: number
           city: string | null
           extra_price: number
+          is_active: boolean
           created_at: string
         }
         Insert: {
           id?: string
+          provider_id?: string | null
           name: string
           address?: string | null
-          latitude?: number | null
-          longitude?: number | null
+          lat: number
+          lng: number
           city?: string | null
           extra_price?: number
+          is_active?: boolean
           created_at?: string
         }
         Update: {
           id?: string
+          provider_id?: string | null
           name?: string
           address?: string | null
-          latitude?: number | null
-          longitude?: number | null
+          lat?: number
+          lng?: number
           city?: string | null
           extra_price?: number
+          is_active?: boolean
           created_at?: string
         }
       }

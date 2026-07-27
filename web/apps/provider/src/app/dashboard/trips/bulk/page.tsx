@@ -224,7 +224,7 @@ export default function BulkTripPage() {
       trips.push({
         id: `temp-${Date.now()}-${trips.length}`,
         destinationId: trip.destination_id || "",
-        destinationName: trip.destination?.name || trip.destination_name || "",
+        destinationName: trip.destination?.name || "",
         tripType: trip.trip_type,
         departureDate: currentDate.toISOString().split('T')[0],
         departureTime: trip.departure_date ? new Date(trip.departure_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "06:00",
@@ -598,7 +598,7 @@ export default function BulkTripPage() {
                   <option value="">Select a trip</option>
                   {existingTrips.map(trip => (
                     <option key={trip.id} value={trip.id}>
-                      {trip.destination?.name || trip.destination_name} - {trip.departure_date ? new Date(trip.departure_date).toLocaleDateString() : 'TBD'}
+                      {trip.destination?.name || "Unnamed destination"} - {trip.departure_date ? new Date(trip.departure_date).toLocaleDateString() : 'TBD'}
                     </option>
                   ))}
                 </select>

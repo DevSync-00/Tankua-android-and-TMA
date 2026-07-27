@@ -354,9 +354,11 @@ export interface BookingDetails {
   trip: {
     id: string;
     departure_date: string;
-    destination: { name: string } | null;
+    destination: { id: string; name: string } | null;
   } | null;
   pickup_station: { name: string } | null;
+  destination_id: string | null;
+  destination_name: string | null;
   seats: number;
   total_price: number;
   status: string;
@@ -384,6 +386,7 @@ export async function getProviderBookings(
       payment_status,
       created_at,
       pickup_station,
+      destination_id,
       destination_name,
       provider_id,
       users (id, name, phone_number),
@@ -391,7 +394,7 @@ export async function getProviderBookings(
         id,
         departure_date,
         provider_id,
-        destinations (name)
+        destinations (id, name)
       )
     `, { count: 'exact' })
     .eq('provider_id', providerId)
@@ -426,6 +429,7 @@ export async function getProviderBookings(
         destination: b.trips.destinations,
       } : null,
       pickup_station: b.pickup_station, // JSONB column, not a foreign key
+      destination_id: b.destination_id,
       destination_name: b.destination_name,
       seats: b.seats,
       total_price: b.total_price,
@@ -460,6 +464,7 @@ export async function updateBookingStatus(
 
 export interface TripDetails {
   id: string;
+  destination_id: string | null;
   destination: { id: string; name: string; city?: string; region?: string } | null;
   departure_date: string;
   return_date: string | null;
@@ -485,6 +490,7 @@ export async function getProviderTrips(
     .from('trips')
     .select(`
       id,
+      destination_id,
       departure_date,
       date,
       return_date,
@@ -528,6 +534,7 @@ export async function getProviderTrips(
   return {
     trips: (data || []).map((t: any) => ({
       id: t.id,
+      destination_id: t.destination_id || t.destinations?.id || null,
       destination: t.destinations || null,
       departure_date: t.departure_date || t.date,
       return_date: t.return_date,
@@ -554,6 +561,7 @@ export async function createTrip(trip: {
   max_seats: number;
   tour_category?: string;
   itinerary?: string;
+  pickup_stations?: Array<{ station_id: string; pickup_time: string; extra_price: number }>;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   // Prepare trip data - handle both departure_date and date columns
   const tripData: any = {
@@ -594,7 +602,53 @@ export async function createTrip(trip: {
     return { success: false, error: error.message };
   }
 
+  if (trip.pickup_stations?.length) {
+    const { error: stationsError } = await supabase
+      .from('trip_pickup_stations')
+      .insert(trip.pickup_stations.map((station) => ({
+        trip_id: data.id,
+        station_id: station.station_id,
+        pickup_time: station.pickup_time,
+        extra_price: station.extra_price,
+      })));
+
+    if (stationsError) {
+      await supabase.from('trips').delete().eq('id', data.id);
+      return { success: false, error: `Trip was not created: ${stationsError.message}` };
+    }
+  }
+
   return { success: true, id: data.id };
+}
+
+export async function getProviderTrip(providerId: string, tripId: string) {
+  const [{ data: trip, error }, { data: stations, error: stationsError }] = await Promise.all([
+    supabase.from('trips').select('*').eq('id', tripId).eq('provider_id', providerId).single(),
+    supabase.from('trip_pickup_stations')
+      .select('station_id, pickup_time, extra_price, pickup_stations(id, name, city, address)')
+      .eq('trip_id', tripId),
+  ]);
+
+  if (error) return { trip: null, stations: [], error: error.message };
+  if (stationsError) return { trip: null, stations: [], error: stationsError.message };
+  return { trip, stations: stations || [], error: null };
+}
+
+export async function replaceTripPickupStations(
+  tripId: string,
+  stations: Array<{ station_id: string; pickup_time: string; extra_price: number }>
+): Promise<{ success: boolean; error?: string }> {
+  const { error: deleteError } = await supabase
+    .from('trip_pickup_stations')
+    .delete()
+    .eq('trip_id', tripId);
+  if (deleteError) return { success: false, error: deleteError.message };
+  if (!stations.length) return { success: true };
+
+  const { error } = await supabase.from('trip_pickup_stations').insert(
+    stations.map((station) => ({ trip_id: tripId, ...station }))
+  );
+  return error ? { success: false, error: error.message } : { success: true };
 }
 
 export async function updateTrip(

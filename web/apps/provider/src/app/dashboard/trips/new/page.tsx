@@ -24,6 +24,8 @@ export default function NewTripPage() {
   const [saving, setSaving] = useState(false);
   const [destinations, setDestinations] = useState<Array<{ id: string; name: string; city?: string; region?: string; category?: string }>>([]);
   const [loadingDestinations, setLoadingDestinations] = useState(true);
+  const [pickupStations, setPickupStations] = useState<Array<{ id: string; name: string; city: string | null; address: string | null; extra_price: number }>>([]);
+  const [stationConfig, setStationConfig] = useState<Record<string, { selected: boolean; pickupTime: string; extraPrice: string }>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [formData, setFormData] = useState({
     destinationId: "",
@@ -77,6 +79,16 @@ export default function NewTripPage() {
   useEffect(() => {
     loadDestinations();
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (!providerId) return;
+    supabase.from("pickup_stations").select("id,name,city,address,extra_price")
+      .eq("provider_id", providerId).eq("is_active", true).order("name")
+      .then(({ data, error }) => {
+        if (error) setErrorMessage(error.message);
+        else setPickupStations(data || []);
+      });
+  }, [providerId]);
 
   const loadDestinations = async () => {
     try {
@@ -140,6 +152,16 @@ export default function NewTripPage() {
       return;
     }
 
+    const selectedStations = pickupStations.filter((station) => stationConfig[station.id]?.selected);
+    if (!selectedStations.length) {
+      setErrorMessage("Select at least one pickup station for this trip.");
+      return;
+    }
+    if (selectedStations.some((station) => !stationConfig[station.id]?.pickupTime)) {
+      setErrorMessage("Add a pickup time for every selected station.");
+      return;
+    }
+
     const departureDate = new Date(`${formData.departureDate}T${formData.departureTime}:00`);
     if (Number.isNaN(departureDate.getTime())) {
       setErrorMessage("Departure date/time is invalid.");
@@ -164,6 +186,11 @@ export default function NewTripPage() {
         max_seats: seatsValue,
         tour_category: formData.tourCategory || undefined,
         itinerary: formData.itinerary?.trim() || undefined,
+        pickup_stations: selectedStations.map((station) => ({
+          station_id: station.id,
+          pickup_time: stationConfig[station.id].pickupTime,
+          extra_price: Number(stationConfig[station.id].extraPrice || station.extra_price || 0),
+        })),
       };
 
       // Import and use the createTrip function
@@ -363,6 +390,42 @@ export default function NewTripPage() {
                   />
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                Pickup Stations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Select every station available for this trip, then set its pickup time and optional surcharge.
+              </p>
+              {!pickupStations.length ? (
+                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                  No active stations yet. <Link className="text-primary font-medium" href="/dashboard/pickup-stations">Create pickup stations first.</Link>
+                </div>
+              ) : pickupStations.map((station) => {
+                const config = stationConfig[station.id] || { selected: false, pickupTime: "", extraPrice: String(station.extra_price || 0) };
+                return <div key={station.id} className={`rounded-xl border p-4 ${config.selected ? "border-primary bg-primary/5" : "border-border"}`}>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" checked={config.selected} className="mt-1"
+                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, selected: e.target.checked } }))}/>
+                    <span className="flex-1"><b className="block">{station.name}</b><small className="text-muted-foreground">{[station.address,station.city].filter(Boolean).join(", ")}</small></span>
+                  </label>
+                  {config.selected && <div className="grid grid-cols-2 gap-3 mt-3 pl-6">
+                    <label className="text-sm">Pickup time *<input type="time" value={config.pickupTime}
+                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, pickupTime: e.target.value } }))}
+                      className="mt-1 w-full px-3 py-2 rounded-lg border bg-background"/></label>
+                    <label className="text-sm">Extra price (ETB)<input type="number" min="0" value={config.extraPrice}
+                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, extraPrice: e.target.value } }))}
+                      className="mt-1 w-full px-3 py-2 rounded-lg border bg-background"/></label>
+                  </div>}
+                </div>;
+              })}
             </CardContent>
           </Card>
 

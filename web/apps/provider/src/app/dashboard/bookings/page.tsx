@@ -440,11 +440,9 @@ export default function BookingsPage() {
                       </div>
                       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
                         {phone && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <a href={`tel:${phone}`}>
-                              <Phone className="h-4 w-4" />
-                            </a>
-                          </Button>
+                          <a href={`tel:${phone}`} className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-muted">
+                            <Phone className="h-4 w-4" />
+                          </a>
                         )}
                         {booking.status === "pending" && (
                           <>
@@ -556,11 +554,9 @@ export default function BookingsPage() {
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               {phone && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                  <a href={`tel:${phone}`}>
-                                    <Phone className="h-4 w-4" />
-                                  </a>
-                                </Button>
+                                <a href={`tel:${phone}`} className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-muted">
+                                  <Phone className="h-4 w-4" />
+                                </a>
                               )}
                               {booking.status === "pending" && (
                                 <>

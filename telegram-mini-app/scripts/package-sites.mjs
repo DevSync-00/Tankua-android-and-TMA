@@ -39,7 +39,7 @@ await mkdir('dist/.openai', { recursive: true });
 const workerTemplate = await readFile('server/worker-template.js', 'utf8');
 await writeFile(
   'dist/server/index.js',
-  workerTemplate.replace('__ASSET_MANIFEST__', JSON.stringify(assets)),
+  workerTemplate.replace('globalThis.__TANKUA_ASSET_MANIFEST__ || []', JSON.stringify(assets)),
 );
 
 await copyFile('.openai/hosting.json', 'dist/.openai/hosting.json');
