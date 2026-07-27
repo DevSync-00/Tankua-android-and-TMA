@@ -471,7 +471,7 @@ const DestinationDetailScreen = ({ route, navigation }) => {
                 activeOpacity={0.85}
               >
                 <Ionicons name="navigate" size={18} color={COLORS.white} />
-                <Text style={styles.directionsButtonText}>Get Directions</Text>
+                <Text style={styles.directionsButtonText}>Get Direction</Text>
               </TouchableOpacity>
             </View>
           </View>
