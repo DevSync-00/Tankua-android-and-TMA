@@ -368,8 +368,8 @@ export async function getUsers(options?: {
 export async function updateUser(
   id: string,
   updates: {
-    name?: string;
-    email?: string;
+    name?: string | null;
+    email?: string | null;
     phone_number?: string;
     is_admin?: boolean;
   }
