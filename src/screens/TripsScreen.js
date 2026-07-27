@@ -264,7 +264,7 @@ const TripsScreen = ({ navigation }) => {
 
       {/* ── Content ── */}
       {filtered.length === 0 ? (
-        <EmptyState tab={activeTab} onExplore={() => navigation.navigate('Home')} />
+        <EmptyState tab={activeTab} onExplore={() => navigation.navigate('Search')} />
       ) : (
         <FlatList
           data={filtered}
