@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -417,24 +418,26 @@ const PaymentScreen = ({ navigation, route }) => {
             styles.deadlineCard,
             timeRemaining != null && timeRemaining.totalSeconds < 600 ? styles.deadlineCardUrgent : null
           ]}>
-            <Ionicons 
-              name="time-outline" 
-              size={18} 
-              color={timeRemaining?.totalSeconds < 600 ? COLORS.error : COLORS.iconSecondary} 
-            />
-            <View style={styles.deadlineContent}>
-              <Text style={styles.deadlineTitle}>
-                {timeRemaining?.totalSeconds < 600 ? 'Complete Payment Immediately!' : 'Payment Window Closes In:'}
-              </Text>
-              {timeRemaining && !timeRemaining.isExpired ? (
-                <Text style={[styles.deadlineTime, timeRemaining.totalSeconds < 600 ? styles.deadlineTimeUrgent : null]}>
-                  {String(timeRemaining.hours).padStart(2, '0')}:
-                  {String(timeRemaining.minutes).padStart(2, '0')}:
-                  {String(timeRemaining.seconds).padStart(2, '0')}
+            <View style={styles.timerHeaderRow}>
+              <View style={styles.timerHeaderLeft}>
+                <Ionicons 
+                  name="time-outline" 
+                  size={16} 
+                  color={timeRemaining?.totalSeconds < 600 ? COLORS.error : COLORS.secondary} 
+                />
+                <Text style={styles.deadlineTitle}>
+                  {timeRemaining?.totalSeconds < 600 ? 'Complete Payment Immediately' : 'Reservation Held For:'}
                 </Text>
-              ) : (
-                <Text style={styles.deadlineExpired}>Expired</Text>
-              )}
+              </View>
+              {timeRemaining && !timeRemaining.isExpired ? (
+                <View style={[styles.timerBadge, timeRemaining.totalSeconds < 600 && styles.timerBadgeUrgent]}>
+                  <Text style={[styles.timerBadgeText, timeRemaining.totalSeconds < 600 && styles.timerBadgeTextUrgent]}>
+                    {String(timeRemaining.hours).padStart(2, '0')}:
+                    {String(timeRemaining.minutes).padStart(2, '0')}:
+                    {String(timeRemaining.seconds).padStart(2, '0')}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -448,44 +451,50 @@ const PaymentScreen = ({ navigation, route }) => {
           </View>
         ) : null}
 
-        <View style={styles.header}>
-          <Text style={styles.subtitle}>Complete payment to secure your ticket</Text>
-        </View>
-
-        {/* Invoice Summary Card */}
+        {/* Digital Ticket Receipt Card */}
         <View style={styles.summaryCard}>
-          <View style={styles.invoiceHeader}>
+          <View style={styles.receiptTopHeader}>
+            <View style={styles.receiptBadgeIcon}>
+              <Ionicons name="receipt-outline" size={16} color={COLORS.secondary} />
+            </View>
             <Text style={styles.summaryTitle}>Trip Booking Receipt</Text>
-            <View style={styles.receiptLine} />
           </View>
           
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Base Price per Seat</Text>
-            <Text style={styles.summaryValue}>ETB {price.basePrice}</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Seats Reserved</Text>
-            <Text style={styles.summaryValue}>× {currentBooking.seats || 1}</Text>
-          </View>
-
-          {Number(currentBooking.pickupStation?.extraPrice) > 0 ? (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Pickup Station Add-on</Text>
-              <Text style={styles.summaryValue}>+ ETB {currentBooking.pickupStation.extraPrice}</Text>
+          {currentBooking.trip ? (
+            <View style={styles.routePillContainer}>
+              <Text style={styles.routeText} numberOfLines={1}>
+                {currentBooking.trip.origin || 'Origin'} → {currentBooking.trip.destination || 'Destination'}
+              </Text>
+              {currentBooking.pickupStation?.name ? (
+                <Text style={styles.pickupPillText} numberOfLines={1}>
+                  Pickup: {currentBooking.pickupStation.name}
+                </Text>
+              ) : null}
             </View>
           ) : null}
+
+          <View style={styles.receiptRowsContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Base Ticket Price ({currentBooking.seats || 1} Seat)</Text>
+              <Text style={styles.summaryValue}>ETB {price.basePrice * (currentBooking.seats || 1)}</Text>
+            </View>
+
+            {Number(currentBooking.pickupStation?.extraPrice) > 0 ? (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Pickup Station Add-on</Text>
+                <Text style={styles.summaryValue}>+ ETB {currentBooking.pickupStation.extraPrice}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Service Fee (5%)</Text>
+              <Text style={styles.summaryValue}>+ ETB {price.serviceFee}</Text>
+            </View>
+          </View>
 
           <View style={styles.dashedDivider} />
 
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Service Fee (5%)</Text>
-            <Text style={styles.summaryValue}>+ ETB {price.serviceFee}</Text>
-          </View>
-
-          <View style={styles.receiptLine} />
-
-          <View style={[styles.summaryRow, { marginBottom: 0 }]}>
             <Text style={styles.totalLabel}>Total Due</Text>
             <Text style={styles.totalValue}>ETB {totalPrice}</Text>
           </View>
@@ -493,17 +502,31 @@ const PaymentScreen = ({ navigation, route }) => {
 
         {/* Chapa Payment Option Card */}
         <View style={styles.methodsContainer}>
+          <Text style={styles.methodsHeaderTitle}>Payment Method</Text>
           <View style={styles.methodCard}>
             <View style={styles.chapaLogoBadge}>
-              <Text style={styles.methodIcon}>💳</Text>
+              <Ionicons name="card-outline" size={20} color={COLORS.secondary} />
             </View>
             <View style={styles.methodContent}>
-              <Text style={styles.methodName}>{t('chapa') || 'Chapa'}</Text>
+              <Text style={styles.methodName}>{t('chapa') || 'Chapa Pay'}</Text>
               <Text style={styles.methodDescription}>
-                Card, Mobile Money (Telebirr, CBE Birr) & Bank Transfer
+                Instant online checkout via local providers
               </Text>
+
+              {/* Supported Channel Badges */}
+              <View style={styles.channelsRow}>
+                <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>Telebirr</Text></View>
+                <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>CBE Birr</Text></View>
+                <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>Card</Text></View>
+                <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>Bank</Text></View>
+              </View>
             </View>
             <Ionicons name="checkmark-circle" size={22} color={COLORS.secondary} />
+          </View>
+
+          <View style={styles.sslTrustBadge}>
+            <Ionicons name="shield-checkmark-outline" size={14} color={COLORS.success} />
+            <Text style={styles.sslTrustText}>256-Bit SSL Encrypted Payment</Text>
           </View>
 
           {!chapaReady ? (
@@ -519,21 +542,25 @@ const PaymentScreen = ({ navigation, route }) => {
 
       {/* Sticky Bottom Actions */}
       <View style={styles.footer}>
+        <View style={styles.footerSummary}>
+          <Text style={styles.footerTotalLabel}>Total Due</Text>
+          <Text style={styles.footerTotalValue}>ETB {totalPrice}</Text>
+        </View>
         <ModernButton
           title={
             bookingExpired
-              ? 'Booking Expired'
+              ? 'Expired'
               : loading
                 ? paymentProcessing
-                  ? 'Verifying payment...'
-                  : 'Opening Chapa checkout...'
-                : `Pay ETB ${totalPrice} with Chapa`
+                  ? 'Verifying...'
+                  : 'Opening Chapa...'
+                : 'Pay with Chapa'
           }
           onPress={handlePayment}
           disabled={!chapaReady || loading || bookingExpired}
           loading={loading}
           variant="primary"
-          size="large"
+          size="medium"
           icon="lock-closed-outline"
           iconPosition="left"
           style={styles.button}
@@ -640,43 +667,68 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 1,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1.5,
     borderColor: COLORS.borderLight,
     marginBottom: SPACING.lg,
     ...SHADOWS.small,
   },
-  invoiceHeader: {
-    marginBottom: SPACING.md,
+  receiptTopHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  receiptBadgeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   summaryTitle: {
-    fontSize: FONTS.sizes.md,
-    fontWeight: '700',
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
     color: COLORS.secondary,
-    textAlign: 'center',
+  },
+  routePillContainer: {
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 8,
     marginBottom: SPACING.sm,
   },
-  receiptLine: {
-    height: 1,
-    backgroundColor: COLORS.border,
+  routeText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.secondary,
+  },
+  pickupPillText: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  receiptRowsContainer: {
+    gap: 6,
     marginVertical: 4,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
   },
   summaryLabel: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.grayDark,
-    fontWeight: '500',
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: '600',
   },
   summaryValue: {
-    fontSize: FONTS.sizes.sm,
+    fontSize: FONTS.sizes.xs,
     color: COLORS.secondary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   dashedDivider: {
     borderWidth: 1,
@@ -686,54 +738,89 @@ const styles = StyleSheet.create({
     height: 0,
   },
   totalLabel: {
-    fontSize: FONTS.sizes.md,
-    fontWeight: '700',
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
     color: COLORS.secondary,
   },
   totalValue: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: '900',
-    color: COLORS.iconSecondary,
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
   },
   methodsContainer: {
     marginBottom: SPACING.xl,
+    gap: SPACING.xs,
+  },
+  methodsHeaderTitle: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.gray,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   methodCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.cardBackground,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 2,
+    borderColor: COLORS.secondary,
     ...SHADOWS.small,
   },
   chapaLogoBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: BORDER_RADIUS.lg,
+    width: 42,
+    height: 42,
+    borderRadius: BORDER_RADIUS.md,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  methodIcon: {
-    fontSize: 22,
-  },
   methodContent: {
     flex: 1,
     marginLeft: SPACING.md,
+    marginRight: SPACING.xs,
   },
   methodName: {
-    fontSize: FONTS.sizes.md,
-    fontWeight: '700',
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
     color: COLORS.secondary,
   },
   methodDescription: {
-    fontSize: FONTS.sizes.xs,
+    fontSize: 10,
     color: COLORS.gray,
     fontWeight: '500',
     marginTop: 2,
+  },
+  channelsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 6,
+  },
+  channelBadge: {
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  channelBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  sslTrustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: SPACING.xs,
+  },
+  sslTrustText: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '600',
   },
   configWarning: {
     flexDirection: 'row',
@@ -741,74 +828,103 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: `${COLORS.warning}15`,
+    backgroundColor: '#FEF3C7',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#F59E0B',
   },
   configWarningText: {
     flex: 1,
     marginLeft: SPACING.sm,
     fontSize: FONTS.sizes.xs,
-    color: COLORS.charcoal,
+    color: COLORS.iconSecondary,
     lineHeight: 18,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   footer: {
-    padding: SPACING.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,
     ...SHADOWS.large,
   },
+  footerSummary: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  footerTotalLabel: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  footerTotalValue: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    marginTop: 2,
+  },
   button: {
-    width: '100%',
+    minWidth: 150,
   },
   deadlineCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    marginBottom: SPACING.lg,
-    gap: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+    ...SHADOWS.small,
   },
   deadlineCardUrgent: {
-    backgroundColor: `${COLORS.error}10`,
+    backgroundColor: '#FEF2F2',
     borderColor: COLORS.error,
   },
-  deadlineContent: {
+  timerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  timerHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
     flex: 1,
   },
   deadlineTitle: {
     fontSize: FONTS.sizes.xs,
     fontWeight: '700',
-    color: COLORS.charcoal,
+    color: COLORS.secondary,
   },
-  deadlineTime: {
-    fontSize: FONTS.sizes.md,
+  timerBadge: {
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  timerBadgeUrgent: {
+    backgroundColor: COLORS.error,
+  },
+  timerBadgeText: {
+    fontSize: FONTS.sizes.xs,
     fontWeight: '800',
-    color: COLORS.iconSecondary,
-    marginTop: 2,
+    color: COLORS.secondary,
   },
-  deadlineTimeUrgent: {
-    color: COLORS.error,
-  },
-  deadlineExpired: {
-    fontSize: FONTS.sizes.sm,
-    fontWeight: '800',
-    color: COLORS.error,
+  timerBadgeTextUrgent: {
+    color: COLORS.white,
   },
   expiredCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${COLORS.error}10`,
-    borderWidth: 1,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
     borderColor: COLORS.error,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.xl,
-    marginBottom: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
   expiredText: {

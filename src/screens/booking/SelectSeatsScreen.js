@@ -138,13 +138,13 @@ const SelectSeatsScreen = ({ navigation }) => {
                     isSelected && styles.vehicleCardSelected,
                   ]}
                   onPress={() => setSelectedVehicle(vehicle)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                 >
                   <View style={[styles.vehicleIconContainer, isSelected && styles.vehicleIconContainerActive]}>
                     <Ionicons 
                       name={vehicle.icon} 
-                      size={28} 
-                      color={isSelected ? COLORS.secondary : COLORS.iconPrimary} 
+                      size={24} 
+                      color={isSelected ? COLORS.white : COLORS.secondary} 
                     />
                   </View>
                   <View style={styles.vehicleDetails}>
@@ -152,8 +152,10 @@ const SelectSeatsScreen = ({ navigation }) => {
                     <Text style={styles.vehicleCapacity}>Up to {vehicle.capacity} passengers</Text>
                   </View>
                   <View style={styles.vehicleRight}>
-                    {vehicle.price > 0 && (
+                    {vehicle.price > 0 ? (
                       <Text style={styles.vehiclePrice}>+ETB {vehicle.price}</Text>
+                    ) : (
+                      <Text style={styles.vehicleFreeText}>Standard</Text>
                     )}
                     <View style={[styles.radioDot, isSelected && styles.radioDotActive]}>
                       {isSelected && <View style={styles.radioDotInner} />}
@@ -164,56 +166,101 @@ const SelectSeatsScreen = ({ navigation }) => {
             })}
           </View>
         ) : (
-          <View style={styles.counterCard}>
-            <Text style={styles.counterTitle}>Number of Passengers</Text>
-            <View style={styles.seatsContainer}>
-              <TouchableOpacity 
-                style={[styles.seatButton, seats === 1 && styles.seatButtonDisabled]} 
-                onPress={decrementSeats}
-                disabled={seats === 1}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="remove" size={24} color={seats === 1 ? COLORS.grayLight : COLORS.secondary} />
-              </TouchableOpacity>
+          <View style={styles.seatSectionContainer}>
+            {/* Quick Seat Selection Chips */}
+            <Text style={styles.sectionSubtitle}>Quick Select Passengers</Text>
+            <View style={styles.chipsRow}>
+              {[1, 2, 3, 4, 5].map((num) => (
+                <TouchableOpacity
+                  key={num}
+                  style={[styles.chipItem, seats === num && styles.chipItemActive]}
+                  onPress={() => setSeats(num)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, seats === num && styles.chipTextActive]}>
+                    {num} {num === 1 ? 'Seat' : 'Seats'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-              <View style={styles.seatsDisplay}>
-                <Text style={styles.seatsNumber}>{seats}</Text>
-                <Text style={styles.seatsLabel}>
-                  {seats === 1 ? 'Seat' : 'Seats'}
-                </Text>
+            {/* Stepper Box */}
+            <View style={styles.counterCard}>
+              <Text style={styles.counterTitle}>Passenger Count</Text>
+              <View style={styles.seatsContainer}>
+                <TouchableOpacity 
+                  style={[styles.seatButton, seats === 1 && styles.seatButtonDisabled]} 
+                  onPress={decrementSeats}
+                  disabled={seats === 1}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="remove" size={20} color={seats === 1 ? COLORS.grayLight : COLORS.secondary} />
+                </TouchableOpacity>
+
+                <View style={styles.seatsDisplay}>
+                  <Text style={styles.seatsNumber}>{seats}</Text>
+                  <Text style={styles.seatsLabel}>
+                    {seats === 1 ? 'Passenger' : 'Passengers'}
+                  </Text>
+                </View>
+
+                <TouchableOpacity 
+                  style={[styles.seatButton, seats === 10 && styles.seatButtonDisabled]} 
+                  onPress={incrementSeats}
+                  disabled={seats === 10}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={20} color={seats === 10 ? COLORS.grayLight : COLORS.secondary} />
+                </TouchableOpacity>
               </View>
+            </View>
 
-              <TouchableOpacity 
-                style={[styles.seatButton, seats === 10 && styles.seatButtonDisabled]} 
-                onPress={incrementSeats}
-                disabled={seats === 10}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={24} color={seats === 10 ? COLORS.grayLight : COLORS.secondary} />
-              </TouchableOpacity>
+            {/* Live Price Breakdown Card */}
+            <View style={styles.priceBreakdownCard}>
+              <View style={styles.priceBreakdownRow}>
+                <Text style={styles.priceBreakdownLabel}>Base Price per Seat</Text>
+                <Text style={styles.priceBreakdownValue}>ETB {currentBooking.trip?.price || 500}</Text>
+              </View>
+              <View style={styles.priceBreakdownRow}>
+                <Text style={styles.priceBreakdownLabel}>Passengers Selected</Text>
+                <Text style={styles.priceBreakdownValue}>× {seats}</Text>
+              </View>
+              <View style={styles.priceBreakdownDivider} />
+              <View style={styles.priceBreakdownRow}>
+                <Text style={styles.priceTotalLabel}>Estimated Subtotal</Text>
+                <Text style={styles.priceTotalValue}>ETB {(currentBooking.trip?.price || 500) * seats}</Text>
+              </View>
             </View>
           </View>
         )}
 
         {/* Warning Info Card */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={22} color={COLORS.iconSecondary} />
+          <Ionicons name="information-circle-outline" size={20} color={COLORS.secondary} />
           <Text style={styles.infoText}>
             {isPrivateTrip
               ? 'The selected vehicle will be booked exclusively for your private travel group.'
-              : 'Public trip ticket bookings have a base price of ETB 500 per passenger seat.'}
+              : 'Public trip tickets guarantee reserved seats on your selected bus departure.'}
           </Text>
         </View>
       </ScrollView>
 
       {/* Sticky Bottom Actions */}
       <View style={styles.footer}>
+        <View style={styles.footerSummary}>
+          <Text style={styles.footerTotalLabel}>Total Amount</Text>
+          <Text style={styles.footerTotalValue}>
+            ETB {isPrivateTrip 
+              ? (currentBooking.trip?.price || 1500) + (selectedVehicle?.price || 0)
+              : (currentBooking.trip?.price || 500) * seats}
+          </Text>
+        </View>
         <ModernButton
           title={t('continue') || 'Continue'}
           onPress={handleContinue}
           disabled={isPrivateTrip ? !selectedVehicle : false}
           variant="primary"
-          size="large"
+          size="medium"
           icon="arrow-forward"
           iconPosition="right"
           style={styles.button}
@@ -375,47 +422,87 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: COLORS.secondary,
   },
+  seatSectionContainer: {
+    gap: SPACING.md,
+  },
+  sectionSubtitle: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '800',
+    color: COLORS.gray,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  chipItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.small,
+  },
+  chipItemActive: {
+    borderColor: COLORS.secondary,
+    backgroundColor: COLORS.secondary,
+  },
+  chipText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  chipTextActive: {
+    color: COLORS.white,
+  },
   counterCard: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1.5,
     borderColor: COLORS.borderLight,
     alignItems: 'center',
     ...SHADOWS.small,
   },
   counterTitle: {
-    fontSize: FONTS.sizes.md,
+    fontSize: FONTS.sizes.sm,
     fontWeight: '700',
     color: COLORS.secondary,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   seatsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: SPACING.lg,
   },
   seatButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.backgroundTertiary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
   },
   seatButtonDisabled: {
-    backgroundColor: COLORS.backgroundGray,
+    backgroundColor: COLORS.backgroundSecondary,
     borderColor: COLORS.borderLight,
+    opacity: 0.4,
   },
   seatsDisplay: {
     alignItems: 'center',
-    minWidth: 100,
+    minWidth: 80,
   },
   seatsNumber: {
-    fontSize: 54,
-    fontWeight: '900',
+    fontSize: 40,
+    fontWeight: '800',
     color: COLORS.secondary,
     letterSpacing: -1,
   },
@@ -424,35 +511,93 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: '600',
     textTransform: 'uppercase',
-    marginTop: 2,
+  },
+  priceBreakdownCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
+    gap: 8,
+    ...SHADOWS.small,
+  },
+  priceBreakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceBreakdownLabel: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: '600',
+  },
+  priceBreakdownValue: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.secondary,
+    fontWeight: '700',
+  },
+  priceBreakdownDivider: {
+    height: 1,
+    backgroundColor: COLORS.borderLight,
+    marginVertical: 4,
+  },
+  priceTotalLabel: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
+    color: COLORS.secondary,
+  },
+  priceTotalValue: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '800',
+    color: COLORS.secondary,
   },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: COLORS.white,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginTop: SPACING.xl,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
+    marginTop: SPACING.md,
     gap: SPACING.sm,
   },
   infoText: {
     flex: 1,
     fontSize: FONTS.sizes.xs,
-    color: COLORS.charcoal,
+    color: COLORS.gray,
     lineHeight: 18,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   footer: {
-    padding: SPACING.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,
     ...SHADOWS.large,
   },
+  footerSummary: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  footerTotalLabel: {
+    fontSize: 10,
+    color: COLORS.gray,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  footerTotalValue: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    marginTop: 2,
+  },
   button: {
-    width: '100%',
+    minWidth: 140,
   },
   customHeader: {
     flexDirection: 'row',

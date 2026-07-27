@@ -1,63 +1,32 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
-import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../config/theme';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 
 const ModernPickupStationCard = ({ 
   station, 
   onPress, 
   selected = false,
-  index = 0,
   showDistance = true,
   showTime = true,
   showPrice = true,
 }) => {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-  const translateY = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateY: translateY.value },
-    ],
-    opacity: opacity.value,
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.96, ANIMATIONS.spring);
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, ANIMATIONS.spring);
-  };
-
   return (
-    <AnimatedTouchable
+    <TouchableOpacity
       style={[
         styles.card,
         selected && styles.cardSelected,
-        animatedStyle,
       ]}
       onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={1}
+      activeOpacity={0.8}
     >
       <View style={styles.cardContent}>
         <View style={styles.header}>
           <View style={[styles.iconContainer, selected && styles.iconContainerSelected]}>
             <Ionicons 
               name="location" 
-              size={24} 
-              color={selected ? COLORS.white : COLORS.primary} 
+              size={22} 
+              color={selected ? COLORS.white : COLORS.secondary} 
             />
           </View>
           <View style={styles.content}>
@@ -69,83 +38,75 @@ const ModernPickupStationCard = ({
                 </View>
               )}
             </View>
-            <Text style={styles.city}>{station.city}</Text>
+            <Text style={styles.city}>{station.city || station.address || 'Pickup Point'}</Text>
           </View>
-          {selected && (
-            <View style={styles.checkContainer}>
-              <Ionicons name="checkmark-circle" size={32} color={COLORS.primary} />
+
+          <View style={styles.radioContainer}>
+            <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
+              {selected && <View style={styles.radioInner} />}
             </View>
-          )}
+          </View>
         </View>
 
         <View style={styles.details}>
           {showTime && station.pickupTime && (
-            <View style={styles.detailItem}>
-              <View style={styles.detailIcon}>
-                <Ionicons name="time" size={14} color={COLORS.primary} />
-              </View>
+            <View style={styles.detailPill}>
+              <Ionicons name="time-outline" size={13} color={COLORS.secondary} />
               <Text style={styles.detailText}>{station.pickupTime}</Text>
             </View>
           )}
           {showDistance && station.distance && (
-            <View style={styles.detailItem}>
-              <View style={styles.detailIcon}>
-                <Ionicons name="navigate" size={14} color={COLORS.primary} />
-              </View>
+            <View style={styles.detailPill}>
+              <Ionicons name="navigate-outline" size={13} color={COLORS.secondary} />
               <Text style={styles.detailText}>{station.distance} km</Text>
             </View>
           )}
           {showPrice && (
-            <View style={styles.detailItem}>
-              <View style={styles.detailIcon}>
-                <Ionicons 
-                  name={station.extraPrice > 0 ? "cash" : "checkmark-circle"} 
-                  size={14} 
-                  color={station.extraPrice > 0 ? COLORS.primary : COLORS.success} 
-                />
-              </View>
-              <Text style={[
-                styles.detailText,
-                station.extraPrice > 0 && styles.priceText
-              ]}>
-                {station.extraPrice > 0 ? `+${station.extraPrice} ETB` : 'Free'}
+            <View style={[styles.detailPill, station.extraPrice > 0 ? styles.extraPricePill : styles.freePill]}>
+              <Ionicons 
+                name={station.extraPrice > 0 ? "cash-outline" : "checkmark-circle-outline"} 
+                size={13} 
+                color={station.extraPrice > 0 ? COLORS.iconSecondary : COLORS.success} 
+              />
+              <Text style={[styles.detailText, station.extraPrice > 0 ? styles.extraPriceText : styles.freeText]}>
+                {station.extraPrice > 0 ? `+ETB ${station.extraPrice}` : 'Included'}
               </Text>
             </View>
           )}
         </View>
       </View>
-    </AnimatedTouchable>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
-    marginHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.md,
-    borderWidth: 3,
+    borderWidth: 1.5,
     borderColor: COLORS.borderLight,
-    overflow: 'hidden',
-    ...SHADOWS.large,
+    ...SHADOWS.small,
   },
   cardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: `${COLORS.primary}08`,
+    borderColor: COLORS.secondary,
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    ...SHADOWS.medium,
   },
   cardContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: `${COLORS.primary}15`,
+    width: 44,
+    height: 44,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
@@ -159,61 +120,84 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
+    gap: SPACING.xs,
   },
   name: {
-    fontSize: FONTS.sizes.xl,
+    fontSize: FONTS.sizes.md,
     fontWeight: '700',
     color: COLORS.secondary,
-    letterSpacing: -0.3,
   },
   nearestBadge: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: 4,
   },
   nearestText: {
-    fontSize: FONTS.sizes.xs,
+    fontSize: 9,
     color: COLORS.white,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   city: {
-    fontSize: FONTS.sizes.sm,
+    fontSize: FONTS.sizes.xs,
     color: COLORS.gray,
     fontWeight: '500',
+    marginTop: 2,
   },
-  checkContainer: {
-    marginLeft: SPACING.sm,
+  radioContainer: {
+    marginLeft: SPACING.xs,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.borderDark,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: COLORS.secondary,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
   },
   details: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.md,
+    gap: SPACING.xs,
+    paddingTop: 4,
   },
-  detailItem: {
+  detailPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.full,
+    gap: 4,
   },
-  detailIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: `${COLORS.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
+  extraPricePill: {
+    backgroundColor: '#FEF3C7',
+  },
+  freePill: {
+    backgroundColor: '#ECFDF5',
   },
   detailText: {
-    fontSize: FONTS.sizes.sm,
+    fontSize: FONTS.sizes.xs,
     color: COLORS.secondary,
     fontWeight: '600',
   },
-  priceText: {
-    color: COLORS.primary,
+  extraPriceText: {
+    color: COLORS.iconSecondary,
+    fontWeight: '700',
+  },
+  freeText: {
+    color: COLORS.success,
     fontWeight: '700',
   },
 });
