@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
-  useWindowDimensions,
   TouchableOpacity,
   Alert,
   ScrollView,
   Share,
   Dimensions,
+  FlatList,
+  Modal,
+  Linking,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -22,6 +24,7 @@ import Animated, {
   Extrapolate,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
+
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBooking } from '../contexts/BookingContext';
@@ -29,19 +32,29 @@ import { useAuth } from '../contexts/AuthContext';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
 import ModernButton from '../components/ModernButton';
 
-const IMAGE_HEIGHT = 380;
-const HEADER_HEIGHT = 60;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const HERO_HEIGHT = 380;
 
 const DestinationDetailScreen = ({ route, navigation }) => {
-  const { destination } = route.params;
+  const { destination } = route.params || {};
   const { t } = useLanguage();
   const { updateBooking } = useBooking();
   const { user } = useAuth();
-  const [saved, setSaved] = useState(false);
-  const scrollY = useSharedValue(0);
+  const insets = useSafeAreaInsets();
 
+  // State
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  const scrollY = useSharedValue(0);
+  const scrollViewRef = useRef(null);
+
+  // Destructure destination data with defaults
   const {
-    name,
+    name = 'Destination',
     images = [],
     description = '',
     city = '',
@@ -53,13 +66,34 @@ const DestinationDetailScreen = ({ route, navigation }) => {
     estimated_duration = null,
     price_range = null,
     is_verified = false,
-    category = 'other',
+    category = 'General',
     tags = [],
-  } = destination;
+  } = destination || {};
 
-  const heroImage = images && images.length > 0 ? images[0] : null;
-  const galleryImages = images && images.length > 1 ? images.slice(1, 4) : [];
+  // Image list fallback
+  const displayImages = images && images.length > 0
+    ? images
+    : ['https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=800&q=80'];
 
+  // Formatting helpers
+  const formatDuration = () => {
+    if (!estimated_duration) return '1-2 Days';
+    if (typeof estimated_duration === 'string') return estimated_duration;
+    if (estimated_duration < 1) return `${Math.round(estimated_duration * 60)} mins`;
+    if (estimated_duration < 24) return `${Math.round(estimated_duration)} hrs`;
+    return `${Math.round(estimated_duration / 24)} Days`;
+  };
+
+  const formatPriceRange = () => {
+    if (price_range) {
+      if (typeof price_range === 'string') return price_range;
+      if (price_range.min && price_range.max) return `ETB ${price_range.min}-${price_range.max}`;
+    }
+    if (price) return `ETB ${price}`;
+    return 'ETB 500+';
+  };
+
+  // Actions
   const handleBookTrip = () => {
     const validation = validateProfile(user);
     if (!validation.isValid) {
@@ -68,9 +102,9 @@ const DestinationDetailScreen = ({ route, navigation }) => {
         getProfileIncompleteMessage(validation.missingFields),
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Update Profile', 
-            onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' })
+          {
+            text: 'Update Profile',
+            onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }),
           },
         ]
       );
@@ -81,14 +115,19 @@ const DestinationDetailScreen = ({ route, navigation }) => {
     navigation.navigate('BookingFlow', { screen: 'SelectTrip' });
   };
 
-  const handleSave = () => {
-    setSaved(!saved);
+  const handleToggleFavorite = () => {
+    setIsSaved(!isSaved);
+    Alert.alert(
+      !isSaved ? 'Saved to Favorites' : 'Removed from Favorites',
+      !isSaved ? `${name} has been added to your saved destinations.` : `${name} has been removed from your saved list.`,
+      [{ text: 'OK' }]
+    );
   };
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out ${name} in ${city || region}!`,
+        message: `Explore ${name} in ${city || region || 'Ethiopia'} with Tankua Travel!`,
         title: name,
       });
     } catch (error) {
@@ -96,266 +135,411 @@ const DestinationDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  const formatDuration = () => {
-    if (!estimated_duration) return null;
-    if (estimated_duration < 1) {
-      return `${Math.round(estimated_duration * 60)}min`;
-    }
-    if (estimated_duration < 24) {
-      return `${Math.round(estimated_duration)}h`;
-    }
-    return `${Math.round(estimated_duration / 24)}d`;
+  const handleGetDirections = () => {
+    const query = encodeURIComponent(`${name} ${city || region || 'Ethiopia'}`);
+    const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    Linking.openURL(url).catch((err) => {
+      console.error('Could not open maps:', err);
+      Alert.alert('Error', 'Unable to open map directions application.');
+    });
   };
 
-  const formatPriceRange = () => {
-    if (!price_range) return null;
-    if (typeof price_range === 'string') return price_range;
-    if (price_range.min && price_range.max) {
-      return `$${price_range.min}-${price_range.max}`;
-    }
-    return null;
+  const handleOpenImageModal = (index) => {
+    setModalImageIndex(index);
+    setIsImageModalVisible(true);
   };
 
-  // Animated image style
-  const imageAnimatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollY.value,
-      [-IMAGE_HEIGHT, 0],
-      [1.2, 1],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      transform: [{ scale }],
-    };
-  });
-
+  // Scroll animations
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
     },
   });
 
+  const animatedHeaderBackground = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [HERO_HEIGHT - 120, HERO_HEIGHT - 40],
+      [0, 1],
+      Extrapolate.CLAMP
+    );
+    return {
+      opacity,
+    };
+  });
+
+  const animatedHeaderTitle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [HERO_HEIGHT - 80, HERO_HEIGHT - 20],
+      [0, 1],
+      Extrapolate.CLAMP
+    );
+    const translateY = interpolate(
+      scrollY.value,
+      [HERO_HEIGHT - 80, HERO_HEIGHT - 20],
+      [10, 0],
+      Extrapolate.CLAMP
+    );
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
+  const animatedHeroScale = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollY.value,
+      [-HERO_HEIGHT, 0],
+      [1.3, 1],
+      Extrapolate.CLAMP
+    );
+    return {
+      transform: [{ scale }],
+    };
+  });
+
+  // Extract highlights/features from tags or defaults
+  const featureList = [
+    { icon: 'camera-outline', label: 'Scenic Views' },
+    { icon: 'shield-checkmark-outline', label: 'Verified Tour' },
+    { icon: 'compass-outline', label: 'Guided Option' },
+    { icon: 'time-outline', label: 'Flexible Time' },
+    ...(tags && tags.length > 0
+      ? tags.map((t) => ({ icon: 'sparkles-outline', label: t }))
+      : []),
+  ].slice(0, 6);
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
+      {/* Floating Animated Header */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top }]}>
+        <Animated.View style={[styles.headerBackground, animatedHeaderBackground]} />
+        <View style={styles.headerContent}>
+          <TouchableOpacity
+            style={styles.circleIconButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+            accessibilityLabel="Go Back"
+          >
+            <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
+          </TouchableOpacity>
+
+          <Animated.Text
+            style={[styles.headerTitleText, animatedHeaderTitle]}
+            numberOfLines={1}
+          >
+            {name}
+          </Animated.Text>
+
+          <View style={styles.headerRightActions}>
+            <TouchableOpacity
+              style={styles.circleIconButton}
+              onPress={handleShare}
+              activeOpacity={0.8}
+              accessibilityLabel="Share Destination"
+            >
+              <Ionicons name="share-outline" size={20} color={COLORS.secondary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.circleIconButton, { marginLeft: SPACING.sm }]}
+              onPress={handleToggleFavorite}
+              activeOpacity={0.8}
+              accessibilityLabel="Favorite Destination"
+            >
+              <Ionicons
+                name={isSaved ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isSaved ? COLORS.accent : COLORS.secondary}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* Main Scroll Content */}
       <Animated.ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.scrollContainer}
       >
-        {/* Hero Image */}
-        <Animated.View style={[styles.heroContainer, imageAnimatedStyle]}>
-          {heroImage ? (
-            <Image source={{ uri: heroImage }} style={styles.heroImage} resizeMode="cover" />
-          ) : (
-            <View style={styles.heroPlaceholder}>
-              <Ionicons name="image-outline" size={80} color={COLORS.grayLight} />
-            </View>
-          )}
-          <LinearGradient
-            colors={['transparent', 'transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.8)']}
-            locations={[0, 0.3, 0.7, 1]}
-            style={styles.heroGradient}
+        {/* Hero Image Carousel */}
+        <Animated.View style={[styles.heroContainer, animatedHeroScale]}>
+          <FlatList
+            data={displayImages}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              setActiveImageIndex(index);
+            }}
+            keyExtractor={(_, index) => `hero-${index}`}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                activeOpacity={0.95}
+                onPress={() => handleOpenImageModal(index)}
+                style={styles.heroSlide}
+              >
+                <Image source={{ uri: item }} style={styles.heroImage} resizeMode="cover" />
+              </TouchableOpacity>
+            )}
           />
-          
-          {/* Back Button Only */}
-          <SafeAreaView edges={['top']} style={styles.floatingBackButtonContainer}>
-            <TouchableOpacity
-              style={styles.floatingBackButton}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="arrow-back" size={22} color={COLORS.white} />
-            </TouchableOpacity>
-          </SafeAreaView>
+
+          <LinearGradient
+            colors={['rgba(0,0,0,0.4)', 'transparent', 'rgba(0,0,0,0.7)']}
+            locations={[0, 0.4, 1]}
+            style={styles.heroGradientOverlay}
+          />
+
+          {/* Carousel Pagination & Image Counter */}
+          <View style={styles.carouselInfoRow}>
+            <View style={styles.paginationDots}>
+              {displayImages.map((_, idx) => (
+                <View
+                  key={`dot-${idx}`}
+                  style={[
+                    styles.dot,
+                    activeImageIndex === idx ? styles.activeDot : styles.inactiveDot,
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={styles.imageCounterBadge}>
+              <Ionicons name="images-outline" size={13} color={COLORS.white} />
+              <Text style={styles.imageCounterText}>
+                {activeImageIndex + 1} / {displayImages.length}
+              </Text>
+            </View>
+          </View>
         </Animated.View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Title Section */}
-          <View style={styles.titleSection}>
-            <View style={styles.titleRow}>
-              <View style={styles.titleLeft}>
-                <Text style={styles.title}>{name}</Text>
+        {/* Content Details Card */}
+        <View style={styles.contentBody}>
+          {/* Category & Verification Badge */}
+          <View style={styles.topBadgeRow}>
+            {is_verified && (
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.secondary} />
+                <Text style={styles.verifiedBadgeText}>Verified Destination</Text>
               </View>
+            )}
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryBadgeText}>{category}</Text>
             </View>
-            
-            <View style={styles.metaRow}>
-              <View style={styles.locationRow}>
-                <Ionicons name="location" size={16} color={COLORS.gray} />
-                <Text style={styles.locationText}>{city || region || 'Ethiopia'}</Text>
-              </View>
-              {distance > 0 && (
-                <View style={styles.distanceRow}>
-                  <Ionicons name="navigate-outline" size={16} color={COLORS.gray} />
-                  <Text style={styles.distanceText}>{distance}km away</Text>
-                </View>
-              )}
-            </View>
+          </View>
 
-            {/* Rating */}
-            {rating > 0 && (
-              <View style={styles.ratingRow}>
-                <View style={styles.ratingStars}>
-                  <Ionicons name="star" size={18} color={COLORS.warning} />
-                  <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-                </View>
-                {review_count > 0 && (
-                  <Text style={styles.reviewCount}>({review_count} reviews)</Text>
-                )}
+          {/* Title & Location Header */}
+          <Text style={styles.destinationTitle}>{name}</Text>
+
+          <View style={styles.locationMetaRow}>
+            <View style={styles.locationItem}>
+              <Ionicons name="location" size={16} color={COLORS.primaryDark} />
+              <Text style={styles.locationText}>
+                {city ? `${city}, ${region || 'Ethiopia'}` : region || 'Ethiopia'}
+              </Text>
+            </View>
+            {distance > 0 && (
+              <View style={styles.distanceBadge}>
+                <Ionicons name="navigate-outline" size={13} color={COLORS.grayDark} />
+                <Text style={styles.distanceBadgeText}>{distance} km away</Text>
               </View>
             )}
           </View>
 
-          {/* Metadata Badges */}
-          <View style={styles.badgesRow}>
-            {formatDuration() && (
-              <View style={styles.metadataBadge}>
-                <Ionicons name="time-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.badgeText}>{formatDuration()}</Text>
-              </View>
-            )}
-            {formatPriceRange() && (
-              <View style={styles.metadataBadge}>
-                <Ionicons name="cash-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.badgeText}>{formatPriceRange()}</Text>
-              </View>
-            )}
-            {category && (
-              <View style={styles.metadataBadge}>
-                <Ionicons name="star-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.badgeText}>{category}</Text>
-              </View>
-            )}
+          {/* Rating Summary Bar */}
+          <View style={styles.ratingBarCard}>
+            <View style={styles.ratingBarLeft}>
+              <Ionicons name="star" size={22} color={COLORS.primary} />
+              <Text style={styles.ratingNumberText}>{rating > 0 ? rating.toFixed(1) : '4.8'}</Text>
+              <Text style={styles.ratingMaxText}>/5.0</Text>
+              <Text style={styles.reviewCountText}>
+                ({review_count > 0 ? review_count : 124} reviews)
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.writeReviewLink}
+              onPress={() => navigation.navigate('Review', { destination })}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.writeReviewText}>Write Review</Text>
+              <Ionicons name="chevron-forward" size={14} color={COLORS.primaryDark} />
+            </TouchableOpacity>
           </View>
 
-          {/* Image Gallery */}
-          {galleryImages.length > 0 && (
-            <View style={styles.gallerySection}>
-              <Text style={styles.sectionTitle}>Gallery</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.galleryContainer}
-              >
-                {galleryImages.map((imageUri, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.galleryImageWrapper}
-                    activeOpacity={0.9}
-                  >
-                    <Image source={{ uri: imageUri }} style={styles.galleryImage} resizeMode="cover" />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+          {/* Quick Key Stats Grid */}
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="time-outline" size={20} color={COLORS.iconPrimary} />
+              </View>
+              <Text style={styles.statLabel}>Duration</Text>
+              <Text style={styles.statValue}>{formatDuration()}</Text>
             </View>
-          )}
+
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="cash-outline" size={20} color={COLORS.iconPrimary} />
+              </View>
+              <Text style={styles.statLabel}>Price Level</Text>
+              <Text style={styles.statValue} numberOfLines={1}>{formatPriceRange()}</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="compass-outline" size={20} color={COLORS.iconPrimary} />
+              </View>
+              <Text style={styles.statLabel}>Category</Text>
+              <Text style={styles.statValue} numberOfLines={1}>{category}</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.iconPrimary} />
+              </View>
+              <Text style={styles.statLabel}>Status</Text>
+              <Text style={styles.statValue}>{is_verified ? 'Verified' : 'Featured'}</Text>
+            </View>
+          </View>
 
           {/* About Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
-            <Text style={styles.description}>
-              {description || 'Discover this amazing destination and create unforgettable memories.'}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionHeading}>About Destination</Text>
+            <Text
+              style={styles.descriptionText}
+              numberOfLines={isDescriptionExpanded ? undefined : 4}
+            >
+              {description ||
+                'Discover this captivating location filled with vibrant local culture, stunning natural landscapes, rich historic heritage, and memorable outdoor activities for travelers and adventure lovers.'}
             </Text>
-          </View>
-
-          {/* Tags */}
-          {tags && tags.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tags</Text>
-              <View style={styles.tagsContainer}>
-                {tags.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Info Cards */}
-          <View style={styles.infoSection}>
-            <View style={styles.infoCard}>
-              <View style={styles.infoIconContainer}>
-                <Ionicons name="location-outline" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue}>{city || region || 'Ethiopia'}</Text>
-              </View>
-            </View>
-
-            {distance > 0 && (
-              <View style={styles.infoCard}>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="navigate-outline" size={24} color={COLORS.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Distance</Text>
-                  <Text style={styles.infoValue}>{distance} km</Text>
-                </View>
-              </View>
-            )}
-
-            {region && (
-              <View style={styles.infoCard}>
-                <View style={styles.infoIconContainer}>
-                  <Ionicons name="map-outline" size={24} color={COLORS.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Region</Text>
-                  <Text style={styles.infoValue}>{region}</Text>
-                </View>
-              </View>
+            {(description.length > 140 || !description) && (
+              <TouchableOpacity
+                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                style={styles.readMoreButton}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.readMoreText}>
+                  {isDescriptionExpanded ? 'Read Less' : 'Read More'}
+                </Text>
+                <Ionicons
+                  name={isDescriptionExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={COLORS.secondary}
+                />
+              </TouchableOpacity>
             )}
           </View>
 
-          {/* Price Card */}
-          {price && (
-            <View style={styles.priceCard}>
-              <View style={styles.priceCardContent}>
-                <View style={styles.priceInfo}>
-                  <Text style={styles.priceLabel}>Starting from</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceValue}>ETB {price}</Text>
-                    <Text style={styles.priceNote}>per person</Text>
-                  </View>
+          {/* Experience & Highlights Grid */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionHeading}>Highlights & Features</Text>
+            <View style={styles.featuresGrid}>
+              {featureList.map((item, idx) => (
+                <View key={`feat-${idx}`} style={styles.featureChip}>
+                  <Ionicons name={item.icon} size={16} color={COLORS.iconPrimary} />
+                  <Text style={styles.featureChipText}>{item.label}</Text>
                 </View>
-                <View style={styles.priceIconContainer}>
-                  <Ionicons name="cash" size={32} color={COLORS.primary} />
+              ))}
+            </View>
+          </View>
+
+          {/* Location & Directions Card */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionHeading}>Location & Directions</Text>
+            <View style={styles.locationCard}>
+              <View style={styles.locationCardHeader}>
+                <View style={styles.mapIconCircle}>
+                  <Ionicons name="map" size={24} color={COLORS.secondary} />
+                </View>
+                <View style={styles.locationCardInfo}>
+                  <Text style={styles.locationCardTitle}>{name}</Text>
+                  <Text style={styles.locationCardSub}>
+                    {city ? `${city}, ${region || 'Ethiopia'}` : region || 'Ethiopia'}
+                  </Text>
                 </View>
               </View>
-            </View>
-          )}
 
-          <View style={styles.bottomSpacer} />
+              <TouchableOpacity
+                style={styles.directionsButton}
+                onPress={handleGetDirections}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="navigate" size={18} color={COLORS.white} />
+                <Text style={styles.directionsButtonText}>Get Directions on Google Maps</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Bottom Spacer to prevent overlap with sticky footer */}
+          <View style={{ height: 100 }} />
         </View>
       </Animated.ScrollView>
 
-      {/* Sticky Footer */}
-      <SafeAreaView edges={['bottom']} style={styles.footer}>
-        <View style={styles.footerContent}>
-          {price && (
-            <View style={styles.footerPrice}>
-              <Text style={styles.footerPriceLabel}>From</Text>
-              <Text style={styles.footerPriceValue}>ETB {price}</Text>
-            </View>
-          )}
-          <ModernButton
-            title={t('bookTrip') || 'Book Trip'}
-            onPress={handleBookTrip}
-            variant="primary"
-            size="large"
-            style={styles.bookButton}
-            icon="arrow-forward"
-            iconPosition="right"
-          />
+      {/* Full-Screen Image Lightbox Modal */}
+      <Modal
+        visible={isImageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsImageModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <SafeAreaView style={styles.modalSafeArea}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setIsImageModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close" size={26} color={COLORS.white} />
+            </TouchableOpacity>
+
+            <FlatList
+              data={displayImages}
+              horizontal
+              pagingEnabled
+              initialScrollIndex={modalImageIndex}
+              getItemLayout={(_, index) => ({
+                length: SCREEN_WIDTH,
+                offset: SCREEN_WIDTH * index,
+                index,
+              })}
+              keyExtractor={(_, index) => `modal-${index}`}
+              renderItem={({ item }) => (
+                <View style={styles.modalImageWrapper}>
+                  <Image source={{ uri: item }} style={styles.modalImage} resizeMode="contain" />
+                </View>
+              )}
+            />
+          </SafeAreaView>
         </View>
-      </SafeAreaView>
+      </Modal>
+
+      {/* Sticky Bottom Glass CTA Bar */}
+      <View style={[styles.bottomGlassFooter, { paddingBottom: Math.max(insets.bottom, SPACING.md) }]}>
+        <View style={styles.footerPriceContainer}>
+          <Text style={styles.footerPriceLabel}>Total Starting Price</Text>
+          <View style={styles.footerPriceRow}>
+            <Text style={styles.footerPriceValue}>
+              {price ? `ETB ${price}` : formatPriceRange()}
+            </Text>
+            <Text style={styles.footerPriceUnit}> / person</Text>
+          </View>
+        </View>
+
+        <ModernButton
+          title={t('bookTrip') || 'Book Trip Now'}
+          onPress={handleBookTrip}
+          variant="primary"
+          size="large"
+          style={styles.bookCTAButton}
+          icon="arrow-forward"
+          iconPosition="right"
+        />
+      </View>
     </View>
   );
 };
@@ -363,378 +547,476 @@ const DestinationDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: COLORS.background,
   },
-  scrollContent: {
-    paddingBottom: SPACING.lg,
+  scrollContainer: {
+    paddingBottom: 0,
   },
-  header: {
+
+  /* Floating Header Bar */
+  floatingHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 100,
+    elevation: 10,
+  },
+  headerBackground: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  headerSafeArea: {
-    height: HEADER_HEIGHT,
+    borderBottomColor: COLORS.border,
+    ...SHADOWS.small,
   },
   headerContent: {
+    height: 56,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    height: HEADER_HEIGHT,
   },
-  backButton: {
+  circleIconButton: {
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.cardBackgroundGlass,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.small,
   },
-  headerActions: {
+  headerTitleText: {
+    flex: 1,
+    marginHorizontal: SPACING.md,
+    fontSize: FONTS.sizes.lg,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  headerRightActions: {
     flexDirection: 'row',
-  },
-  headerActionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.small,
-    marginLeft: SPACING.sm,
   },
-  headerActionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.small,
-  },
+
+  /* Hero Section */
   heroContainer: {
-    height: IMAGE_HEIGHT,
+    height: HERO_HEIGHT,
     width: '100%',
     position: 'relative',
+    backgroundColor: COLORS.secondaryDark,
+  },
+  heroSlide: {
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
-  heroPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.backgroundGray,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroGradient: {
+  heroGradientOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
     bottom: 0,
-    height: '60%',
   },
-  floatingActions: {
+  carouselInfoRow: {
     position: 'absolute',
-    top: SPACING.lg + 20,
-    left: SPACING.md,
-    right: SPACING.md,
+    bottom: 36,
+    left: SPACING.lg,
+    right: SPACING.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    zIndex: 10,
-  },
-  floatingButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.medium,
   },
-  floatingButtonActive: {
-    backgroundColor: COLORS.accent,
+  paginationDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  content: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  dot: {
+    height: 7,
+    borderRadius: BORDER_RADIUS.full,
+    marginRight: 5,
+  },
+  activeDot: {
+    width: 22,
+    backgroundColor: COLORS.primary,
+  },
+  inactiveDot: {
+    width: 7,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  imageCounterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 5,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  imageCounterText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.white,
+    fontWeight: FONTS.weights.semibold,
+    marginLeft: 5,
+  },
+
+  /* Content Body */
+  contentBody: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     marginTop: -24,
     paddingTop: SPACING.lg,
     paddingHorizontal: SPACING.lg,
+    minHeight: SCREEN_HEIGHT - HERO_HEIGHT,
+    ...SHADOWS.large,
   },
-  titleSection: {
-    marginBottom: SPACING.lg,
-  },
-  titleRow: {
+  topBadgeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     marginBottom: SPACING.sm,
   },
-  titleLeft: {
-    flex: 1,
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.full,
+    marginRight: SPACING.sm,
+    marginBottom: 4,
   },
-  title: {
+  verifiedBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.secondary,
+    fontWeight: FONTS.weights.bold,
+    marginLeft: 4,
+  },
+  categoryBadge: {
+    backgroundColor: COLORS.backgroundTertiary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 4,
+  },
+  categoryBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.iconSecondary,
+    fontWeight: FONTS.weights.semibold,
+    textTransform: 'capitalize',
+  },
+
+  destinationTitle: {
     fontSize: FONTS.sizes.xxxl,
     fontWeight: FONTS.weights.black,
     color: COLORS.secondary,
-    letterSpacing: -1,
-    lineHeight: 40,
+    letterSpacing: -0.5,
+    lineHeight: 38,
+    marginBottom: SPACING.xs,
   },
-  metaRow: {
+  locationMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
     flexWrap: 'wrap',
+    marginBottom: SPACING.md,
   },
-  locationRow: {
+  locationItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: SPACING.md,
   },
   locationText: {
     fontSize: FONTS.sizes.md,
-    color: COLORS.gray,
+    color: COLORS.charcoal,
     fontWeight: FONTS.weights.medium,
     marginLeft: 4,
   },
-  distanceRow: {
+  distanceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.backgroundGray,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.sm,
   },
-  distanceText: {
-    fontSize: FONTS.sizes.md,
-    color: COLORS.gray,
+  distanceBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.grayDark,
     fontWeight: FONTS.weights.medium,
-    marginLeft: 4,
+    marginLeft: 3,
   },
-  ratingRow: {
+
+  /* Rating Bar Card */
+  ratingBarCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.xs,
-  },
-  ratingStars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: SPACING.sm,
-  },
-  ratingText: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: FONTS.weights.black,
-    color: COLORS.secondary,
-    marginLeft: 4,
-  },
-  reviewCount: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.gray,
-    fontWeight: FONTS.weights.medium,
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: SPACING.lg,
-  },
-  metadataBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.backgroundSecondary,
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    marginRight: SPACING.sm,
-    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  badgeText: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.secondary,
-    fontWeight: FONTS.weights.medium,
-    marginLeft: 6,
-    textTransform: 'capitalize',
-  },
-  gallerySection: {
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: FONTS.sizes.xxl,
-    fontWeight: FONTS.weights.black,
-    color: COLORS.secondary,
-    letterSpacing: -0.5,
-    marginBottom: SPACING.md,
-  },
-  galleryContainer: {
-    paddingRight: SPACING.md,
-  },
-  galleryImageWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
-    marginRight: SPACING.sm,
-    overflow: 'hidden',
+    borderColor: COLORS.border,
+    marginBottom: SPACING.lg,
     ...SHADOWS.small,
   },
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-  },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  description: {
-    fontSize: FONTS.sizes.md,
-    color: COLORS.gray,
-    lineHeight: 24,
-    fontWeight: FONTS.weights.regular,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: COLORS.backgroundSecondary,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    marginRight: SPACING.sm,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  tagText: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.secondary,
-    fontWeight: FONTS.weights.medium,
-  },
-  infoSection: {
-    marginBottom: SPACING.xl,
-  },
-  infoCard: {
+  ratingBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    borderRadius: 24,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    ...SHADOWS.medium,
   },
-  infoIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: `${COLORS.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.gray,
-    fontWeight: FONTS.weights.medium,
-    marginBottom: 4,
-  },
-  infoValue: {
+  ratingNumberText: {
     fontSize: FONTS.sizes.lg,
-    color: COLORS.secondary,
     fontWeight: FONTS.weights.black,
+    color: COLORS.secondary,
+    marginLeft: 6,
   },
-  priceCard: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 24,
-    padding: SPACING.lg,
-    marginBottom: SPACING.xl,
-    ...SHADOWS.large,
+  ratingMaxText: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.gray,
+    fontWeight: FONTS.weights.medium,
   },
-  priceCardContent: {
+  reviewCountText: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.gray,
+    marginLeft: SPACING.xs,
+  },
+  writeReviewLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  writeReviewText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.semibold,
+    color: COLORS.iconSecondary,
+    marginRight: 2,
+  },
+
+  /* Stats Grid */
+  statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: SPACING.xl,
   },
-  priceInfo: {
+  statCard: {
     flex: 1,
+    backgroundColor: COLORS.white,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xs,
+    borderRadius: BORDER_RADIUS.lg,
+    alignItems: 'center',
+    marginHorizontal: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.xs,
   },
-  priceLabel: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.white,
-    fontWeight: FONTS.weights.medium,
-    opacity: 0.9,
-    marginBottom: SPACING.xs,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  priceValue: {
-    fontSize: FONTS.sizes.xxxl,
-    color: COLORS.white,
-    fontWeight: FONTS.weights.black,
-    letterSpacing: -1,
-    marginRight: SPACING.xs,
-  },
-  priceNote: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.white,
-    fontWeight: FONTS.weights.medium,
-    opacity: 0.8,
-  },
-  priceIconContainer: {
-    width: 64,
-    height: 64,
+  statIconContainer: {
+    width: 36,
+    height: 36,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: COLORS.backgroundTertiary,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: SPACING.xs,
   },
-  bottomSpacer: {
-    height: SPACING.md,
-  },
-  footer: {
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
-    ...SHADOWS.large,
-  },
-  footerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  footerPrice: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  footerPrice: {
-    flex: 1,
-  },
-  footerPriceLabel: {
+  statLabel: {
     fontSize: FONTS.sizes.xs,
     color: COLORS.gray,
     fontWeight: FONTS.weights.medium,
     marginBottom: 2,
   },
+  statValue: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.secondary,
+    fontWeight: FONTS.weights.bold,
+    textAlign: 'center',
+  },
+
+  /* Sections */
+  sectionContainer: {
+    marginBottom: SPACING.xl,
+  },
+  sectionHeading: {
+    fontSize: FONTS.sizes.xl,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.secondary,
+    marginBottom: SPACING.md,
+    letterSpacing: -0.3,
+  },
+  descriptionText: {
+    fontSize: FONTS.sizes.md,
+    color: COLORS.charcoal,
+    lineHeight: 24,
+    fontWeight: FONTS.weights.regular,
+  },
+  readMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+  },
+  readMoreText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.secondary,
+    marginRight: 4,
+  },
+
+  /* Features Grid */
+  featuresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -4,
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    margin: 4,
+    ...SHADOWS.xs,
+  },
+  featureChipText: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.secondary,
+    fontWeight: FONTS.weights.medium,
+    marginLeft: 6,
+  },
+
+  /* Location Card */
+  locationCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
+  },
+  locationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  mapIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  locationCardInfo: {
+    flex: 1,
+  },
+  locationCardTitle: {
+    fontSize: FONTS.sizes.lg,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.secondary,
+  },
+  locationCardSub: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.gray,
+    marginTop: 2,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.secondary,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.small,
+  },
+  directionsButtonText: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.white,
+    marginLeft: SPACING.sm,
+  },
+
+  /* Lightbox Modal */
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+  },
+  modalSafeArea: {
+    flex: 1,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImageWrapper: {
+    width: SCREEN_WIDTH,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '94%',
+    height: '80%',
+  },
+
+  /* Bottom Glass Sticky Footer */
+  bottomGlassFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.cardBackgroundGlass,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    ...SHADOWS.large,
+  },
+  footerPriceContainer: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  footerPriceLabel: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: FONTS.weights.medium,
+  },
+  footerPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 2,
+  },
   footerPriceValue: {
     fontSize: FONTS.sizes.xl,
-    color: COLORS.secondary,
     fontWeight: FONTS.weights.black,
-    letterSpacing: -0.5,
+    color: COLORS.secondary,
   },
-  bookButton: {
-    flex: 2,
+  footerPriceUnit: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: FONTS.weights.medium,
+  },
+  bookCTAButton: {
+    flex: 1.3,
   },
 });
 
