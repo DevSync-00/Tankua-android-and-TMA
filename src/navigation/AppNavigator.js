@@ -59,7 +59,7 @@ const AppNavigator = () => {
           <Stack.Screen 
             name="DestinationDetail" 
             component={DestinationDetailScreen}
-            options={{ headerShown: true, headerTitle: '' }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen 
             name="BookingFlow" 

@@ -171,11 +171,23 @@ const SelectPickupStationScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Back Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.customBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
+        </TouchableOpacity>
+        <Text style={styles.customHeaderTitle}>Pickup Station</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
       {renderStepHeader()}
 
       <View style={styles.header}>
         <View style={styles.headerTextWrap}>
-          <Text style={styles.title}>{t('selectPickupStation') || 'Select Pickup Station'}</Text>
           <Text style={styles.subtitle}>Choose your preferred departure station</Text>
         </View>
         
@@ -506,6 +518,35 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
   },
 });
 

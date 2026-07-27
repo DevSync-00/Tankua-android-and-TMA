@@ -79,6 +79,13 @@ const ConfirmationScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Confirmation Header */}
+      <View style={styles.customHeader}>
+        <View style={styles.customHeaderLeft} />
+        <Text style={styles.customHeaderTitle}>Confirmation</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
       {/* Sleek Success Header Banner */}
       <View style={styles.successBanner}>
         <View style={styles.successIconCircle}>
@@ -205,6 +212,28 @@ const styles = StyleSheet.create({
   },
   footerButton: {
     flex: 1,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customHeaderLeft: {
+    width: 36,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
   },
 });
 

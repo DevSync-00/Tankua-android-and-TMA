@@ -395,6 +395,19 @@ const PaymentScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Custom Back Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity
+          style={styles.customBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
+        </TouchableOpacity>
+        <Text style={styles.customHeaderTitle}>{t('payment') || 'Payment'}</Text>
+        <View style={styles.customHeaderRight} />
+      </View>
+
       {renderStepHeader()}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -436,7 +449,6 @@ const PaymentScreen = ({ navigation, route }) => {
         ) : null}
 
         <View style={styles.header}>
-          <Text style={styles.title}>{t('payment') || 'Payment'}</Text>
           <Text style={styles.subtitle}>Complete payment to secure your ticket</Text>
         </View>
 
@@ -804,6 +816,35 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.xs,
     color: COLORS.error,
     fontWeight: '700',
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  customBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  customHeaderTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  customHeaderRight: {
+    width: 36,
   },
 });
 
