@@ -206,12 +206,23 @@ async function authenticate(request, env) {
 
 async function getCatalog(env) {
   const [destinations, trips, stations, links] = await Promise.all([
-    supabase(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,rating,review_count,price,estimated_duration,price_range,is_verified,place_type&order=rating.desc.nullslast'),
+    supabase(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,place_type&order=name.asc'),
     supabase(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,itinerary,status&status=in.(active,upcoming)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc`),
     supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,lat,lng,is_active&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
   ]);
-  return json({ destinations, trips, stations, trip_pickup_stations: links });
+  const catalogDestinations = destinations.map(destination => {
+    const prices = trips
+      .filter(trip => trip.destination_id === destination.id)
+      .map(trip => Number(trip.price))
+      .filter(Number.isFinite);
+    return {
+      ...destination,
+      price: prices.length ? Math.min(...prices) : null,
+      is_verified: true,
+    };
+  });
+  return json({ destinations: catalogDestinations, trips, stations, trip_pickup_stations: links });
 }
 
 async function getBookings(session, env) {
