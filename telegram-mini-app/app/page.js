@@ -73,7 +73,32 @@ export default function App() {
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'telebirr' });
-  const [bookedTrips, setBookedTrips] = useState([]);
+  const [bookedTrips, setBookedTrips] = useState([
+    {
+      id: 'TNK-92041',
+      destination_id: 7,
+      destination_name: 'Fasil Ghebbi (Royal Enclosure)',
+      destination_city: 'Gondar',
+      destination_image: '/destinations/onboarding-fasil-ghebbi.png',
+      departure_date: '2026-08-15T06:00:00Z',
+      pickup_name: 'Meskel Square Station',
+      seats: 2,
+      payment_status: 'paid',
+      status: 'confirmed',
+    },
+    {
+      id: 'TNK-83019',
+      destination_id: 1,
+      destination_name: 'Church of St. George (Biete Ghiorgis)',
+      destination_city: 'Lalibela',
+      destination_image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg',
+      departure_date: '2026-09-04T07:30:00Z',
+      pickup_name: 'Bole Brass Station',
+      seats: 1,
+      payment_status: 'paid',
+      status: 'confirmed',
+    },
+  ]);
   const [user, setUser] = useState(null);
   const [authStatus, setAuthStatus] = useState('loading');
   const [authError, setAuthError] = useState('');
@@ -300,19 +325,27 @@ function normalizeDestination(destination) {
 }
 
 function normalizeBookingForUi(item, destinations) {
-  const destination = destinations.find(candidate => candidate.id === item.destination_id) || {
+  const destination = destinations.find(candidate => String(candidate.id) === String(item.destination_id)) || {
     name: item.destination_name || 'Tankua Trip',
-    image: fallbackDestinations[0].image,
+    image: item.destination_image || fallbackDestinations[0].image,
   };
-  const date = new Date(item.date || item.created_at);
+  const rawDate = item.departure_date || item.date || item.created_at;
+  const dateObj = rawDate ? new Date(rawDate) : null;
+  const dateStr = dateObj && !isNaN(dateObj.getTime())
+    ? dateObj.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+    : (typeof rawDate === 'string' ? rawDate : 'Upcoming');
   return {
     ...item,
-    destination,
-    trip: {
-      date: date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }),
-      time: item.pickup_station?.pickup_time || '—',
+    destination: {
+      ...destination,
+      name: item.destination_name || destination.name,
+      image: item.destination_image || destination.image,
     },
-    pickup: item.pickup_station || { name: 'Pickup station' },
+    trip: {
+      date: dateStr,
+      time: item.departure_time || item.pickup_time || '06:00 AM',
+    },
+    pickup: item.pickup || item.pickup_station || { name: item.pickup_name || 'Pickup station' },
     total: Number(item.total_price || 0),
   };
 }
