@@ -392,8 +392,6 @@ const ALL_CATEGORIES = [
 ];
 
 function HomeView({ user, destinations, category, setCategory, open, goSearch, openNotifications }) {
-  const firstName = (user?.name || 'ber.bir').split(' ')[0];
-
   // Featured destinations: Top 4 most booked, clicked, and featured attractions
   const featured = [...destinations]
     .sort((a, b) => {
@@ -414,10 +412,7 @@ function HomeView({ user, destinations, category, setCategory, open, goSearch, o
 
   return <div className="page home-page">
     <header className="home-header">
-      <div>
-        <p className="greeting">Where to next, {firstName}? 👋</p>
-        <h1>Explore <em>Ethiopia</em></h1>
-      </div>
+      <h1>Explore <em>Ethiopia</em></h1>
       <button className="icon-button" aria-label="Notifications" onClick={openNotifications}>
         <Bell size={20}/>
         <i/>
@@ -629,7 +624,12 @@ function TripsView({trips,destinations,open,explore}) {
     return !['completed','cancelled','canceled'].includes(status);
   });
   const labels={upcoming:'upcoming',completed:'completed',cancelled:'cancelled'};
-  return <div className="page"><header className="page-head"><div><p className="eyebrow">YOUR JOURNEYS</p><h1>Trips</h1></div></header>
+  const upcomingCount=trips.filter(trip=>!['completed','cancelled','canceled'].includes(String(trip.status||'pending').toLowerCase())).length;
+  return <div className="page trips-page"><header className="trips-hero">
+      <div className="trips-hero-icon"><Bus/></div>
+      <div className="trips-hero-copy"><p className="eyebrow">YOUR JOURNEYS</p><h1>My trips</h1><span>Tickets, pickup details and travel plans</span></div>
+      <div className="trips-count"><b>{upcomingCount}</b><span>Upcoming</span></div>
+    </header>
     <div className="segmented">
       {['upcoming','completed','cancelled'].map(item=><button key={item} className={filter===item?'active':''} onClick={()=>{setFilter(item);vibrate();}}>{item[0].toUpperCase()+item.slice(1)}</button>)}
     </div>
