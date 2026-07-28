@@ -9,13 +9,30 @@ import {
 } from 'lucide-react';
 
 const fallbackDestinations = [
-  { id: 1, name: 'Sof Umar Cave', city: 'Sof Omar', region: 'Oromia', category: 'Adventure', rating: 4.5, reviews: 142, price: 3500, duration: '2 days', image: '/destinations/onboarding-dallol.png', description: 'Explore one of the world’s largest subterranean cavern networks, carved by the Web River through limestone cliffs.' },
-  { id: 2, name: 'Fasil Ghebbi', city: 'Gondar', region: 'Amhara', category: 'Historical', rating: 4.9, reviews: 328, price: 2400, duration: '2 days', image: '/destinations/onboarding-fasil-ghebbi.png', description: 'Walk through the royal enclosure of Ethiopia’s emperors, where palaces, castles and history meet in the heart of Gondar.' },
-  { id: 3, name: 'Blue Nile Falls', city: 'Bahir Dar', region: 'Amhara', category: 'Nature', rating: 4.8, reviews: 216, price: 1800, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'Feel the mist and power of one of Ethiopia’s most iconic natural wonders, locally known as Tis Abay — the smoking water.' },
-  { id: 4, name: 'Danakil Depression', city: 'Dallol', region: 'Afar', category: 'Adventure', rating: 4.7, reviews: 184, price: 7200, duration: '3 days', image: '/destinations/onboarding-dallol.png', description: 'Explore a surreal landscape of salt flats, sulfur springs and volcanic terrain in one of Earth’s most extraordinary places.' },
-  { id: 5, name: 'Church of St. George', city: 'Lalibela', region: 'Amhara', category: 'Religious', rating: 4.9, reviews: 492, price: 3200, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'Discover eleven medieval rock-hewn churches carved from living stone, a spiritual landmark unlike anywhere else.' },
-  { id: 6, name: 'Simien Mountains', city: 'Debark', region: 'Amhara', category: 'Hiking', rating: 4.8, reviews: 267, price: 4800, duration: '3 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'Trek dramatic escarpments, spot gelada baboons and wake to vast highland views in Ethiopia’s rooftop wilderness.' },
-  { id: 7, name: 'Harar Jugol', city: 'Harar', region: 'Harari', category: 'Cultural', rating: 4.7, reviews: 201, price: 2800, duration: '2 days', image: '/destinations/pexels-lovetosmile-5034469.jpg', description: 'Get lost in the colorful alleys, markets and living traditions of this ancient walled city.' },
+  { id: 1, name: 'Church of St. George (Biete Ghiorgis)', city: 'Lalibela', region: 'Amhara', category: 'religious', rating: 4.9, reviews: 492, price: 3200, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'The iconic monolith rock-hewn church carved from red volcanic tuff in the shape of a Greek cross. The most famous symbol of Lalibela.', location: { lat: 12.0319, lng: 39.0411 } },
+  { id: 2, name: 'Abuna Yemata Guh Cliff Church', city: 'Hawzen', region: 'Tigray', category: 'religious', rating: 4.8, reviews: 156, price: 4500, duration: '2 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'A dramatic 5th-century rock-cut church situated 200 meters up a sheer vertical rock face in the Gheralta Mountains.', location: { lat: 13.9142, lng: 39.3602 } },
+  { id: 3, name: 'Debre Libanos Monastery', city: 'Debre Libanos', region: 'Oromia', category: 'religious', rating: 4.6, reviews: 184, price: 1800, duration: '1 day', image: '/destinations/onboarding-fasil-ghebbi.png', description: 'Historic 13th-century monastery founded by Saint Tekle Haymanot, overlooking the Jamma River Gorge.', location: { lat: 9.7140, lng: 38.8540 } },
+  { id: 4, name: 'Debre Birhan Selassie Church', city: 'Gondar', region: 'Amhara', category: 'religious', rating: 4.8, reviews: 290, price: 2200, duration: '1 day', image: '/destinations/pexels-lovetosmile-5034469.jpg', description: 'Celebrated 17th-century church in Gondar famed for its ceiling decorated with hundreds of painted winged angel faces.', location: { lat: 12.6122, lng: 37.4722 } },
+  { id: 5, name: 'Ura Kidane Mehret Monastery', city: 'Bahir Dar', region: 'Amhara', category: 'religious', rating: 4.7, reviews: 210, price: 2000, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'Famous 14th-century circular island monastery on the Zege Peninsula of Lake Tana, renowned for vivid murals.', location: { lat: 11.6975, lng: 37.3312 } },
+  { id: 6, name: 'Holy Trinity Cathedral', city: 'Addis Ababa', region: 'Addis Ababa', category: 'sacred', rating: 4.7, reviews: 310, price: 1200, duration: 'Half day', image: '/destinations/onboarding-fasil-ghebbi.png', description: 'The highest-ranking Orthodox Cathedral in Addis Ababa, holding the tombs of Emperor Haile Selassie.', location: { lat: 9.0305, lng: 38.7618 } },
+  { id: 7, name: 'Fasil Ghebbi (Royal Enclosure)', city: 'Gondar', region: 'Amhara', category: 'historical', rating: 4.9, reviews: 328, price: 2400, duration: '2 days', image: '/destinations/onboarding-fasil-ghebbi.png', description: '17th-century fortress city built by Emperor Fasilides, featuring stone castles known as the Camelot of Africa.', location: { lat: 12.6080, lng: 37.4673 } },
+  { id: 8, name: 'Obelisk of Axum', city: 'Axum', region: 'Tigray', category: 'historical', rating: 4.8, reviews: 275, price: 3000, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'Ancient 1,700-year-old phonolite stela standing 24 meters high, marking royal burial chambers of the Aksumite Kingdom.', location: { lat: 14.1311, lng: 38.7194 } },
+  { id: 9, name: 'Harar Jugol Walled City', city: 'Harar', region: 'Harari', category: 'cultural', rating: 4.7, reviews: 201, price: 2800, duration: '2 days', image: '/destinations/pexels-lovetosmile-5034469.jpg', description: 'The 4th holiest city of Islam, surrounded by 16th-century stone walls with 82 mosques and 102 shrines.', location: { lat: 9.3117, lng: 42.1283 } },
+  { id: 10, name: 'Tiya Megalithic Standing Stones', city: 'Tiya', region: 'SNNPR', category: 'historical', rating: 4.5, reviews: 120, price: 1500, duration: '1 day', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'UNESCO World Heritage site containing 36 carved megalithic stelae marking ancient burial sites.', location: { lat: 8.4347, lng: 38.6117 } },
+  { id: 11, name: 'Portuguese Bridge', city: 'Debre Libanos', region: 'Oromia', category: 'historical', rating: 4.6, reviews: 145, price: 1600, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: '17th-century stone bridge spanning a waterfall in the Jamma River Gorge, frequented by endemic Gelada baboons.', location: { lat: 9.7198, lng: 38.8512 } },
+  { id: 12, name: 'Palace of Abba Jifar', city: 'Jimma', region: 'Oromia', category: 'historical', rating: 4.5, reviews: 98, price: 2100, duration: '1 day', image: '/destinations/onboarding-fasil-ghebbi.png', description: 'Wooden 19th-century royal palace of the Kingdom of Jimma, built by King Abba Jifar II at Jiren.', location: { lat: 7.6767, lng: 36.8344 } },
+  { id: 13, name: 'Simien Mountains National Park', city: 'Debark', region: 'Amhara', category: 'nature', rating: 4.8, reviews: 267, price: 4800, duration: '3 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'Spectacular mountain scenery featuring Ras Dashen, home to Walia ibex, Gelada baboons, and Ethiopian wolves.', location: { lat: 13.2500, lng: 38.0000 } },
+  { id: 14, name: 'Bale Mountains National Park', city: 'Dinsho', region: 'Oromia', category: 'nature', rating: 4.8, reviews: 215, price: 5200, duration: '3 days', image: '/destinations/pexels-lovetosmile-5034469.jpg', description: 'High-altitude Afro-alpine plateau protecting the world’s largest population of rare Ethiopian wolves.', location: { lat: 6.9000, lng: 39.7500 } },
+  { id: 15, name: 'Awash National Park', city: 'Awash', region: 'Afar', category: 'wildlife', rating: 4.6, reviews: 162, price: 3600, duration: '2 days', image: '/destinations/onboarding-dallol.png', description: 'Acacia woodland reserve centered around Awash Falls, harboring Beisa oryx, kudus, and over 450 bird species.', location: { lat: 8.8833, lng: 40.0167 } },
+  { id: 16, name: 'Nechisar National Park', city: 'Arbaminch', region: 'SNNPR', category: 'wildlife', rating: 4.7, reviews: 178, price: 3800, duration: '2 days', image: '/destinations/onboarding-waterfall.png', description: 'White grass plains situated between Lakes Abaya and Chamo, famous for giant Nile crocodiles and Burchell’s zebras.', location: { lat: 5.9333, lng: 37.5500 } },
+  { id: 17, name: 'Omo National Park', city: 'Jinka', region: 'SNNPR', category: 'wildlife', rating: 4.7, reviews: 134, price: 6500, duration: '4 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'Remote wildlife refuge along the West bank of the Omo River, home to large herds of elands, buffalos, and giraffes.', location: { lat: 5.7833, lng: 35.8333 } },
+  { id: 18, name: 'Abijatta-Shalla Lakes National Park', city: 'Batu', region: 'Oromia', category: 'park', rating: 4.5, reviews: 140, price: 2500, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'Twin Rift Valley crater lakes renowned for massive flocks of lesser flamingos and natural boiling sulfur hot springs.', location: { lat: 7.5000, lng: 38.6000 } },
+  { id: 19, name: 'Erta Ale Volcano & Lava Lake', city: 'Dallol', region: 'Afar', category: 'adventure', rating: 4.9, reviews: 298, price: 9500, duration: '3 days', image: '/destinations/onboarding-dallol.png', description: 'Continuously active basaltic shield volcano in the Danakil Depression holding one of the world’s rare persistent lava lakes.', location: { lat: 13.6000, lng: 40.6667 } },
+  { id: 20, name: 'Dallol Hydrothermal Field', city: 'Dallol', region: 'Afar', category: 'adventure', rating: 4.7, reviews: 184, price: 8800, duration: '3 days', image: '/destinations/onboarding-dallol.png', description: 'Surreal geothermal crater featuring neon-green acidic hot springs, yellow sulfur mounds, and salt formations.', location: { lat: 14.2417, lng: 40.2989 } },
+  { id: 21, name: 'Sof Umar Cave System', city: 'Sof Omar', region: 'Oromia', category: 'adventure', rating: 4.5, reviews: 142, price: 3500, duration: '2 days', image: '/destinations/onboarding-dallol.png', description: 'One of Africa’s largest underground cave networks, carved through limestone by the Web River over millennia.', location: { lat: 6.9070, lng: 40.8465 } },
+  { id: 22, name: 'Blue Nile Falls (Tis Abay)', city: 'Bahir Dar', region: 'Amhara', category: 'nature', rating: 4.8, reviews: 216, price: 1800, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'The grand smoking waterfall on the Blue Nile River dropping 45 meters over basalt cliffs.', location: { lat: 11.4850, lng: 37.5950 } },
+  { id: 23, name: 'Gheralta Mountains Trek', city: 'Hawzen', region: 'Tigray', category: 'adventure', rating: 4.9, reviews: 210, price: 5400, duration: '3 days', image: '/destinations/pexels-malaydi-7941708.jpg', description: 'Striking red rock pillars and cliffside ancient monasteries offering premier adventure trekking.', location: { lat: 13.9000, lng: 39.3500 } },
+  { id: 24, name: 'Lake Tana Boat Expedition', city: 'Bahir Dar', region: 'Amhara', category: 'ecotourism', rating: 4.7, reviews: 195, price: 2600, duration: '1 day', image: '/destinations/onboarding-waterfall.png', description: 'Cruise Ethiopia’s largest lake, source of the Blue Nile, visiting island monasteries and wetland bird habitats.', location: { lat: 11.7000, lng: 37.3000 } },
 ];
 
 const categories = ['All', 'Historical', 'Nature', 'Adventure', 'Religious', 'Hiking', 'Cultural'];
@@ -324,9 +341,36 @@ function AuthGate({ status, error, retry }) {
   </main>;
 }
 
+const ALL_CATEGORIES = [
+  'All', 'Adventure', 'Cultural', 'Medical', 'Religious', 'Ecotourism',
+  'Business', 'Wildlife', 'Cruise', 'Rural', 'Sports', 'Shopping',
+  'Wellness', 'Dark', 'Budget', 'Culinary', 'Luxury', 'Voluntourism',
+  'Space', 'Accessible', 'Agritourism', 'Photography', 'Ancestry',
+  'Educational', 'Urban', 'Historical', 'Nature', 'Sacred', 'Monument',
+  'Park', 'Museum', 'City', 'Other'
+];
+
 function HomeView({ user, destinations, category, setCategory, open, goSearch, openNotifications }) {
-  const filtered = category === 'All' ? destinations : destinations.filter(d => d.category === category);
   const firstName = (user?.name || 'ber.bir').split(' ')[0];
+
+  // Featured destinations: Top 4 most booked, clicked, and featured attractions
+  const featured = [...destinations]
+    .sort((a, b) => {
+      const scoreA = (a.is_featured ? 1000 : 0) + (Number(a.bookings_count || 0) * 10) + Number(a.views_count || 0) + Number(a.rating || 0);
+      const scoreB = (b.is_featured ? 1000 : 0) + (Number(b.bookings_count || 0) * 10) + Number(b.views_count || 0) + Number(b.rating || 0);
+      return scoreB - scoreA;
+    })
+    .slice(0, 4);
+
+  // Popular destinations: Top 6 iconic tourist attractions in Ethiopia (not dumping all DB entries)
+  const categoryFiltered = category === 'All'
+    ? destinations
+    : destinations.filter(d => (d.category || '').toLowerCase() === category.toLowerCase());
+
+  const popular = [...categoryFiltered]
+    .sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)))
+    .slice(0, 6);
+
   return <div className="page home-page">
     <header className="home-header">
       <div>
@@ -344,12 +388,12 @@ function HomeView({ user, destinations, category, setCategory, open, goSearch, o
       <i className="search-go"><ChevronRight/></i>
     </button>
     <div className="chips">
-      {categories.map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}
+      {ALL_CATEGORIES.slice(0, 16).map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}
     </div>
     <SectionHeader title="Featured" />
-    <div className="featured-row">{filtered.slice(0,4).map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
+    <div className="featured-row">{featured.map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
     <SectionHeader title="Popular destinations" action="See all" onAction={goSearch}/>
-    <div className="destination-grid">{filtered.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
+    <div className="destination-grid">{popular.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
     <section className="how">
       <SectionHeader title="How it works"/>
       {[['01','Choose destination','Find a place that inspires you.'],['02','Select your trip','Pick a date, pickup and seats.'],['03','Book & pay','Pay securely and get your QR ticket.']].map(x=><div className="how-row" key={x[0]}><b>{x[0]}</b><div><strong>{x[1]}</strong><p>{x[2]}</p></div></div>)}
@@ -506,8 +550,15 @@ function Confirmation({booking,home,ticket}) { return <div className="confirmati
 function TicketView({booking,back}) { return <div className="ticket-page"><header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Your ticket</h1><span/></header><div className="ticket-card"><div className="ticket-top"><img src="/tankua-logo.png"/><span><b>TANKUA</b><small>EXPLORE ETHIOPIA</small></span></div><div className="ticket-destination" style={{backgroundImage:`linear-gradient(180deg,transparent,rgba(5,15,28,.85)),url("${booking.destination.image}")`}}><h2>{booking.destination.name}</h2><p>{booking.trip.date}</p></div><div className="ticket-info"><p><span>DEPARTURE<b>{booking.trip.time}</b></span><span>SEATS<b>{booking.seats}</b></span></p><p><span>PICKUP<b>{booking.pickup.name}</b></span><span>BOOKING<b>{booking.id}</b></span></p><div className="qr"><div className="qr-pattern">{Array.from({length:81},(_,i)=><i key={i} className={(i*7+i%5)%3===0?'on':''}/>)}</div><small>Present this code at pickup</small></div></div></div><div className="info-note"><Info/><p><b>Ready for your trip?</b>Arrive 15 minutes before departure with a valid ID.</p></div></div>; }
 
 function SearchView({destinations,query,setQuery,open}) {
-  const cleanQuery=query.trim().toLowerCase();
-  const list=destinations.filter(d=>(d.name+d.city+d.category).toLowerCase().includes(cleanQuery));
+  const [selectedCat, setSelectedCat] = useState('All');
+  const cleanQuery = query.trim().toLowerCase();
+
+  const list = destinations.filter(d => {
+    const matchesCategory = selectedCat === 'All' || (d.category || '').toLowerCase() === selectedCat.toLowerCase();
+    const matchesSearch = !cleanQuery || `${d.name} ${d.city} ${d.category} ${d.region}`.toLowerCase().includes(cleanQuery);
+    return matchesCategory && matchesSearch;
+  });
+
   return <div className="page search-page">
     <header className="search-hero">
       <div>
@@ -520,9 +571,12 @@ function SearchView({destinations,query,setQuery,open}) {
       <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search places or cities" autoComplete="off" enterKeyHint="search"/>
       {query&&<button type="button" aria-label="Clear search" onClick={()=>setQuery('')}><X size={15}/></button>}
     </label>
+    <div className="chips" style={{ marginTop: '14px', marginBottom: '14px' }}>
+      {ALL_CATEGORIES.map(c => <button key={c} className={selectedCat===c?'selected':''} onClick={()=>setSelectedCat(c)}>{c}</button>)}
+    </div>
     {!cleanQuery&&<div className="search-suggestions"><span>Try</span>{['Lalibela','Gondar','Nature','Adventure'].map(item=><button key={item} onClick={()=>setQuery(item)}>{item}</button>)}</div>}
-    <div className="result-head"><b>{cleanQuery?`${list.length} match${list.length===1?'':'es'}`:'Places for you'}</b><span>{cleanQuery?'Live results':'Handpicked by Tankua'}</span></div>
-    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image} alt={d.name}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin size={12}/>{d.city}</p><div><span><Star size={12} fill="#ffb800" color="#ffb800"/>{d.rating||'New'}</span><b>From {money(d.price)}</b></div></div><i><ChevronRight size={16}/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>setQuery('')}>Show all places</button></div>}
+    <div className="result-head"><b>{cleanQuery||selectedCat!=='All'?`${list.length} match${list.length===1?'':'es'}`:'Places for you'}</b><span>{cleanQuery||selectedCat!=='All'?'Filtered results':'Handpicked by Tankua'}</span></div>
+    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image} alt={d.name}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin size={12}/>{d.city}</p><div><span><Star size={12} fill="#ffb800" color="#ffb800"/>{d.rating||'New'}</span><b>From {money(d.price)}</b></div></div><i><ChevronRight size={16}/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>{setQuery('');setSelectedCat('All');}}>Show all places</button></div>}
   </div>;
 }
 function TripsView({trips,destinations,open,explore}) {
@@ -570,26 +624,38 @@ function MapView({destinations,open,back}) {
   },[]);
 
   useEffect(()=>{
-    if(!mapInstance.current) return;
+    if(!mapInstance.current || !mapReady) return;
     let active=true;
     import('leaflet').then(({default:L})=>{
       if(!active||!mapInstance.current)return;
       markers.current.forEach(m=>m.remove());
       markers.current=[];
       destinations.forEach(item=>{
-        const coords=item.coordinates;
-        if(!coords) return;
+        const coords=destinationCoordinates(item);
+        if(!coords || !Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) return;
         const isSel=selected?.id===item.id;
-        const iconHtml=`<div class="map-marker-pin ${isSel?'selected':''}"><span>${item.name}</span><b>ETB ${Number(item.price||0).toLocaleString()}</b></div>`;
-        const customIcon=L.divIcon({html:iconHtml,className:'custom-map-pin',iconSize:[110,36],iconAnchor:[55,18]});
+        const priceNum=Number(item.price||0);
+        const priceStr=priceNum ? (priceNum>=1000?`${(priceNum/1000).toFixed(priceNum%1000===0?0:1)}k`:priceNum) : '0';
+
+        const iconHtml=`<div class="map-pin-badge ${isSel?'selected':''}">
+          <span class="pin-icon">📍</span>
+          <b class="pin-price">ETB ${priceStr}</b>
+        </div>`;
+
+        const customIcon=L.divIcon({
+          html:iconHtml,
+          className:'map-pin-wrapper',
+          iconSize:[68,28],
+          iconAnchor:[34,14],
+        });
+
         const marker=L.marker(coords,{icon:customIcon}).addTo(mapInstance.current);
         marker.on('click',()=>{setSelected(item);vibrate();});
         markers.current.push(marker);
       });
-      if(destinations.length>1){
-        mapInstance.current.fitBounds(L.latLngBounds(destinations.map(item=>item.coordinates)),{padding:[44,44],maxZoom:8});
-      }else if(destinations[0]){
-        mapInstance.current.setView(destinations[0].coordinates,10);
+      if(destinations.length>1 && !selected){
+        const validCoords=destinations.map(d=>destinationCoordinates(d)).filter(c=>Number.isFinite(c[0]));
+        if(validCoords.length) mapInstance.current.fitBounds(L.latLngBounds(validCoords),{padding:[50,50],maxZoom:9});
       }
     });
     return()=>{active=false;};
