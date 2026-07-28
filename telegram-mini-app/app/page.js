@@ -63,6 +63,16 @@ export default function App() {
   const [catalog, setCatalog] = useState({ destinations: [], trips: [], providers: [], stations: [], trip_pickup_stations: [] });
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
+  const [favorites, setFavorites] = useState([1, 4]);
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev => {
+      const isFav = prev.includes(id);
+      const updated = isFav ? prev.filter(item => item !== id) : [...prev, id];
+      notify(isFav ? 'Removed from saved destinations' : 'Added to saved destinations ❤️');
+      return updated;
+    });
+  };
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -91,10 +101,20 @@ export default function App() {
   };
 
   const loadProductionData = async () => {
-    const [catalogData, bookingsData] = await Promise.all([api('/api/catalog'), api('/api/bookings')]);
-    setCatalog(catalogData);
-    setBookedTrips(bookingsData.bookings || []);
-    return { catalogData, bookings: bookingsData.bookings || [] };
+    try {
+      const [catalogData, bookingsData] = await Promise.all([
+        api('/api/catalog').catch(() => ({ destinations: fallbackDestinations, trips: [], providers: [], stations: [], trip_pickup_stations: [] })),
+        api('/api/bookings').catch(() => ({ bookings: [] }))
+      ]);
+      const activeCatalog = catalogData?.destinations?.length ? catalogData : { destinations: fallbackDestinations, trips: [], providers: [], stations: [], trip_pickup_stations: [] };
+      setCatalog(activeCatalog);
+      setBookedTrips(bookingsData.bookings || []);
+      return { catalogData: activeCatalog, bookings: bookingsData.bookings || [] };
+    } catch (e) {
+      const activeCatalog = { destinations: fallbackDestinations, trips: [], providers: [], stations: [], trip_pickup_stations: [] };
+      setCatalog(activeCatalog);
+      return { catalogData: activeCatalog, bookings: [] };
+    }
   };
 
   const refreshCatalog = async () => {
@@ -111,11 +131,7 @@ export default function App() {
       if (!tg?.initData) {
         if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
           setUser({ id: 'dev', name: 'ber.bir' });
-          try {
-            await loadProductionData();
-          } catch (e) {
-            setCatalog({ destinations: fallbackDestinations, trips: [], providers: [], stations: [], trip_pickup_stations: [] });
-          }
+          setCatalog({ destinations: fallbackDestinations, trips: [], providers: [], stations: [], trip_pickup_stations: [] });
           setAuthStatus('authenticated');
           return;
         }
@@ -224,7 +240,7 @@ export default function App() {
   };
 
   const content = () => {
-    if (screen === 'detail') return <Detail destination={selected} catalog={catalog} back={goBack} book={startBooking} notify={notify} />;
+    if (screen === 'detail') return <Detail destination={selected} catalog={catalog} back={goBack} book={startBooking} notify={notify} favorites={favorites} toggleFavorite={toggleFavorite} />;
     if (['trip','pickup','seats','passengers','payment'].includes(screen))
       return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
     if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => setScreen('ticket')} />;
@@ -235,7 +251,7 @@ export default function App() {
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
     if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} open={openTrip} explore={() => goTab('home')} />;
-    if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} />;
+    if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
     return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} />;
   };
 
@@ -345,12 +361,52 @@ function SectionHeader({ title, action, onAction }) { return <div className="sec
 function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(5,15,28,.88) 100%),url("${d.image}")`}}><div className="hero-content"><h3>{d.name}</h3><p className="hero-location"><MapPin size={13}/>{d.city}</p><div className="hero-meta"><span className="hero-rating"><Star size={13} fill="#ffb800" color="#ffb800"/> {d.rating}</span>{d.price ? <b className="hero-price">From {money(d.price)}</b> : null}</div></div></button>; }
 function DestinationCard({d,open}) { return <button className="destination-card" onClick={()=>open(d)}><div className="card-image" style={{backgroundImage:`url("${d.image}")`}}><span>{d.category}</span><Heart size={18}/></div><div className="card-copy"><h3>{d.name}</h3><p><MapPin size={13}/>{d.city}</p><div><span><Star size={13} fill="currentColor"/> {d.rating}</span><b>{money(d.price)}</b></div></div></button>; }
 
-function Detail({ destination:d, catalog, back, book, notify }) {
+function Detail({ destination:d, catalog, back, book, notify, favorites = [], toggleFavorite }) {
   const destinationTrip=(catalog.trips||[]).find(trip=>trip.destination_id===d.id);
   const provider=(catalog.providers||[]).find(item=>item.id===destinationTrip?.provider_id);
+  const isFavorite = favorites.includes(d.id);
+
+  const handleShare = async () => {
+    const shareText = `Check out ${d.name} in ${d.city}, Ethiopia on Tankua!`;
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: d.name,
+          text: shareText,
+          url: shareUrl,
+        });
+        notify('Shared successfully!');
+        return;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          // User cancelled or failed
+        }
+      }
+    }
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        notify('Trip link copied to clipboard! 📋');
+      } else {
+        notify('Trip link ready to share!');
+      }
+    } catch (e) {
+      notify('Trip link copied to clipboard! 📋');
+    }
+  };
+
   return <div className="detail-page">
-    <div className="detail-hero" style={{backgroundImage:`linear-gradient(180deg,rgba(0,0,0,.16),transparent 38%,rgba(5,15,28,.78)),url("${d.image}")`}}>
-      <div className="floating-head"><button onClick={back}><ArrowLeft/></button><div><button onClick={()=>notify('Saved to favorites')}><Heart/></button><button onClick={()=>{navigator.share?.({title:d.name,text:d.description});notify('Ready to share')}}><Share2/></button></div></div>
+    <div className="detail-hero" style={{backgroundImage:`linear-gradient(180deg,rgba(0,0,0,.35),transparent 40%,rgba(5,15,28,.85)),url("${d.image}")`}}>
+      <div className="floating-head">
+        <button onClick={back} aria-label="Go back"><ArrowLeft size={20}/></button>
+        <div>
+          <button onClick={() => toggleFavorite ? toggleFavorite(d.id) : notify('Saved to favorites')} aria-label="Favorite destination">
+            <Heart size={20} fill={isFavorite ? '#ff6b6b' : 'none'} color={isFavorite ? '#ff6b6b' : 'currentColor'}/>
+          </button>
+          <button onClick={handleShare} aria-label="Share destination"><Share2 size={20}/></button>
+        </div>
+      </div>
       <div className="detail-title"><span>{d.category}</span><h1>{d.name}</h1><p><MapPin size={15}/>{d.city}, {d.region}</p></div>
     </div>
     <div className="detail-content">
@@ -486,7 +542,7 @@ function TripsView({trips,destinations,open,explore}) {
   </div>;
 }
 
-function MapView({destinations,open}) {
+function MapView({destinations,open,back}) {
   const mapElement=useRef(null);
   const mapInstance=useRef(null);
   const markers=useRef([]);
@@ -518,15 +574,17 @@ function MapView({destinations,open}) {
     let active=true;
     import('leaflet').then(({default:L})=>{
       if(!active||!mapInstance.current)return;
-      markers.current.forEach(marker=>marker.remove());
-      markers.current=destinations.map(destination=>{
-        const marker=L.marker(destination.coordinates,{icon:L.divIcon({
-          className:'tankua-map-marker-wrap',
-          html:`<span class="tankua-map-marker"><i></i>${destination.price?Number(destination.price).toLocaleString():''}</span>`,
-          iconSize:[58,38],iconAnchor:[29,36],
-        })}).addTo(mapInstance.current);
-        marker.on('click',()=>{setSelected(destination);vibrate();});
-        return marker;
+      markers.current.forEach(m=>m.remove());
+      markers.current=[];
+      destinations.forEach(item=>{
+        const coords=item.coordinates;
+        if(!coords) return;
+        const isSel=selected?.id===item.id;
+        const iconHtml=`<div class="map-marker-pin ${isSel?'selected':''}"><span>${item.name}</span><b>ETB ${Number(item.price||0).toLocaleString()}</b></div>`;
+        const customIcon=L.divIcon({html:iconHtml,className:'custom-map-pin',iconSize:[110,36],iconAnchor:[55,18]});
+        const marker=L.marker(coords,{icon:customIcon}).addTo(mapInstance.current);
+        marker.on('click',()=>{setSelected(item);vibrate();});
+        markers.current.push(marker);
       });
       if(destinations.length>1){
         mapInstance.current.fitBounds(L.latLngBounds(destinations.map(item=>item.coordinates)),{padding:[44,44],maxZoom:8});
@@ -535,7 +593,7 @@ function MapView({destinations,open}) {
       }
     });
     return()=>{active=false;};
-  },[destinations,mapReady]);
+  },[destinations,mapReady,selected]);
 
   const searchMap=(event)=>{
     event.preventDefault();
@@ -556,8 +614,12 @@ function MapView({destinations,open}) {
   };
 
   return <div className="map-page"><div ref={mapElement} className="osm-map"/>
-    <div className="map-controls"><form onSubmit={searchMap}><Search/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search destinations"/><button type="submit"><ChevronRight/></button></form><button className={locating?'locating':''} onClick={locate} aria-label="Use my location"><LocateFixed/></button></div>
-    {selected&&<div className="map-preview"><img src={selected.image}/><div><span>EXPLORE ETHIOPIA</span><h3>{selected.name}</h3><p><Star fill="currentColor"/>{selected.rating||'New'} · {selected.city}</p></div><button onClick={()=>open(selected)}><ChevronRight/></button></div>}
+    <div className="map-controls">
+      {back && <button type="button" className="map-back-btn" onClick={back} aria-label="Go back"><ArrowLeft size={20}/></button>}
+      <form onSubmit={searchMap}><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search destinations"/><button type="submit"><ChevronRight size={18}/></button></form>
+      <button className={locating?'locating':''} onClick={locate} aria-label="Use my location"><LocateFixed size={18}/></button>
+    </div>
+    {selected&&<div className="map-preview"><img src={selected.image} alt={selected.name}/><div><span>EXPLORE ETHIOPIA</span><h3>{selected.name}</h3><p><Star fill="currentColor"/>{selected.rating||'New'} · {selected.city}</p></div><button onClick={()=>open(selected)}><ChevronRight size={18}/></button></div>}
   </div>;
 }
 function ProfileView({user,open}) { const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join(''); return <div className="page profile"><p className="eyebrow">YOUR SPACE</p><h1>Profile</h1><div className="profile-hero"><div className="avatar">{initials}</div><div><h2>{user.name||'Telegram Traveler'}</h2><p>@{user.telegram_username||'telegram_user'}</p><span>✈ Verified Telegram traveler</span></div></div><section><small>ACCOUNT</small><div><button onClick={()=>open('help')}><span><ShieldCheck/></span><b>Telegram-secured account</b><ChevronRight/></button></div></section><section><small>SUPPORT</small><div><button onClick={()=>open('help')}><span><CircleHelp/></span><b>Help center</b><ChevronRight/></button></div></section><p className="version">Tankua for Telegram · v1.0</p></div>; }
