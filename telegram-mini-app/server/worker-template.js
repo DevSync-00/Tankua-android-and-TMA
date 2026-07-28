@@ -387,6 +387,35 @@ async function verifyPayment(txRef, env, expectedUserId = null) {
   return json({ paid: paid && amountMatches, status: paid && amountMatches ? 'paid' : transaction.status, booking_id: transaction.booking_id });
 }
 
+async function updateProfile(request, session, env) {
+  const body = await request.json();
+  const updates = {};
+  if (body.name !== undefined) updates.name = body.name || null;
+  if (body.email !== undefined) updates.email = body.email || null;
+  if (body.phone_number !== undefined) updates.phone_number = body.phone_number || null;
+  if (body.emergency_contact !== undefined) updates.emergency_contact = body.emergency_contact || null;
+  if (body.location !== undefined) updates.location = body.location || null;
+  
+  await supabase(env, `users?id=eq.${session.uid}`, {
+    method: 'PATCH',
+    body: updates,
+    headers: { Prefer: 'return=minimal' },
+  });
+  return json({ success: true });
+}
+
+async function deleteProfile(session, env) {
+  await supabase(env, `users?id=eq.${session.uid}`, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=minimal' },
+  });
+  return json({ success: true });
+}
+
+async function suggestTrip(request, session, env) {
+  return json({ success: true });
+}
+
 function assertSameOrigin(request, env) {
   const origin = request.headers.get('origin');
   if (origin && env.APP_ORIGIN && origin !== env.APP_ORIGIN) {
@@ -421,6 +450,9 @@ async function handleApi(request, env, requestId) {
   if (url.pathname === '/api/bookings' && request.method === 'POST') return createBooking(request, session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
+  if (url.pathname === '/api/profile' && request.method === 'PUT') return updateProfile(request, session, env);
+  if (url.pathname === '/api/profile' && request.method === 'DELETE') return deleteProfile(session, env);
+  if (url.pathname === '/api/suggestions' && request.method === 'POST') return suggestTrip(request, session, env);
   if (url.pathname === '/api/logout' && request.method === 'POST') {
     return json({ success: true }, 200, { 'set-cookie': `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0` });
   }

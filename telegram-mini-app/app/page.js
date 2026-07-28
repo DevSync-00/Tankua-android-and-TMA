@@ -5,7 +5,7 @@ import {
   ArrowLeft, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
   Building2, Clock3, Compass, CreditCard, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
   MapPin, Minus, Navigation, Plus, Search, Share2, ShieldCheck, Star,
-  Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings
+  Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings, Phone, ShieldAlert
 } from 'lucide-react';
 
 const fallbackDestinations = [
@@ -287,9 +287,17 @@ export default function App() {
       return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
     if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => setScreen('ticket')} />;
     if (screen === 'ticket') return <TicketView booking={booking} back={() => setScreen('confirmation')} />;
-    if (screen === 'notifications') return <SimplePage title="Notifications" back={goBack} icon={Bell} text="You’re all caught up. Booking confirmations and trip updates will appear here." />;
-    if (screen === 'rewards') return <SimplePage title="Rewards" back={goBack} icon={Gift} text="You have 1,240 Tankua points. Keep exploring to unlock your next travel reward." />;
-    if (screen === 'help') return <SimplePage title="Help Center" back={goBack} icon={CircleHelp} text="Find answers about bookings, payment, refunds and your Tankua account." />;
+    if (screen === 'notifications') return <NotificationsView back={goBack} />;
+    if (screen === 'notification_settings') return <NotificationSettingsView back={goBack} />;
+    if (screen === 'rewards') return <RewardsView back={goBack} />;
+    if (screen === 'coupons') return <CouponsView back={goBack} />;
+    if (screen === 'payment') return <PaymentMethodsView back={goBack} />;
+    if (screen === 'help') return <HelpCenterView back={goBack} />;
+    if (screen === 'account') return <MyAccountView user={user} back={goBack} notify={notify} />;
+    if (screen === 'saved') return <SavedDestinationsView destinations={liveDestinations} favorites={favorites} open={openDetail} back={goBack} />;
+    if (screen === 'suggest') return <SuggestTripView back={goBack} notify={notify} />;
+    if (screen === 'friends') return <CloseFriendsView back={goBack} />;
+    if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} />;
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
     if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} open={openTrip} explore={() => goTab('home')} />;
@@ -761,6 +769,279 @@ function MapView({destinations,open,back}) {
     )}
   </div>;
 }
+
+function MyAccountView({ user, back, notify }) {
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone_number: user?.phone_number || '',
+    emergency_contact: user?.emergency_contact || '',
+    location: user?.location || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.phone_number) {
+      notify('Name and phone number are required');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error('Failed to update profile');
+      notify('Profile updated successfully');
+      back();
+    } catch (e) {
+      notify(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) return;
+    try {
+      setDeleting(true);
+      const res = await fetch('/api/profile', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete account');
+      window.Telegram?.WebApp?.close();
+    } catch (e) {
+      notify(e.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>My Account</h1><span/></header>
+      <div className="flow-body profile-form">
+        <section className="form-section">
+          <h3><UserRound size={16}/> Personal Information</h3>
+          <div className="form-group">
+            <label>Full Name *</label>
+            <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Enter your full name" />
+          </div>
+        </section>
+        <section className="form-section">
+          <h3><Phone size={16}/> Contact Information</h3>
+          <div className="form-group">
+            <label>Email Address</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Enter your email" />
+          </div>
+          <div className="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} placeholder="+251 9XX XXX XXXX" />
+          </div>
+          <div className="form-group">
+            <label>Emergency Contact</label>
+            <input type="tel" value={formData.emergency_contact} onChange={e => setFormData({...formData, emergency_contact: e.target.value})} placeholder="Emergency contact phone number" />
+          </div>
+        </section>
+        <section className="form-section">
+          <h3><MapPin size={16}/> Location</h3>
+          <div className="form-group">
+            <label>Address</label>
+            <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Your location (city, address)" />
+          </div>
+        </section>
+        <div className="info-note"><Info/><p>Fields marked with * are required. Your information is kept secure and private.</p></div>
+        <section className="form-section danger-zone">
+          <h3 className="danger-text"><ShieldAlert size={16}/> Danger Zone</h3>
+          <div className="danger-card">
+            <h4>Delete Account</h4>
+            <p>Permanently remove your account and related data from Tankua.</p>
+            <button className="btn-danger" disabled={deleting} onClick={handleDelete}>{deleting ? 'Deleting...' : 'Delete Account'}</button>
+          </div>
+        </section>
+      </div>
+      <div className="flow-sticky">
+        <button className="continue" disabled={loading} onClick={handleSave}>{loading ? 'Saving...' : 'Save Changes'}</button>
+      </div>
+    </div>
+  );
+}
+
+function SavedDestinationsView({ destinations, favorites, open, back }) {
+  const saved = destinations.filter(d => favorites.includes(d.id));
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Saved Destinations</h1><span/></header>
+      <div className="flow-body">
+        {saved.length === 0 ? (
+          <div className="empty"><span><Heart size={40}/></span><h2>No saved places</h2><p>You haven't bookmarked any destinations yet.</p></div>
+        ) : (
+          <div className="destination-grid">{saved.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SuggestTripView({ back, notify }) {
+  const [loading, setLoading] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    await fetch('/api/suggestions', { method: 'POST' });
+    notify('Thank you! Your route suggestion has been submitted.');
+    back();
+  };
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Suggest a Trip</h1><span/></header>
+      <form className="flow-body profile-form" onSubmit={submit}>
+        <div className="form-group"><label>Origin</label><input required placeholder="Where from?"/></div>
+        <div className="form-group"><label>Destination</label><input required placeholder="Where to?"/></div>
+        <div className="form-group"><label>Message (Optional)</label><textarea rows={4} placeholder="Tell us more about this route..."/></div>
+        <button className="continue mt-4" disabled={loading} type="submit">{loading ? 'Submitting...' : 'Submit Suggestion'}</button>
+      </form>
+    </div>
+  );
+}
+
+function CloseFriendsView({ back }) {
+  const [friends, setFriends] = useState([
+    { id: '1', name: 'John Doe', phone: '0912345678', trips: 5 },
+    { id: '2', name: 'Jane Smith', phone: '0918765432', trips: 3 },
+  ]);
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Close Friends</h1><span/></header>
+      <div className="flow-body list-view">
+        <div className="search-input mb-4"><Search size={18}/><input placeholder="Search friends..."/></div>
+        {friends.length === 0 ? (
+          <div className="empty"><span><UsersRound size={40}/></span><h2>No friends found</h2><p>Add friends to see their trips and travel together</p></div>
+        ) : (
+          friends.map(f => (
+            <div key={f.id} className="list-card">
+              <div className="list-avatar">{f.name[0]}</div>
+              <div className="list-info"><b>{f.name}</b><p>{f.phone}</p><small>{f.trips} trips together</small></div>
+              <button className="icon-button danger-text" onClick={() => setFriends(friends.filter(x => x.id !== f.id))}><X size={18}/></button>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="flow-sticky"><button className="continue">Add Friend</button></div>
+    </div>
+  );
+}
+
+function ReferFriendView({ back, notify }) {
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Refer a Friend</h1><span/></header>
+      <div className="flow-body text-center">
+        <div className="empty"><span><Share2 size={40}/></span><h2>Invite Friends</h2><p>Share Tankua with friends and earn 500 points for their first trip!</p></div>
+        <div className="referral-box"><b>TANKUA-WELCOME-2026</b></div>
+      </div>
+      <div className="flow-sticky"><button className="continue" onClick={() => notify('Code copied to clipboard!')}>Copy Link</button></div>
+    </div>
+  );
+}
+
+function RewardsView({ back }) {
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Rewards</h1><span/></header>
+      <div className="flow-body">
+        <div className="rewards-card">
+          <div className="rewards-icon"><Gift size={40}/></div>
+          <h2>1,240 Points</h2>
+          <p>Explorer Tier</p>
+          <div className="progress mt-4"><i style={{width:'40%'}}/></div>
+          <small>760 more points to reach Voyager Tier</small>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CouponsView({ back }) {
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Coupons</h1><span/></header>
+      <div className="flow-body list-view">
+        <div className="list-card">
+          <div className="list-icon"><Tag/></div>
+          <div className="list-info"><b>WELCOME10</b><p>10% off your first trip</p><small>Expires in 30 days</small></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentMethodsView({ back }) {
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Payment Methods</h1><span/></header>
+      <div className="flow-body list-view">
+        <div className="list-card">
+          <div className="list-icon"><CreditCard/></div>
+          <div className="list-info"><b>Chapa (Default)</b><p>Mobile money, CBE Birr, Telebirr</p></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsView({ back }) {
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Notifications</h1><span/></header>
+      <div className="flow-body list-view">
+        <div className="list-card">
+          <div className="list-icon bg-blue"><Bell color="white"/></div>
+          <div className="list-info"><b>Welcome to Tankua!</b><p>Start exploring Ethiopia today.</p><small>2 days ago</small></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationSettingsView({ back }) {
+  const [push, setPush] = useState(true);
+  const [sms, setSms] = useState(false);
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Notification Settings</h1><span/></header>
+      <div className="flow-body list-view">
+        <div className="list-card toggle-card">
+          <div className="list-info"><b>Push Notifications</b><p>Updates on bookings and trips</p></div>
+          <input type="checkbox" className="toggle" checked={push} onChange={e => setPush(e.target.checked)} />
+        </div>
+        <div className="list-card toggle-card">
+          <div className="list-info"><b>SMS Alerts</b><p>Text messages for ticket QR codes</p></div>
+          <input type="checkbox" className="toggle" checked={sms} onChange={e => setSms(e.target.checked)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HelpCenterView({ back }) {
+  return (
+    <div className="flow-page">
+      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Help Center</h1><span/></header>
+      <div className="flow-body list-view">
+        <div className="list-card faq">
+          <div className="list-info"><b>How do I book a trip?</b><p>Search for a destination, select an available trip, choose your seats, and pay securely via Chapa.</p></div>
+        </div>
+        <div className="list-card faq">
+          <div className="list-info"><b>Can I cancel my booking?</b><p>Yes, you can cancel up to 24 hours before departure for a full refund.</p></div>
+        </div>
+        <div className="list-card faq">
+          <div className="list-info"><b>How do I get my ticket?</b><p>Your QR ticket is available in the Trips tab. Show it to the driver during pickup.</p></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function ProfileView({user,open}) {
   const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join('');
   return (
@@ -784,34 +1065,34 @@ function ProfileView({user,open}) {
       <section>
         <small>ACCOUNT</small>
         <div>
-          <button onClick={()=>open('help')}><span><UserRound/></span><div><b>My Account</b><small className="sub">Edit your personal details</small></div><ChevronRight/></button>
-          <button onClick={()=>open('help')}><span><Heart/></span><div><b>Saved Destinations</b><small className="sub">Your bookmarked places</small></div><ChevronRight/></button>
+          <button onClick={()=>open('account')}><span><UserRound/></span><div><b>My Account</b><small className="sub">Edit your personal details</small></div><ChevronRight/></button>
+          <button onClick={()=>open('saved')}><span><Heart/></span><div><b>Saved Destinations</b><small className="sub">Your bookmarked places</small></div><ChevronRight/></button>
         </div>
       </section>
 
       <section>
         <small>TRAVEL</small>
         <div>
-          <button onClick={()=>open('help')}><span><MapIcon/></span><div><b>Suggest a Trip</b><small className="sub">Recommend a new route</small></div><ChevronRight/></button>
-          <button onClick={()=>open('help')}><span><UsersRound/></span><div><b>Close Friends</b><small className="sub">Travel with your circle</small></div><ChevronRight/></button>
-          <button onClick={()=>open('help')}><span><Share2/></span><div><b>Refer a Friend</b><small className="sub">Invite friends and earn rewards</small></div><ChevronRight/></button>
+          <button onClick={()=>open('suggest')}><span><MapIcon/></span><div><b>Suggest a Trip</b><small className="sub">Recommend a new route</small></div><ChevronRight/></button>
+          <button onClick={()=>open('friends')}><span><UsersRound/></span><div><b>Close Friends</b><small className="sub">Travel with your circle</small></div><ChevronRight/></button>
+          <button onClick={()=>open('refer')}><span><Share2/></span><div><b>Refer a Friend</b><small className="sub">Invite friends and earn rewards</small></div><ChevronRight/></button>
         </div>
       </section>
 
       <section>
         <small>PERKS</small>
         <div>
-          <button onClick={()=>open('help')}><span><Gift/></span><div><b>Rewards</b><small className="sub">Your points and benefits</small></div><ChevronRight/></button>
-          <button onClick={()=>open('help')}><span><Tag/></span><div><b>Coupons</b><small className="sub">Discounts and promo codes</small></div><ChevronRight/></button>
-          <button onClick={()=>open('help')}><span><CreditCard/></span><div><b>Payment Methods</b><small className="sub">Manage your payment options</small></div><ChevronRight/></button>
+          <button onClick={()=>open('rewards')}><span><Gift/></span><div><b>Rewards</b><small className="sub">Your points and benefits</small></div><ChevronRight/></button>
+          <button onClick={()=>open('coupons')}><span><Tag/></span><div><b>Coupons</b><small className="sub">Discounts and promo codes</small></div><ChevronRight/></button>
+          <button onClick={()=>open('payment')}><span><CreditCard/></span><div><b>Payment Methods</b><small className="sub">Manage your payment options</small></div><ChevronRight/></button>
         </div>
       </section>
 
       <section>
         <small>SUPPORT</small>
         <div>
-          <button onClick={()=>open('help')}><span><Bell/></span><div><b>Notifications</b><small className="sub">See your activity</small></div><ChevronRight/></button>
-          <button onClick={()=>open('help')}><span><Settings/></span><div><b>Notification Settings</b><small className="sub">Manage push preferences</small></div><ChevronRight/></button>
+          <button onClick={()=>open('notifications')}><span><Bell/></span><div><b>Notifications</b><small className="sub">See your activity</small></div><ChevronRight/></button>
+          <button onClick={()=>open('notification_settings')}><span><Settings/></span><div><b>Notification Settings</b><small className="sub">Manage push preferences</small></div><ChevronRight/></button>
           <button onClick={()=>open('help')}><span><CircleHelp/></span><div><b>Help Center</b><small className="sub">FAQs and support</small></div><ChevronRight/></button>
         </div>
       </section>
