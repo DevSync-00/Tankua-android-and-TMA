@@ -464,7 +464,7 @@ async function getProfileOverview(session, env) {
     supabase(env, `user_favorites?select=destination_id&user_id=eq.${session.uid}&order=created_at.desc`),
     supabase(env, `trip_suggestions?select=id,origin,destination,message,status,created_at&user_id=eq.${session.uid}&order=created_at.desc`),
     supabase(env, `close_friends?select=id,name,phone,trips_together,created_at&user_id=eq.${session.uid}&order=created_at.desc`),
-    supabase(env, `rewards_points?select=current_points,total_earned,total_redeemed&user_id=eq.${session.uid}&limit=1`),
+    supabase(env, `rewards_points?select=current_points&user_id=eq.${session.uid}&limit=1`),
     supabase(env, `rewards_transactions?select=id,type,amount,description,created_at&user_id=eq.${session.uid}&order=created_at.desc&limit=20`),
     supabase(env, `promotions?select=id,code,name,description,discount_type,discount_value,valid_until&is_active=eq.true&valid_from=lte.${encodeURIComponent(new Date().toISOString())}&valid_until=gt.${encodeURIComponent(new Date().toISOString())}&order=valid_until.asc`),
     supabase(env, `saved_payment_methods?select=id,type,provider,name,masked_number,is_default&user_id=eq.${session.uid}&is_active=eq.true&order=is_default.desc,created_at.desc`),

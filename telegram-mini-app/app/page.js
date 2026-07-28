@@ -203,7 +203,13 @@ export default function App() {
         body: JSON.stringify({ initData: tg.initData }),
       });
       setUser(verifiedUser);
-      const [productionData] = await Promise.all([loadProductionData(), loadProfileData()]);
+      const [productionData] = await Promise.all([
+        loadProductionData(),
+        loadProfileData().catch(error => {
+          console.error('Profile overview unavailable', error);
+          return null;
+        }),
+      ]);
       setAuthStatus('authenticated');
       const params = new URLSearchParams(window.location.search);
       const txRef = params.get('tx_ref');

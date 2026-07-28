@@ -7,6 +7,10 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS profile_photo_url TEXT,
   ADD COLUMN IF NOT EXISTS referral_code TEXT;
 
+ALTER TABLE public.rewards_points
+  ADD COLUMN IF NOT EXISTS total_earned INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_redeemed INTEGER NOT NULL DEFAULT 0;
+
 UPDATE public.users
 SET referral_code = 'TNK-' || upper(substr(replace(id::text, '-', ''), 1, 8))
 WHERE referral_code IS NULL;
