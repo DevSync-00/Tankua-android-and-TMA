@@ -718,7 +718,47 @@ function MapView({destinations,open,back}) {
       <form onSubmit={searchMap}><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search destinations"/><button type="submit"><ChevronRight size={18}/></button></form>
       <button className={locating?'locating':''} onClick={locate} aria-label="Use my location"><LocateFixed size={18}/></button>
     </div>
-    {selected&&<div className="map-preview"><img src={selected.image} alt={selected.name}/><div><span>EXPLORE ETHIOPIA</span><h3>{selected.name}</h3><p><Star fill="currentColor"/>{selected.rating||'New'} · {selected.city}</p></div><button onClick={()=>open(selected)}><ChevronRight size={18}/></button></div>}
+    {selected && (
+      <div className="map-card-floating">
+        <button type="button" className="map-card-close" onClick={() => setSelected(null)} aria-label="Close destination preview">
+          <X size={15} />
+        </button>
+        <div className="map-card-top">
+          <img src={selected.image} alt={selected.name} className="map-card-thumb" />
+          <div className="map-card-info">
+            <h3>{selected.name}</h3>
+            <p className="map-card-location">{selected.city || 'Ethiopia'} · {selected.region || 'Amhara'}</p>
+            <div className="map-card-meta">
+              <span className="map-card-rating">
+                <Star size={12} fill="#ffb800" color="#ffb800" />
+                {selected.rating || '4.5'}
+              </span>
+              <span className="map-card-distance">
+                <MapPin size={12} />
+                {selected.distance ? `${selected.distance} km` : 'Iconic spot'}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="map-card-actions">
+          <button type="button" className="map-card-btn-primary" onClick={() => open(selected)}>
+            View Details <ChevronRight size={15} />
+          </button>
+          <button
+            type="button"
+            className="map-card-btn-secondary"
+            onClick={() => {
+              const coords = destinationCoordinates(selected);
+              if (coords) {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${coords[0]},${coords[1]}`, '_blank');
+              }
+            }}
+          >
+            <Navigation size={14} /> Directions
+          </button>
+        </div>
+      </div>
+    )}
   </div>;
 }
 function ProfileView({user,open}) { const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join(''); return <div className="page profile"><p className="eyebrow">YOUR SPACE</p><h1>Profile</h1><div className="profile-hero"><div className="avatar">{initials}</div><div><h2>{user.name||'Telegram Traveler'}</h2><p>@{user.telegram_username||'telegram_user'}</p><span>✈ Verified Telegram traveler</span></div></div><section><small>ACCOUNT</small><div><button onClick={()=>open('help')}><span><ShieldCheck/></span><b>Telegram-secured account</b><ChevronRight/></button></div></section><section><small>SUPPORT</small><div><button onClick={()=>open('help')}><span><CircleHelp/></span><b>Help center</b><ChevronRight/></button></div></section><p className="version">Tankua for Telegram · v1.0</p></div>; }
