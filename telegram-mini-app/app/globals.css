@@ -1763,3 +1763,385 @@ h1, h2, h3, h4, b, strong {
 .toggle:checked::after {
   transform: translateX(20px);
 }
+
+/* Telegram Mini App polish pass */
+img {
+  max-width: 100%;
+}
+
+.page,
+.flow-body,
+.profile section button > div,
+.list-info,
+.search-copy,
+.card-copy {
+  min-width: 0;
+}
+
+.home-header,
+.search-hero,
+.page-head {
+  gap: 14px;
+}
+
+.home-header > div,
+.search-hero > div,
+.page-head > div {
+  min-width: 0;
+}
+
+.home-header h1,
+.search-title,
+.page-head h1,
+.flow-body > h1 {
+  letter-spacing: 0;
+}
+
+.search-title {
+  white-space: nowrap;
+  font-size: 24px;
+}
+
+.search-input input,
+.map-controls input {
+  min-height: 44px;
+}
+
+.chips,
+.featured-row,
+.search-suggestions {
+  -webkit-overflow-scrolling: touch;
+}
+
+.destination-card,
+.search-list > button,
+.booked-card,
+.mobile-trip-card,
+.pickup-card,
+.summary,
+.passenger-card,
+.provider,
+.profile-hero,
+.profile section > div,
+.form-section,
+.list-card {
+  border-radius: 16px;
+}
+
+.destination-card,
+.search-list > button,
+.booked-card,
+.mobile-trip-card,
+.pickup-card,
+.profile section > div,
+.form-section,
+.list-card {
+  border-color: #eee9df;
+  box-shadow: 0 6px 18px rgba(10, 26, 47, 0.055);
+}
+
+.destination-grid {
+  align-items: stretch;
+}
+
+.destination-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-image {
+  height: auto;
+  aspect-ratio: 1.2;
+}
+
+.card-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-copy p,
+.search-copy p,
+.booked-card p,
+.profile-hero p,
+.list-info p,
+.list-info small,
+.profile section .sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-copy > div,
+.search-copy > div,
+.trip-card-foot,
+.selected-pickup,
+.summary p {
+  min-width: 0;
+}
+
+.card-copy > div b,
+.search-copy > div b,
+.trip-card-foot b,
+.summary p b,
+.selected-pickup small {
+  white-space: nowrap;
+}
+
+.segmented {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.segmented button {
+  min-height: 40px;
+}
+
+.booked-card {
+  align-items: stretch;
+}
+
+.booked-card img {
+  width: 84px !important;
+  height: 92px !important;
+}
+
+.booked-card b {
+  min-width: 0;
+  justify-content: space-between;
+}
+
+.flow-body > h1 {
+  font-size: 30px;
+  line-height: 1.08;
+  margin: 28px 0 8px;
+}
+
+.flow-body .lead {
+  margin-top: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.mobile-trip-list,
+.pickup-list {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-trip-card,
+.pickup-card {
+  margin-bottom: 0;
+}
+
+.trip-provider {
+  min-width: 0;
+}
+
+.trip-provider > div {
+  min-width: 0;
+}
+
+.trip-provider b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-schedule {
+  gap: 10px;
+}
+
+.trip-schedule > div {
+  min-width: 0;
+}
+
+.trip-schedule b,
+.trip-schedule small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickup-card {
+  align-items: flex-start;
+}
+
+.pickup-card > div {
+  min-width: 0;
+}
+
+.pickup-card b,
+.pickup-card p,
+.pickup-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-page {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.map-controls {
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  right: 12px;
+  gap: 8px;
+}
+
+.map-controls form,
+.map-back-btn,
+.map-controls > button {
+  height: 44px;
+  border-radius: 14px;
+}
+
+.map-back-btn,
+.map-controls > button {
+  width: 44px;
+}
+
+.map-card-floating {
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  left: 12px;
+  right: 12px;
+  border-radius: 18px;
+  padding: 12px;
+  gap: 10px;
+}
+
+.map-card-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+}
+
+.map-card-actions {
+  gap: 8px;
+}
+
+.map-card-btn-primary,
+.map-card-btn-secondary {
+  min-width: 0;
+  height: 42px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.leaflet-control-attribution {
+  font-size: 9px !important;
+}
+
+.leaflet-control-zoom {
+  margin-bottom: 150px !important;
+}
+
+.toast {
+  max-width: calc(100% - 28px);
+  text-align: center;
+  line-height: 1.25;
+}
+
+@media (max-width: 390px) {
+  .page,
+  .home-page,
+  .search-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chips,
+  .featured-row,
+  .search-suggestions {
+    margin-left: -14px;
+    margin-right: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .search-title {
+    font-size: 22px;
+  }
+
+  .bottom-nav {
+    width: min(calc(100% - 18px), 492px);
+    height: 68px;
+    border-radius: 22px;
+  }
+
+  .bottom-nav button {
+    gap: 3px;
+  }
+
+  .bottom-nav svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .destination-grid {
+    gap: 10px;
+  }
+
+  .booked-card {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .booked-card img {
+    width: 74px !important;
+    height: 84px !important;
+  }
+
+  .map-controls {
+    left: 10px;
+    right: 10px;
+  }
+
+  .map-card-actions {
+    flex-direction: column;
+  }
+
+  .map-card-btn-primary,
+  .map-card-btn-secondary {
+    width: 100%;
+    flex: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .search-title {
+    font-size: 20px;
+  }
+
+  .destination-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-list > button,
+  .booked-card {
+    align-items: flex-start;
+  }
+
+  .search-thumb {
+    width: 68px;
+    height: 68px;
+  }
+
+  .booked-card img {
+    width: 66px !important;
+    height: 76px !important;
+  }
+
+  .segmented button {
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 10px;
+  }
+}
