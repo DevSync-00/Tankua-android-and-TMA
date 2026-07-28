@@ -361,16 +361,19 @@ function normalizeBookingForUi(item, destinations) {
 function AuthGate({ status, error, retry }) {
   const loading = status === 'loading';
   const telegramRequired = status === 'telegram-required';
+  if (loading) return <main className="auth-splash" aria-label="Tankua is loading">
+    <img src="/tankua-boat.svg" alt="Tankua"/>
+    <h1>Tankua</h1>
+  </main>;
   return <main className="auth-gate">
     <div className="auth-brand">
       <img src="/tankua-logo.png" alt="Tankua"/>
       <div><strong>TANKUA</strong><span>Explore Ethiopia</span></div>
     </div>
     <section className="auth-panel">
-      <p className="eyebrow">{loading ? 'CONNECTING SECURELY' : telegramRequired ? 'TELEGRAM MINI APP' : 'SIGN-IN INTERRUPTED'}</p>
-      <h1>{loading ? 'Getting your journey ready…' : telegramRequired ? 'Continue in Telegram' : 'Let’s get you back in'}</h1>
-      <p>{loading ? 'Confirming your Telegram account and loading live trips.' : telegramRequired ? 'Launch Tankua from the official bot to sign in securely—no password needed.' : error}</p>
-      {loading && <div className="auth-loader"><i/><i/><i/></div>}
+      <p className="eyebrow">{telegramRequired ? 'TELEGRAM MINI APP' : 'SIGN-IN INTERRUPTED'}</p>
+      <h1>{telegramRequired ? 'Continue in Telegram' : 'Let’s get you back in'}</h1>
+      <p>{telegramRequired ? 'Launch Tankua from the official bot to sign in securely—no password needed.' : error}</p>
       {telegramRequired && <a href="https://t.me/tankua_tma_bot" target="_blank" rel="noreferrer">Open @tankua_tma_bot</a>}
       {status === 'error' && <button onClick={retry}>Try secure sign-in again</button>}
       <div className={`auth-trust ${status === 'error' ? 'error' : ''}`}>

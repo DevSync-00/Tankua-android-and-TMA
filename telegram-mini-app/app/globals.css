@@ -42,6 +42,65 @@ h1, h2, h3, h4, b, strong {
 }
 
 /* TELEGRAM AUTH / APP BOOT */
+.auth-splash {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #ffb800;
+}
+
+.auth-splash > img {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: min(64vw, 310px);
+  height: auto;
+  transform: translate(-50%, -50%);
+  animation: splash-boat-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-splash > h1 {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: calc(7.5% + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  color: #111318;
+  font-family: Rockwell, "Roboto Slab", Georgia, serif;
+  font-size: clamp(42px, 13vw, 66px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -2px;
+  text-align: center;
+  animation: splash-name-in 0.45s 0.15s ease-out both;
+}
+
+@keyframes splash-boat-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes splash-name-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .auth-gate {
   width: 100%;
   max-width: 520px;
@@ -2882,6 +2941,15 @@ img {
 }
 
 @media (max-width: 340px) {
+  .auth-splash > img {
+    top: 40%;
+    width: min(68vw, 250px);
+  }
+
+  .auth-splash > h1 {
+    bottom: calc(6% + env(safe-area-inset-bottom, 0px));
+  }
+
   .auth-gate {
     justify-content: flex-start;
     gap: 17px;
