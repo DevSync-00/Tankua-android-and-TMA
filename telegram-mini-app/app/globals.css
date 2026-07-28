@@ -57,7 +57,7 @@ h1, h2, h3, h4, b, strong {
   position: absolute;
   top: 42%;
   left: 50%;
-  width: min(64vw, 310px);
+  width: min(156vw, 800px);
   height: auto;
   transform: translate(-50%, -50%);
   animation: splash-boat-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -2943,7 +2943,7 @@ img {
 @media (max-width: 340px) {
   .auth-splash > img {
     top: 40%;
-    width: min(68vw, 250px);
+    width: min(158vw, 620px);
   }
 
   .auth-splash > h1 {

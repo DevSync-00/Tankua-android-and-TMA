@@ -362,7 +362,7 @@ function AuthGate({ status, error, retry }) {
   const loading = status === 'loading';
   const telegramRequired = status === 'telegram-required';
   if (loading) return <main className="auth-splash" aria-label="Tankua is loading">
-    <img src="/tankua-boat.svg" alt="Tankua"/>
+    <img src="/android-adaptive-icon.png" alt="Tankua"/>
     <h1>Tankua</h1>
   </main>;
   return <main className="auth-gate">
