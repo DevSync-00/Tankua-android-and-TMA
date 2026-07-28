@@ -63,22 +63,6 @@ h1, h2, h3, h4, b, strong {
   animation: splash-boat-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.auth-splash > h1 {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: calc(7.5% + env(safe-area-inset-bottom, 0px));
-  margin: 0;
-  color: #111318;
-  font-family: Rockwell, "Roboto Slab", Georgia, serif;
-  font-size: clamp(42px, 13vw, 66px);
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: -2px;
-  text-align: center;
-  animation: splash-name-in 0.45s 0.15s ease-out both;
-}
-
 @keyframes splash-boat-in {
   from {
     opacity: 0;
@@ -87,17 +71,6 @@ h1, h2, h3, h4, b, strong {
   to {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes splash-name-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -1809,6 +1782,13 @@ h1, h2, h3, h4, b, strong {
   font-weight: 800;
   font-size: 20px;
   flex: none;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .hero-text {
@@ -1975,6 +1955,78 @@ h1, h2, h3, h4, b, strong {
   align-items: center;
   gap: 8px;
   color: var(--navy);
+}
+
+.profile-photo-picker {
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffcf6;
+  cursor: pointer;
+}
+
+.profile-photo-picker input {
+  display: none;
+}
+
+.profile-photo-preview {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.profile-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-photo-picker > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-photo-picker b {
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.profile-photo-picker small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.notification-row {
+  width: 100%;
+  border: 0;
+  text-align: left;
+}
+
+.notification-row.read {
+  opacity: 0.65;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--gold);
 }
 .form-group {
   margin-bottom: 16px;
@@ -2944,10 +2996,6 @@ img {
   .auth-splash > img {
     top: 40%;
     width: min(158vw, 620px);
-  }
-
-  .auth-splash > h1 {
-    bottom: calc(6% + env(safe-area-inset-bottom, 0px));
   }
 
   .auth-gate {

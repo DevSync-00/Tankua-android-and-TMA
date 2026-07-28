@@ -166,6 +166,9 @@ function safeUser(user) {
     location: user.location || '',
     telegram_username: user.telegram_username || '',
     telegram_photo_url: user.telegram_photo_url || '',
+    profile_photo_url: user.profile_photo_url || '',
+    photo_url: user.profile_photo_url || user.telegram_photo_url || '',
+    referral_code: user.referral_code || '',
   };
 }
 
@@ -195,15 +198,22 @@ async function authenticate(request, env) {
   );
   let users;
   if (existing?.[0]?.id) {
+    const loginUpdate = {
+      telegram_id: profile.telegram_id,
+      telegram_username: profile.telegram_username,
+      telegram_photo_url: profile.telegram_photo_url,
+      telegram_language_code: profile.telegram_language_code,
+      last_login_at: profile.last_login_at,
+    };
     users = await supabase(
       env,
-      `users?id=eq.${existing[0].id}&select=id,name,email,phone_number,emergency_contact,location,telegram_id,telegram_username,telegram_photo_url`,
-      { method: 'PATCH', body: profile, headers: { Prefer: 'return=representation' } },
+      `users?id=eq.${existing[0].id}&select=id,name,email,phone_number,emergency_contact,location,telegram_id,telegram_username,telegram_photo_url,profile_photo_url,referral_code`,
+      { method: 'PATCH', body: loginUpdate, headers: { Prefer: 'return=representation' } },
     );
   } else {
     users = await supabase(
       env,
-      'users?select=id,name,email,phone_number,emergency_contact,location,telegram_id,telegram_username,telegram_photo_url',
+      'users?select=id,name,email,phone_number,emergency_contact,location,telegram_id,telegram_username,telegram_photo_url,profile_photo_url,referral_code',
       { method: 'POST', body: profile, headers: { Prefer: 'return=representation' } },
     );
   }
@@ -267,6 +277,7 @@ async function getProviderLogo(providerId, env) {
 }
 
 async function getBookings(session, env) {
+  await supabase(env, 'rpc/delete_expired_unpaid_bookings', { method: 'POST', body: {} });
   const bookings = await supabase(
     env,
     `bookings?select=*&user_id=eq.${session.uid}&order=created_at.desc`,
@@ -390,18 +401,146 @@ async function verifyPayment(txRef, env, expectedUserId = null) {
 async function updateProfile(request, session, env) {
   const body = await request.json();
   const updates = {};
-  if (body.name !== undefined) updates.name = body.name || null;
-  if (body.email !== undefined) updates.email = body.email || null;
-  if (body.phone_number !== undefined) updates.phone_number = body.phone_number || null;
-  if (body.emergency_contact !== undefined) updates.emergency_contact = body.emergency_contact || null;
-  if (body.location !== undefined) updates.location = body.location || null;
+  const clean = (value, limit) => String(value || '').trim().slice(0, limit);
+  if (body.name !== undefined) {
+    updates.name = clean(body.name, 120);
+    if (updates.name.length < 2) throw new Error('Name must contain at least 2 characters');
+  }
+  if (body.email !== undefined) {
+    updates.email = clean(body.email, 254);
+    if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) throw new Error('Enter a valid email address');
+  }
+  if (body.phone_number !== undefined) {
+    updates.phone_number = clean(body.phone_number, 32);
+    if (updates.phone_number.length < 7) throw new Error('Enter a valid phone number');
+  }
+  if (body.emergency_contact !== undefined) updates.emergency_contact = clean(body.emergency_contact, 32);
+  if (body.location !== undefined) updates.location = clean(body.location, 180);
   
-  await supabase(env, `users?id=eq.${session.uid}`, {
+  const users = await supabase(env, `users?id=eq.${session.uid}&select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url,profile_photo_url,referral_code`, {
     method: 'PATCH',
     body: updates,
-    headers: { Prefer: 'return=minimal' },
+    headers: { Prefer: 'return=representation' },
   });
+  return json({ user: safeUser(users?.[0] || {}) });
+}
+
+async function updateProfilePhoto(request, session, env) {
+  const { data_url: dataUrl } = await request.json();
+  const match = String(dataUrl || '').match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) throw new Error('Choose a JPG, PNG, or WebP image');
+  if (match[2].length > 2800000) throw new Error('Profile image must be smaller than 2 MB');
+  const extension = match[1] === 'jpeg' ? 'jpg' : match[1];
+  const contentType = match[1] === 'jpeg' ? 'image/jpeg' : `image/${match[1]}`;
+  const bytes = Uint8Array.from(atob(match[2]), character => character.charCodeAt(0));
+  const objectPath = `${session.uid}/avatar.${extension}`;
+  const upload = await fetch(`${env.SUPABASE_URL}/storage/v1/object/user-avatars/${objectPath}`, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': contentType,
+      'x-upsert': 'true',
+    },
+    body: bytes,
+  });
+  if (!upload.ok) {
+    const details = await upload.text();
+    console.error(JSON.stringify({ event: 'profile_photo_upload_failed', status: upload.status, details }));
+    throw new Error('Unable to upload profile photo');
+  }
+  const photoUrl = `${env.SUPABASE_URL}/storage/v1/object/public/user-avatars/${objectPath}?v=${Date.now()}`;
+  const users = await supabase(env, `users?id=eq.${session.uid}&select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url,profile_photo_url,referral_code`, {
+    method: 'PATCH',
+    body: { profile_photo_url: photoUrl },
+    headers: { Prefer: 'return=representation' },
+  });
+  return json({ user: safeUser(users?.[0] || {}) });
+}
+
+async function getProfileOverview(session, env) {
+  const [users, favorites, suggestions, friends, rewards, rewardTransactions, coupons, paymentMethods, notifications, preferences] = await Promise.all([
+    supabase(env, `users?select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url,profile_photo_url,referral_code&id=eq.${session.uid}&limit=1`),
+    supabase(env, `user_favorites?select=destination_id&user_id=eq.${session.uid}&order=created_at.desc`),
+    supabase(env, `trip_suggestions?select=id,origin,destination,message,status,created_at&user_id=eq.${session.uid}&order=created_at.desc`),
+    supabase(env, `close_friends?select=id,name,phone,trips_together,created_at&user_id=eq.${session.uid}&order=created_at.desc`),
+    supabase(env, `rewards_points?select=current_points,total_earned,total_redeemed&user_id=eq.${session.uid}&limit=1`),
+    supabase(env, `rewards_transactions?select=id,type,amount,description,created_at&user_id=eq.${session.uid}&order=created_at.desc&limit=20`),
+    supabase(env, `promotions?select=id,code,name,description,discount_type,discount_value,valid_until&is_active=eq.true&valid_from=lte.${encodeURIComponent(new Date().toISOString())}&valid_until=gt.${encodeURIComponent(new Date().toISOString())}&order=valid_until.asc`),
+    supabase(env, `saved_payment_methods?select=id,type,provider,name,masked_number,is_default&user_id=eq.${session.uid}&is_active=eq.true&order=is_default.desc,created_at.desc`),
+    supabase(env, `notifications?select=id,title,message,type,is_read,created_at,data&recipient_type=eq.user&recipient_id=eq.${session.uid}&order=created_at.desc&limit=50`),
+    supabase(env, `user_notification_preferences?select=push_enabled,sms_enabled&user_id=eq.${session.uid}&limit=1`),
+  ]);
+  const user = safeUser(users?.[0] || {});
+  return json({
+    user,
+    favorites: favorites.map(item => item.destination_id),
+    suggestions,
+    friends,
+    rewards: rewards?.[0] || { current_points: 0, total_earned: 0, total_redeemed: 0 },
+    reward_transactions: rewardTransactions,
+    coupons,
+    payment_methods: paymentMethods,
+    notifications,
+    notification_preferences: preferences?.[0] || { push_enabled: true, sms_enabled: false },
+    referral_code: user.referral_code || `TNK-${String(session.uid).replaceAll('-', '').slice(0, 8).toUpperCase()}`,
+  });
+}
+
+async function changeFavorite(request, session, env, remove = false) {
+  const { destination_id: destinationId } = await request.json();
+  if (!/^[0-9a-f-]{36}$/i.test(String(destinationId || ''))) throw new Error('Invalid destination');
+  if (remove) {
+    await supabase(env, `user_favorites?user_id=eq.${session.uid}&destination_id=eq.${destinationId}`, {
+      method: 'DELETE', headers: { Prefer: 'return=minimal' },
+    });
+  } else {
+    await supabase(env, 'user_favorites?on_conflict=user_id,destination_id', {
+      method: 'POST',
+      body: { user_id: session.uid, destination_id: destinationId },
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    });
+  }
   return json({ success: true });
+}
+
+async function suggestTrip(request, session, env) {
+  const body = await request.json();
+  const origin = String(body.origin || '').trim().slice(0, 120);
+  const destination = String(body.destination || '').trim().slice(0, 120);
+  const message = String(body.message || '').trim().slice(0, 1000);
+  if (origin.length < 2 || destination.length < 2) throw new Error('Origin and destination are required');
+  const rows = await supabase(env, 'trip_suggestions?select=id,origin,destination,message,status,created_at', {
+    method: 'POST',
+    body: { user_id: session.uid, origin, destination, message: message || null },
+    headers: { Prefer: 'return=representation' },
+  });
+  return json({ suggestion: rows?.[0] }, 201);
+}
+
+async function addFriend(request, session, env) {
+  const body = await request.json();
+  const name = String(body.name || '').trim().slice(0, 120);
+  const phone = String(body.phone || '').trim().slice(0, 32);
+  if (name.length < 2 || phone.length < 7) throw new Error('Enter a valid name and phone number');
+  const rows = await supabase(env, 'close_friends?select=id,name,phone,trips_together,created_at', {
+    method: 'POST', body: { user_id: session.uid, name, phone }, headers: { Prefer: 'return=representation' },
+  });
+  return json({ friend: rows?.[0] }, 201);
+}
+
+async function updateNotificationPreferences(request, session, env) {
+  const body = await request.json();
+  const preferences = {
+    user_id: session.uid,
+    push_enabled: Boolean(body.push_enabled),
+    sms_enabled: Boolean(body.sms_enabled),
+    updated_at: new Date().toISOString(),
+  };
+  const rows = await supabase(env, 'user_notification_preferences?on_conflict=user_id&select=push_enabled,sms_enabled', {
+    method: 'POST', body: preferences, headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+  });
+  return json({ preferences: rows?.[0] || preferences });
 }
 
 async function deleteProfile(session, env) {
@@ -409,10 +548,6 @@ async function deleteProfile(session, env) {
     method: 'DELETE',
     headers: { Prefer: 'return=minimal' },
   });
-  return json({ success: true });
-}
-
-async function suggestTrip(request, session, env) {
   return json({ success: true });
 }
 
@@ -443,7 +578,7 @@ async function handleApi(request, env, requestId) {
   const session = await readSession(request, env);
   if (!session) return json({ error: 'Authentication required' }, 401);
   if (url.pathname === '/api/session' && request.method === 'GET') {
-    const users = await supabase(env, `users?select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url&id=eq.${session.uid}&limit=1`);
+    const users = await supabase(env, `users?select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url,profile_photo_url,referral_code&id=eq.${session.uid}&limit=1`);
     return json({ user: safeUser(users?.[0] || {}) });
   }
   if (url.pathname === '/api/bookings' && request.method === 'GET') return getBookings(session, env);
@@ -452,7 +587,25 @@ async function handleApi(request, env, requestId) {
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
   if (url.pathname === '/api/profile' && request.method === 'PUT') return updateProfile(request, session, env);
   if (url.pathname === '/api/profile' && request.method === 'DELETE') return deleteProfile(session, env);
+  if (url.pathname === '/api/profile/photo' && request.method === 'POST') return updateProfilePhoto(request, session, env);
+  if (url.pathname === '/api/profile/overview' && request.method === 'GET') return getProfileOverview(session, env);
+  if (url.pathname === '/api/favorites' && request.method === 'POST') return changeFavorite(request, session, env);
+  if (url.pathname === '/api/favorites' && request.method === 'DELETE') return changeFavorite(request, session, env, true);
   if (url.pathname === '/api/suggestions' && request.method === 'POST') return suggestTrip(request, session, env);
+  if (url.pathname === '/api/friends' && request.method === 'POST') return addFriend(request, session, env);
+  const friendMatch = url.pathname.match(/^\/api\/friends\/([0-9a-f-]{36})$/i);
+  if (friendMatch && request.method === 'DELETE') {
+    await supabase(env, `close_friends?id=eq.${friendMatch[1]}&user_id=eq.${session.uid}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    return json({ success: true });
+  }
+  if (url.pathname === '/api/notification-preferences' && request.method === 'PUT') return updateNotificationPreferences(request, session, env);
+  const notificationMatch = url.pathname.match(/^\/api\/notifications\/([0-9a-f-]{36})\/read$/i);
+  if (notificationMatch && request.method === 'POST') {
+    await supabase(env, `notifications?id=eq.${notificationMatch[1]}&recipient_type=eq.user&recipient_id=eq.${session.uid}`, {
+      method: 'PATCH', body: { is_read: true, read_at: new Date().toISOString() }, headers: { Prefer: 'return=minimal' },
+    });
+    return json({ success: true });
+  }
   if (url.pathname === '/api/logout' && request.method === 'POST') {
     return json({ success: true }, 200, { 'set-cookie': `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0` });
   }

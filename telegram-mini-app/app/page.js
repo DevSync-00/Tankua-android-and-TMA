@@ -105,15 +105,25 @@ export default function App() {
   const [catalog, setCatalog] = useState({ destinations: [], trips: [], providers: [], stations: [], trip_pickup_stations: [] });
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
-  const [favorites, setFavorites] = useState([1, 4]);
+  const [favorites, setFavorites] = useState([]);
+  const [profileData, setProfileData] = useState({
+    friends: [], suggestions: [], rewards: { current_points: 0, total_earned: 0, total_redeemed: 0 },
+    reward_transactions: [], coupons: [], payment_methods: [], notifications: [],
+    notification_preferences: { push_enabled: true, sms_enabled: false }, referral_code: '',
+  });
 
-  const toggleFavorite = (id) => {
-    setFavorites(prev => {
-      const isFav = prev.includes(id);
-      const updated = isFav ? prev.filter(item => item !== id) : [...prev, id];
-      notify(isFav ? 'Removed from saved destinations' : 'Added to saved destinations ❤️');
-      return updated;
-    });
+  const toggleFavorite = async (id) => {
+    const isFav = favorites.includes(id);
+    try {
+      await api('/api/favorites', {
+        method: isFav ? 'DELETE' : 'POST',
+        body: JSON.stringify({ destination_id: id }),
+      });
+      setFavorites(prev => isFav ? prev.filter(item => item !== id) : [...prev, id]);
+      notify(isFav ? 'Removed from saved destinations' : 'Added to saved destinations');
+    } catch (error) {
+      notify(error.message);
+    }
   };
 
   useEffect(() => {
@@ -159,6 +169,14 @@ export default function App() {
     }
   };
 
+  const loadProfileData = async () => {
+    const data = await api('/api/profile/overview');
+    setProfileData(data);
+    setFavorites(data.favorites || []);
+    if (data.user?.id) setUser(data.user);
+    return data;
+  };
+
   const refreshCatalog = async () => {
     const catalogData = await api(`/api/catalog?refresh=${Date.now()}`);
     setCatalog(catalogData);
@@ -185,7 +203,7 @@ export default function App() {
         body: JSON.stringify({ initData: tg.initData }),
       });
       setUser(verifiedUser);
-      const productionData = await loadProductionData();
+      const [productionData] = await Promise.all([loadProductionData(), loadProfileData()]);
       setAuthStatus('authenticated');
       const params = new URLSearchParams(window.location.search);
       const txRef = params.get('tx_ref');
@@ -287,22 +305,22 @@ export default function App() {
       return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
     if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => setScreen('ticket')} />;
     if (screen === 'ticket') return <TicketView booking={booking} back={() => setScreen('confirmation')} />;
-    if (screen === 'notifications') return <NotificationsView back={goBack} />;
-    if (screen === 'notification_settings') return <NotificationSettingsView back={goBack} />;
-    if (screen === 'rewards') return <RewardsView back={goBack} />;
-    if (screen === 'coupons') return <CouponsView back={goBack} />;
-    if (screen === 'payment') return <PaymentMethodsView back={goBack} />;
+    if (screen === 'notifications') return <NotificationsView back={goBack} notifications={profileData.notifications} api={api} onChange={loadProfileData} />;
+    if (screen === 'notification_settings') return <NotificationSettingsView back={goBack} preferences={profileData.notification_preferences} api={api} notify={notify} onChange={loadProfileData} />;
+    if (screen === 'rewards') return <RewardsView back={goBack} rewards={profileData.rewards} transactions={profileData.reward_transactions} />;
+    if (screen === 'coupons') return <CouponsView back={goBack} coupons={profileData.coupons} />;
+    if (screen === 'payment') return <PaymentMethodsView back={goBack} methods={profileData.payment_methods} />;
     if (screen === 'help') return <HelpCenterView back={goBack} />;
-    if (screen === 'account') return <MyAccountView user={user} back={goBack} notify={notify} />;
+    if (screen === 'account') return <MyAccountView user={user} back={goBack} notify={notify} api={api} onUpdated={(updated) => { setUser(updated); loadProfileData().catch(() => {}); }} />;
     if (screen === 'saved') return <SavedDestinationsView destinations={liveDestinations} favorites={favorites} open={openDetail} back={goBack} />;
-    if (screen === 'suggest') return <SuggestTripView back={goBack} notify={notify} />;
-    if (screen === 'friends') return <CloseFriendsView back={goBack} />;
-    if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} />;
+    if (screen === 'suggest') return <SuggestTripView back={goBack} notify={notify} api={api} />;
+    if (screen === 'friends') return <CloseFriendsView back={goBack} friends={profileData.friends} api={api} notify={notify} onChange={loadProfileData} />;
+    if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} code={profileData.referral_code} />;
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
     if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} open={openTrip} explore={() => goTab('home')} />;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
-    return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} />;
+    return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} api={api} />;
   };
 
   if (authStatus !== 'authenticated') {
@@ -363,7 +381,6 @@ function AuthGate({ status, error, retry }) {
   const telegramRequired = status === 'telegram-required';
   if (loading) return <main className="auth-splash" aria-label="Tankua is loading">
     <img src="/android-adaptive-icon.png" alt="Tankua"/>
-    <h1>Tankua</h1>
   </main>;
   return <main className="auth-gate">
     <div className="auth-brand">
@@ -773,7 +790,7 @@ function MapView({destinations,open,back}) {
   </div>;
 }
 
-function MyAccountView({ user, back, notify }) {
+function MyAccountView({ user, back, notify, api, onUpdated }) {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -783,6 +800,20 @@ function MyAccountView({ user, back, notify }) {
   });
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [photoData, setPhotoData] = useState('');
+  const photoPreview = photoData || user?.photo_url || user?.profile_photo_url || user?.telegram_photo_url || '';
+
+  const choosePhoto = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      notify('Choose a JPG, PNG, or WebP image under 2 MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setPhotoData(String(reader.result || ''));
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async () => {
     if (!formData.name || !formData.phone_number) {
@@ -791,12 +822,20 @@ function MyAccountView({ user, back, notify }) {
     }
     try {
       setLoading(true);
-      const res = await fetch('/api/profile', {
+      let updated = user;
+      const profile = await api('/api/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error('Failed to update profile');
+      updated = profile.user;
+      if (photoData) {
+        const photo = await api('/api/profile/photo', {
+          method: 'POST',
+          body: JSON.stringify({ data_url: photoData }),
+        });
+        updated = photo.user;
+      }
+      onUpdated?.(updated);
       notify('Profile updated successfully');
       back();
     } catch (e) {
@@ -826,6 +865,13 @@ function MyAccountView({ user, back, notify }) {
       <div className="flow-body profile-form">
         <section className="form-section">
           <h3><UserRound size={16}/> Personal Information</h3>
+          <label className="profile-photo-picker">
+            <span className="profile-photo-preview">
+              {photoPreview ? <img src={photoPreview} alt="Profile"/> : (formData.name || 'T').slice(0, 1).toUpperCase()}
+            </span>
+            <span><b>Profile photo</b><small>Telegram photo is used automatically. Tap to choose your own.</small></span>
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto}/>
+          </label>
           <div className="form-group">
             <label>Full Name *</label>
             <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Enter your full name" />
@@ -886,33 +932,62 @@ function SavedDestinationsView({ destinations, favorites, open, back }) {
   );
 }
 
-function SuggestTripView({ back, notify }) {
+function SuggestTripView({ back, notify, api }) {
   const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ origin: '', destination: '', message: '' });
   const submit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    await fetch('/api/suggestions', { method: 'POST' });
-    notify('Thank you! Your route suggestion has been submitted.');
-    back();
+    try {
+      setLoading(true);
+      await api('/api/suggestions', { method: 'POST', body: JSON.stringify(form) });
+      notify('Your route suggestion has been submitted');
+      back();
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Suggest a Trip</h1><span/></header>
       <form className="flow-body profile-form" onSubmit={submit}>
-        <div className="form-group"><label>Origin</label><input required placeholder="Where from?"/></div>
-        <div className="form-group"><label>Destination</label><input required placeholder="Where to?"/></div>
-        <div className="form-group"><label>Message (Optional)</label><textarea rows={4} placeholder="Tell us more about this route..."/></div>
+        <div className="form-group"><label>Origin</label><input required value={form.origin} onChange={e=>setForm({...form,origin:e.target.value})} placeholder="Where from?"/></div>
+        <div className="form-group"><label>Destination</label><input required value={form.destination} onChange={e=>setForm({...form,destination:e.target.value})} placeholder="Where to?"/></div>
+        <div className="form-group"><label>Message (Optional)</label><textarea rows={4} value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Tell us more about this route..."/></div>
         <button className="continue mt-4" disabled={loading} type="submit">{loading ? 'Submitting...' : 'Submit Suggestion'}</button>
       </form>
     </div>
   );
 }
 
-function CloseFriendsView({ back }) {
-  const [friends, setFriends] = useState([
-    { id: '1', name: 'John Doe', phone: '0912345678', trips: 5 },
-    { id: '2', name: 'Jane Smith', phone: '0918765432', trips: 3 },
-  ]);
+function CloseFriendsView({ back, friends = [], api, notify, onChange }) {
+  const [adding, setAdding] = useState(false);
+  const addFriend = async () => {
+    const name = window.prompt('Friend’s full name');
+    if (!name) return;
+    const phone = window.prompt('Friend’s phone number');
+    if (!phone) return;
+    try {
+      setAdding(true);
+      await api('/api/friends', { method: 'POST', body: JSON.stringify({ name, phone }) });
+      await onChange();
+      notify('Friend added');
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+  const removeFriend = async (id) => {
+    try {
+      await api(`/api/friends/${id}`, { method: 'DELETE' });
+      await onChange();
+      notify('Friend removed');
+    } catch (error) {
+      notify(error.message);
+    }
+  };
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Close Friends</h1><span/></header>
@@ -924,62 +999,72 @@ function CloseFriendsView({ back }) {
           friends.map(f => (
             <div key={f.id} className="list-card">
               <div className="list-avatar">{f.name[0]}</div>
-              <div className="list-info"><b>{f.name}</b><p>{f.phone}</p><small>{f.trips} trips together</small></div>
-              <button className="icon-button danger-text" onClick={() => setFriends(friends.filter(x => x.id !== f.id))}><X size={18}/></button>
+              <div className="list-info"><b>{f.name}</b><p>{f.phone}</p><small>{f.trips_together || 0} trips together</small></div>
+              <button className="icon-button danger-text" onClick={() => removeFriend(f.id)}><X size={18}/></button>
             </div>
           ))
         )}
       </div>
-      <div className="flow-sticky"><button className="continue">Add Friend</button></div>
+      <div className="flow-sticky"><button className="continue" disabled={adding} onClick={addFriend}>{adding ? 'Adding...' : 'Add Friend'}</button></div>
     </div>
   );
 }
 
-function ReferFriendView({ back, notify }) {
+function ReferFriendView({ back, notify, code }) {
+  const referralCode = code || 'TANKUA';
+  const copyReferral = async () => {
+    const link = `https://t.me/tankua_tma_bot?start=${encodeURIComponent(referralCode)}`;
+    await navigator.clipboard?.writeText(link);
+    notify('Referral link copied');
+  };
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Refer a Friend</h1><span/></header>
       <div className="flow-body text-center">
         <div className="empty"><span><Share2 size={40}/></span><h2>Invite Friends</h2><p>Share Tankua with friends and earn 500 points for their first trip!</p></div>
-        <div className="referral-box"><b>TANKUA-WELCOME-2026</b></div>
+        <div className="referral-box"><b>{referralCode}</b></div>
       </div>
-      <div className="flow-sticky"><button className="continue" onClick={() => notify('Code copied to clipboard!')}>Copy Link</button></div>
+      <div className="flow-sticky"><button className="continue" onClick={copyReferral}>Copy Link</button></div>
     </div>
   );
 }
 
-function RewardsView({ back }) {
+function RewardsView({ back, rewards = {}, transactions = [] }) {
+  const points = Number(rewards.current_points || 0);
+  const nextTier = Math.ceil((points + 1) / 2000) * 2000;
+  const progress = Math.min(100, Math.round((points / Math.max(nextTier, 2000)) * 100));
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Rewards</h1><span/></header>
       <div className="flow-body">
         <div className="rewards-card">
           <div className="rewards-icon"><Gift size={40}/></div>
-          <h2>1,240 Points</h2>
-          <p>Explorer Tier</p>
-          <div className="progress mt-4"><i style={{width:'40%'}}/></div>
-          <small>760 more points to reach Voyager Tier</small>
+          <h2>{points.toLocaleString()} Points</h2>
+          <p>{points >= 5000 ? 'Voyager Tier' : 'Explorer Tier'}</p>
+          <div className="progress mt-4"><i style={{width:`${progress}%`}}/></div>
+          <small>{Math.max(0, nextTier - points).toLocaleString()} more points to your next milestone</small>
         </div>
+        {transactions.length > 0 && <div className="list-view">{transactions.map(item=><div className="list-card" key={item.id}><div className="list-icon"><Gift/></div><div className="list-info"><b>{item.description}</b><p>{new Date(item.created_at).toLocaleDateString()}</p></div><strong>{item.amount > 0 ? '+' : ''}{item.amount}</strong></div>)}</div>}
       </div>
     </div>
   );
 }
 
-function CouponsView({ back }) {
+function CouponsView({ back, coupons = [] }) {
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Coupons</h1><span/></header>
       <div className="flow-body list-view">
-        <div className="list-card">
+        {coupons.length ? coupons.map(coupon=><div className="list-card" key={coupon.id}>
           <div className="list-icon"><Tag/></div>
-          <div className="list-info"><b>WELCOME10</b><p>10% off your first trip</p><small>Expires in 30 days</small></div>
-        </div>
+          <div className="list-info"><b>{coupon.code}</b><p>{coupon.description || coupon.name}</p><small>Expires {new Date(coupon.valid_until).toLocaleDateString()}</small></div>
+        </div>):<div className="empty"><span><Tag/></span><h2>No active coupons</h2><p>Available discounts will appear here.</p></div>}
       </div>
     </div>
   );
 }
 
-function PaymentMethodsView({ back }) {
+function PaymentMethodsView({ back, methods = [] }) {
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Payment Methods</h1><span/></header>
@@ -988,39 +1073,49 @@ function PaymentMethodsView({ back }) {
           <div className="list-icon"><CreditCard/></div>
           <div className="list-info"><b>Chapa (Default)</b><p>Mobile money, CBE Birr, Telebirr</p></div>
         </div>
+        {methods.map(method=><div className="list-card" key={method.id}><div className="list-icon"><CreditCard/></div><div className="list-info"><b>{method.name}{method.is_default ? ' · Default' : ''}</b><p>{method.provider} {method.masked_number || ''}</p></div></div>)}
       </div>
     </div>
   );
 }
 
-function NotificationsView({ back }) {
+function NotificationsView({ back, notifications = [], api, onChange }) {
+  const markRead = async (notification) => {
+    if (notification.is_read) return;
+    await api(`/api/notifications/${notification.id}/read`, { method: 'POST' });
+    await onChange();
+  };
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Notifications</h1><span/></header>
-      <div className="flow-body list-view">
-        <div className="list-card">
-          <div className="list-icon bg-blue"><Bell color="white"/></div>
-          <div className="list-info"><b>Welcome to Tankua!</b><p>Start exploring Ethiopia today.</p><small>2 days ago</small></div>
-        </div>
-      </div>
+      <div className="flow-body list-view">{notifications.length ? notifications.map(item=><button className={`list-card notification-row ${item.is_read?'read':''}`} key={item.id} onClick={()=>markRead(item)}><div className="list-icon bg-blue"><Bell color="white"/></div><div className="list-info"><b>{item.title}</b><p>{item.message}</p><small>{new Date(item.created_at).toLocaleString()}</small></div>{!item.is_read&&<i className="unread-dot"/>}</button>):<div className="empty"><span><Bell/></span><h2>No notifications</h2><p>Booking and payment updates will appear here.</p></div>}</div>
     </div>
   );
 }
 
-function NotificationSettingsView({ back }) {
-  const [push, setPush] = useState(true);
-  const [sms, setSms] = useState(false);
+function NotificationSettingsView({ back, preferences, api, notify, onChange }) {
+  const [push, setPush] = useState(preferences?.push_enabled ?? true);
+  const [sms, setSms] = useState(preferences?.sms_enabled ?? false);
+  const save = async (nextPush, nextSms) => {
+    try {
+      await api('/api/notification-preferences', { method: 'PUT', body: JSON.stringify({ push_enabled: nextPush, sms_enabled: nextSms }) });
+      await onChange();
+      notify('Notification settings saved');
+    } catch (error) {
+      notify(error.message);
+    }
+  };
   return (
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Notification Settings</h1><span/></header>
       <div className="flow-body list-view">
         <div className="list-card toggle-card">
           <div className="list-info"><b>Push Notifications</b><p>Updates on bookings and trips</p></div>
-          <input type="checkbox" className="toggle" checked={push} onChange={e => setPush(e.target.checked)} />
+          <input type="checkbox" className="toggle" checked={push} onChange={e => {setPush(e.target.checked);save(e.target.checked,sms);}} />
         </div>
         <div className="list-card toggle-card">
           <div className="list-info"><b>SMS Alerts</b><p>Text messages for ticket QR codes</p></div>
-          <input type="checkbox" className="toggle" checked={sms} onChange={e => setSms(e.target.checked)} />
+          <input type="checkbox" className="toggle" checked={sms} onChange={e => {setSms(e.target.checked);save(push,e.target.checked);}} />
         </div>
       </div>
     </div>
@@ -1045,21 +1140,30 @@ function HelpCenterView({ back }) {
     </div>
   );
 }
-function ProfileView({user,open}) {
+function ProfileView({user,open,api,notify}) {
   const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join('');
+  const signOut = async () => {
+    try {
+      await api('/api/logout', { method: 'POST' });
+      window.Telegram?.WebApp?.close();
+      setTimeout(() => window.location.reload(), 300);
+    } catch (error) {
+      notify(error.message);
+    }
+  };
   return (
     <div className="page profile">
       <h1>Profile</h1>
       <div className="profile-hero">
         <div className="hero-left">
-          <div className="avatar">{initials}</div>
+          <div className="avatar">{user.photo_url ? <img src={user.photo_url} alt={user.name || 'Profile'}/> : initials}</div>
           <div className="hero-text">
             <h2>{user.name||'Telegram Traveler'}</h2>
             <p>@{user.telegram_username||'telegram_user'}</p>
             <span className="telegram-badge">✈ Telegram</span>
           </div>
         </div>
-        <button className="edit-chip">
+        <button className="edit-chip" onClick={()=>open('account')}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           Edit
         </button>
@@ -1100,7 +1204,7 @@ function ProfileView({user,open}) {
         </div>
       </section>
 
-      <button className="sign-out-btn" onClick={() => window.Telegram?.WebApp?.close()}>
+      <button className="sign-out-btn" onClick={signOut}>
         <LogOut size={20} /> Sign Out
       </button>
 
