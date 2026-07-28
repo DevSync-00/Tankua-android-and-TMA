@@ -5,7 +5,7 @@ import {
   ArrowLeft, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
   Building2, Clock3, Compass, CreditCard, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
   MapPin, Minus, Navigation, Plus, Search, Share2, ShieldCheck, Star,
-  Tag, Ticket, UserRound, UsersRound, X
+  Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings
 } from 'lucide-react';
 
 const fallbackDestinations = [
@@ -761,5 +761,67 @@ function MapView({destinations,open,back}) {
     )}
   </div>;
 }
-function ProfileView({user,open}) { const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join(''); return <div className="page profile"><p className="eyebrow">YOUR SPACE</p><h1>Profile</h1><div className="profile-hero"><div className="avatar">{initials}</div><div><h2>{user.name||'Telegram Traveler'}</h2><p>@{user.telegram_username||'telegram_user'}</p><span>✈ Verified Telegram traveler</span></div></div><section><small>ACCOUNT</small><div><button onClick={()=>open('help')}><span><ShieldCheck/></span><b>Telegram-secured account</b><ChevronRight/></button></div></section><section><small>SUPPORT</small><div><button onClick={()=>open('help')}><span><CircleHelp/></span><b>Help center</b><ChevronRight/></button></div></section><p className="version">Tankua for Telegram · v1.0</p></div>; }
+function ProfileView({user,open}) {
+  const initials=(user.name||'T').split(' ').map(part=>part[0]).slice(0,2).join('');
+  return (
+    <div className="page profile">
+      <h1>Profile</h1>
+      <div className="profile-hero">
+        <div className="hero-left">
+          <div className="avatar">{initials}</div>
+          <div className="hero-text">
+            <h2>{user.name||'Telegram Traveler'}</h2>
+            <p>@{user.telegram_username||'telegram_user'}</p>
+            <span className="telegram-badge">✈ Telegram</span>
+          </div>
+        </div>
+        <button className="edit-chip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit
+        </button>
+      </div>
+
+      <section>
+        <small>ACCOUNT</small>
+        <div>
+          <button onClick={()=>open('help')}><span><UserRound/></span><div><b>My Account</b><small className="sub">Edit your personal details</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><Heart/></span><div><b>Saved Destinations</b><small className="sub">Your bookmarked places</small></div><ChevronRight/></button>
+        </div>
+      </section>
+
+      <section>
+        <small>TRAVEL</small>
+        <div>
+          <button onClick={()=>open('help')}><span><MapIcon/></span><div><b>Suggest a Trip</b><small className="sub">Recommend a new route</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><UsersRound/></span><div><b>Close Friends</b><small className="sub">Travel with your circle</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><Share2/></span><div><b>Refer a Friend</b><small className="sub">Invite friends and earn rewards</small></div><ChevronRight/></button>
+        </div>
+      </section>
+
+      <section>
+        <small>PERKS</small>
+        <div>
+          <button onClick={()=>open('help')}><span><Gift/></span><div><b>Rewards</b><small className="sub">Your points and benefits</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><Tag/></span><div><b>Coupons</b><small className="sub">Discounts and promo codes</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><CreditCard/></span><div><b>Payment Methods</b><small className="sub">Manage your payment options</small></div><ChevronRight/></button>
+        </div>
+      </section>
+
+      <section>
+        <small>SUPPORT</small>
+        <div>
+          <button onClick={()=>open('help')}><span><Bell/></span><div><b>Notifications</b><small className="sub">See your activity</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><Settings/></span><div><b>Notification Settings</b><small className="sub">Manage push preferences</small></div><ChevronRight/></button>
+          <button onClick={()=>open('help')}><span><CircleHelp/></span><div><b>Help Center</b><small className="sub">FAQs and support</small></div><ChevronRight/></button>
+        </div>
+      </section>
+
+      <button className="sign-out-btn" onClick={() => window.Telegram?.WebApp?.close()}>
+        <LogOut size={20} /> Sign Out
+      </button>
+
+      <p className="version">Tankua · v1.0</p>
+    </div>
+  );
+}
 function SimplePage({title,back,icon:Icon,text}) { return <div className="simple-page"><header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>{title}</h1><span/></header><div className="empty"><span><Icon/></span><h2>{title}</h2><p>{text}</p></div></div>; }

@@ -214,7 +214,7 @@ h1, h2, h3, h4, b, strong {
   align-items: center;
   gap: 10px;
   box-shadow: 0 4px 14px rgba(10, 26, 47, 0.04);
-  margin-bottom: 0;
+  margin-bottom: 16px;
   width: 100%;
   text-align: left;
 }
@@ -469,6 +469,38 @@ h1, h2, h3, h4, b, strong {
   font-size: 10px;
   color: var(--navy);
   font-weight: 800;
+}
+
+.how {
+  margin-top: 40px;
+}
+
+.how-row {
+  margin-bottom: 32px;
+}
+
+.how-row b {
+  display: block;
+  font-size: 16px;
+  color: var(--navy);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.how-row strong {
+  display: block;
+  font-size: 16px;
+  color: var(--navy);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.how-row p {
+  font-size: 15px;
+  color: var(--navy);
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.5;
 }
 
 /* SEARCH PAGE */
@@ -1125,9 +1157,17 @@ h1, h2, h3, h4, b, strong {
   padding: 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
   box-shadow: var(--shadow);
   margin-bottom: 20px;
+}
+
+.hero-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
 }
 
 .avatar {
@@ -1143,7 +1183,7 @@ h1, h2, h3, h4, b, strong {
   flex: none;
 }
 
-.profile-hero > div:nth-child(2) {
+.hero-text {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1163,7 +1203,7 @@ h1, h2, h3, h4, b, strong {
   margin: 0 0 6px;
 }
 
-.profile-hero span {
+.telegram-badge {
   font-size: 9px;
   color: #1687bd;
   background: rgba(34, 158, 217, 0.1);
@@ -1171,6 +1211,22 @@ h1, h2, h3, h4, b, strong {
   border-radius: 99px;
   width: fit-content;
   font-weight: 700;
+}
+
+.edit-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 184, 0, 0.12);
+  color: var(--gold-dark);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.edit-chip svg {
+  color: var(--gold-dark);
 }
 
 .profile section {
@@ -1196,13 +1252,14 @@ h1, h2, h3, h4, b, strong {
 
 .profile section button {
   width: 100%;
-  height: 56px;
+  height: auto;
+  min-height: 56px;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: #ffffff;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 12px 16px;
   gap: 12px;
   text-align: left;
 }
@@ -1212,9 +1269,9 @@ h1, h2, h3, h4, b, strong {
 }
 
 .profile section button > span {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: rgba(255, 184, 0, 0.12);
   color: var(--gold-dark);
   display: grid;
@@ -1222,17 +1279,45 @@ h1, h2, h3, h4, b, strong {
   flex: none;
 }
 
+.profile section button > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .profile section b {
   font-size: 13px;
-  flex: 1;
   color: var(--navy);
   font-weight: 700;
+}
+
+.profile section .sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .profile section button > svg {
   color: #adb2b9;
   width: 16px;
   height: 16px;
+}
+
+.sign-out-btn {
+  width: 100%;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
+  color: #ef4444;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 24px;
 }
 
 .version {
