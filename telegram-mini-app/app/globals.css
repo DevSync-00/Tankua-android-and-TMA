@@ -1812,6 +1812,9 @@ h1, h2, h3, h4, b, strong {
 }
 
 .telegram-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 9px;
   color: #1687bd;
   background: rgba(34, 158, 217, 0.1);
@@ -1819,6 +1822,10 @@ h1, h2, h3, h4, b, strong {
   border-radius: 99px;
   width: fit-content;
   font-weight: 700;
+}
+
+.telegram-badge .fa-telegram {
+  font-size: 11px;
 }
 
 .edit-chip {
@@ -2028,6 +2035,76 @@ h1, h2, h3, h4, b, strong {
   flex: none;
   background: var(--gold);
 }
+
+.friend-form {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 184, 0, 0.25);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(10, 26, 47, 0.06);
+}
+
+.friend-form > div {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.friend-form > div b {
+  font-size: 15px;
+}
+
+.friend-form > div button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #f6f3ed;
+}
+
+.friend-form > div svg {
+  width: 16px;
+}
+
+.friend-form > p {
+  margin: -4px 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.friend-form label {
+  margin-bottom: 12px;
+  display: block;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.friend-form input {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fdfcf9;
+  outline: none;
+}
+
+.friend-form input:focus {
+  border-color: var(--gold);
+}
+
+.friend-form .continue {
+  height: 46px;
+  margin-top: 4px;
+}
+
 .form-group {
   margin-bottom: 16px;
 }
@@ -2612,14 +2689,14 @@ img {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin: -44px 0 24px;
+  margin: 0 0 24px;
   position: relative;
   z-index: 2;
 }
 
 .quick-facts > div {
   min-width: 0;
-  min-height: 92px;
+  min-height: 84px;
   border: 1px solid rgba(238, 233, 223, 0.95);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
@@ -2969,7 +3046,7 @@ img {
   }
 
   .quick-facts > div {
-    min-height: 86px;
+    min-height: 82px;
     padding: 10px 6px;
   }
 
@@ -3056,15 +3133,16 @@ img {
   }
 
   .quick-facts {
-    grid-template-columns: 1fr;
-    margin-top: -28px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 0;
   }
 
   .quick-facts > div {
-    min-height: 64px;
-    align-items: flex-start;
-    text-align: left;
-    padding: 10px 12px;
+    min-height: 78px;
+    align-items: center;
+    text-align: center;
+    padding: 8px 4px;
   }
 
   .included {

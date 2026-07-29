@@ -458,16 +458,35 @@ async function updateProfilePhoto(request, session, env) {
   return json({ user: safeUser(users?.[0] || {}) });
 }
 
+async function getCloseFriends(session, env) {
+  const relationships = await supabase(env, `close_friends?select=id,friend_user_id,created_at&user_id=eq.${session.uid}&order=created_at.desc`);
+  const friendIds = relationships.map(item => item.friend_user_id).filter(Boolean);
+  if (!friendIds.length) return [];
+  const users = await supabase(env, `users?select=id,name,phone_number,telegram_username,telegram_photo_url,profile_photo_url&id=in.(${friendIds.join(',')})`);
+  const usersById = new Map(users.map(user => [user.id, user]));
+  return relationships.map(relationship => {
+    const friend = usersById.get(relationship.friend_user_id) || {};
+    return {
+      id: relationship.id,
+      friend_user_id: relationship.friend_user_id,
+      name: friend.name || friend.telegram_username || 'Tankua traveler',
+      phone: friend.phone_number?.startsWith('telegram:') ? '' : (friend.phone_number || ''),
+      photo_url: friend.profile_photo_url || friend.telegram_photo_url || '',
+      trips_together: 0,
+      created_at: relationship.created_at,
+    };
+  });
+}
+
 async function getProfileOverview(session, env) {
-  const [users, favorites, suggestions, friends, rewards, rewardTransactions, coupons, paymentMethods, notifications, preferences] = await Promise.all([
+  const [users, favorites, suggestions, friends, rewards, rewardTransactions, coupons, notifications, preferences] = await Promise.all([
     supabase(env, `users?select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url,profile_photo_url,referral_code&id=eq.${session.uid}&limit=1`),
     supabase(env, `user_favorites?select=destination_id&user_id=eq.${session.uid}&order=created_at.desc`),
     supabase(env, `trip_suggestions?select=id,origin,destination,message,status,created_at&user_id=eq.${session.uid}&order=created_at.desc`),
-    supabase(env, `close_friends?select=id,name,phone,trips_together,created_at&user_id=eq.${session.uid}&order=created_at.desc`),
+    getCloseFriends(session, env),
     supabase(env, `rewards_points?select=current_points&user_id=eq.${session.uid}&limit=1`),
     supabase(env, `rewards_transactions?select=id,type,amount,description,created_at&user_id=eq.${session.uid}&order=created_at.desc&limit=20`),
     supabase(env, `promotions?select=id,code,name,description,discount_type,discount_value,valid_until&is_active=eq.true&valid_from=lte.${encodeURIComponent(new Date().toISOString())}&valid_until=gt.${encodeURIComponent(new Date().toISOString())}&order=valid_until.asc`),
-    supabase(env, `saved_payment_methods?select=id,type,provider,name,masked_number,is_default&user_id=eq.${session.uid}&is_active=eq.true&order=is_default.desc,created_at.desc`),
     supabase(env, `notifications?select=id,title,message,type,is_read,created_at,data&recipient_type=eq.user&recipient_id=eq.${session.uid}&order=created_at.desc&limit=50`),
     supabase(env, `user_notification_preferences?select=push_enabled,sms_enabled&user_id=eq.${session.uid}&limit=1`),
   ]);
@@ -480,7 +499,7 @@ async function getProfileOverview(session, env) {
     rewards: rewards?.[0] || { current_points: 0, total_earned: 0, total_redeemed: 0 },
     reward_transactions: rewardTransactions,
     coupons,
-    payment_methods: paymentMethods,
+    payment_methods: [],
     notifications,
     notification_preferences: preferences?.[0] || { push_enabled: true, sms_enabled: false },
     referral_code: user.referral_code || `TNK-${String(session.uid).replaceAll('-', '').slice(0, 8).toUpperCase()}`,
@@ -520,13 +539,20 @@ async function suggestTrip(request, session, env) {
 
 async function addFriend(request, session, env) {
   const body = await request.json();
-  const name = String(body.name || '').trim().slice(0, 120);
   const phone = String(body.phone || '').trim().slice(0, 32);
-  if (name.length < 2 || phone.length < 7) throw new Error('Enter a valid name and phone number');
-  const rows = await supabase(env, 'close_friends?select=id,name,phone,trips_together,created_at', {
-    method: 'POST', body: { user_id: session.uid, name, phone }, headers: { Prefer: 'return=representation' },
+  if (phone.length < 7) throw new Error('Enter a valid phone number');
+  const matches = await supabase(env, `users?select=id,name,phone_number,telegram_username,telegram_photo_url,profile_photo_url&phone_number=eq.${encodeURIComponent(phone)}&limit=1`);
+  const friend = matches?.[0];
+  if (!friend) return json({ error: 'No Tankua account was found with that phone number' }, 404);
+  if (friend.id === session.uid) throw new Error('You cannot add yourself as a friend');
+  const existing = await supabase(env, `close_friends?select=id,friend_user_id,created_at&user_id=eq.${session.uid}&friend_user_id=eq.${friend.id}&limit=1`);
+  if (existing?.[0]) return json({ friend: { ...existing[0], name: friend.name, phone: friend.phone_number, photo_url: friend.profile_photo_url || friend.telegram_photo_url || '' } });
+  const rows = await supabase(env, 'close_friends?select=id,friend_user_id,created_at', {
+    method: 'POST',
+    body: { user_id: session.uid, friend_user_id: friend.id },
+    headers: { Prefer: 'return=representation' },
   });
-  return json({ friend: rows?.[0] }, 201);
+  return json({ friend: { ...rows?.[0], name: friend.name, phone: friend.phone_number, photo_url: friend.profile_photo_url || friend.telegram_photo_url || '' } }, 201);
 }
 
 async function updateNotificationPreferences(request, session, env) {
@@ -632,7 +658,7 @@ function serveAsset(request) {
       'content-type': asset[1],
       'cache-control': pathname.endsWith('.html') ? 'no-cache' : 'public, max-age=31536000, immutable',
       'x-content-type-options': 'nosniff',
-      'content-security-policy': "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://api.chapa.co; frame-ancestors https://web.telegram.org https://*.telegram.org;",
+      'content-security-policy': "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https: data:; connect-src 'self' https://api.chapa.co; frame-ancestors https://web.telegram.org https://*.telegram.org;",
       'permissions-policy': 'camera=(), microphone=(), geolocation=()',
     },
   });

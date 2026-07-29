@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
-  Building2, Clock3, Compass, CreditCard, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
+  Building2, Clock3, Compass, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
   MapPin, Minus, Navigation, Plus, Search, Share2, ShieldCheck, Star,
   Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings, Phone, ShieldAlert
 } from 'lucide-react';
@@ -315,7 +315,6 @@ export default function App() {
     if (screen === 'notification_settings') return <NotificationSettingsView back={goBack} preferences={profileData.notification_preferences} api={api} notify={notify} onChange={loadProfileData} />;
     if (screen === 'rewards') return <RewardsView back={goBack} rewards={profileData.rewards} transactions={profileData.reward_transactions} />;
     if (screen === 'coupons') return <CouponsView back={goBack} coupons={profileData.coupons} />;
-    if (screen === 'payment') return <PaymentMethodsView back={goBack} methods={profileData.payment_methods} />;
     if (screen === 'help') return <HelpCenterView back={goBack} />;
     if (screen === 'account') return <MyAccountView user={user} back={goBack} notify={notify} api={api} onUpdated={(updated) => { setUser(updated); loadProfileData().catch(() => {}); }} />;
     if (screen === 'saved') return <SavedDestinationsView destinations={liveDestinations} favorites={favorites} open={openDetail} back={goBack} />;
@@ -969,16 +968,19 @@ function SuggestTripView({ back, notify, api }) {
 
 function CloseFriendsView({ back, friends = [], api, notify, onChange }) {
   const [adding, setAdding] = useState(false);
-  const addFriend = async () => {
-    const name = window.prompt('Friend’s full name');
-    if (!name) return;
-    const phone = window.prompt('Friend’s phone number');
-    if (!phone) return;
+  const [showForm, setShowForm] = useState(false);
+  const [query, setQuery] = useState('');
+  const [friendForm, setFriendForm] = useState({ phone: '' });
+  const visibleFriends = friends.filter(friend => `${friend.name} ${friend.phone}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const addFriend = async (event) => {
+    event.preventDefault();
     try {
       setAdding(true);
-      await api('/api/friends', { method: 'POST', body: JSON.stringify({ name, phone }) });
+      await api('/api/friends', { method: 'POST', body: JSON.stringify(friendForm) });
       await onChange();
       notify('Friend added');
+      setFriendForm({ phone: '' });
+      setShowForm(false);
     } catch (error) {
       notify(error.message);
     } finally {
@@ -998,11 +1000,17 @@ function CloseFriendsView({ back, friends = [], api, notify, onChange }) {
     <div className="flow-page">
       <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Close Friends</h1><span/></header>
       <div className="flow-body list-view">
-        <div className="search-input mb-4"><Search size={18}/><input placeholder="Search friends..."/></div>
-        {friends.length === 0 ? (
+        {showForm && <form className="friend-form" onSubmit={addFriend}>
+          <div><b>Add a close friend</b><button type="button" onClick={()=>setShowForm(false)} aria-label="Close"><X/></button></div>
+          <p>Enter the phone number linked to their Tankua account.</p>
+          <label>Phone number<input required minLength={7} inputMode="tel" value={friendForm.phone} onChange={event=>setFriendForm({...friendForm,phone:event.target.value})} placeholder="+251 9XX XXX XXX"/></label>
+          <button className="continue" type="submit" disabled={adding}>{adding ? 'Saving...' : 'Save friend'}</button>
+        </form>}
+        <div className="search-input mb-4"><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search friends..."/></div>
+        {visibleFriends.length === 0 ? (
           <div className="empty"><span><UsersRound size={40}/></span><h2>No friends found</h2><p>Add friends to see their trips and travel together</p></div>
         ) : (
-          friends.map(f => (
+          visibleFriends.map(f => (
             <div key={f.id} className="list-card">
               <div className="list-avatar">{f.name[0]}</div>
               <div className="list-info"><b>{f.name}</b><p>{f.phone}</p><small>{f.trips_together || 0} trips together</small></div>
@@ -1011,7 +1019,7 @@ function CloseFriendsView({ back, friends = [], api, notify, onChange }) {
           ))
         )}
       </div>
-      <div className="flow-sticky"><button className="continue" disabled={adding} onClick={addFriend}>{adding ? 'Adding...' : 'Add Friend'}</button></div>
+      <div className="flow-sticky"><button className="continue" onClick={()=>setShowForm(true)}>Add Friend</button></div>
     </div>
   );
 }
@@ -1065,21 +1073,6 @@ function CouponsView({ back, coupons = [] }) {
           <div className="list-icon"><Tag/></div>
           <div className="list-info"><b>{coupon.code}</b><p>{coupon.description || coupon.name}</p><small>Expires {new Date(coupon.valid_until).toLocaleDateString()}</small></div>
         </div>):<div className="empty"><span><Tag/></span><h2>No active coupons</h2><p>Available discounts will appear here.</p></div>}
-      </div>
-    </div>
-  );
-}
-
-function PaymentMethodsView({ back, methods = [] }) {
-  return (
-    <div className="flow-page">
-      <header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Payment Methods</h1><span/></header>
-      <div className="flow-body list-view">
-        <div className="list-card">
-          <div className="list-icon"><CreditCard/></div>
-          <div className="list-info"><b>Chapa (Default)</b><p>Mobile money, CBE Birr, Telebirr</p></div>
-        </div>
-        {methods.map(method=><div className="list-card" key={method.id}><div className="list-icon"><CreditCard/></div><div className="list-info"><b>{method.name}{method.is_default ? ' · Default' : ''}</b><p>{method.provider} {method.masked_number || ''}</p></div></div>)}
       </div>
     </div>
   );
@@ -1166,7 +1159,7 @@ function ProfileView({user,open,api,notify}) {
           <div className="hero-text">
             <h2>{user.name||'Telegram Traveler'}</h2>
             <p>@{user.telegram_username||'telegram_user'}</p>
-            <span className="telegram-badge">✈ Telegram</span>
+            <span className="telegram-badge"><i className="fa-brands fa-telegram" aria-hidden="true" /> Telegram</span>
           </div>
         </div>
         <button className="edit-chip" onClick={()=>open('account')}>
@@ -1197,7 +1190,6 @@ function ProfileView({user,open,api,notify}) {
         <div>
           <button onClick={()=>open('rewards')}><span><Gift/></span><div><b>Rewards</b><small className="sub">Your points and benefits</small></div><ChevronRight/></button>
           <button onClick={()=>open('coupons')}><span><Tag/></span><div><b>Coupons</b><small className="sub">Discounts and promo codes</small></div><ChevronRight/></button>
-          <button onClick={()=>open('payment')}><span><CreditCard/></span><div><b>Payment Methods</b><small className="sub">Manage your payment options</small></div><ChevronRight/></button>
         </div>
       </section>
 

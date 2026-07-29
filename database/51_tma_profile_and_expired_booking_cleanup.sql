@@ -37,16 +37,6 @@ CREATE TABLE IF NOT EXISTS public.trip_suggestions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS public.close_friends (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  trips_together INTEGER NOT NULL DEFAULT 0 CHECK (trips_together >= 0),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, phone)
-);
-
 CREATE TABLE IF NOT EXISTS public.user_notification_preferences (
   user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -74,9 +64,8 @@ CREATE POLICY "Public user avatar access"
 
 ALTER TABLE public.user_favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trip_suggestions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.close_friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_notification_preferences ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.user_favorites, public.trip_suggestions, public.close_friends,
+REVOKE ALL ON public.user_favorites, public.trip_suggestions,
   public.user_notification_preferences FROM anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.delete_expired_unpaid_bookings()
