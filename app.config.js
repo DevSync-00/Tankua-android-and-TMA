@@ -64,8 +64,8 @@ export default ({ config }) => {
           'expo-build-properties',
           {
             android: {
-              enableMinifyInReleaseBuilds: true,
-              enableShrinkResourcesInReleaseBuilds: true,
+              enableMinifyInReleaseBuilds: false,
+              enableShrinkResourcesInReleaseBuilds: false,
             },
           },
         ],
