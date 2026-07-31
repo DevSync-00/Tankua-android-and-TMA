@@ -19,29 +19,6 @@ import {
   Image as ImageIcon,
   XCircle,
 } from "lucide-react";
-import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Input } from "@tankua/ui";
-import { getDestinations, deleteDestination, type Destination as DestinationType } from "@tankua/database";
-import { createDestination, updateDestination } from "@/lib/queries";
-import { supabase } from "@/lib/supabase";
-
-const CATEGORIES = [
-  { value: "all", label: "All Categories", icon: "🌍" },
-  { value: "religious", label: "Religious Heritage", icon: "🕌" },
-  { value: "sacred", label: "Sacred Sites", icon: "⭐" },
-  { value: "historical", label: "Historical", icon: "🏛️" },
-  { value: "nature", label: "Nature", icon: "🌲" },
-  { value: "adventure", label: "Adventure", icon: "🚴" },
-  { value: "cultural", label: "Cultural", icon: "🎭" },
-  { value: "monument", label: "Monuments", icon: "🗿" },
-  { value: "park", label: "Parks", icon: "🌳" },
-  { value: "museum", label: "Museums", icon: "🏛️" },
-  { value: "other", label: "Other", icon: "📍" },
-];
-
-const getCategoryIcon = (category: string) => {
-  const cat = CATEGORIES.find(c => c.value === category);
-  return cat?.icon || "📍";
 };
 
 export default function DestinationsPage() {

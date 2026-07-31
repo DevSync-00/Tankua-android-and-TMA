@@ -69,7 +69,6 @@ export default function NewTripPage() {
     loadProviderSession();
   }, [router]);
 
-  // Reset return date when switching to one way
   useEffect(() => {
     if (formData.tripType === "one_way" && formData.returnDate) {
       setFormData((prev) => ({ ...prev, returnDate: "" }));
@@ -93,7 +92,6 @@ export default function NewTripPage() {
   const loadDestinations = async () => {
     try {
       setLoadingDestinations(true);
-      // Try destinations table first
       let query = supabase
         .from('destinations')
         .select('id, name, city, region, category')
@@ -193,7 +191,6 @@ export default function NewTripPage() {
         })),
       };
 
-      // Import and use the createTrip function
       const { createTrip } = await import("@/lib/queries");
       const result = await createTrip(tripData);
       
@@ -258,6 +255,7 @@ export default function NewTripPage() {
               {errorMessage}
             </div>
           )}
+
           {/* Destination */}
           <Card>
             <CardHeader>
@@ -279,14 +277,37 @@ export default function NewTripPage() {
                   className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
                 >
                   <option value="all">All Categories</option>
-                  <option value="religious">Religious Heritage</option>
-                  <option value="historical">Historical</option>
-                  <option value="nature">Nature</option>
                   <option value="adventure">Adventure</option>
                   <option value="cultural">Cultural</option>
+                  <option value="medical">Medical</option>
+                  <option value="religious">Religious</option>
+                  <option value="ecotourism">Ecotourism</option>
+                  <option value="business">Business</option>
+                  <option value="wildlife">Wildlife</option>
+                  <option value="cruise">Cruise</option>
+                  <option value="rural">Rural</option>
+                  <option value="sports">Sports</option>
+                  <option value="shopping">Shopping</option>
+                  <option value="wellness">Wellness</option>
+                  <option value="dark">Dark Tourism</option>
+                  <option value="budget">Budget</option>
+                  <option value="culinary">Culinary</option>
+                  <option value="luxury">Luxury</option>
+                  <option value="voluntourism">Voluntourism</option>
+                  <option value="space">Space</option>
+                  <option value="accessible">Accessible</option>
+                  <option value="agritourism">Agritourism</option>
+                  <option value="photography">Photography</option>
+                  <option value="ancestry">Ancestry</option>
+                  <option value="educational">Educational</option>
+                  <option value="urban">Urban</option>
+                  <option value="historical">Historical</option>
+                  <option value="nature">Nature</option>
+                  <option value="sacred">Sacred</option>
                   <option value="monument">Monuments</option>
                   <option value="park">Parks</option>
                   <option value="museum">Museums</option>
+                  <option value="city">City</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -313,7 +334,18 @@ export default function NewTripPage() {
                   </select>
                 )}
               </div>
+            </CardContent>
+          </Card>
 
+          {/* Schedule */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Trip Type *</label>
                 <div className="grid grid-cols-2 gap-4">
@@ -343,18 +375,7 @@ export default function NewTripPage() {
                   </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Schedule */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Departure Date *</label>
@@ -526,4 +547,3 @@ export default function NewTripPage() {
     </div>
   );
 }
-

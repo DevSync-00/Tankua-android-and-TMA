@@ -118,7 +118,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A2F] via-[#0d2341] to-[#0A1A2F] flex">
+    <div className="auth-surface flex min-h-screen">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
         {/* Background pattern */}
@@ -133,18 +133,18 @@ export default function LoginPage() {
               <Image src="/favicon.png" alt="Tankua" width={32} height={32} className="object-contain" />
             </div>
             <div>
-              <span className="text-2xl font-bold text-white">Tankua</span>
-              <span className="block text-sm text-white/50">Provider Portal</span>
+              <span className="text-2xl font-bold text-stone-950">Tankua</span>
+              <span className="block text-sm text-stone-500">Provider Portal</span>
             </div>
           </Link>
         </div>
 
         <div className="relative space-y-8">
-          <h1 className="text-4xl font-bold text-white leading-tight">
+          <h1 className="text-4xl font-bold leading-tight text-stone-950">
             Grow Your Travel Business with{" "}
             <span className="text-[#FFB800]">Tankua</span>
           </h1>
-          <p className="text-xl text-white/70">
+          <p className="text-xl text-stone-600">
             Join Ethiopia's fastest-growing pilgrimage platform and reach thousands of travelers.
           </p>
 
@@ -155,7 +155,7 @@ export default function LoginPage() {
               "Fast and secure payouts",
               "Marketing support",
             ].map((item, index) => (
-              <div key={index} className="flex items-center gap-3 text-white/80">
+              <div key={index} className="flex items-center gap-3 text-stone-700">
                 <div className="w-5 h-5 rounded-full bg-[#FFB800] flex items-center justify-center">
                   <span className="text-white text-xs">✓</span>
                 </div>
@@ -165,7 +165,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="relative text-white/40 text-sm">
+        <div className="relative text-sm text-stone-400">
           © 2024 Tankua. All rights reserved.
         </div>
       </div>
@@ -178,12 +178,12 @@ export default function LoginPage() {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg mb-4 overflow-hidden">
               <Image src="/favicon.png" alt="Tankua" width={40} height={40} className="object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Provider Portal</h1>
+            <h1 className="text-2xl font-bold text-stone-950">Provider Portal</h1>
           </div>
 
           <Card className="bg-white p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-[#0A1A2F]">Welcome Back</h2>
+              <h2 className="text-2xl font-bold text-stone-950">Welcome Back</h2>
               <p className="text-muted-foreground mt-2">Sign in to manage your business</p>
             </div>
 

@@ -33,6 +33,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const [currentAdmin, setCurrentAdmin] = useState({ name: "Administrator", email: "", role: "admin" });
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +48,16 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
   useEffect(() => {
     loadNotifications();
+    try {
+      const stored = JSON.parse(localStorage.getItem("admin_user") || "{}");
+      setCurrentAdmin({
+        name: stored.name || stored.email || "Administrator",
+        email: stored.email || "",
+        role: stored.role || "admin",
+      });
+    } catch {
+      // Keep the neutral fallback for legacy sessions.
+    }
   }, [loadNotifications]);
 
   useEffect(() => {
@@ -95,11 +106,11 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
+    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-xl">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left side - Title */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">{title}</h1>
+          <h1 className="truncate text-lg font-semibold tracking-tight text-stone-950 sm:text-xl">{title}</h1>
           {subtitle && <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>}
         </div>
 
@@ -192,10 +203,10 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
               className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition-colors touch-manipulation"
               aria-label="User menu"
             >
-              <Avatar name="Admin User" size="sm" />
+              <Avatar name={currentAdmin.name} size="sm" />
               <div className="hidden lg:block text-left">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-muted-foreground">Super Admin</p>
+                <p className="max-w-36 truncate text-sm font-medium">{currentAdmin.name}</p>
+                <p className="text-xs capitalize text-muted-foreground">{currentAdmin.role.replace("_", " ")}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground hidden lg:block" />
             </button>
@@ -203,21 +214,29 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-slide-down z-50">
                 <div className="p-4 border-b border-border">
-                  <p className="font-medium">Admin User</p>
-                  <p className="text-sm text-muted-foreground">admin@tankua.et</p>
+                  <p className="font-medium">{currentAdmin.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">{currentAdmin.email}</p>
                 </div>
                 <div className="p-2">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm">
+                  <button onClick={() => router.push("/dashboard/settings")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm">
                     <User className="h-4 w-4" />
                     Profile
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm">
+                  <button onClick={() => router.push("/dashboard/settings")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm">
                     <Settings className="h-4 w-4" />
                     Settings
                   </button>
                 </div>
                 <div className="p-2 border-t border-border">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors text-sm">
+                  <button
+                    onClick={async () => {
+                      const { supabase } = await import("@/lib/supabase");
+                      await supabase.auth.signOut();
+                      localStorage.removeItem("admin_user");
+                      router.replace("/login");
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors text-sm"
+                  >
                     <LogOut className="h-4 w-4" />
                     Sign Out
                   </button>

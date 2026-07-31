@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A2F] via-[#0d2341] to-[#0A1A2F] flex">
+    <div className="auth-surface flex min-h-screen">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
         {/* Background pattern */}
@@ -76,22 +76,22 @@ export default function ForgotPasswordPage() {
               <Image src="/favicon.png" alt="Tankua" width={34} height={34} className="object-contain" priority />
             </div>
             <div>
-              <span className="text-2xl font-bold text-white">Tankua</span>
-              <span className="block text-sm text-white/50">Provider Portal</span>
+              <span className="text-2xl font-bold text-stone-950">Tankua</span>
+              <span className="block text-sm text-stone-500">Provider Portal</span>
             </div>
           </Link>
         </div>
 
         <div className="relative space-y-8">
-          <h1 className="text-4xl font-bold text-white leading-tight">
+          <h1 className="text-4xl font-bold leading-tight text-stone-950">
             Reset Your Password
           </h1>
-          <p className="text-xl text-white/70">
+          <p className="text-xl text-stone-600">
             Enter your email address and we'll send you a link to reset your password.
           </p>
         </div>
 
-        <div className="relative text-white/40 text-sm">
+        <div className="relative text-sm text-stone-400">
           © 2024 Tankua. All rights reserved.
         </div>
       </div>
@@ -104,12 +104,12 @@ export default function ForgotPasswordPage() {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg mb-4 overflow-hidden">
               <Image src="/favicon.png" alt="Tankua" width={48} height={48} className="object-contain" priority />
             </div>
-            <h1 className="text-2xl font-bold text-white">Provider Portal</h1>
+            <h1 className="text-2xl font-bold text-stone-950">Provider Portal</h1>
           </div>
 
           <Card className="bg-white p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-[#0A1A2F]">Forgot Password?</h2>
+              <h2 className="text-2xl font-bold text-stone-950">Forgot Password?</h2>
               <p className="text-muted-foreground mt-2">
                 {success 
                   ? "Check your email for reset instructions"

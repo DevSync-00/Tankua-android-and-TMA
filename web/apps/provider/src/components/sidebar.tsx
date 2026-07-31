@@ -46,6 +46,20 @@ const otherItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [provider, setProvider] = useState({ name: "Your company", logo_url: "" });
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("provider_user") || "{}");
+      const profile = stored.provider || stored;
+      setProvider({
+        name: profile.name || profile.company_name || "Your company",
+        logo_url: profile.logo_url || "",
+      });
+    } catch {
+      // Keep the neutral fallback for legacy sessions.
+    }
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -74,8 +88,8 @@ export function Sidebar() {
         className={cn(
           "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
           isActive
-            ? "bg-[#FFB800] text-[#0A1A2F]"
-            : "text-white/70 hover:bg-white/10 hover:text-white"
+            ? "bg-amber-50 text-stone-950 shadow-sm ring-1 ring-amber-200"
+            : "text-stone-600 hover:bg-stone-100 hover:text-stone-950"
         )}
       >
         <item.icon className="h-5 w-5" />
@@ -90,7 +104,7 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-[#0A1A2F] text-white rounded-lg shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-white text-stone-800 border border-stone-200 rounded-xl shadow-sm"
         aria-label="Open menu"
       >
         <LayoutDashboard className="h-6 w-6" />
@@ -107,25 +121,25 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 bottom-0 w-64 bg-[#0A1A2F] flex flex-col z-50 transition-transform duration-300",
+          "fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-stone-200 flex flex-col z-50 transition-transform duration-300",
           "lg:translate-x-0",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
       {/* Logo */}
-      <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="px-5 py-5 border-b border-stone-200 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="w-10 h-10 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center overflow-hidden">
             <Image src="/favicon.png" alt="Tankua" width={28} height={28} className="object-contain" />
           </div>
           <div>
-            <span className="text-xl font-bold text-white">Tankua</span>
-            <span className="block text-xs text-white/50">Provider Portal</span>
+            <span className="text-lg font-semibold text-stone-950">Tankua</span>
+            <span className="block text-xs text-stone-500">Provider workspace</span>
           </div>
         </Link>
         <button
           onClick={() => setIsMobileMenuOpen(false)}
-          className="lg:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+          className="lg:hidden p-2 text-stone-500 hover:text-stone-950 hover:bg-stone-100 rounded-lg transition-colors"
           aria-label="Close menu"
         >
           <X className="h-5 w-5" />
@@ -136,7 +150,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Main */}
         <div>
-          <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+          <p className="px-4 text-[10px] font-semibold text-stone-400 uppercase tracking-[0.16em] mb-2">
             Main
           </p>
           <div className="space-y-1">
@@ -148,7 +162,7 @@ export function Sidebar() {
 
         {/* Finance */}
         <div>
-          <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+          <p className="px-4 text-[10px] font-semibold text-stone-400 uppercase tracking-[0.16em] mb-2">
             Finance
           </p>
           <div className="space-y-1">
@@ -160,7 +174,7 @@ export function Sidebar() {
 
         {/* Other */}
         <div>
-          <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+          <p className="px-4 text-[10px] font-semibold text-stone-400 uppercase tracking-[0.16em] mb-2">
             Other
           </p>
           <div className="space-y-1">
@@ -172,17 +186,28 @@ export function Sidebar() {
       </nav>
 
       {/* Company */}
-      <div className="p-4 border-t border-white/10">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-          <div className="w-10 h-10 rounded-full bg-[#FFB800] flex items-center justify-center text-white font-semibold">
-            A
+      <div className="p-4 border-t border-stone-200">
+        <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-amber-100 font-semibold text-amber-950">
+            {provider.logo_url ? (
+              <img src={provider.logo_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              provider.name.charAt(0).toUpperCase()
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Abyssinia Tours</p>
-            <p className="text-xs text-emerald-400">● Active</p>
+            <p className="truncate text-sm font-semibold text-stone-900">{provider.name}</p>
+            <p className="text-xs font-medium text-emerald-600">Active workspace</p>
           </div>
         </div>
-        <button className="w-full mt-3 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-all">
+        <button
+          onClick={() => {
+            localStorage.removeItem("provider_user");
+            localStorage.removeItem("provider_token");
+            window.location.href = "/login";
+          }}
+          className="mt-3 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950"
+        >
           <LogOut className="h-5 w-5" />
           <span>Sign Out</span>
         </button>

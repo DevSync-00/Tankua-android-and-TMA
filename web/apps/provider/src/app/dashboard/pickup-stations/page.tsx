@@ -8,9 +8,9 @@ import { supabase } from "@/lib/supabase";
 
 type Station = {
   id: string; name: string; city: string | null; address: string | null;
-  lat: number; lng: number; extra_price: number; is_active: boolean;
+  extra_price: number; is_active: boolean;
 };
-const emptyForm = { name: "", city: "", address: "", lat: "", lng: "", extraPrice: "0" };
+const emptyForm = { name: "", city: "", address: "", extraPrice: "0" };
 
 export default function PickupStationsPage() {
   const [providerId, setProviderId] = useState<string | null>(null);
@@ -42,14 +42,14 @@ export default function PickupStationsPage() {
     event.preventDefault();
     setError("");
     if (!providerId) { setError("Please sign in again."); return; }
-    const lat = Number(form.lat), lng = Number(form.lng), extraPrice = Number(form.extraPrice);
-    if (!form.name.trim() || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-      setError("Name, latitude, and longitude are required."); return;
+    const extraPrice = Number(form.extraPrice);
+    if (!form.name.trim()) {
+      setError("Station name is required."); return;
     }
     setSaving(true);
     const result = await supabase.from("pickup_stations").insert({
       provider_id: providerId, name: form.name.trim(), city: form.city.trim() || null,
-      address: form.address.trim() || null, lat, lng,
+      address: form.address.trim() || null, lat: 0, lng: 0,
       extra_price: Number.isFinite(extraPrice) ? extraPrice : 0, is_active: true,
     });
     if (result.error) setError(result.error.message);
@@ -72,14 +72,14 @@ export default function PickupStationsPage() {
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
             {[
               ["name", "Station name *"], ["city", "City"], ["address", "Address"],
-              ["lat", "Latitude *"], ["lng", "Longitude *"], ["extraPrice", "Default extra price (ETB)"],
+              ["extraPrice", "Default extra price (ETB)"],
             ].map(([key, label]) => (
               <label key={key} className="space-y-1 text-sm">
                 <span className="font-medium">{label}</span>
                 <input value={form[key as keyof typeof form]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  type={["lat", "lng", "extraPrice"].includes(key) ? "number" : "text"}
-                  step={key === "extraPrice" ? "0.01" : ["lat", "lng"].includes(key) ? "any" : undefined}
+                  type={key === "extraPrice" ? "number" : "text"}
+                  step={key === "extraPrice" ? "0.01" : undefined}
                   className="w-full h-11 px-3 rounded-lg border bg-background" />
               </label>
             ))}
@@ -104,7 +104,6 @@ export default function PickupStationsPage() {
                     <p className="mt-2 text-sm text-muted-foreground">
                       {[station.address, station.city].filter(Boolean).join(", ") || "No address"}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{station.lat}, {station.lng}</p>
                     <p className="mt-2 text-sm">Extra: {Number(station.extra_price || 0)} ETB</p>
                   </div>
                   <button onClick={() => removeStation(station.id)} className="h-9 w-9 text-red-600"

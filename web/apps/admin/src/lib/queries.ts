@@ -513,6 +513,110 @@ export async function updateBookingStatus(
   return true;
 }
 
+export interface AdminPayment {
+  id: string;
+  booking_id: string;
+  user_name: string;
+  provider_name: string;
+  method: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
+
+export async function getPayments(): Promise<AdminPayment[]> {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      total_price,
+      payment_status,
+      created_at,
+      users (name),
+      trips (providers (name))
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Unable to load payments: ${error.message}`);
+  }
+
+  return (data || []).map((booking: any) => ({
+    id: `PAY-${booking.id.slice(0, 8).toUpperCase()}`,
+    booking_id: booking.id,
+    user_name: booking.users?.name || 'Guest traveler',
+    provider_name: booking.trips?.providers?.name || 'Provider unavailable',
+    method: 'Chapa',
+    amount: Number(booking.total_price || 0),
+    status: booking.payment_status || 'pending',
+    created_at: booking.created_at,
+  }));
+}
+
+export async function updatePaymentStatus(
+  bookingId: string,
+  paymentStatus: 'pending' | 'paid' | 'refunded'
+): Promise<void> {
+  const { error } = await supabase
+    .from('bookings')
+    .update({ payment_status: paymentStatus })
+    .eq('id', bookingId);
+
+  if (error) {
+    throw new Error(`Unable to update payment: ${error.message}`);
+  }
+}
+
+export interface ProviderPayoutBalance {
+  provider_id: string;
+  provider_name: string;
+  gross_amount: number;
+  platform_fee: number;
+  payable_amount: number;
+  booking_count: number;
+}
+
+export async function getProviderPayoutBalances(): Promise<ProviderPayoutBalance[]> {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      provider_id,
+      total_price,
+      status,
+      payment_status,
+      trips (providers (id, name))
+    `)
+    .eq('payment_status', 'paid')
+    .in('status', ['confirmed', 'completed']);
+
+  if (error) {
+    throw new Error(`Unable to load payout balances: ${error.message}`);
+  }
+
+  const balances = new Map<string, ProviderPayoutBalance>();
+  for (const booking of (data || []) as any[]) {
+    const providerId = booking.provider_id || booking.trips?.providers?.id;
+    if (!providerId) continue;
+    const gross = Number(booking.total_price || 0);
+    const current = balances.get(providerId) || {
+      provider_id: providerId,
+      provider_name: booking.trips?.providers?.name || 'Unknown provider',
+      gross_amount: 0,
+      platform_fee: 0,
+      payable_amount: 0,
+      booking_count: 0,
+    };
+    current.gross_amount += gross;
+    current.platform_fee += gross * 0.05;
+    current.payable_amount += gross * 0.95;
+    current.booking_count += 1;
+    balances.set(providerId, current);
+  }
+
+  return Array.from(balances.values()).sort((a, b) => b.payable_amount - a.payable_amount);
+}
+
 // ============================================
 // PROVIDERS MANAGEMENT
 // ============================================
