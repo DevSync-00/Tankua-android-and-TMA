@@ -41,5 +41,14 @@
 | `CHAPA_SECRET_KEY` | Server-only payment initialization and verification |
 | `APP_ORIGIN` | Exact public Mini App origin |
 
+The Supabase `telegram-auth` Edge Function additionally requires two separate
+secrets because the native login and Mini App use different Telegram bots:
+
+- `TELEGRAM_LOGIN_BOT_TOKEN` validates mobile Login Widget payloads.
+- `TELEGRAM_MINI_APP_BOT_TOKEN` validates Mini App `initData` payloads.
+
+Deploy the Edge Function with both secrets before deploying a Worker that
+forwards `initData` to it.
+
 Do not reuse the mobile app's `EXPO_PUBLIC_CHAPA_SECRET_KEY`. A value with an
 `EXPO_PUBLIC_` prefix is part of the client bundle and must be treated as exposed.

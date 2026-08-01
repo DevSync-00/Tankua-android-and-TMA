@@ -24,9 +24,11 @@ function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
 }
 
 const originalFetch = globalThis.fetch;
+let lastEdgePayload = null;
 globalThis.fetch = async (url, options = {}) => {
   const value = String(url);
   if (value.includes('/functions/v1/telegram-auth')) {
+    lastEdgePayload = JSON.parse(options.body);
     return new Response(JSON.stringify({ session: { user: { id: userId } } }), { status: 200 });
   }
   if (value.includes('/rest/v1/telegram_auth_events')) {
@@ -89,5 +91,8 @@ test('accepts signed Telegram launch data and sets an HttpOnly session', async (
   const body = await response.json();
   assert.equal(response.status, 200);
   assert.equal(body.user.name, 'Production Traveler');
+  assert.equal(typeof lastEdgePayload.init_data, 'string');
+  assert.equal(lastEdgePayload.init_data, initData);
+  assert.deepEqual(Object.keys(lastEdgePayload), ['init_data']);
   assert.match(response.headers.get('set-cookie'), /tankua_session=.*HttpOnly.*Secure.*SameSite=Lax/);
 });

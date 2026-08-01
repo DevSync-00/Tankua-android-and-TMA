@@ -136,29 +136,7 @@ async function supabase(env, path, { method = 'GET', body, headers = {} } = {}) 
   return data;
 }
 
-async function telegramWidgetPayload(telegram, botToken) {
-  const payload = {
-    id: String(telegram.id),
-    first_name: String(telegram.first_name || 'Telegram User'),
-    auth_date: String(Math.floor(Date.now() / 1000)),
-  };
-  if (telegram.last_name) payload.last_name = String(telegram.last_name);
-  if (telegram.username) payload.username = String(telegram.username);
-  if (telegram.photo_url) payload.photo_url = String(telegram.photo_url);
-  const dataCheckString = Object.entries(payload)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
-  const secret = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(botToken)));
-  payload.hash = hex(await hmac(secret, dataCheckString));
-  return payload;
-}
-
-async function resolveTelegramAuthUser(env, telegram) {
-  // The deployed mobile function accepts Login Widget fields. Re-sign the
-  // identity that was already verified from Mini App initData in that format.
-  // The newer function accepts this format too, keeping rollout backwards-compatible.
-  const authPayload = await telegramWidgetPayload(telegram, env.TELEGRAM_BOT_TOKEN);
+async function resolveTelegramAuthUser(env, initData) {
   const response = await fetch(`${env.SUPABASE_URL}/functions/v1/telegram-auth`, {
     method: 'POST',
     headers: {
@@ -166,7 +144,7 @@ async function resolveTelegramAuthUser(env, telegram) {
       authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify(authPayload),
+    body: JSON.stringify({ init_data: initData }),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload?.session?.user?.id) {
@@ -233,7 +211,7 @@ async function authenticate(request, env) {
   };
   // The Edge Function owns Telegram -> Supabase Auth identity resolution.
   // Both the native app and TMA therefore receive the same canonical UUID.
-  const canonicalUserId = await resolveTelegramAuthUser(env, telegram);
+  const canonicalUserId = await resolveTelegramAuthUser(env, body.initData);
   const existing = await supabase(
     env,
     `users?select=id&id=eq.${canonicalUserId}&limit=1`,

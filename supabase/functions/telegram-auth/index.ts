@@ -1,59 +1,24 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { verifyTelegram, type TelegramPayloadType } from './telegram-verifier.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
 };
 
-const bytesToHex = (bytes: Uint8Array) => [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-const encode = new TextEncoder();
-
-async function hmac(key: string | Uint8Array, value: string) {
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw', typeof key === 'string' ? encode.encode(key) : key,
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  return new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, encode.encode(value)));
-}
-
-async function verifyTelegram(payload: Record<string, unknown>, botToken: string) {
-  let fields: Record<string, string>;
-  let user: Record<string, unknown>;
-  let webApp = false;
-  if (typeof payload.init_data === 'string') {
-    const params = new URLSearchParams(payload.init_data);
-    fields = Object.fromEntries(params.entries());
-    user = JSON.parse(fields.user || 'null');
-    webApp = true;
-  } else {
-    fields = Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, String(v ?? '')]));
-    user = payload;
-  }
-  const suppliedHash = fields.hash;
-  const authDate = Number(fields.auth_date);
-  if (!suppliedHash || !authDate || !user?.id) throw new Error('Incomplete Telegram authentication data');
-  if (Math.abs(Math.floor(Date.now() / 1000) - authDate) > 300) throw new Error('Telegram authentication data expired');
-  const check = Object.entries(fields)
-    .filter(([key]) => key !== 'hash')
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`).join('\n');
-  const key = webApp
-    ? await hmac('WebAppData', botToken)
-    : new Uint8Array(await crypto.subtle.digest('SHA-256', encode.encode(botToken)));
-  const expected = bytesToHex(await hmac(key, check));
-  if (expected.length !== suppliedHash.length || expected !== suppliedHash.toLowerCase()) throw new Error('Invalid Telegram signature');
-  return user;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  let attemptedPayloadType: TelegramPayloadType | 'unknown' = 'unknown';
   try {
     const url = Deno.env.get('SUPABASE_URL')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
-    if (!url || !anonKey || !serviceKey || !botToken) throw new Error('Telegram auth is not configured');
-    const telegram = await verifyTelegram(await req.json(), botToken);
+    const loginBotToken = Deno.env.get('TELEGRAM_LOGIN_BOT_TOKEN') || '';
+    const miniAppBotToken = Deno.env.get('TELEGRAM_MINI_APP_BOT_TOKEN') || '';
+    if (!url || !anonKey || !serviceKey) throw new Error('Telegram auth service is not configured');
+    const payload = await req.json();
+    attemptedPayloadType = typeof payload?.init_data === 'string' ? 'mini_app' : 'login_widget';
+    const { user: telegram, payloadType } = await verifyTelegram(payload, loginBotToken, miniAppBotToken);
     const telegramId = String(telegram.id);
     const email = `telegram-${telegramId}@auth.tankua.app`;
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -79,9 +44,15 @@ Deno.serve(async (req) => {
       p_language_code: telegram.language_code || null,
     });
     if (profileError) throw profileError;
+    console.info(JSON.stringify({ event: 'telegram_auth_success', payload_type: payloadType, telegram_id: telegramId }));
     return new Response(JSON.stringify({ session: verified.session }), { headers: { ...cors, 'content-type': 'application/json' } });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Telegram login failed' }), {
+    console.error(JSON.stringify({
+      event: 'telegram_auth_failed',
+      payload_type: attemptedPayloadType,
+      reason: error instanceof Error ? error.message : 'Unknown authentication failure',
+    }));
+    return new Response(JSON.stringify({ error: 'Telegram authentication failed. Please try again.' }), {
       status: 400, headers: { ...cors, 'content-type': 'application/json' },
     });
   }
