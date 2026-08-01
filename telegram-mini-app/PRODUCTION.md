@@ -47,6 +47,12 @@ secrets because the native login and Mini App use different Telegram bots:
 - `TELEGRAM_LOGIN_BOT_TOKEN` validates mobile Login Widget payloads.
 - `TELEGRAM_MINI_APP_BOT_TOKEN` validates Mini App `initData` payloads.
 
+The TMA Worker also submits its already verified Telegram user under a
+service-role-authenticated request. This is the resilient production path and
+avoids requiring the same Mini App bot token in both Vercel and Supabase. The
+Edge Function still validates direct Mini App requests with
+`TELEGRAM_MINI_APP_BOT_TOKEN` when no trusted Worker assertion is present.
+
 Deploy the Edge Function with both secrets before deploying a Worker that
 forwards `initData` to it.
 

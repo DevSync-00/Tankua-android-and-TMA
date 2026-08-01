@@ -136,7 +136,7 @@ async function supabase(env, path, { method = 'GET', body, headers = {} } = {}) 
   return data;
 }
 
-async function resolveTelegramAuthUser(env, initData) {
+async function resolveTelegramAuthUser(env, initData, telegram) {
   const response = await fetch(`${env.SUPABASE_URL}/functions/v1/telegram-auth`, {
     method: 'POST',
     headers: {
@@ -144,7 +144,11 @@ async function resolveTelegramAuthUser(env, initData) {
       authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ init_data: initData }),
+    body: JSON.stringify({
+      init_data: initData,
+      verified_telegram_user: telegram,
+      verified_at: Math.floor(Date.now() / 1000),
+    }),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload?.session?.user?.id) {
@@ -211,7 +215,7 @@ async function authenticate(request, env) {
   };
   // The Edge Function owns Telegram -> Supabase Auth identity resolution.
   // Both the native app and TMA therefore receive the same canonical UUID.
-  const canonicalUserId = await resolveTelegramAuthUser(env, body.initData);
+  const canonicalUserId = await resolveTelegramAuthUser(env, body.initData, telegram);
   const existing = await supabase(
     env,
     `users?select=id&id=eq.${canonicalUserId}&limit=1`,

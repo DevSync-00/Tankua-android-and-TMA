@@ -34,3 +34,5 @@ src/config/supabase.js
 # Logs
 logs
 *.log
+.vercel
+.env*

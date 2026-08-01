@@ -93,6 +93,8 @@ test('accepts signed Telegram launch data and sets an HttpOnly session', async (
   assert.equal(body.user.name, 'Production Traveler');
   assert.equal(typeof lastEdgePayload.init_data, 'string');
   assert.equal(lastEdgePayload.init_data, initData);
-  assert.deepEqual(Object.keys(lastEdgePayload), ['init_data']);
+  assert.equal(lastEdgePayload.verified_telegram_user.id, 99887766);
+  assert.equal(typeof lastEdgePayload.verified_at, 'number');
+  assert.deepEqual(Object.keys(lastEdgePayload), ['init_data', 'verified_telegram_user', 'verified_at']);
   assert.match(response.headers.get('set-cookie'), /tankua_session=.*HttpOnly.*Secure.*SameSite=Lax/);
 });

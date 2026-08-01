@@ -13,12 +13,33 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_URL')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const loginBotToken = Deno.env.get('TELEGRAM_LOGIN_BOT_TOKEN') || '';
+    // TELEGRAM_BOT_TOKEN is retained as a backwards-compatible mobile-login
+    // token while production transitions to the explicit variable name.
+    const loginBotToken = Deno.env.get('TELEGRAM_LOGIN_BOT_TOKEN')
+      || Deno.env.get('TELEGRAM_BOT_TOKEN')
+      || '';
     const miniAppBotToken = Deno.env.get('TELEGRAM_MINI_APP_BOT_TOKEN') || '';
     if (!url || !anonKey || !serviceKey) throw new Error('Telegram auth service is not configured');
     const payload = await req.json();
     attemptedPayloadType = typeof payload?.init_data === 'string' ? 'mini_app' : 'login_widget';
-    const { user: telegram, payloadType } = await verifyTelegram(payload, loginBotToken, miniAppBotToken);
+    const authorization = req.headers.get('authorization') || '';
+    const serviceRoleAuthorized = authorization === `Bearer ${serviceKey}`;
+    const workerUser = payload?.verified_telegram_user;
+    const workerVerifiedAt = Number(payload?.verified_at);
+    const freshWorkerAssertion = Number.isFinite(workerVerifiedAt)
+      && Math.abs(Math.floor(Date.now() / 1000) - workerVerifiedAt) <= 60;
+
+    let telegram: Record<string, unknown>;
+    let payloadType: TelegramPayloadType;
+    if (serviceRoleAuthorized && freshWorkerAssertion && workerUser?.id && typeof payload?.init_data === 'string') {
+      // The TMA Worker has already verified initData with its bot token. A
+      // service-role bearer is the trust boundary; callers without it always
+      // go through Telegram HMAC verification below.
+      telegram = workerUser;
+      payloadType = 'mini_app_worker';
+    } else {
+      ({ user: telegram, payloadType } = await verifyTelegram(payload, loginBotToken, miniAppBotToken));
+    }
     const telegramId = String(telegram.id);
     const email = `telegram-${telegramId}@auth.tankua.app`;
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });

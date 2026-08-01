@@ -1,4 +1,4 @@
-export type TelegramPayloadType = 'mini_app' | 'login_widget';
+export type TelegramPayloadType = 'mini_app' | 'mini_app_worker' | 'login_widget';
 
 const encode = new TextEncoder();
 const bytesToHex = (bytes: Uint8Array) => [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
