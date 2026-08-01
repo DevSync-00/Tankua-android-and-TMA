@@ -358,7 +358,11 @@ const DestinationDetailScreen = ({ route, navigation }) => {
           {/* Title & Location Header */}
           <Text style={styles.destinationTitle}>{name}</Text>
 
-          <View style={styles.locationMetaRow}>
+          <TouchableOpacity
+            style={styles.locationMetaRow}
+            onPress={handleGetDirections}
+            activeOpacity={0.8}
+          >
             <View style={styles.locationItem}>
               <Ionicons name="location" size={16} color={COLORS.primaryDark} />
               <Text style={styles.locationText}>
@@ -371,7 +375,7 @@ const DestinationDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.distanceBadgeText}>{distance} km away</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
           {/* Rating Summary Bar */}
           <View style={styles.ratingBarCard}>
@@ -472,7 +476,11 @@ const DestinationDetailScreen = ({ route, navigation }) => {
           {/* Location & Directions Card */}
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionHeading}>Location & Directions</Text>
-            <View style={styles.locationCard}>
+            <TouchableOpacity
+              style={styles.locationCard}
+              onPress={handleGetDirections}
+              activeOpacity={0.9}
+            >
               <View style={styles.locationCardHeader}>
                 <View style={styles.mapIconCircle}>
                   <Ionicons name="map" size={24} color={COLORS.secondary} />
@@ -485,15 +493,11 @@ const DestinationDetailScreen = ({ route, navigation }) => {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.directionsButton}
-                onPress={handleGetDirections}
-                activeOpacity={0.85}
-              >
+              <View style={styles.directionsButton}>
                 <Ionicons name="navigate" size={18} color={COLORS.white} />
                 <Text style={styles.directionsButtonText}>Get Direction</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Bottom Spacer to prevent overlap with sticky footer */}

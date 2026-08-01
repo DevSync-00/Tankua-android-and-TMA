@@ -68,7 +68,7 @@ const LiquidGlassTabBar = ({ state, descriptors, navigation }) => {
               iconName = isFocused ? 'search' : 'search-outline';
             } else if (route.name === 'Trips') {
               iconName = isFocused ? 'bus' : 'bus-outline';
-            } else if (route.name === 'Help') {
+            } else if (route.name === 'Map' || route.name === 'Help') {
               iconName = isFocused ? 'map' : 'map-outline';
             } else if (route.name === 'Profile') {
               iconName = isFocused ? 'person' : 'person-outline';
@@ -176,7 +176,7 @@ const MainTabNavigator = () => {
         options={{ tabBarLabel: 'Trips' }}
       />
       <Tab.Screen 
-        name="Help" 
+        name="Map" 
         component={MapScreen}
         options={{ tabBarLabel: 'Map' }}
       />
