@@ -142,11 +142,26 @@ const DestinationDetailScreen = ({ route, navigation }) => {
   };
 
   const handleGetDirections = () => {
-    const searchQuery = `${name} ${city || region || 'Ethiopia'}`;
-    const url = getOsmSearchUrl(searchQuery);
-    Linking.openURL(url).catch((err) => {
-      console.error('Could not open maps:', err);
-      Alert.alert('Error', 'Unable to open map directions application.');
+    const lat = destination?.location?.lat || destination?.location?.coordinates?.[1] || destination?.lat || 9.0320;
+    const lng = destination?.location?.lng || destination?.location?.coordinates?.[0] || destination?.lng || 38.7469;
+
+    navigation.navigate('MainTabs', {
+      screen: 'Map',
+      params: {
+        targetDestination: {
+          id: destination?.id,
+          name,
+          city: city || '',
+          region: region || '',
+          category: category || 'other',
+          lat,
+          lng,
+          description: description || '',
+          images: displayImages,
+          fullData: destination,
+        },
+        showDirections: true,
+      },
     });
   };
 

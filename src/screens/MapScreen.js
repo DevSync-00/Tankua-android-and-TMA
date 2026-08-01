@@ -38,7 +38,7 @@ import ModernButton from '../components/ModernButton';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const MapScreen = ({ navigation }) => {
+const MapScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
   const { t } = useLanguage();
   const mapRef = useRef(null);
@@ -152,6 +152,50 @@ const MapScreen = ({ navigation }) => {
         requestLocationPermission();
       }
     }, [userLocation])
+  );
+
+  // Handle incoming targetDestination and showDirections from DestinationDetailScreen
+  useFocusEffect(
+    React.useCallback(() => {
+      const target = route?.params?.targetDestination;
+      const showDirections = route?.params?.showDirections;
+
+      if (target && target.lat && target.lng) {
+        setSelectedDestination(target);
+        
+        const newRegion = {
+          latitude: target.lat,
+          longitude: target.lng,
+          latitudeDelta: 0.1,
+          longitudeDelta: 0.1,
+        };
+        setRegion(newRegion);
+        if (mapRef.current) {
+          mapRef.current.animateToRegion(newRegion, 500);
+        }
+
+        if (showDirections && userLocation) {
+          fetchOsmRoute(userLocation.latitude, userLocation.longitude, target.lat, target.lng)
+            .then((routeData) => {
+              if (routeData && routeData.coordinates.length > 0) {
+                setRouteCoordinates(routeData.coordinates);
+                setRouteInfo({
+                  destinationName: target.name,
+                  distanceKm: routeData.distanceKm,
+                  durationMin: routeData.durationMin,
+                });
+                if (mapRef.current) {
+                  mapRef.current.fitToCoordinates(routeData.coordinates, {
+                    edgePadding: { top: 140, right: 60, bottom: 220, left: 60 },
+                    animated: true,
+                  });
+                }
+              }
+            })
+            .catch((err) => console.log('Error calculating incoming route:', err));
+        }
+      }
+    }, [route?.params, userLocation])
   );
 
   const loadDestinations = async () => {
