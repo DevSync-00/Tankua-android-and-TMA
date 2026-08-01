@@ -76,9 +76,9 @@ const HomeScreen = ({ navigation }) => {
         rating: destination.rating || 4.5,
         review_count: destination.review_count || 0,
         price: destination.price || null,
-        estimated_duration: destination.estimated_duration || Math.floor(Math.random() * 8) + 2,
+        estimated_duration: destination.estimated_duration || null,
         price_range: destination.price_range || (destination.price ? `$${Math.floor(destination.price / 100)}` : null),
-        is_verified: destination.is_verified || Math.random() > 0.3,
+        is_verified: Boolean(destination.is_verified),
       }));
 
       transformedDestinations = deduplicateDestinations(transformedDestinations);

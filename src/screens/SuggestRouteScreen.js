@@ -39,12 +39,11 @@ const SuggestRouteScreen = ({ navigation }) => {
     try {
       setLoading(true);
 
-      const { error } = await supabase.from('route_suggestions').insert({
+      const { error } = await supabase.from('trip_suggestions').insert({
         user_id: user.id,
         origin: formData.origin.trim(),
         destination: formData.destination.trim(),
-        frequency: formData.frequency,
-        description: formData.description.trim() || null,
+        message: [formData.frequency ? `Preferred frequency: ${formData.frequency}.` : '', formData.description.trim()].filter(Boolean).join(' ') || null,
       });
 
       if (error) throw error;

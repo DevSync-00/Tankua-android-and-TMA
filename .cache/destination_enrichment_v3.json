@@ -1,0 +1,126 @@
+{
+  "version": 3,
+  "geocode": {
+    "000b9cf0-b53f-4546-8840-ba364d586682": {
+      "status": "matched",
+      "score": 0.72,
+      "query": "rehabilitation, Ethiopia",
+      "lat": 9.00325,
+      "lng": 38.736569,
+      "city": "Lideta",
+      "region": "Addis Ababa",
+      "display_name": "Lideta Rehabilitation Centre for Children in Conflict with law, Bekele Weya Street, Lideta, Addis Ababa, 7777, Ethiopia",
+      "osm_type": "way",
+      "osm_id": 1525613224
+    },
+    "00294e3d-1208-4208-a015-996c71cf9738": {
+      "status": "matched",
+      "score": 0.775,
+      "query": "gorgora, Ethiopia",
+      "lat": 12.2382669,
+      "lng": 37.2971393,
+      "city": "Gorgora",
+      "region": "Amhara",
+      "display_name": "Gorgora, North Gondar, Amhara Region, Ethiopia",
+      "osm_type": "node",
+      "osm_id": 1150592885
+    },
+    "0051e3e0-cdf6-4292-8b3f-55e0cf27bec7": {
+      "status": "matched",
+      "score": 0.72,
+      "query": "qusquam, Ethiopia",
+      "lat": 9.076097,
+      "lng": 38.7555656,
+      "city": "Gulale",
+      "region": "Addis Ababa",
+      "display_name": "Qusquam Mariam Orthodox Church, Entoto Road, Gulale, Addis Ababa, 9837, Ethiopia",
+      "osm_type": "way",
+      "osm_id": 1232477353
+    },
+    "00620588-4ca4-48fa-90d5-3eba0e18392b": {
+      "status": "matched",
+      "score": 0.798,
+      "query": "erta ale, Ethiopia",
+      "lat": 13.6030321,
+      "lng": 40.6634086,
+      "city": null,
+      "region": "Afar",
+      "display_name": "Erta Ale, Zone 2, Afar Region, Ethiopia",
+      "osm_type": "node",
+      "osm_id": 319176124
+    },
+    "007b0123-edb6-4112-8470-9c97d02e180a": {
+      "status": "matched",
+      "score": 0.813,
+      "query": "benishangul, Ethiopia",
+      "lat": 10.3778251,
+      "lng": 35.5084442,
+      "city": null,
+      "region": "Benishangul-Gumuz",
+      "display_name": "Benishangul-Gumuz Region, Ethiopia",
+      "osm_type": "relation",
+      "osm_id": 1707653
+    },
+    "00e4f04e-be64-4f35-8e8f-41d59df6a948": {
+      "status": "matched",
+      "score": 0.731,
+      "query": "hospital, Ethiopia",
+      "lat": 9.1061245,
+      "lng": 41.6308668,
+      "city": "Bedeno",
+      "region": "Oromia",
+      "display_name": "Hospital, Bedeno, East Harerghe, Oromia Region, Ethiopia",
+      "osm_type": "way",
+      "osm_id": 1422132497
+    },
+    "0113fde5-2ea6-4aeb-965d-64901480d8c0": {
+      "status": "matched",
+      "score": 0.783,
+      "query": "jinka, Ethiopia",
+      "lat": 5.786181,
+      "lng": 36.5654425,
+      "city": "Jinka",
+      "region": "South Ethiopia Regional State",
+      "display_name": "Jinka, Ari Zone, South Ethiopia Regional State, Ethiopia",
+      "osm_type": "node",
+      "osm_id": 540265111
+    },
+    "0172040d-afdc-49d2-a38e-f7c51cb36544": {
+      "status": "matched",
+      "score": 0.736,
+      "query": "bamboo, Ethiopia",
+      "lat": 8.9750399,
+      "lng": 38.7563673,
+      "city": "Nefas Silk",
+      "region": "Addis Ababa",
+      "display_name": "China-Africa Bamboo Center, Gulele Bota, Nefas Silk, Addis Ababa, Ethiopia",
+      "osm_type": "way",
+      "osm_id": 27367003
+    },
+    "01a955e4-eb2e-4586-9b0d-5ab3c563c175": {
+      "status": "matched",
+      "score": 0.749,
+      "query": "kotebe, Ethiopia",
+      "lat": 9.0371282,
+      "lng": 38.8398518,
+      "city": "Yeka",
+      "region": "Addis Ababa",
+      "display_name": "Kotebe, Yeka, Addis Ababa, 4343, Ethiopia",
+      "osm_type": "node",
+      "osm_id": 627616292
+    },
+    "022c139e-027b-4c2b-b90f-103bdcf0f824": {
+      "status": "matched",
+      "score": 0.733,
+      "query": "guassa, Ethiopia",
+      "lat": 10.3511111,
+      "lng": 39.7959722,
+      "city": null,
+      "region": "Amhara",
+      "display_name": "Menz Guassa Community Conservation Area, North Shewa (Amhara Region), Amhara Region, Ethiopia",
+      "osm_type": "relation",
+      "osm_id": 3308593
+    }
+  },
+  "images": {}
+}

@@ -1,0 +1,11 @@
+id,name,geocode_status,score,matched_query,city,region,lat,lng,matched_address,image_status,image_file,image_match_score,image_search,image_source,image_license,generated_update
+000b9cf0-b53f-4546-8840-ba364d586682,Cheshire Services Ethiopia Center,existing,,,,,,,,no_match,,,,,,False
+00294e3d-1208-4208-a015-996c71cf9738,Gorgora Northern Lake Tana Dock,existing,,,,,,,,matched,destination-images/gorgora-northern-lake-tana-dock/cover.webp,0.667,gorgora,https://commons.wikimedia.org/wiki/File:ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg,FAL,False
+0051e3e0-cdf6-4292-8b3f-55e0cf27bec7,Mentewab Palace Grounds,existing,,,,,,,,matched,destination-images/mentewab-palace-grounds/cover.webp,0.5,empress mentewab,"https://commons.wikimedia.org/wiki/File:Gondar,_cittadella,_palazzo_di_mentewab_01.jpg",CC BY 3.0,False
+00620588-4ca4-48fa-90d5-3eba0e18392b,Erta Ale Active Volcano Lava Hazards Field,existing,,,,,,,,matched,destination-images/erta-ale-active-volcano-lava-hazards-field/cover.webp,0.75,Erta Ale Active,https://commons.wikimedia.org/wiki/File:Lava_Lake_in_Erta_Ale_Volcano_in_Ethiopia_20080501.jpg,CC BY-SA 2.0,False
+007b0123-edb6-4112-8470-9c97d02e180a,Mount Belaya Wilderness Trek,existing,,,,,,,,no_match,,,,,,False
+00e4f04e-be64-4f35-8e8f-41d59df6a948,Asella Referral Hospital,existing,,,,,,,,matched,destination-images/asella-referral-hospital/cover.webp,0.5,asella,"https://commons.wikimedia.org/wiki/File:Asella_Town,_2021.jpg",CC BY-SA 4.0,False
+0113fde5-2ea6-4aeb-965d-64901480d8c0,Jinka Urban Hub,existing,,,,,,,,no_match,,,,,,False
+0172040d-afdc-49d2-a38e-f7c51cb36544,Assosa Bamboo & Mango Farms,existing,,,,,,,,matched,destination-images/assosa-bamboo-mango-farms/cover.webp,0.5,assosa,https://commons.wikimedia.org/wiki/File:Sunset_at_assosa_Ethiopia.jpg,CC BY-SA 4.0,False
+01a955e4-eb2e-4586-9b0d-5ab3c563c175,Kotebe Sports Education Center Complex,existing,,,,,,,,no_match,,,,,,False
+022c139e-027b-4c2b-b90f-103bdcf0f824,Menz Guassa High-Altitude Pastoral Communities,existing,,,,,,,,no_match,,,,,,False

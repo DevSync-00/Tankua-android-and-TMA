@@ -136,6 +136,23 @@ async function supabase(env, path, { method = 'GET', body, headers = {} } = {}) 
   return data;
 }
 
+async function resolveTelegramAuthUser(env, initData) {
+  const response = await fetch(`${env.SUPABASE_URL}/functions/v1/telegram-auth`, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ init_data: initData }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.session?.user?.id) {
+    throw new Error(payload?.error || 'Unable to resolve the shared Telegram account');
+  }
+  return payload.session.user.id;
+}
+
 async function auditTelegramAuth(request, env, { telegramId = null, userId = null, success, reason = null }) {
   try {
     const ip = request.headers.get('cf-connecting-ip') || '';
@@ -192,9 +209,12 @@ async function authenticate(request, env) {
     phone_number: `telegram:${telegramId}`,
     last_login_at: new Date().toISOString(),
   };
+  // The Edge Function owns Telegram -> Supabase Auth identity resolution.
+  // Both the native app and TMA therefore receive the same canonical UUID.
+  const canonicalUserId = await resolveTelegramAuthUser(env, body.initData);
   const existing = await supabase(
     env,
-    `users?select=id&or=(telegram_id.eq.${telegramId},phone_number.eq.${encodeURIComponent(`telegram:${telegramId}`)})&limit=1`,
+    `users?select=id&id=eq.${canonicalUserId}&limit=1`,
   );
   let users;
   if (existing?.[0]?.id) {
@@ -214,7 +234,7 @@ async function authenticate(request, env) {
     users = await supabase(
       env,
       'users?select=id,name,email,phone_number,emergency_contact,location,telegram_id,telegram_username,telegram_photo_url,profile_photo_url,referral_code',
-      { method: 'POST', body: profile, headers: { Prefer: 'return=representation' } },
+      { method: 'POST', body: { id: canonicalUserId, ...profile }, headers: { Prefer: 'return=representation' } },
     );
   }
   const user = users?.[0];
@@ -416,7 +436,7 @@ async function updateProfile(request, session, env) {
   }
   if (body.emergency_contact !== undefined) updates.emergency_contact = clean(body.emergency_contact, 32);
   if (body.location !== undefined) updates.location = clean(body.location, 180);
-  
+
   const users = await supabase(env, `users?id=eq.${session.uid}&select=id,name,email,phone_number,emergency_contact,location,telegram_username,telegram_photo_url,profile_photo_url,referral_code`, {
     method: 'PATCH',
     body: updates,

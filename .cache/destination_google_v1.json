@@ -1,0 +1,1692 @@
+{
+  "version": 1,
+  "places": {
+    "000b9cf0-b53f-4546-8840-ba364d586682": {
+      "status": "candidate",
+      "score": 0.9,
+      "place_id": "ChIJGyFScz53TBYRdVuA8KUpJho",
+      "display_name": "Menagesha Rehabilitation Centre - Cheshire Services Ethiopia",
+      "formatted_address": "Menagesha, New Road, Addis Abbaba,, 3HHQ+4FW, Ambo",
+      "region": "Oromia",
+      "city": "Ambo",
+      "lat": 9.077867699999999,
+      "lng": 38.588705700000006,
+      "types": [
+        "association_or_organization",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "0051e3e0-cdf6-4292-8b3f-55e0cf27bec7": {
+      "status": "candidate",
+      "score": 0.9,
+      "place_id": "ChIJOZv_5yEnQxYR23bWGPlH3T4",
+      "display_name": "Mentewab's Palace",
+      "formatted_address": "JF5C+Q3V, Gondar",
+      "region": "Amhara",
+      "city": "Gondar",
+      "lat": 12.609496000000002,
+      "lng": 37.470178,
+      "types": [
+        "historical_landmark",
+        "historical_place",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "007b0123-edb6-4112-8470-9c97d02e180a": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJFzr6JsI4thcR7BzEfxBOjjk",
+      "display_name": "Bale Mountains National Park",
+      "formatted_address": "VPPM+8PG, Rira",
+      "region": null,
+      "city": "Rira",
+      "lat": 6.8858193,
+      "lng": 39.734338,
+      "types": [
+        "national_park",
+        "tourist_attraction",
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "00e4f04e-be64-4f35-8e8f-41d59df6a948": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJN7eH9ELotBcRrWEgLrAf5vg",
+      "display_name": "Asella Referal and Teaching hospital",
+      "formatted_address": "09, Asela",
+      "region": "Oromia",
+      "city": "Asela",
+      "lat": 7.969162799999999,
+      "lng": 39.131521,
+      "types": [
+        "hospital",
+        "service",
+        "health",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0113fde5-2ea6-4aeb-965d-64901480d8c0": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJA42eQKKppRcRLK53MXNsyIQ",
+      "display_name": "Jinka Museum(SORC)",
+      "formatted_address": "QHVF+W5W, Jinka",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Jinka",
+      "lat": 5.7948676,
+      "lng": 36.5729553,
+      "types": [
+        "history_museum",
+        "museum",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0172040d-afdc-49d2-a38e-f7c51cb36544": {
+      "status": "candidate",
+      "score": 0.225,
+      "place_id": "ChIJSzm_9Z-GSxYRN5i8hd-i0Bw",
+      "display_name": "African Bamboo",
+      "formatted_address": "XPMP+879, Addis Ababa Light Rail - Green Line, አዲስ አበባ 1525",
+      "region": "አዲስ አበባ",
+      "city": "ንፋስ ስልክ ላፍቶ",
+      "lat": 8.9832951,
+      "lng": 38.7357331,
+      "types": [
+        "manufacturer",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0255ec62-2fd1-40be-ac57-209276df35e9": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJnxpXRaNTsRcR12XBrDS74lo",
+      "display_name": "Wondo Genet Hot water and recreation ወንዶ ገነት ፍል ውሃ እና መዝናኛ",
+      "formatted_address": "Unnamed Road, 3JJQ+G47, Wondo Genet",
+      "region": "ሲዳማ ክልል",
+      "city": "Wondo Genet",
+      "lat": 7.081275300000001,
+      "lng": 38.6378019,
+      "types": [
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "02c8223e-334d-47e5-b354-7fca28aada4f": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJJ4k33qd-TBYRWy9x7zQB5qo",
+      "display_name": "Suba Menagesha park",
+      "formatted_address": "Baburoto",
+      "region": "Oromia",
+      "city": "Baburoto",
+      "lat": 8.9781523,
+      "lng": 38.5585415,
+      "types": [
+        "national_park",
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "032ca2c4-2e8c-4a0f-9b3e-0df565405328": {
+      "status": "no_match"
+    },
+    "037f40de-3fe9-4a23-9b9e-bf17b49de895": {
+      "status": "candidate",
+      "score": 0.9,
+      "place_id": "ChIJJVNQ2E6DSxYRxsgWQychWhY",
+      "display_name": "Bebeka Coffee Estate Share Company",
+      "formatted_address": "Addis Ababa, Ethiopia",
+      "region": "Addis Ababa",
+      "city": "Nefassilk Lafto",
+      "lat": 8.934156,
+      "lng": 38.748854,
+      "types": [
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0383471e-05bb-422a-872c-430f3ecf90b0": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJi4zbFbmFSxYREvDa7YBzV9g",
+      "display_name": "Meskel Square",
+      "formatted_address": "Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Addis Ababa",
+      "lat": 9.0104744,
+      "lng": 38.761103999999996,
+      "types": [
+        "historical_landmark",
+        "historical_place",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "039c265c-7824-4623-8e6a-455de2877896": {
+      "status": "candidate",
+      "score": 0.54,
+      "place_id": "ChIJXVDrpcKFSxYRDLbU0l0ZMIQ",
+      "display_name": "The Grand Palace Hotel",
+      "formatted_address": "Guinea Conakry St, Addis Ababa 5710",
+      "region": "Addis Ababa",
+      "city": "Kirkos",
+      "lat": 9.011794,
+      "lng": 38.7690011,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "03fdc7fc-8467-46cf-a763-6e088fde3e14": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJwVvCObCFSxYR_mAB9qh3FpQ",
+      "display_name": "Dembel City Center.",
+      "formatted_address": "2Q38+XQC, Africa Ave, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Kirkos",
+      "lat": 9.0049456,
+      "lng": 38.7668785,
+      "types": [
+        "shopping_mall",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "03fee98a-a4f1-406e-ac0b-2db9aa5a2915": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJ8xOCcayaSxYRX6DwOKppHEY",
+      "display_name": "EEFRI",
+      "formatted_address": "2RCF+HM2, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Yeka",
+      "lat": 9.021385500000001,
+      "lng": 38.824126299999996,
+      "types": [
+        "research_institute",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "055d7202-aec8-4194-afdf-f775c86e4cd5": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJSTODo5a9MRYRAy9oVmlOxoI",
+      "display_name": "Harari Rural and Agricultural Development Bureau",
+      "formatted_address": "843J+8RX, Harar",
+      "region": "Harar",
+      "city": "Jin'ala",
+      "lat": 9.3033561,
+      "lng": 42.1321167,
+      "types": [
+        "local_government_office",
+        "government_office",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0601c42b-9a91-41fe-a460-4708f4d35127": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJWzfubQClyRcRdxS17Vt5pb0",
+      "display_name": "Gura dhamole",
+      "formatted_address": "JFRG+W6, Haro Dibe",
+      "region": "Oromia",
+      "city": "Haro Dibe",
+      "lat": 6.6423499999999995,
+      "lng": 40.4755469,
+      "types": [
+        "general_store",
+        "food_store",
+        "point_of_interest",
+        "food",
+        "store",
+        "establishment"
+      ]
+    },
+    "0621462d-39b6-421d-93c2-36425fc9ba8c": {
+      "status": "candidate",
+      "score": 0.225,
+      "place_id": "ChIJef6j-WqFSxYRYGf7Mh56j_s",
+      "display_name": "Gotera",
+      "formatted_address": "Gotera-Kera, XQM3+7PP, አዲስ አበባ",
+      "region": "አዲስ አበባ",
+      "city": "ቂርቆስ ክፍለ ከተማ",
+      "lat": 8.9832242,
+      "lng": 38.7543241,
+      "types": [
+        "auto_parts_store",
+        "car_repair",
+        "store",
+        "service",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "06692b34-d8e7-4a29-bf58-74a899324989": {
+      "status": "candidate",
+      "score": 0.225,
+      "place_id": "ChIJhUBcgOP9ahYRnMyiIrdQb7k",
+      "display_name": "Center for rehabilitation and Development(CRDO)",
+      "formatted_address": "Mekele 7000",
+      "region": "Tigray",
+      "city": "Mekele",
+      "lat": 13.4963255,
+      "lng": 39.4742677,
+      "types": [
+        "non_profit_organization",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "06929243-25f5-4b7f-818e-6770c4fd6500": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJFZ3132xZpRcRAR43-3DWi18",
+      "display_name": "Gaamo",
+      "formatted_address": "Gaamo",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Gaamo",
+      "lat": 6.3609074,
+      "lng": 37.125859299999995,
+      "types": [
+        "administrative_area_level_2",
+        "political"
+      ]
+    },
+    "06e8bf00-f0ca-4393-b9a2-c04eb25fb2bc": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJXVDrpcKFSxYRDLbU0l0ZMIQ",
+      "display_name": "The Grand Palace Hotel",
+      "formatted_address": "Guinea Conakry St, Addis Ababa 5710",
+      "region": "Addis Ababa",
+      "city": "Kirkos",
+      "lat": 9.011794,
+      "lng": 38.7690011,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0719dd1e-6986-49b7-b092-400e2548dfc5": {
+      "status": "candidate",
+      "score": 0.54,
+      "place_id": "ChIJ62p5c5iFSxYRxnS-h4YUo90",
+      "display_name": "Inter Luxury Hotel",
+      "formatted_address": "Kazanchis area, Guinea Conakry, Tito St, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Kirkos",
+      "lat": 9.015415899999999,
+      "lng": 38.7697827,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "07384a8f-5e47-43e5-af76-0ed738a4f7f6": {
+      "status": "candidate",
+      "score": 0.36,
+      "place_id": "ChIJyexpsAKFSxYRuQ0f_AdqmjM",
+      "display_name": "Kenenisa Everett Hotel | ቀነኒሳ ኤቬሬት ሆቴል",
+      "formatted_address": "XQWQ+5C, Cameroon St, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Bole",
+      "lat": 8.995239100000001,
+      "lng": 38.7885985,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "079c543b-0632-403a-a752-7f7b63cd0037": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJ4XDbdgCFSxYRnkyj6TwD67M",
+      "display_name": "Qween honey",
+      "formatted_address": "XQMF+VHH, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Bole",
+      "lat": 8.9847178,
+      "lng": 38.7741574,
+      "types": [
+        "farm",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "07e3c3e0-9588-41e5-a2b6-5865142da6e2": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJB7KvbrNHSRYRQh6_20TWDP0",
+      "display_name": "Debre libanos Orthodox Church",
+      "formatted_address": "PR6W+RX8, Bolo",
+      "region": "Oromia",
+      "city": "Bolo",
+      "lat": 9.712026,
+      "lng": 38.8474393,
+      "types": [
+        "tourist_attraction",
+        "place_of_worship",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "098a3ef4-e0f9-4680-a0a3-531cd2363b7c": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJJ4k33qd-TBYRWy9x7zQB5qo",
+      "display_name": "Suba Menagesha park",
+      "formatted_address": "Baburoto",
+      "region": "Oromia",
+      "city": "Baburoto",
+      "lat": 8.9781523,
+      "lng": 38.5585415,
+      "types": [
+        "national_park",
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "09cf80ad-8f11-4213-860c-c391cac7c1e4": {
+      "status": "candidate",
+      "score": 0.225,
+      "place_id": "ChIJf7qd3JaFSxYRtXIChBM0JVg",
+      "display_name": "Tulu Kapi Gold Mine",
+      "formatted_address": "4th Floor, Tirtira Building, Cape Verde Street, Bole Sub City, Woreda 03, አዲስ አበባ",
+      "region": "አዲስ አበባ",
+      "city": "ቦሌ ክፍለ ከተማ",
+      "lat": 8.9978871,
+      "lng": 38.7794897,
+      "types": [
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0a20e07d-73dd-4284-ae5b-b631cc2cc559": {
+      "status": "candidate",
+      "score": 0.54,
+      "place_id": "ChIJLVUWIvzbsRcR_K4n88uA4pI",
+      "display_name": "Halala Kella Eco Lodge",
+      "formatted_address": "WC4C+CXP",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Dawro",
+      "lat": 6.9060985,
+      "lng": 37.4224631,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0a56edc3-e173-4766-863d-d602923659eb": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJCzibfqaISxYRXkkCvkGUW4w",
+      "display_name": "Abebe Bikila Stadium",
+      "formatted_address": "2PVF+7M6, Addis Ababa 1000",
+      "region": "Addis Ababa",
+      "city": "Addis Ketema",
+      "lat": 9.0430245,
+      "lng": 38.724053999999995,
+      "types": [
+        "stadium",
+        "sports_complex",
+        "sports_activity_location",
+        "event_venue",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0a85ecd4-5c50-4860-b012-f6780d7ed2d3": {
+      "status": "candidate",
+      "score": 0.36,
+      "place_id": "ChIJBZ2PzN5vphcRmI4vuHhp9ZQ",
+      "display_name": "Omo National Park",
+      "formatted_address": "Omo National Park",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": null,
+      "lat": 5.8310333,
+      "lng": 35.8279959,
+      "types": [
+        "premise",
+        "street_address"
+      ]
+    },
+    "0b323a29-7996-4f3d-b524-51210f902bdd": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJV0vmRzObSxYRpbaiQCkw-9c",
+      "display_name": "FEEDEL YOUTH FOOTBALL ACADEMY",
+      "formatted_address": "22 opposite Gullagol tower 11 meda woreda 8, አዲስ አበባ 1000",
+      "region": "አዲስ አበባ",
+      "city": "አዲስ አበባ",
+      "lat": 9.0185832,
+      "lng": 38.7900373,
+      "types": [
+        "sports_complex",
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0bb81add-f212-4fa1-a84c-03ac54cb7b4e": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJWzfubQClyRcRdxS17Vt5pb0",
+      "display_name": "Gura dhamole",
+      "formatted_address": "JFRG+W6, Haro Dibe",
+      "region": "Oromia",
+      "city": "Haro Dibe",
+      "lat": 6.6423499999999995,
+      "lng": 40.4755469,
+      "types": [
+        "general_store",
+        "food_store",
+        "store",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0beb83f4-243e-4161-8657-8f7ce8b4d268": {
+      "status": "candidate",
+      "score": 0.54,
+      "place_id": "ChIJi40LKGyLLRYRkVi8y618HLA",
+      "display_name": "Babile Elephant Sanctuary",
+      "formatted_address": "6HX43795+XXXX",
+      "region": null,
+      "city": null,
+      "lat": 9.07,
+      "lng": 42.26,
+      "types": [
+        "zoo",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0bfc7ee8-ddd1-4b35-baa9-543a2a227862": {
+      "status": "candidate",
+      "score": 0.36,
+      "place_id": "ChIJkVW4vnqppRcRM1jEKCOgUD8",
+      "display_name": "Eco Omo Lodge",
+      "formatted_address": "QHP4+3HW, Jinka",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Jinka",
+      "lat": 5.7852355,
+      "lng": 36.556452,
+      "types": [
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0c0a0214-76e4-480e-8291-7d97965501da": {
+      "status": "candidate",
+      "score": 0.15,
+      "place_id": "ChIJp5VY2OvCZhYRJm6PBLGBeT4",
+      "display_name": "Tekeze River",
+      "formatted_address": "Tekeze River",
+      "region": null,
+      "city": null,
+      "lat": 14.2668459,
+      "lng": 36.2395345,
+      "types": [
+        "river",
+        "natural_feature",
+        "establishment"
+      ]
+    },
+    "0cc86c22-d3a7-48d9-ac1a-1478f842b8ff": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJlZ65iqgeyxcRFOVl2u6waTA",
+      "display_name": "Shrine Of Sheikh Hussein",
+      "formatted_address": "PPW4+HQ3, Sheki Husen",
+      "region": "Oromia",
+      "city": "Sheki Husen",
+      "lat": 7.7463772,
+      "lng": 40.706935699999995,
+      "types": [
+        "mosque",
+        "place_of_worship",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0d1058d2-0ac5-4f62-904a-86b77a783a9f": {
+      "status": "candidate",
+      "score": 0.9,
+      "place_id": "ChIJyZPBOEePSxYRtNM8j7ynJCQ",
+      "display_name": "Ethnological Museum",
+      "formatted_address": "Algeria St, Addis amama",
+      "region": "Addis Ababa",
+      "city": "Gulele",
+      "lat": 9.0469448,
+      "lng": 38.7577717,
+      "types": [
+        "tourist_attraction",
+        "museum",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0d291d6c-0210-408b-87a8-fbc919f72dc5": {
+      "status": "candidate",
+      "score": 0.225,
+      "place_id": "ChIJ4RSIt_6ESxYRXWO3nIb47-Q",
+      "display_name": "The Donkey Sanctuary Ethiopia",
+      "formatted_address": "Airport Road, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Bole",
+      "lat": 8.9917178,
+      "lng": 38.7827564,
+      "types": [
+        "association_or_organization",
+        "service",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0db2f2ba-292b-4bfd-a534-f3bbcf855467": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJp5VY2OvCZhYRJm6PBLGBeT4",
+      "display_name": "Tekeze River",
+      "formatted_address": "Tekeze River",
+      "region": null,
+      "city": null,
+      "lat": 14.2668459,
+      "lng": 36.2395345,
+      "types": [
+        "river",
+        "natural_feature",
+        "establishment"
+      ]
+    },
+    "0deb4635-ec6e-41d1-95cf-f0b0d2389259": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJPQo1oqlasRcR8aP7FamTFVI",
+      "display_name": "Haile Resort - Hawassa",
+      "formatted_address": "A8, Awasa",
+      "region": "Sidama",
+      "city": "Awasa",
+      "lat": 7.0795884,
+      "lng": 38.479093899999995,
+      "types": [
+        "resort_hotel",
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0e43bad9-7f39-4795-be9d-01fd987acf85": {
+      "status": "candidate",
+      "score": 0.36,
+      "place_id": "ChIJ8RzFVmN1ShYR-FJVWSXem64",
+      "display_name": "Awash National Park",
+      "formatted_address": "32M2+82J, Didiga",
+      "region": null,
+      "city": "Didiga",
+      "lat": 9.0833333,
+      "lng": 40.0,
+      "types": [
+        "park",
+        "tourist_attraction",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0e4d4519-15ac-4164-95ff-67610eea618a": {
+      "status": "candidate",
+      "score": 0.273,
+      "place_id": "ChIJt5gtdM1ySxYRYc7TgpGCnn0",
+      "display_name": "Pyramid Hotels and Resorts",
+      "formatted_address": "A1, Bishoftu",
+      "region": "Oromia",
+      "city": "Bishoftu",
+      "lat": 8.7465809,
+      "lng": 38.9841207,
+      "types": [
+        "resort_hotel",
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0e95b8df-daa1-4410-a730-189befba6f99": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJAUA3jbujuhcR1jDnQO2FmVQ",
+      "display_name": "Arba Minch crocodile ranch",
+      "formatted_address": "2HHR+VP4, Arba Minch",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Arba Minch",
+      "lat": 6.029646199999999,
+      "lng": 37.5918419,
+      "types": [
+        "tourist_attraction",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0f2b4014-1411-4d39-9d1f-ab7c9840a894": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJRefp3nKDSxYRjRiB8jEMM5M",
+      "display_name": "Sidama Coffee Farmers Cooperative Union",
+      "formatted_address": "WQH6+78Q, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Akaki Kality",
+      "lat": 8.928212199999999,
+      "lng": 38.760859499999995,
+      "types": [
+        "wholesaler",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0f7c84bd-4645-4e2b-b0c8-c603b9a940b1": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJx03Spm6PSxYRjGQ3Zcb8nck",
+      "display_name": "Kuriftu Adventure Park Zipline",
+      "formatted_address": "3PHW+M3H, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Gulele",
+      "lat": 9.078457799999999,
+      "lng": 38.744583299999995,
+      "types": [
+        "adventure_sports_center",
+        "sports_complex",
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "0fa2359e-59e0-4cb3-867c-b289e8e9a009": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJixthmYaPSxYRgdsFai2xAe0",
+      "display_name": "Ethiopian Seed Enterprise",
+      "formatted_address": "Addis Ababa, Ethiopia",
+      "region": "Addis Ababa",
+      "city": "Yeka",
+      "lat": 9.0320428,
+      "lng": 38.8130443,
+      "types": [
+        "service",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "10428c4d-037c-4235-a04c-81eeedfcbb52": {
+      "status": "candidate",
+      "score": 0.469,
+      "place_id": "ChIJA8KupiyppRcRELzp7tecrIE",
+      "display_name": "South Omo Zone Health Department",
+      "formatted_address": "QHJC+7M3, Jinka",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Jinka",
+      "lat": 5.780638,
+      "lng": 36.5716722,
+      "types": [
+        "government_office",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1083c39b-85cc-457d-9a68-518fe138f7be": {
+      "status": "candidate",
+      "score": 0.328,
+      "place_id": "ChIJH3uSkGiPSxYRqRRaUexQHC4",
+      "display_name": "Yekatit 12 Monument ( የካቲት 12 መታሰብያ ሐውልት )",
+      "formatted_address": "2QV6+GFP, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Gulele",
+      "lat": 9.043825199999999,
+      "lng": 38.761217099999996,
+      "types": [
+        "monument",
+        "tourist_attraction",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "10995a8c-f549-4261-9251-3c7e872b92b8": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJjWGemY6FSxYRcZx-J_k3rwc",
+      "display_name": "SOS Children's Villages in Ethiopia",
+      "formatted_address": "Namibia St, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Bole",
+      "lat": 9.0012663,
+      "lng": 38.7829561,
+      "types": [
+        "non_profit_organization",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "10c92854-678b-4c37-9275-8d10f798aa6d": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJ05YaoOWNSxYReCM19j0GoH8",
+      "display_name": "Entoto Observatory and Research Center",
+      "formatted_address": "oromia, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Nefassilk Lafto",
+      "lat": 8.980603,
+      "lng": 38.757760999999995,
+      "types": [
+        "research_institute",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "131993b4-a8b5-41cb-a8d1-5e2610dfd540": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJYVxgadRzSxYRO0V9xY-ITY4",
+      "display_name": "Lake Bishoftu Resort",
+      "formatted_address": "Kebele 04, ቢሾፍቱ",
+      "region": "ኦሮሚያ",
+      "city": "ቢሾፍቱ",
+      "lat": 8.7423545,
+      "lng": 38.9762766,
+      "types": [
+        "resort_hotel",
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "133d233e-e6d0-4a8e-803a-7a7b8b5bde07": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJv9bDvKBsqxcRuVc2dR52xAM",
+      "display_name": "Metu",
+      "formatted_address": "Metu",
+      "region": "Oromia",
+      "city": "Metu",
+      "lat": 8.2957398,
+      "lng": 35.5830043,
+      "types": [
+        "locality",
+        "political"
+      ]
+    },
+    "13e068c7-3d20-4a4e-b74b-3b403ab237a2": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJVerKjHV2axYRcg-1IQXGeVM",
+      "display_name": "Abune Yemata",
+      "formatted_address": "Megab",
+      "region": "Tigray",
+      "city": "Megab",
+      "lat": 13.9152875,
+      "lng": 39.3452969,
+      "types": [
+        "church",
+        "place_of_worship",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "14dcdb3b-f234-4f0e-9ddb-270c10ebcc13": {
+      "status": "no_match"
+    },
+    "14fcb4c1-abbd-41c3-b00f-cf1decb0777c": {
+      "status": "candidate",
+      "score": 0.656,
+      "place_id": "ChIJr2O4ImObtBcR5id0HN3EH0Y",
+      "display_name": "Gelila Camping Island",
+      "formatted_address": "Ziway Lake",
+      "region": "Oromia",
+      "city": "East Shewa",
+      "lat": 7.9265107,
+      "lng": 38.7552253,
+      "types": [
+        "hiking_area",
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "15d4cc48-4db3-4cbb-91c9-c60fa8b4dc57": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJXYEeaAlFsRcR7ShAxQkCOVU",
+      "display_name": "ሌዊ ሪዞርት / Lewi Resort",
+      "formatted_address": "Hawassa",
+      "region": "Sidama",
+      "city": "Hawassa",
+      "lat": 7.0495179,
+      "lng": 38.4585013,
+      "types": [
+        "resort_hotel",
+        "hotel",
+        "event_venue",
+        "spa",
+        "lodging",
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "15f2bcde-0809-406f-8919-09b8f795e41a": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJC9i5CO5PSBYRdlyfNzMrIxQ",
+      "display_name": "Mama Midir",
+      "formatted_address": "Mama Midir",
+      "region": "Amhara",
+      "city": "Mama Midir",
+      "lat": 10.082794999999999,
+      "lng": 39.5016809,
+      "types": [
+        "locality",
+        "political"
+      ]
+    },
+    "16b17298-cf95-44da-b6a5-4c1bce95c425": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJzVYm4COJSxYR4akGFw0Ky7U",
+      "display_name": "Imperial Academy | Winget | ኢምፔሪያል አካዳሚ | ዊንጌት",
+      "formatted_address": "2PX6+FG3 Kolfe Keraniyo 13/14, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Kolfe Keranio",
+      "lat": 9.0486434,
+      "lng": 38.7113078,
+      "types": [
+        "school",
+        "educational_institution",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "17182a01-db5e-4920-b6bb-5927b96a2ccb": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJAQAAAFzotBcRpo1WFAQK34k",
+      "display_name": "Chilalo Food Complex",
+      "formatted_address": "X4RV+3VG, Asela",
+      "region": "Oromia",
+      "city": "Asela",
+      "lat": 7.990187499999999,
+      "lng": 39.1447031,
+      "types": [
+        "manufacturer",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "17520cea-bed8-4aa0-b020-30e597001408": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJd5bQbqANSxYRHB-rfwN5WxQ",
+      "display_name": "Kuriftu Water Park",
+      "formatted_address": "Bishoftu",
+      "region": "Oromia",
+      "city": "Bishoftu",
+      "lat": 8.7817245,
+      "lng": 39.0029434,
+      "types": [
+        "water_park",
+        "amusement_park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1776863c-a67a-47a1-a39b-1ff5f28972a2": {
+      "status": "candidate",
+      "score": 0.9,
+      "place_id": "ChIJ9yP_kjfzSxYRR8vBIkZE8BI",
+      "display_name": "Yaya Africa Athletics Village",
+      "formatted_address": "Weserbi Street, Gergis area A3, Sululta",
+      "region": "ኦሮሚያ",
+      "city": "Sululta",
+      "lat": 9.103813599999999,
+      "lng": 38.7109595,
+      "types": [
+        "resort_hotel",
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1780d35c-2488-4b5e-b3ae-042a32f6c0b7": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJJzV5MpWFSxYRRjFawkLdEkM",
+      "display_name": "Filwuha Agelglot /SPA Service Enterprise",
+      "formatted_address": "Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Addis Ababa",
+      "lat": 9.0181504,
+      "lng": 38.7579196,
+      "types": [
+        "cafe",
+        "sauna",
+        "public_bath",
+        "massage_spa",
+        "massage",
+        "spa",
+        "hotel",
+        "lodging",
+        "health",
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "17cdd081-8692-4079-ad33-6a5c3db45ad7": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJS4kehJUBMRYRe_Un2rpjzB8",
+      "display_name": "Dilchora Hospital wifi pasword",
+      "formatted_address": "HVP5+WJG, Dire Dawa",
+      "region": "Dire Dawa",
+      "city": "Kezira",
+      "lat": 9.5877523,
+      "lng": 41.8594253,
+      "types": [
+        "consultant",
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "18d1a00d-e89d-4c2a-81e3-727d2f2c2196": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJqQ-W1XG9rhcR5wFvvKsKcUM",
+      "display_name": "Kafa Biosphere Reserve",
+      "formatted_address": "9394+XHH, Bonga",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Bonga",
+      "lat": 7.369928100000001,
+      "lng": 36.0564877,
+      "types": [
+        "nature_preserve",
+        "tourist_attraction",
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1911def4-e997-465b-a0a3-6d9d84380461": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJd10qAd-HSxYRWW8sjdT8K30",
+      "display_name": "TOUR ETHIOPIA",
+      "formatted_address": "woreda 05, Addis Ababa 1000",
+      "region": "Addis Ababa",
+      "city": "Lideta",
+      "lat": 9.0063465,
+      "lng": 38.7315822,
+      "types": [
+        "tour_agency",
+        "tourist_attraction",
+        "tourist_information_center",
+        "transportation_service",
+        "travel_agency",
+        "service",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1a1c5e1b-dafa-4c16-b381-623fbaa66752": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJqSyTAg17ShYRnkcLqFrHYCQ",
+      "display_name": "BEYNOUNA VILLAGE ECO RESORT BY ETHIOPIAN SKYLIGHT",
+      "formatted_address": "VVV4+V2G",
+      "region": "Oromia",
+      "city": "East Shewa",
+      "lat": 8.894689,
+      "lng": 39.8550927,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1a5b3dff-4d10-4581-8c58-b2c5f9aec1f4": {
+      "status": "candidate",
+      "score": 0.36,
+      "place_id": "ChIJ31NDrlzbMRYRLsQeCwFmVJQ",
+      "display_name": "Kundudo feral horses",
+      "formatted_address": "992X+G39 Jarso and Gursum, districts",
+      "region": "Oromia",
+      "city": "districts",
+      "lat": 9.351289999999999,
+      "lng": 42.397732,
+      "types": [
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1cf5758b-28cb-430a-b66a-8d238d4d8bb5": {
+      "status": "candidate",
+      "score": 0.225,
+      "place_id": "ChIJn4dFov6TNRYR7GkTJOTAk8o",
+      "display_name": "Kuriftu Resort & Spa Awash Falls",
+      "formatted_address": "awash park, Awash",
+      "region": "አፋር",
+      "city": "Awash",
+      "lat": 8.8430524,
+      "lng": 40.0122975,
+      "types": [
+        "resort_hotel",
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1d914cd7-3a4f-4b25-ac05-35aae3470100": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJC0oXYgCFSxYRij_LJpZlpW8",
+      "display_name": "Sami wendimamchoch butchery(ሳሚ ወንድማማቾች)",
+      "formatted_address": "XQRH+JJ9, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Bole",
+      "lat": 8.991547599999999,
+      "lng": 38.779115100000006,
+      "types": [
+        "butcher_shop",
+        "food_store",
+        "point_of_interest",
+        "food",
+        "manufacturer",
+        "service",
+        "store",
+        "establishment"
+      ]
+    },
+    "1e396328-3fdf-40f1-b7dd-41362f74ef63": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJpRwSz0G7sRcR4nwGnZQy8NU",
+      "display_name": "Hiking to Damot mountain",
+      "formatted_address": "VQFF+CWF, Soddo",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Soddo",
+      "lat": 6.8735623,
+      "lng": 37.7747904,
+      "types": [
+        "hiking_area",
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1e9cbc26-1c66-4df8-a395-3ce61bb60b65": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJDTVyFACFSxYRZHpBUL-1zJU",
+      "display_name": "Riverside Park",
+      "formatted_address": "2Q68+7P8, Jomo Kenyatta St, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Kirkos",
+      "lat": 9.0107509,
+      "lng": 38.7670331,
+      "types": [
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1ed00cb8-cefc-4d4f-be7b-e45568710d02": {
+      "status": "no_match"
+    },
+    "1ed24426-c2c9-4515-8ff8-f7200e264835": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJm0C44L-GSxYR3slzJzC-BW0",
+      "display_name": "Abune TekleHaymanot Church",
+      "formatted_address": "XPP8+4R9, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Nefassilk Lafto",
+      "lat": 8.9852932,
+      "lng": 38.7170977,
+      "types": [
+        "church",
+        "place_of_worship",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1ee1842e-065b-46cc-972f-8d9d45d54b92": {
+      "status": "candidate",
+      "score": 0.36,
+      "place_id": "ChIJ49McDQDRNRYRE5kYX70BFIU",
+      "display_name": "Maze National park",
+      "formatted_address": "South Ethiopia Region",
+      "region": "Oromia",
+      "city": "West Hararge",
+      "lat": 9.145000000000001,
+      "lng": 40.489672999999996,
+      "types": [
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1f3e6ebe-2be1-4614-82f1-e2f837b3d3d7": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJ2aEPz3ZDQxYRMERve1O3kSs",
+      "display_name": "Guzara Castle ጉዛራ ቤተ መንግስት",
+      "formatted_address": "6JMP+Q27, Emfraz",
+      "region": "Amhara",
+      "city": "Emfraz",
+      "lat": 12.2344061,
+      "lng": 37.6350403,
+      "types": [
+        "castle",
+        "historical_place",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1f69a209-ecd9-4cd9-9188-57c315e4f2be": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJW5-r76mFSxYRrEk2Zsr6nfc",
+      "display_name": "Lamberet Abune Aregawi Church | ላምበረት አቡነ አረጋዊ ቤተክርስቲያን",
+      "formatted_address": "2RG6+9VH Lamberet, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Yeka",
+      "lat": 9.0259467,
+      "lng": 38.812221699999995,
+      "types": [
+        "church",
+        "place_of_worship",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "1fafd623-6c4d-41bb-a79b-8b5bd35127d9": {
+      "status": "candidate",
+      "score": 0.54,
+      "place_id": "ChIJbcuR09aRSxYR3sKvU41cjlE",
+      "display_name": "Abebech Gobena MCH Hospital",
+      "formatted_address": "2VHR+85X, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Bole",
+      "lat": 9.0215981,
+      "lng": 38.8898994,
+      "types": [
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "1ff14e7b-bfb6-444f-9af4-b1073a2631d3": {
+      "status": "no_match"
+    },
+    "200f2932-52b1-430f-87fa-ef56ba6bee1d": {
+      "status": "candidate",
+      "score": 0.257,
+      "place_id": "ChIJf7yRT26XtBcRoDxGiSi2aew",
+      "display_name": "Ziway Lake",
+      "formatted_address": "Ziway Lake",
+      "region": "Oromia",
+      "city": null,
+      "lat": 8.0073084,
+      "lng": 38.8414602,
+      "types": [
+        "lake",
+        "natural_feature",
+        "establishment"
+      ]
+    },
+    "2022c34b-b7e3-4236-81e3-d04af7a3d038": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJ3eG2bPvjVhYRlKD4EoZwQ6g",
+      "display_name": "Benishangul-Gumuz",
+      "formatted_address": "Benishangul-Gumuz",
+      "region": "Benishangul-Gumuz",
+      "city": null,
+      "lat": 10.7802889,
+      "lng": 35.5657862,
+      "types": [
+        "administrative_area_level_1",
+        "political"
+      ]
+    },
+    "207de875-a9dc-412b-8054-964c5edc08b7": {
+      "status": "candidate",
+      "score": 0.129,
+      "place_id": "ChIJFzr6JsI4thcR7BzEfxBOjjk",
+      "display_name": "Bale Mountains National Park",
+      "formatted_address": "VPPM+8PG, Rira",
+      "region": null,
+      "city": "Rira",
+      "lat": 6.8858193,
+      "lng": 39.734338,
+      "types": [
+        "national_park",
+        "tourist_attraction",
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "20833650-32b4-4b1e-8aab-7d9b3fb8e27c": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJM-H_O239ahYRB5NgJgaqVrM",
+      "display_name": "Tigray Stadium",
+      "formatted_address": "FFW4+CRM, Mekele",
+      "region": "Tigray",
+      "city": "Mekele",
+      "lat": 13.4960787,
+      "lng": 39.4570393,
+      "types": [
+        "stadium",
+        "sports_complex",
+        "event_venue",
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "21432d95-30dd-40e4-9388-ee6133851758": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJtY71VWv9ahYRhAzU5oMGLM4",
+      "display_name": "ሆቴል ፕላኔት መቐለ / Planet Hotel Meqelle",
+      "formatted_address": "FFW6+H99, Mekele",
+      "region": "Tigray",
+      "city": "Mekele",
+      "lat": 13.4964142,
+      "lng": 39.460983299999995,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "21d9b8a0-7f58-4f22-96b8-78e242ae990c": {
+      "status": "no_match"
+    },
+    "220cc188-0798-45da-a7d9-80c1885886e2": {
+      "status": "candidate",
+      "score": 0.615,
+      "place_id": "ChIJb--uOMe9MRYRV2ICw2-_qUc",
+      "display_name": "Grand Jami Mosque",
+      "formatted_address": "10 Amir Uga St, Harar",
+      "region": "Harar",
+      "city": "Jegol",
+      "lat": 9.3109748,
+      "lng": 42.138774399999996,
+      "types": [
+        "mosque",
+        "place_of_worship",
+        "association_or_organization",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "2272a61f-9359-4e0c-a986-2026a826d363": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJTV36jwTjThYRMC6fBn8tgXw",
+      "display_name": "Blue Nile River Bridge አባይ ድልድይ",
+      "formatted_address": "35GR+8JM, Dejen",
+      "region": "Oromia",
+      "city": "Dejen",
+      "lat": 10.0758359,
+      "lng": 38.191536299999996,
+      "types": [
+        "bridge",
+        "transportation_service",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "26cfc331-c3b9-4089-a0ed-b629bbd081d6": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJFacr9hWrpRcRKgFdNH8IjNw",
+      "display_name": "Omo River Tours",
+      "formatted_address": "Jinka 1077",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Jinka",
+      "lat": 5.780162499999999,
+      "lng": 36.5746609,
+      "types": [
+        "tour_agency",
+        "travel_agency",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "28b06163-a019-4ec8-806d-dc45aba5595f": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJ3woLlft1ShYRmfK8CghaFKY",
+      "display_name": "Mount Fentale",
+      "formatted_address": "Fentale",
+      "region": "Oromia",
+      "city": "Fentale",
+      "lat": 8.9811614,
+      "lng": 39.9273374,
+      "types": [
+        "tourist_attraction",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "2c71cbff-592a-4424-9657-eade98bf9987": {
+      "status": "candidate",
+      "score": 0.72,
+      "place_id": "ChIJxbPtF3-8uhcRd6fc861jnes",
+      "display_name": "paradise Lodge Arba Minch",
+      "formatted_address": "Arba Minch",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Arba Minch",
+      "lat": 6.009771799999999,
+      "lng": 37.5553594,
+      "types": [
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "2cdc89c9-ccae-4a4a-a328-41dcfe7efd2e": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJk37BosT8axYRyov5W4puRf0",
+      "display_name": "ቤተ መንግስቲ ንግስቲ ሳባ | Dungur Palace (Queen of Sheba Palace)",
+      "formatted_address": "4PG4+PHQ, 3, Aksum",
+      "region": "Tigray",
+      "city": "Aksum",
+      "lat": 14.1268302,
+      "lng": 38.706479699999996,
+      "types": [
+        "historical_landmark",
+        "tourist_attraction",
+        "historical_place",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "2ceb15dd-7be7-413f-9582-0f9d00bf115b": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJtY71VWv9ahYRhAzU5oMGLM4",
+      "display_name": "ሆቴል ፕላኔት መቐለ / Planet Hotel Meqelle",
+      "formatted_address": "FFW6+H99, Mekele",
+      "region": "Tigray",
+      "city": "Mekele",
+      "lat": 13.4964142,
+      "lng": 39.460983299999995,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "2dd76ae5-d856-4946-83ab-85a9bd32a9d3": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJCelnErYNSxYR21Bv9Yk3lFA",
+      "display_name": "Bishoftu hora",
+      "formatted_address": "Unnamed Road, Bishoftu",
+      "region": "Oromia",
+      "city": "Bishoftu",
+      "lat": 8.765806699999999,
+      "lng": 38.9956822,
+      "types": [
+        "sports_activity_location",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "2de90c71-ca60-4d2b-be4b-22ab54f37a93": {
+      "status": "no_match"
+    },
+    "2e8a6a51-a57c-43f3-8cd8-49f38b7bb164": {
+      "status": "candidate",
+      "score": 0.328,
+      "place_id": "ChIJOfoRbQC9MRYRFDmzO0T6_dk",
+      "display_name": "Stadium",
+      "formatted_address": "846C+G2M, Harar",
+      "region": "Harar",
+      "city": "Harar",
+      "lat": 9.311347399999999,
+      "lng": 42.1200324,
+      "types": [
+        "stadium",
+        "sports_complex",
+        "sports_activity_location",
+        "event_venue",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "3096f7ab-0a87-42fa-ba55-98282bb96595": {
+      "status": "no_match"
+    },
+    "31b2466f-8630-4b81-8717-2af3da7822c3": {
+      "status": "no_match"
+    },
+    "31fb5ee6-550b-44b9-a935-eb136e4db8ab": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJIwNQu_CXsBcRw3-FdZzv8ao",
+      "display_name": "Tutu Fela Steles Site",
+      "formatted_address": "7794+9PG, Dila",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Dila",
+      "lat": 6.2684485,
+      "lng": 38.256816,
+      "types": [
+        "historical_landmark",
+        "historical_place",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "3286a788-e2b1-4bec-a5ea-c32b752fe610": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJ8RzFVmN1ShYR-FJVWSXem64",
+      "display_name": "Awash National Park",
+      "formatted_address": "32M2+82J, Didiga",
+      "region": null,
+      "city": "Didiga",
+      "lat": 9.0833333,
+      "lng": 40.0,
+      "types": [
+        "park",
+        "tourist_attraction",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "32ee3318-b222-4de7-b1e2-ff8a62cd2dfa": {
+      "status": "candidate",
+      "score": 0.3,
+      "place_id": "ChIJO7QifD4NRhYR0ujrgcUrEu4",
+      "display_name": "Borena Sayint WorehimenoNational Park",
+      "formatted_address": "VQ6R+CXQ, Galemot",
+      "region": "Amhara",
+      "city": "Galemot",
+      "lat": 10.8610872,
+      "lng": 38.7924887,
+      "types": [
+        "national_park",
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "3307136d-33b9-46d1-a85d-329b832ef1fa": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJ3_u349mPSxYRfejr4ddt8-k",
+      "display_name": "የእንጦጦ ፓርክ ቁስቋም መግብያ | Entoto Park Kuskuam Entrance",
+      "formatted_address": "3QJ4+7H5 Addis Ababa 20673/1000 Addis Ababa, አዲስ አበባ 1000",
+      "region": "አዲስ አበባ",
+      "city": "ጉለሌ",
+      "lat": 9.0806875,
+      "lng": 38.7564375,
+      "types": [
+        "park",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "3337e9f7-776d-43c5-8f15-ea2a1ad159cd": {
+      "status": "no_match"
+    },
+    "3393d169-bb0a-4fca-9812-109036f62ad4": {
+      "status": "candidate",
+      "score": 0.18,
+      "place_id": "ChIJWZohSAABTRYRefQErzAh2Qs",
+      "display_name": "Wanchi-Dendi Eco Tourism Village ወንጪ-ደንዲ ኢኮ ቱሪዝም መንደር",
+      "formatted_address": "XW5J+6RH Wanci, Ambo",
+      "region": "Oromia",
+      "city": "Ambo",
+      "lat": 8.9580605,
+      "lng": 37.9321008,
+      "types": [
+        "tour_agency",
+        "travel_agency",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ]
+    },
+    "353a512f-270c-49f3-8a0b-a72199f59027": {
+      "status": "candidate",
+      "score": 0.6,
+      "place_id": "ChIJF5e_JD0oSxYRNWHH0XpawIw",
+      "display_name": "Wonji Shoa Sugar Factory",
+      "formatted_address": "446 Adama or 133, Addis Ababa",
+      "region": "ኦሮሚያ",
+      "city": "Addis Ababa",
+      "lat": 8.376791599999999,
+      "lng": 39.3093979,
+      "types": [
+        "point_of_interest",
+        "manufacturer",
+        "establishment"
+      ]
+    },
+    "357cf054-8b96-4b60-90fd-26a6517404a0": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJA6jE5ImFSxYRJPQnueMk57o",
+      "display_name": "Addis Ababa University | Natural Sciences Campus",
+      "formatted_address": "NBH1, 4killo King George VI St, Addis Ababa",
+      "region": "Addis Ababa",
+      "city": "Arada",
+      "lat": 9.033506299999999,
+      "lng": 38.7636817,
+      "types": [
+        "university",
+        "educational_institution",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "35f47335-8797-403c-84b7-4d773d3255ae": {
+      "status": "no_match"
+    },
+    "3672280d-719b-4f45-a075-330c2a8e2814": {
+      "status": "candidate",
+      "score": 0.45,
+      "place_id": "ChIJLVUWIvzbsRcR_K4n88uA4pI",
+      "display_name": "Halala Kella Eco Lodge",
+      "formatted_address": "WC4C+CXP",
+      "region": "Southern Nations, Nationalities and Peoples",
+      "city": "Dawro",
+      "lat": 6.9060985,
+      "lng": 37.4224631,
+      "types": [
+        "hotel",
+        "lodging",
+        "point_of_interest",
+        "establishment"
+      ]
+    },
+    "37babb65-974f-4586-a52c-06cc4ffd339d": {
+      "status": "no_match"
+    },
+    "3abb2bc8-cd5e-4567-8459-71ea7cba5b36": {
+      "status": "candidate",
+      "score": 0.0,
+      "place_id": "ChIJpSYHvqiPSxYROn7UV3_3In8",
+      "display_name": "جبل انطوطو",
+      "formatted_address": "4Q3H+52, Tulu Lench'a",
+      "region": "Oromia",
+      "city": "Tulu Lench'a",
+      "lat": 9.102981,
+      "lng": 38.777501699999995,
+      "types": [
+        "tourist_attraction",
+        "point_of_interest",
+        "establishment"
+      ]
+    }
+  }
+}

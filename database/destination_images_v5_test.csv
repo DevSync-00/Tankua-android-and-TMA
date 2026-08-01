@@ -1,0 +1,21 @@
+id,name,geocode_status,resolution_level,anchor_approved,geocode_error,score,matched_query,city,region,lat,lng,matched_address,image_status,image_file,image_match_score,image_search,image_source,image_license,generated_update
+000b9cf0-b53f-4546-8840-ba364d586682,Cheshire Services Ethiopia Center,existing,,False,,,,,,,,,no_match,,,,,,False
+00294e3d-1208-4208-a015-996c71cf9738,Gorgora Northern Lake Tana Dock,existing,,False,,,,,,,,,matched,destination-images/gorgora-northern-lake-tana-dock/cover.webp,0.667,gorgora tana,https://commons.wikimedia.org/wiki/File:ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg,FAL,False
+0051e3e0-cdf6-4292-8b3f-55e0cf27bec7,Mentewab Palace Grounds,existing,,False,,,,,,,,,no_match,,,,,,False
+00620588-4ca4-48fa-90d5-3eba0e18392b,Erta Ale Active Volcano Lava Hazards Field,existing,,False,,,,,,,,,matched,destination-images/erta-ale-active-volcano-lava-hazards-field/cover.webp,0.75,Erta Ale Active,https://commons.wikimedia.org/wiki/File:Lava_Lake_in_Erta_Ale_Volcano_in_Ethiopia_20080501.jpg,CC BY-SA 2.0,False
+007b0123-edb6-4112-8470-9c97d02e180a,Mount Belaya Wilderness Trek,existing,,False,,,,,,,,,no_match,,,,,,False
+00e4f04e-be64-4f35-8e8f-41d59df6a948,Asella Referral Hospital,existing,,False,,,,,,,,,no_match,,,,,,False
+0113fde5-2ea6-4aeb-965d-64901480d8c0,Jinka Urban Hub,existing,,False,,,,,,,,,no_match,,,,,,False
+0172040d-afdc-49d2-a38e-f7c51cb36544,Assosa Bamboo & Mango Farms,existing,,False,,,,,,,,,no_match,,,,,,False
+01a955e4-eb2e-4586-9b0d-5ab3c563c175,Kotebe Sports Education Center Complex,existing,,False,,,,,,,,,no_match,,,,,,False
+022c139e-027b-4c2b-b90f-103bdcf0f824,Menz Guassa High-Altitude Pastoral Communities,existing,,False,,,,,,,,,no_match,,,,,,False
+02327ceb-e29b-4d7e-8904-dd4c8f1c7944,Bishoftu Town Crater Lake City Circuit,existing,,False,,,,,,,,,matched,destination-images/bishoftu-town-crater-lake-city-circuit/cover.webp,0.5,bishoftu crater,https://commons.wikimedia.org/wiki/File:Goat_eating_leaves_near_Green_Crater_Lake_in_Bishoftu_December_2017.jpg,CC BY-SA 4.0,False
+0255ec62-2fd1-40be-ac57-209276df35e9,Massacre Memorial of Wondo Genet,existing,,False,,,,,,,,,matched,destination-images/massacre-memorial-of-wondo-genet/cover.webp,0.667,wondo genet,https://commons.wikimedia.org/wiki/File:Wondo_Genet_Banner.jpg,CC BY-SA 3.0,False
+02890b20-0688-473d-98ed-09a1e4d3a042,Bishoftu Natural Hot Springs Wellness Retreats,existing,,False,,,,,,,,,matched,destination-images/bishoftu-natural-hot-springs-wellness-retreats/cover.webp,0.333,bishoftu,"https://commons.wikimedia.org/wiki/File:Bishoftu,_Ethiopia_(51643961472).jpg",CC BY 2.0,False
+02c8223e-334d-47e5-b354-7fca28aada4f,Sheka Forest Biosphere Reserve,existing,,False,,,,,,,,,no_match,,,,,,False
+032ca2c4-2e8c-4a0f-9b3e-0df565405328,Battlefield of Dogali Memorial Monument,existing,,False,,,,,,,,,matched,destination-images/battlefield-of-dogali-memorial-monument/cover.webp,0.667,dogali monument,https://commons.wikimedia.org/wiki/File:Dogali_Monument.jpg,CC BY 2.0,False
+037f40de-3fe9-4a23-9b9e-bf17b49de895,Bebeka Coffee Estate,existing,,False,,,,,,,,,no_match,,,,,,False
+0383471e-05bb-422a-872c-430f3ecf90b0,Bob Marley Statue & Imperial Square,existing,,False,,,,,,,,,matched,destination-images/bob-marley-statue-imperial-square/cover.webp,0.5,bob marley,https://commons.wikimedia.org/wiki/File:Bob_Marley_and_Che_Guevara_-_Side_by_Side_-_Market_-_Adigrat_-_Ethiopia_(8707734386).jpg,CC BY-SA 2.0,False
+039c265c-7824-4623-8e6a-455de2877896,Grand Palace Hotel Meeting Rooms,existing,,False,,,,,,,,,no_match,,,,,,False
+03a350a1-6dbb-4dcb-a64a-20c725d254b9,Gondar City Center & Imperial Precincts,existing,,False,,,,,,,,,matched,destination-images/gondar-city-center-imperial-precincts/cover.webp,0.333,gondar,"https://commons.wikimedia.org/wiki/File:A_busy_street_in_Gondar,_Ethiopia.jpg",CC BY 4.0,False
+03b49d09-289b-46f3-a0a6-911ce7e8b65c,Chebera Churchura National Park,existing,,False,,,,,,,,,matched,destination-images/chebera-churchura-national-park/cover.webp,1.0,Chebera Churchura National Park,https://commons.wikimedia.org/wiki/File:A_photographer_capturing_hippopotamus_in_at_Chebera_Churchura_National_Park.jpg,CC BY-SA 4.0,False

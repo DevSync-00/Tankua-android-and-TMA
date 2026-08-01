@@ -1,0 +1,101 @@
+id,name,geocode_status,resolution_level,anchor_approved,geocode_error,score,matched_query,city,region,lat,lng,matched_address,image_status,image_file,image_match_score,image_search,image_source,image_license,generated_update
+10a673a7-4637-4406-b3ce-1ba3b0959686,Lake Babogaya Kayak & Boat Launches,existing,,False,,,,,,,,,no_match,,,,,,False
+10aad439-21ab-49ae-bad6-cd8d0e02d12f,Teppi Coffee & Spice Plantation Estate,existing,,False,,,,,,,,,no_match,,,,,,False
+10c92854-678b-4c37-9275-8d10f798aa6d,Entoto Planetarium Complex,existing,,False,,,,,,,,,no_match,,,,,,False
+10cae156-391a-4c15-9fa6-2d9adfd70352,Gidole Terraces & Rural Hamlets,existing,,False,,,,,,,,,no_match,,,,,,False
+113b58ce-45b5-4569-89d4-f5f7ca88df14,Kadisco General Hospital,existing,,False,,,,,,,,,no_match,,,,,,False
+1199349e-9884-4cf4-9829-6629cbdc454a,Nechisar National Park Anti-Poaching Base,existing,,False,,,,,,,,,no_match,,,,,,False
+11d5d687-cf9d-4d2e-80fa-c16dc4bc2d07,Sabana Beach Resort Main Level Pavilions,existing,,False,,,,,,,,,no_match,,,,,,False
+123cfd93-3039-4f07-a333-891d1dae1ff3,Adama Central Commercial Market,existing,,False,,,,,,,,,no_match,,,,,,False
+128ea5e5-e0c7-4b55-ab19-15fcaa579189,Masha Rainforest Honey Villages,existing,,False,,,,,,,,,no_match,,,,,,False
+128fc595-bc5c-412c-9acb-c322347df6f3,Gorgora Eco-Resort Marina Complex,existing,,False,,,,,,,,,no_match,,,,,,False
+12d7c2e5-6f22-407c-b6f5-f9d62a3f7e4f,Hyatt Regency Oasis Spa,existing,,False,,,,,,,,,no_match,,,,,,False
+131993b4-a8b5-41cb-a8d1-5e2610dfd540,Bishoftu Lake Kilole Water Outpost,existing,,False,,,,,,,,,matched,destination-images/bishoftu-lake-kilole-water-outpost/cover.webp,0.5,kilole bishoftu,https://commons.wikimedia.org/wiki/File:Bishoftu_volcanic_field.jpg,Public domain,False
+133d233e-e6d0-4a8e-803a-7a7b8b5bde07,Metu Town Center,existing,,False,,,,,,,,,no_match,,,,,,False
+13e068c7-3d20-4a4e-b74b-3b403ab237a2,Abuna Yemata Guh Rock Climb,existing,,False,,,,,,,,,matched,destination-images/abuna-yemata-guh-rock-climb/cover.webp,0.6,Abuna Yemata Guh Rock Climb,https://commons.wikimedia.org/wiki/File:Abuna_Yemata_Guh_Monk.jpg,CC BY-SA 2.0,False
+142fb748-0f18-4bf9-841b-11aa0b15611d,Gondar City Center Public Walkway,existing,,False,,,,,,,,,no_match,,,,,,False
+146f6075-c877-4699-affe-e3d724587aa7,Dorze Eco-Lodge & Cultural Highlands,existing,,False,,,,,,,,,no_match,,,,,,False
+148034e4-7fe4-4dad-8d25-5be713fff5fe,Yabello Borena Cattle Breeding Research Center,existing,,False,,,,,,,,,no_match,,,,,,False
+14cd6748-c252-4f1d-af1b-7145c3d63012,Lalibela Church Street Craft & Cross Vendors,existing,,False,,,,,,,,,no_match,,,,,,False
+14dcdb3b-f234-4f0e-9ddb-270c10ebcc13,Assab Road Historical Conflict Sites,existing,,False,,,,,,,,,no_match,,,,,,False
+14f1955f-8954-4783-bac3-6c65d261f23b,Al-Nejashi Shrine,existing,,False,,,,,,,,,no_match,,,,,,False
+14fcb4c1-abbd-41c3-b00f-cf1decb0777c,Lake Ziway Gelila Island Boat Trail,existing,,False,,,,,,,,,no_match,,,,,,False
+151689f0-1345-4c94-8b5e-4cf3b59dfae8,Chebera Churchura National Park (African Elephants),existing,,False,,,,,,,,,no_match,,,,,,False
+154e92cf-82ab-4022-9339-7a382efd7a69,Semera Afar Plain Astronomical Observation Sites,existing,,False,,,,,,,,,no_match,,,,,,False
+155560ee-ef59-4e8f-9b0a-da01cfb2db33,Gerbi Natural Hot Springs Retreat,existing,,False,,,,,,,,,no_match,,,,,,False
+15580d30-aaf4-41e6-8928-1b7ce0c5b9d7,Tomoca Coffee Original Shop,existing,,False,,,,,,,,,no_match,,,,,,False
+15b19af3-fa80-42e8-a887-582c31528014,Gondar Saturday Market,existing,,False,,,,,,,,,no_match,,,,,,False
+15d4cc48-4db3-4cbb-91c9-c60fa8b4dc57,Lewi Resort & Wellness Spa,existing,,False,,,,,,,,,no_match,,,,,,False
+15f2bcde-0809-406f-8919-09b8f795e41a,Menz Mama Midir Wool Farming Hamlets,existing,,False,,,,,,,,,no_match,,,,,,False
+160260ef-113c-4092-b084-b9344923802e,Bole Medhanealem Modern Fusion & Bistro Belt,existing,,False,,,,,,,,,no_match,,,,,,False
+160cbdd9-963a-4959-8f22-f565a0621de3,Suba Forest Tree Planting Volunteers Hub,existing,,False,,,,,,,,,no_match,,,,,,False
+1618e41c-dd41-468c-bc4d-eb68f0980534,Geralle National Park (Giraffes & Gazelles),existing,,False,,,,,,,,,no_match,,,,,,False
+16716603-1c73-4a69-b4e5-aa9673c399fd,Wushwush Tea Estate & Factory,existing,,False,,,,,,,,,no_match,,,,,,False
+16b17298-cf95-44da-b6a5-4c1bce95c425,Imperial Club Sports Facilities,existing,,False,,,,,,,,,no_match,,,,,,False
+16c62e77-ebbe-46f9-ac95-2a3784f4b47b,Haile Resort Hawassa Private Boat Pier,existing,,False,,,,,,,,,matched,destination-images/haile-resort-hawassa-private-boat-pier/cover.webp,0.667,boat hawassa,"https://commons.wikimedia.org/wiki/File:Reed_Boat,_Lake_Hawassa_(10903076965).jpg",CC BY-SA 2.0,False
+171119ef-dd22-425f-93bc-654ef09a656a,Menz Guassa Silent Wilderness Camp,existing,,False,,,,,,,,,no_match,,,,,,False
+17182a01-db5e-4920-b6bb-5927b96a2ccb,Silte Halawa & Traditional Confectionery Outlets,existing,,False,,,,,,,,,no_match,,,,,,False
+17520cea-bed8-4aa0-b020-30e597001408,Lake Kuriftu Waterpark Boating Marina,existing,,False,,,,,,,,,no_match,,,,,,False
+175f8db8-fab1-4154-8709-8b21e6b308e7,Lake Hayq & Stephens Monastery Sanctuary,existing,,False,,,,,,,,,no_match,,,,,,False
+1776863c-a67a-47a1-a39b-1ff5f28972a2,Yaya Africa Athletics Village,existing,,False,,,,,,,,,matched,destination-images/yaya-africa-athletics-village/cover.webp,1.0,Yaya Africa Athletics Village,https://commons.wikimedia.org/wiki/File:Yaya_Africa_Athletics_Village.jpg,CC BY-SA 3.0,False
+1780d35c-2488-4b5e-b3ae-042a32f6c0b7,Filwoha Thermal Mineral Baths,existing,,False,,,,,,,,,no_match,,,,,,False
+17cdd081-8692-4079-ad33-6a5c3db45ad7,Dil Chora Hospital,existing,,False,,,,,,,,,matched,destination-images/dil-chora-hospital/cover.webp,1.0,Dil Chora Hospital,"https://commons.wikimedia.org/wiki/File:Dil_Chora_Hospital,_Dire_Dawa,_Ethiopia,_2010_(5117158873).jpg",CC BY 2.0,False
+1802b841-f5a4-49fe-9c32-efbd4b5e966e,Dirre Sheikh Hussein Sacred Site,existing,,False,,,,,,,,,no_match,,,,,,False
+184162e1-10f4-47c4-8df2-43e9baef7374,Key Afer Market,existing,,False,,,,,,,,,matched,destination-images/key-afer-market/cover.webp,1.0,Key Afer Market,"https://commons.wikimedia.org/wiki/File:Banna_Tribe,_KEy_Afer_Market_(8141395546).jpg",CC BY-SA 2.0,False
+1861714b-d99d-45db-9295-7a295c30b79f,Arbore Pastoralist Hamlets,existing,,False,,,,,,,,,no_match,,,,,,False
+18d1a00d-e89d-4c2a-81e3-727d2f2c2196,Kafa Biosphere Waterfall & Wild Coffee Forests,existing,,False,,,,,,,,,no_match,,,,,,False
+18e7ff60-d9b4-4951-b88f-f1881b20abad,Yanet Specialized Hospital,existing,,False,,,,,,,,,no_match,,,,,,False
+1911def4-e997-465b-a0a3-6d9d84380461,Dima River Canyon Adventure Trail,existing,,False,,,,,,,,,no_match,,,,,,False
+1976295f-ecce-48f7-bbc3-cc4f1b53fef3,Ethiopian Postal Museum,existing,,False,,,,,,,,,no_match,,,,,,False
+1a0fe466-2e4e-4af5-8db4-43be8bea6df0,Gheralta Escarpment Farm Settlements,existing,,False,,,,,,,,,no_match,,,,,,False
+1a1c5e1b-dafa-4c16-b381-623fbaa66752,Beynuna Village Community,existing,,False,,,,,,,,,no_match,,,,,,False
+1a209072-6ad4-4054-a3d1-7a60411b1120,Saris & Kera Urban Districts,existing,,False,,,,,,,,,no_match,,,,,,False
+1a38eefe-828e-469c-ae8b-5bbe525db738,Dimeka Tribal Souvenir & Crafts Market,existing,,False,,,,,,,,,no_match,,,,,,False
+1a3d3411-dd15-4ebd-87ad-be817055defb,Debre Markos Urban Hub,existing,,False,,,,,,,,,no_match,,,,,,False
+1a3def45-0960-4282-bebd-627a7cb980c4,Argobba Ancient Settlements,existing,,False,,,,,,,,,no_match,,,,,,False
+1a5b3dff-4d10-4581-8c58-b2c5f9aec1f4,Mount Kundudo Feral Horse Sanctuary,existing,,False,,,,,,,,,no_match,,,,,,False
+1a96e60a-57ff-432a-8daf-6e94fe955bc4,Gore Historic Urban Center,existing,,False,,,,,,,,,no_match,,,,,,False
+1b0cc407-865c-4661-94dd-c1fcd6c13494,Ankober St. George Church,existing,,False,,,,,,,,,no_match,,,,,,False
+1b0dae3c-22ba-4e5d-ba89-22160801cca4,Konso Soil Erosion & Cultural Preservation Sites,existing,,False,,,,,,,,,no_match,,,,,,False
+1bd34702-eb28-425c-b0e5-4fadf009287a,Metahara Sugar Cane Estate,existing,,False,,,,,,,,,no_match,,,,,,False
+1bf2d847-791f-4a70-be57-01108f2f4871,Hayat Hospital Specialized Center,existing,,False,,,,,,,,,no_match,,,,,,False
+1c3acc4f-bf27-4343-953d-1d0001863ed7,Dorze Elephant-Shaped Bamboo Huts,existing,,False,,,,,,,,,matched,destination-images/dorze-elephant-shaped-bamboo-huts/cover.webp,0.5,dorze huts,https://commons.wikimedia.org/wiki/File:Dorze_huts.jpg,CC BY-SA 2.0,False
+1c4be61c-293b-40b7-90c5-85d159009ee5,Dinsho Campsite Grounds,existing,,False,,,,,,,,,no_match,,,,,,False
+1c917664-8092-4e3f-ba11-abce35e97266,Lalibela Church Preservation & Masonry Museum,existing,,False,,,,,,,,,no_match,,,,,,False
+1cf5758b-28cb-430a-b66a-8d238d4d8bb5,Awash Thermal Hot Springs,existing,,False,,,,,,,,,no_match,,,,,,False
+1d8c6efd-f46e-47dd-beaa-68f0ecb56f51,Wondo Genet Medicinal Hot Springs,existing,,False,,,,,,,,,no_match,,,,,,False
+1d914cd7-3a4f-4b25-ac05-35aae3470100,Menz Highland Sheep Meat Roasting Centers,existing,,False,,,,,,,,,no_match,,,,,,False
+1dcd5529-5ebf-47e1-b6f2-cb400f078caf,Arba Minch Local Farmer Co-ops Volunteer Sites,existing,,False,,,,,,,,,no_match,,,,,,False
+1e0f8cff-e37b-4576-bfe4-7504166dd876,Jijiga Convention & Cultural Center,existing,,False,,,,,,,,,matched,destination-images/jijiga-convention-cultural-center/cover.webp,0.5,jijiga somali region,https://commons.wikimedia.org/wiki/File:ET-Jijiga_Somali_Region_(7).JPG,CC BY-SA 3.0,False
+1e396328-3fdf-40f1-b7dd-41362f74ef63,Sodo Town Mount Damota Public Hike,existing,,False,,,,,,,,,no_match,,,,,,False
+1e577338-7b6b-45c2-994e-76af1a5596d3,Beta Emmanuel Church,existing,,False,,,,,,,,,disabled,,,,,,False
+1e580650-e9ae-4a13-ad77-bcf61acde245,Jinka Town Public Museum Hill,existing,,False,,,,,,,,,no_match,,,,,,False
+1e5fb8fb-9aa3-485b-ac54-a57255d5aac4,Edna Mall Paved Concourse,existing,,False,,,,,,,,,no_match,,,,,,False
+1e95d4ee-0a3f-4595-98b3-9e7949a572cf,Menz Guassa Community Conservation Area (Ethiopian Wolves),existing,,False,,,,,,,,,no_match,,,,,,False
+1e9cbc26-1c66-4df8-a395-3ce61bb60b65,Combolcha Central Park,existing,,False,,,,,,,,,no_match,,,,,,False
+1ea861e7-cb1f-424d-ae1e-a3f646a04d6d,Ramada by Wyndham Conference Hub,existing,,False,,,,,,,,,no_match,,,,,,False
+1ed00cb8-cefc-4d4f-be7b-e45568710d02,Gedeo Sacred Cultural Landscapes,existing,,False,,,,,,,,,no_match,,,,,,False
+1ed24426-c2c9-4515-8ff8-f7200e264835,Tekle Haymanot Cave Shrine,existing,,False,,,,,,,,,no_match,,,,,,False
+1ee1842e-065b-46cc-972f-8d9d45d54b92,Maze National Park (Swaynes Hartebeest & Lions),existing,,False,,,,,,,,,no_match,,,,,,False
+1efae8e3-da7d-4023-9252-4429553933c0,Jibat Forest Reserve (Endemic Birds),existing,,False,,,,,,,,,no_match,,,,,,False
+1f001180-7b6a-4c63-80ea-2d8f6aa0fdfb,Massacre Memorial at Zeret Cave,existing,,False,,,,,,,,,no_match,,,,,,False
+1f3e6ebe-2be1-4614-82f1-e2f837b3d3d7,Guzara Royal Castle Ruins,existing,,False,,,,,,,,,no_match,,,,,,False
+1f69a209-ecd9-4cd9-9188-57c315e4f2be,Abuna Aregawi Shrine,existing,,False,,,,,,,,,no_match,,,,,,False
+1fa93518-ef46-47ee-b8cb-80974632fa72,Dire Dawa Stadium,existing,,False,,,,,,,,,matched,destination-images/dire-dawa-stadium/cover.webp,1.0,dire dawa football,https://commons.wikimedia.org/wiki/File:Downtown_Dire_Dawa_(211276819).jpeg,CC BY 3.0,False
+1fafd623-6c4d-41bb-a79b-8b5bd35127d9,Abebech Gobena Mothers & Children Hospital,existing,,False,,,,,,,,,no_match,,,,,,False
+1fe95f3d-b517-485c-8606-2c76364232a7,Lake Hayq Public Monastery Shore,existing,,False,,,,,,,,,no_match,,,,,,False
+1ff14e7b-bfb6-444f-9af4-b1073a2631d3,Awi Agew Rural Homesteads,existing,,False,,,,,,,,,no_match,,,,,,False
+200f2932-52b1-430f-87fa-ef56ba6bee1d,Lake Ziway Bird Sanctuary (Pelicans & Fish Eagles),existing,,False,,,,,,,,,no_match,,,,,,False
+2022c34b-b7e3-4236-81e3-d04af7a3d038,Gumuz Tribal Communities,existing,,False,,,,,,,,,no_match,,,,,,False
+204e1584-f5ab-442a-95e0-d6c1928546a6,Mizan Teferi Urban Center,existing,,False,,,,,,,,,no_match,,,,,,False
+207de875-a9dc-412b-8054-964c5edc08b7,Bale Harenna Cloud Forest Moss & Fern Canopy,existing,,False,,,,,,,,,no_match,,,,,,False
+20833650-32b4-4b1e-8aab-7d9b3fb8e27c,Mekelle Tigray Stadium,existing,,False,,,,,,,,,matched,destination-images/mekelle-tigray-stadium/cover.webp,1.0,mekelle tigray,"https://commons.wikimedia.org/wiki/File:Destroyed_buildings_in_Mekelle,_Tigray_(2022).jpg",Public domain,False
+2129a44b-cf85-453a-b73d-325d060210e1,Bete Abba Libanos,existing,,False,,,,,,,,,matched,destination-images/bete-abba-libanos/cover.webp,1.0,Bete Abba Libanos,https://commons.wikimedia.org/wiki/File:Bete_Abba_Libanos.jpg,CC BY-SA 3.0,False
+21432d95-30dd-40e4-9388-ee6133851758,Planet Hotel Conference Center,existing,,False,,,,,,,,,no_match,,,,,,False
+2162a321-4397-4796-b2c5-884443ba2282,Bench Maji Forest Honey Tasting Outlets,existing,,False,,,,,,,,,no_match,,,,,,False
+219e56e6-83b1-40b4-9542-f6e99e81a063,Bahar Dar Mango Park Boat Terminal,existing,,False,,,,,,,,,no_match,,,,,,False
+21a09171-dbeb-4615-8ffd-0140311ed755,Sabana Beach Resort Spa,existing,,False,,,,,,,,,no_match,,,,,,False
+21bd35c9-3b3d-4cb7-b92e-6947621f5d16,Turmi Hamer Village Settlements,existing,,False,,,,,,,,,matched,destination-images/turmi-hamer-village-settlements/cover.webp,0.667,turmi hamer,"https://commons.wikimedia.org/wiki/File:Hamer_Girl,_Turmi,_Ethiopia_(15479674450).jpg",CC BY-SA 2.0,False
+21d9b8a0-7f58-4f22-96b8-78e242ae990c,Arsi Highlands Cattle & Grain Farms,existing,,False,,,,,,,,,no_match,,,,,,False
+220cc188-0798-45da-a7d9-80c1885886e2,Jamia Grand Mosque of Harar,existing,,False,,,,,,,,,matched,destination-images/jamia-grand-mosque-of-harar/cover.webp,0.5,Jamia Grand Mosque of Harar,"https://commons.wikimedia.org/wiki/File:Harar,_moschea_jamia,_02.jpg",CC BY 3.0,False
+2231f7f1-2a31-402c-85ba-10c48224cbc7,Tiya Megalithic Burial Grounds,existing,,False,,,,,,,,,no_match,,,,,,False

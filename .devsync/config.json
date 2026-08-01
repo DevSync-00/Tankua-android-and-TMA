@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "tankua",
+    "schemaType": "supabase",
+    "id": "7955dd56-167e-42f3-93a6-b678e5f2fd9a"
+  },
+  "database": {
+    "mode": "auto",
+    "connectionString": "",
+    "writeAccess": false
+  },
+  "ai": {},
+  "safety": {
+    "allowWrites": false,
+    "allowDbWrites": false,
+    "requirePlanApproval": true
+  },
+  "paths": {
+    "ignores": []
+  }
+}

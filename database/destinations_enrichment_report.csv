@@ -1,0 +1,11 @@
+id,name,geocode_status,score,city,region,lat,lng,matched_address,image_status,image_file,image_source,image_license,generated_update
+000b9cf0-b53f-4546-8840-ba364d586682,Cheshire Services Ethiopia Center,no_match,,,,,,,disabled,,,,False
+00294e3d-1208-4208-a015-996c71cf9738,Gorgora Northern Lake Tana Dock,no_match,,,,,,,disabled,,,,False
+0051e3e0-cdf6-4292-8b3f-55e0cf27bec7,Mentewab Palace Grounds,no_match,,,,,,,disabled,,,,False
+00620588-4ca4-48fa-90d5-3eba0e18392b,Erta Ale Active Volcano Lava Hazards Field,no_match,,,,,,,disabled,,,,False
+007b0123-edb6-4112-8470-9c97d02e180a,Mount Belaya Wilderness Trek,no_match,,,,,,,disabled,,,,False
+00e4f04e-be64-4f35-8e8f-41d59df6a948,Asella Referral Hospital,matched,0.5,Asela,Oromia,7.9677229,39.1327111,"Asella Hospital, B90, Ardu, Asela, Arsi, Oromia Region, Ethiopia",disabled,,,,True
+0113fde5-2ea6-4aeb-965d-64901480d8c0,Jinka Urban Hub,no_match,,,,,,,disabled,,,,False
+0172040d-afdc-49d2-a38e-f7c51cb36544,Assosa Bamboo & Mango Farms,no_match,,,,,,,disabled,,,,False
+01a955e4-eb2e-4586-9b0d-5ab3c563c175,Kotebe Sports Education Center Complex,no_match,,,,,,,disabled,,,,False
+022c139e-027b-4c2b-b90f-103bdcf0f824,Menz Guassa High-Altitude Pastoral Communities,no_match,,,,,,,disabled,,,,False

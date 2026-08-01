@@ -1,0 +1,86 @@
+{
+  "version": 6,
+  "geocode": {},
+  "images": {
+    "000b9cf0-b53f-4546-8840-ba364d586682": {
+      "status": "no_match",
+      "match_version": 3
+    },
+    "00294e3d-1208-4208-a015-996c71cf9738": {
+      "status": "matched",
+      "match_version": 3,
+      "match_score": 0.667,
+      "search": "gorgora",
+      "title": "File:ET Amhara asv2018-02 img033 Lake Tana at Gorgora.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg/1920px-ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg",
+      "artist": "<b><span class=\"plainlinks\"><a class=\"external text\" href=\"https://commons.wikimedia.org/wiki/User:A.Savin\">A.Savin</a></span></b>",
+      "license": "FAL",
+      "license_url": "http://artlibre.org/licence/lal/en"
+    },
+    "0051e3e0-cdf6-4292-8b3f-55e0cf27bec7": {
+      "status": "matched",
+      "match_version": 3,
+      "match_score": 0.5,
+      "search": "empress mentewab",
+      "title": "File:Gondar, cittadella, palazzo di mentewab 01.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Gondar,_cittadella,_palazzo_di_mentewab_01.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Gondar%2C_cittadella%2C_palazzo_di_mentewab_01.jpg/1920px-Gondar%2C_cittadella%2C_palazzo_di_mentewab_01.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/wiki/User:Sailko\" title=\"User:Sailko\">Sailko</a>",
+      "license": "CC BY 3.0",
+      "license_url": "https://creativecommons.org/licenses/by/3.0"
+    },
+    "00620588-4ca4-48fa-90d5-3eba0e18392b": {
+      "status": "matched",
+      "match_version": 3,
+      "match_score": 0.75,
+      "search": "Erta Ale Active",
+      "title": "File:Lava Lake in Erta Ale Volcano in Ethiopia 20080501.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Lava_Lake_in_Erta_Ale_Volcano_in_Ethiopia_20080501.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/8/84/Lava_Lake_in_Erta_Ale_Volcano_in_Ethiopia_20080501.jpg",
+      "artist": "filippo_jean  <a rel=\"nofollow\" class=\"external free\" href=\"https://www.flickr.com/people/26162032@N03/\">https://www.flickr.com/people/26162032@N03/</a>",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+    },
+    "007b0123-edb6-4112-8470-9c97d02e180a": {
+      "status": "no_match",
+      "match_version": 3
+    },
+    "00e4f04e-be64-4f35-8e8f-41d59df6a948": {
+      "status": "matched",
+      "match_version": 3,
+      "match_score": 0.5,
+      "search": "asella",
+      "title": "File:Asella Town, 2021.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Asella_Town,_2021.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/07/Asella_Town%2C_2021.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Ayeleabebe&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Ayeleabebe (page does not exist)\">Ayeleabebe</a>",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "0113fde5-2ea6-4aeb-965d-64901480d8c0": {
+      "status": "no_match",
+      "match_version": 3
+    },
+    "0172040d-afdc-49d2-a38e-f7c51cb36544": {
+      "status": "matched",
+      "match_version": 3,
+      "match_score": 0.5,
+      "search": "assosa",
+      "title": "File:Sunset at assosa Ethiopia.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Sunset_at_assosa_Ethiopia.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sunset_at_assosa_Ethiopia.jpg/1920px-Sunset_at_assosa_Ethiopia.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Dawit_yohannes_ye_zufi_lij&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Dawit yohannes ye zufi lij (page does not exist)\">Dawit yohannes ye zufi lij</a>",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "01a955e4-eb2e-4586-9b0d-5ab3c563c175": {
+      "status": "no_match",
+      "match_version": 3
+    },
+    "022c139e-027b-4c2b-b90f-103bdcf0f824": {
+      "status": "no_match",
+      "match_version": 3
+    }
+  }
+}

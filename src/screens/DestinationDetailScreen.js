@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,7 @@ import { getOsmSearchUrl } from '../config/osm';
 import { useAuth } from '../contexts/AuthContext';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
 import ModernButton from '../components/ModernButton';
+import { isFavorited, toggleFavorite } from '../services/favorites';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_HEIGHT = 380;
@@ -49,6 +50,10 @@ const DestinationDetailScreen = ({ route, navigation }) => {
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  useEffect(() => {
+    if (destination?.id) isFavorited(destination.id).then(setIsSaved).catch(console.error);
+  }, [destination?.id]);
 
   const scrollY = useSharedValue(0);
   const scrollViewRef = useRef(null);
@@ -116,13 +121,13 @@ const DestinationDetailScreen = ({ route, navigation }) => {
     navigation.navigate('BookingFlow', { screen: 'SelectTrip' });
   };
 
-  const handleToggleFavorite = () => {
-    setIsSaved(!isSaved);
-    Alert.alert(
-      !isSaved ? 'Saved to Favorites' : 'Removed from Favorites',
-      !isSaved ? `${name} has been added to your saved destinations.` : `${name} has been removed from your saved list.`,
-      [{ text: 'OK' }]
-    );
+  const handleToggleFavorite = async () => {
+    try {
+      const next = await toggleFavorite(destination.id);
+      setIsSaved(next);
+    } catch (error) {
+      Alert.alert('Could not update favorites', error.message || 'Please try again.');
+    }
   };
 
   const handleShare = async () => {

@@ -26,10 +26,13 @@ function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (url, options = {}) => {
   const value = String(url);
+  if (value.includes('/functions/v1/telegram-auth')) {
+    return new Response(JSON.stringify({ session: { user: { id: userId } } }), { status: 200 });
+  }
   if (value.includes('/rest/v1/telegram_auth_events')) {
     return new Response(null, { status: 201 });
   }
-  if (value.includes('/rest/v1/users?select=id&or=')) {
+  if (value.includes('/rest/v1/users?select=id&id=')) {
     return new Response(JSON.stringify([]), { status: 200 });
   }
   if (value.includes('/rest/v1/users?select=id,name')) {

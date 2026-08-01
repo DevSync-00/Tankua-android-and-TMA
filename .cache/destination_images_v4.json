@@ -1,0 +1,190 @@
+{
+  "version": 6,
+  "geocode": {},
+  "images": {
+    "000b9cf0-b53f-4546-8840-ba364d586682": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "00294e3d-1208-4208-a015-996c71cf9738": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.667,
+      "search": "gorgora tana",
+      "title": "File:ET Amhara asv2018-02 img033 Lake Tana at Gorgora.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg/1920px-ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg",
+      "artist": "<b><span class=\"plainlinks\"><a class=\"external text\" href=\"https://commons.wikimedia.org/wiki/User:A.Savin\">A.Savin</a></span></b>",
+      "license": "FAL",
+      "license_url": "http://artlibre.org/licence/lal/en"
+    },
+    "0051e3e0-cdf6-4292-8b3f-55e0cf27bec7": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "00620588-4ca4-48fa-90d5-3eba0e18392b": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.75,
+      "search": "Erta Ale Active",
+      "title": "File:Lava Lake in Erta Ale Volcano in Ethiopia 20080501.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Lava_Lake_in_Erta_Ale_Volcano_in_Ethiopia_20080501.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/8/84/Lava_Lake_in_Erta_Ale_Volcano_in_Ethiopia_20080501.jpg",
+      "artist": "filippo_jean  <a rel=\"nofollow\" class=\"external free\" href=\"https://www.flickr.com/people/26162032@N03/\">https://www.flickr.com/people/26162032@N03/</a>",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+    },
+    "007b0123-edb6-4112-8470-9c97d02e180a": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "00e4f04e-be64-4f35-8e8f-41d59df6a948": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "0113fde5-2ea6-4aeb-965d-64901480d8c0": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "0172040d-afdc-49d2-a38e-f7c51cb36544": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "01a955e4-eb2e-4586-9b0d-5ab3c563c175": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "022c139e-027b-4c2b-b90f-103bdcf0f824": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "02327ceb-e29b-4d7e-8904-dd4c8f1c7944": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.5,
+      "search": "bishoftu crater",
+      "title": "File:Goat eating leaves near Green Crater Lake in Bishoftu December 2017.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Goat_eating_leaves_near_Green_Crater_Lake_in_Bishoftu_December_2017.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Goat_eating_leaves_near_Green_Crater_Lake_in_Bishoftu_December_2017.jpg/1920px-Goat_eating_leaves_near_Green_Crater_Lake_in_Bishoftu_December_2017.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/wiki/User:DonCamillo\" title=\"User:DonCamillo\">DonCamillo</a>",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "0255ec62-2fd1-40be-ac57-209276df35e9": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.667,
+      "search": "wondo genet",
+      "title": "File:Wondo Genet Banner.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Wondo_Genet_Banner.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Wondo_Genet_Banner.jpg/1920px-Wondo_Genet_Banner.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/wiki/User:Gyrofrog\" title=\"User:Gyrofrog\">Gyrofrog</a>",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+    },
+    "02890b20-0688-473d-98ed-09a1e4d3a042": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.333,
+      "search": "bishoftu",
+      "title": "File:Bishoftu, Ethiopia (51643961472).jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Bishoftu,_Ethiopia_(51643961472).jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Bishoftu%2C_Ethiopia_%2851643961472%29.jpg/1920px-Bishoftu%2C_Ethiopia_%2851643961472%29.jpg",
+      "artist": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/150102727@N06\">Nina R</a> from Africa",
+      "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0"
+    },
+    "02c8223e-334d-47e5-b354-7fca28aada4f": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "032ca2c4-2e8c-4a0f-9b3e-0df565405328": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.667,
+      "search": "dogali monument",
+      "title": "File:Dogali Monument.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Dogali_Monument.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Dogali_Monument.jpg",
+      "artist": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/79721788@N00\">David Stanley</a>",
+      "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0"
+    },
+    "037f40de-3fe9-4a23-9b9e-bf17b49de895": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "0383471e-05bb-422a-872c-430f3ecf90b0": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.5,
+      "search": "bob marley",
+      "title": "File:Bob Marley and Che Guevara - Side by Side - Market - Adigrat - Ethiopia (8707734386).jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Bob_Marley_and_Che_Guevara_-_Side_by_Side_-_Market_-_Adigrat_-_Ethiopia_(8707734386).jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Bob_Marley_and_Che_Guevara_-_Side_by_Side_-_Market_-_Adigrat_-_Ethiopia_%288707734386%29.jpg/1920px-Bob_Marley_and_Che_Guevara_-_Side_by_Side_-_Market_-_Adigrat_-_Ethiopia_%288707734386%29.jpg",
+      "artist": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/41000732@N04\">Adam Jones</a> from Kelowna, BC, Canada",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+    },
+    "039c265c-7824-4623-8e6a-455de2877896": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "03a350a1-6dbb-4dcb-a64a-20c725d254b9": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.333,
+      "search": "gondar",
+      "title": "File:A busy street in Gondar, Ethiopia.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:A_busy_street_in_Gondar,_Ethiopia.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/A_busy_street_in_Gondar%2C_Ethiopia.jpg/1920px-A_busy_street_in_Gondar%2C_Ethiopia.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/wiki/User:HistoriaSalutis\" title=\"User:HistoriaSalutis\">Dr. Ondřej Havelka (cestovatel)</a>",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0"
+    },
+    "03b49d09-289b-46f3-a0a6-911ce7e8b65c": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 1.0,
+      "search": "Chebera Churchura National Park",
+      "title": "File:A photographer capturing hippopotamus in at Chebera Churchura National Park.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:A_photographer_capturing_hippopotamus_in_at_Chebera_Churchura_National_Park.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/A_photographer_capturing_hippopotamus_in_at_Chebera_Churchura_National_Park.jpg/1920px-A_photographer_capturing_hippopotamus_in_at_Chebera_Churchura_National_Park.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/wiki/User:James_Moore200\" title=\"User:James Moore200\">James Moore200</a>",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "03fdc7fc-8467-46cf-a763-6e088fde3e14": {
+      "status": "no_match",
+      "match_version": 4
+    },
+    "03fee98a-a4f1-406e-ac0b-2db9aa5a2915": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 0.667,
+      "search": "mizan teferi",
+      "title": "File:Mizan Teferi.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Mizan_Teferi.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Mizan_Teferi.jpg",
+      "artist": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Fikruju&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Fikruju (page does not exist)\">Fikruju</a>",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "04bb43b1-4136-46a9-923e-e6eb3baaa15d": {
+      "status": "matched",
+      "match_version": 4,
+      "match_score": 1.0,
+      "search": "debre libanos",
+      "title": "File:Debre Libanos Monastery Ethiopia Oct19 D72 12186.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Debre_Libanos_Monastery_Ethiopia_Oct19_D72_12186.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Debre_Libanos_Monastery_Ethiopia_Oct19_D72_12186.jpg/1920px-Debre_Libanos_Monastery_Ethiopia_Oct19_D72_12186.jpg",
+      "artist": "<table class=\"toccolours\" style=\"width:100%; margin-top:10px;\" cellpadding=\"2\">\n\n<tbody><tr class=\"plainlinks\">\n<td><a href=\"https://upload.wikimedia.org/wikipedia/commons/a/a8/Debre_Libanos_Monastery_Ethiopia_Oct19_D72_12186.jpg\" class=\"internal\" title=\"Debre Libanos Monastery Ethiopia Oct19 D72 12186.jpg\">This Photo</a> was taken by <i><b><a href=\"//commons.wikimedia.org/wiki/User:Tagooty\" title=\"User:Tagooty\">Timothy A. Gonsalves</a></b></i>.  Feel free to use my photos, but please mention me as the author.  I would much appreciate if you send me an email <a rel=\"nofollow\" class=\"external text\" href=\"mailto:tagooty@yahoo.com\">tagooty@yahoo.com</a> or write on <a class=\"external text\" href=\"https://commons.wikimedia.org/w/index.php?title=User_talk:Tagooty&amp;action=edit&amp;section=new\">my talk page</a>, for my information.  Please contact me before commercial use.\n</td></tr></tbody></table>\n<div style=\"clear:both; border:2px solid #00cc00; background-color:#f7f7f7; margin-top:6px;\">\n<table><tbody><tr><td style=\"padding:4px;\"><span typeof=\"mw:File\"><a href=\"//commons.wikimedia.org/wiki/File:Upload-problem2.svg\" class=\"mw-file-description\"><img src=\"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Upload-problem2.svg/120px-Upload-problem2.svg.png\" decoding=\"async\" width=\"64\" height=\"57\" class=\"mw-file-element\" srcset=\"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Upload-problem2.svg/250px-Upload-problem2.svg.png 2x\" data-file-width=\"159\" data-file-height=\"142\"></a></span>\n</td><td style=\"padding:4px;\"><div style=\"margin-top:0.5em;\">Please do not upload an edited image here without consulting me.  I would like to make corrections only at my own source to ensure that the changes improve the image and are preserved.<br>Otherwise you may upload an edited image with a new name. Please use one of the templates <a href=\"//commons.wikimedia.org/wiki/Template:Derived_from\" title=\"Template:Derived from\">derivative</a> or <a href=\"//commons.wikimedia.org/wiki/Template:Extracted_from\" title=\"Template:Extracted from\">extract</a>.</div>\n</td></tr></tbody></table></div>",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+    },
+    "04c8c45f-4738-457f-bf20-218105ff3170": {
+      "status": "no_match",
+      "match_version": 4
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "geocode": {},
+  "images": {
+    "000b9cf0-b53f-4546-8840-ba364d586682": {
+      "status": "matched",
+      "title": "File:Darkwater (Du Bois 1920).djvu",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Darkwater_(Du_Bois_1920).djvu",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Darkwater_%28Du_Bois_1920%29.djvu/page1-1920px-Darkwater_%28Du_Bois_1920%29.djvu.jpg",
+      "artist": "W.E.B. Du Bois",
+      "license": "Public domain",
+      "license_url": null
+    },
+    "00294e3d-1208-4208-a015-996c71cf9738": {
+      "status": "no_match"
+    },
+    "0051e3e0-cdf6-4292-8b3f-55e0cf27bec7": {
+      "status": "no_match"
+    },
+    "00620588-4ca4-48fa-90d5-3eba0e18392b": {
+      "status": "no_match"
+    },
+    "007b0123-edb6-4112-8470-9c97d02e180a": {
+      "status": "no_match"
+    },
+    "00e4f04e-be64-4f35-8e8f-41d59df6a948": {
+      "status": "no_match"
+    },
+    "0113fde5-2ea6-4aeb-965d-64901480d8c0": {
+      "status": "no_match"
+    },
+    "0172040d-afdc-49d2-a38e-f7c51cb36544": {
+      "status": "no_match"
+    },
+    "01a955e4-eb2e-4586-9b0d-5ab3c563c175": {
+      "status": "no_match"
+    },
+    "022c139e-027b-4c2b-b90f-103bdcf0f824": {
+      "status": "no_match"
+    }
+  }
+}

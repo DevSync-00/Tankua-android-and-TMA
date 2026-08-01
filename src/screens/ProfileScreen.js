@@ -130,7 +130,7 @@ const MENU_SECTIONS = [
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const Avatar = ({ user }) => {
-  const photoUrl = user?.photo_url;
+  const photoUrl = user?.profile_photo_url || user?.telegram_photo_url || user?.photo_url;
   const initials = (user?.name || 'U')
     .split(' ')
     .map((w) => w[0])

@@ -1,0 +1,66 @@
+{
+  "version": 3,
+  "geocode": {},
+  "images": {
+    "000b9cf0-b53f-4546-8840-ba364d586682": {
+      "status": "matched",
+      "match_version": 2,
+      "match_score": 0.333,
+      "search": "rehabilitation",
+      "title": "File:Sign for Djibouti-Ethiopia Railway Line Rehabilitation Project - Dire Dawa - Ethiopia (8764163095).jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Sign_for_Djibouti-Ethiopia_Railway_Line_Rehabilitation_Project_-_Dire_Dawa_-_Ethiopia_(8764163095).jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Sign_for_Djibouti-Ethiopia_Railway_Line_Rehabilitation_Project_-_Dire_Dawa_-_Ethiopia_%288764163095%29.jpg/1920px-Sign_for_Djibouti-Ethiopia_Railway_Line_Rehabilitation_Project_-_Dire_Dawa_-_Ethiopia_%288764163095%29.jpg",
+      "artist": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/41000732@N04\">Adam Jones</a> from Kelowna, BC, Canada",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+    },
+    "00294e3d-1208-4208-a015-996c71cf9738": {
+      "status": "matched",
+      "match_version": 2,
+      "match_score": 0.6,
+      "search": "gorgora",
+      "title": "File:ET Amhara asv2018-02 img033 Lake Tana at Gorgora.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg/1920px-ET_Amhara_asv2018-02_img033_Lake_Tana_at_Gorgora.jpg",
+      "artist": "<b><span class=\"plainlinks\"><a class=\"external text\" href=\"https://commons.wikimedia.org/wiki/User:A.Savin\">A.Savin</a></span></b>",
+      "license": "FAL",
+      "license_url": "http://artlibre.org/licence/lal/en"
+    },
+    "0051e3e0-cdf6-4292-8b3f-55e0cf27bec7": {
+      "status": "matched",
+      "match_version": 2,
+      "match_score": 0.4,
+      "search": "empress mentewab",
+      "title": "File:Ethiopian Manuscript Painting - The Empress Mentewab (2385578870).jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Ethiopian_Manuscript_Painting_-_The_Empress_Mentewab_(2385578870).jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Ethiopian_Manuscript_Painting_-_The_Empress_Mentewab_%282385578870%29.jpg",
+      "artist": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/40595948@N00\">A. Davey</a> from Where I Live Now: Pacific Northwest",
+      "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0"
+    },
+    "00620588-4ca4-48fa-90d5-3eba0e18392b": {
+      "status": "matched",
+      "match_version": 2,
+      "match_score": 0.4,
+      "search": "erta ale",
+      "title": "File:Erta-ale lac-de-lave 2001.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Erta-ale_lac-de-lave_2001.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Erta-ale_lac-de-lave_2001.jpg/1920px-Erta-ale_lac-de-lave_2001.jpg",
+      "artist": "Hervé Sthioul",
+      "license": "CC BY 2.5",
+      "license_url": "https://creativecommons.org/licenses/by/2.5"
+    },
+    "007b0123-edb6-4112-8470-9c97d02e180a": {
+      "status": "matched",
+      "match_version": 2,
+      "match_score": 0.2,
+      "search": "benishangul",
+      "title": "File:Benishangul.PNG",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Benishangul.PNG",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Benishangul.PNG",
+      "artist": "<a href=\"https://de.wikipedia.org/wiki/User:Ferenji\" class=\"extiw\" title=\"de:User:Ferenji\">User:Ferenji</a>",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+    }
+  }
+}

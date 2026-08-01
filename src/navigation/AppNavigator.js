@@ -27,6 +27,8 @@ import ReferFriendScreen from '../screens/ReferFriendScreen';
 import SuggestRouteScreen from '../screens/SuggestRouteScreen';
 import CloseFriendsScreen from '../screens/CloseFriendsScreen';
 import ReviewScreen from '../screens/ReviewScreen';
+import SavedDestinationsScreen from '../screens/SavedDestinationsScreen';
+import NotificationPreferencesScreen from '../screens/NotificationPreferencesScreen';
 
 // Admin Screens
 import AddAdminScreen from '../screens/admin/AddAdminScreen';
@@ -120,6 +122,8 @@ const AppNavigator = () => {
             component={ReviewScreen}
             options={{ headerShown: true, headerTitle: 'Rate Your Trip' }}
           />
+          <Stack.Screen name="SavedDestinations" component={SavedDestinationsScreen} />
+          <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
           <Stack.Screen 
             name="AddAdmin" 
             component={AddAdminScreen}
