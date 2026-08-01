@@ -570,7 +570,7 @@ const MapScreen = ({ navigation, route }) => {
                     {dest.name}
                   </Text>
                   <Text style={styles.nearbyCardDistance}>
-                    {dest.distance?.toFixed(1) || '0'} km
+                    {dest.distance != null && !isNaN(Number(dest.distance)) ? Number(dest.distance).toFixed(1) : '0'} km
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -608,19 +608,19 @@ const MapScreen = ({ navigation, route }) => {
                   
                   {/* Meta Badges Row */}
                   <View style={styles.compactMetaRow}>
-                    {typeof selectedDestination.rating === 'number' && selectedDestination.rating > 0 && (
+                    {selectedDestination.rating != null && (
                       <View style={styles.compactBadge}>
                         <Ionicons name="star" size={12} color={COLORS.primary} />
                         <Text style={styles.compactBadgeText}>
-                          {selectedDestination.rating.toFixed(1)}
+                          {Number(selectedDestination.rating || 4.8).toFixed(1)}
                         </Text>
                       </View>
                     )}
-                    {selectedDestination.distance !== null && (
+                    {selectedDestination.distance != null && !isNaN(Number(selectedDestination.distance)) && (
                       <View style={styles.compactBadge}>
                         <Ionicons name="location-outline" size={12} color={COLORS.primary} />
                         <Text style={styles.compactBadgeText}>
-                          {selectedDestination.distance.toFixed(1)} km
+                          {Number(selectedDestination.distance).toFixed(1)} km
                         </Text>
                       </View>
                     )}
