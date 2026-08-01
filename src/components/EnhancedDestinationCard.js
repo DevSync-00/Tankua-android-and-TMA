@@ -98,7 +98,7 @@ const EnhancedDestinationCard = ({ destination, onPress, size = 'small', style }
           {rating > 0 && (
             <View style={styles.ratingWrap}>
               <Ionicons name="star" size={11} color={COLORS.warning} />
-              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+              <Text style={styles.ratingText}>{Number(rating).toFixed(1)}</Text>
             </View>
           )}
         </View>

@@ -76,7 +76,7 @@ const ModernDestinationCard = ({
               <View style={styles.ratingContainer}>
                 <Ionicons name="star" size={14} color={COLORS.warning} />
                 <Text style={styles.ratingText}>
-                  {rating.toFixed(1)}
+                  {Number(rating).toFixed(1)}
                   {review_count > 0 && (
                     <Text style={styles.reviewCount}> ({review_count})</Text>
                   )}
@@ -153,7 +153,7 @@ const ModernDestinationCard = ({
           {rating > 0 && (
             <View style={styles.rating}>
               <Ionicons name="star" size={12} color={COLORS.warning} />
-              <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
+              <Text style={styles.ratingValue}>{Number(rating).toFixed(1)}</Text>
             </View>
           )}
           {distance > 0 && (
