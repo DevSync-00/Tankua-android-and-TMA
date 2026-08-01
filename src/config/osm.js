@@ -32,7 +32,7 @@ export const getOsmSearchUrl = (query) => {
 
 /**
  * Fetches turn-by-turn road route coordinates using free OSRM (Open Source Routing Machine) API.
- * Returns array of { latitude, longitude } for react-native-maps <Polyline />, plus distance & duration.
+ * Returns array of { latitude, longitude } for map <Polyline />, plus distance & duration.
  */
 export const fetchOsmRoute = async (startLat, startLng, endLat, endLng) => {
   try {

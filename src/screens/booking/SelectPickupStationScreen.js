@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import OsmMapView from '../../components/OsmMapView';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -249,51 +249,13 @@ const SelectPickupStationScreen = ({ navigation }) => {
         />
       ) : (
         <View style={styles.mapContainer}>
-          <MapView
+          <OsmMapView
             style={styles.map}
             region={region}
-            onRegionChangeComplete={setRegion}
-          >
-            <UrlTile
-              urlTemplate={OSM_TILE_URL}
-              maximumZ={19}
-              flipY={false}
-            />
-            {stations.map((station) => {
-              const isSelected = selectedStation?.id === station.id;
-              return (
-                <Marker
-                  key={station.id}
-                  coordinate={{ latitude: station.lat, longitude: station.lng }}
-                  onPress={() => handleStationSelect(station)}
-                  tracksViewChanges={tracksViewChanges}
-                >
-                  <View style={[styles.markerCanvasBuffer, isSelected && styles.markerCanvasBufferSelected]}>
-                    <View style={[styles.unifiedStationPill, isSelected && styles.unifiedStationPillSelected]}>
-                      <View style={[styles.stationIconCircle, isSelected && styles.stationIconCircleSelected]}>
-                        <Ionicons 
-                          name="bus" 
-                          size={12} 
-                          color={isSelected ? COLORS.white : COLORS.secondary} 
-                        />
-                      </View>
-                      <View style={styles.stationTextCol}>
-                        <Text style={[styles.stationTitleText, isSelected && styles.stationTitleTextSelected]} numberOfLines={1}>
-                          {station.name}
-                        </Text>
-                        {station.pickupTime ? (
-                          <Text style={[styles.stationTimeText, isSelected && styles.stationTimeTextSelected]}>
-                            Pickup: {station.pickupTime}
-                          </Text>
-                        ) : null}
-                      </View>
-                    </View>
-                    <View style={[styles.pillPointerStem, { borderTopColor: isSelected ? COLORS.secondary : COLORS.white }]} />
-                  </View>
-                </Marker>
-              );
-            })}
-          </MapView>
+            stations={stations}
+            selectedStation={selectedStation}
+            onMarkerPress={handleStationSelect}
+          />
 
           {selectedStation && (
             <Animated.View style={[styles.mapStationCard, mapCardAnimatedStyle]}>

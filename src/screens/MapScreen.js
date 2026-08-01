@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker, UrlTile, Polyline } from 'react-native-maps';
+import OsmMapView from '../components/OsmMapView';
 import * as Location from 'expo-location';
 import Animated, {
   useSharedValue,
@@ -396,85 +396,16 @@ const MapScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Map View */}
-      <MapView
-        ref={mapRef}
+      <OsmMapView
         style={styles.map}
         region={region}
-        showsUserLocation={true}
-        showsMyLocationButton={false}
-        showsCompass={true}
-        onPress={() => setSelectedDestination(null)}
-      >
-        <UrlTile
-          urlTemplate={OSM_TILE_URL}
-          maximumZ={19}
-          flipY={false}
-        />
-
-        {/* In-App Route Polyline (High Contrast Dual-Layer Electric Blue) */}
-        {routeCoordinates.length > 0 && (
-          <>
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor="#1A1A2E"
-              strokeWidth={8}
-            />
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor="#2563EB"
-              strokeWidth={5}
-            />
-          </>
-        )}
-        {/* User Location Marker */}
-        {userLocation && (
-          <Marker
-            coordinate={userLocation}
-            title="Your Location"
-            identifier="user-location"
-          >
-            <Animated.View style={styles.userMarkerContainer}>
-              <View style={styles.userMarkerPulse} />
-              <View style={styles.userMarker}>
-                <Ionicons name="person" size={16} color={COLORS.white} />
-              </View>
-            </Animated.View>
-          </Marker>
-        )}
-
-        {/* Destination Markers */}
-        {filteredDestinations.map((destination) => {
-          const isSelected = selectedDestination?.id === destination.id;
-          const markerColor = getMarkerColor(destination.category);
-          
-          return (
-            <Marker
-              key={destination.id}
-              coordinate={{ latitude: destination.lat, longitude: destination.lng }}
-              onPress={() => handleMarkerPress(destination)}
-              identifier={String(destination.id)}
-              tracksViewChanges={tracksViewChanges}
-            >
-              {/* Explicit Canvas Buffer (190x56) preventing Android bitmap cropping */}
-              <View style={[styles.markerCanvasBuffer, isSelected && styles.markerCanvasBufferSelected]}>
-                <View style={[styles.unifiedPill, isSelected && styles.unifiedPillSelected]}>
-                  <View style={[styles.pillIconCircle, { backgroundColor: markerColor }]}>
-                    <Ionicons
-                      name={getMarkerIcon(destination.category)}
-                      size={12}
-                      color={COLORS.white}
-                    />
-                  </View>
-                  <Text style={[styles.pillTitleText, isSelected && styles.pillTitleTextSelected]} numberOfLines={1}>
-                    {destination.name}
-                  </Text>
-                </View>
-                <View style={[styles.pillPointerStem, { borderTopColor: isSelected ? COLORS.secondary : COLORS.white }]} />
-              </View>
-            </Marker>
-          );
-        })}
-      </MapView>
+        destinations={filteredDestinations}
+        routeCoordinates={routeCoordinates}
+        userLocation={userLocation}
+        selectedDestination={selectedDestination}
+        onMarkerPress={handleMarkerPress}
+        onMapPress={() => setSelectedDestination(null)}
+      />
 
       {/* Header with Search */}
       <SafeAreaView style={styles.safeArea} edges={['top']} pointerEvents="box-none">
