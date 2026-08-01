@@ -357,6 +357,16 @@ const MapScreen = ({ navigation, route }) => {
     }
   };
 
+  const formatDurationText = (mins) => {
+    const m = Number(mins);
+    if (isNaN(m) || m <= 0) return 'Approx drive';
+    if (m < 60) return `Approx ${m} mins drive`;
+    const hrs = Math.floor(m / 60);
+    const remainingMins = Math.round(m % 60);
+    if (remainingMins === 0) return `Approx ${hrs} hr${hrs > 1 ? 's' : ''} drive`;
+    return `Approx ${hrs} hr${hrs > 1 ? 's' : ''} ${remainingMins} min${remainingMins > 1 ? 's' : ''} drive`;
+  };
+
   const handleClearRoute = () => {
     setRouteCoordinates([]);
     setRouteInfo(null);
@@ -524,14 +534,14 @@ const MapScreen = ({ navigation, route }) => {
         <View style={styles.routeBannerCard}>
           <View style={styles.routeBannerLeft}>
             <View style={styles.routeIconCircle}>
-              <Ionicons name="navigate" size={16} color={COLORS.white} />
+              <Ionicons name="navigate-circle" size={24} color={COLORS.white} />
             </View>
             <View style={styles.routeBannerTextCol}>
               <Text style={styles.routeBannerTitle} numberOfLines={1}>
                 Route to {routeInfo.destinationName}
               </Text>
               <Text style={styles.routeBannerSubtitle}>
-                {routeInfo.distanceKm} km • Approx {routeInfo.durationMin} mins drive
+                {routeInfo.distanceKm} km • {formatDurationText(routeInfo.durationMin)}
               </Text>
             </View>
           </View>
@@ -540,7 +550,7 @@ const MapScreen = ({ navigation, route }) => {
             onPress={handleClearRoute}
             activeOpacity={0.7}
           >
-            <Ionicons name="close" size={16} color={COLORS.secondary} />
+            <Ionicons name="close-circle" size={15} color="#DC2626" />
             <Text style={styles.clearRouteText}>Clear</Text>
           </TouchableOpacity>
         </View>
@@ -712,7 +722,7 @@ const styles = StyleSheet.create({
   },
   routeBannerCard: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 140 : 130,
+    top: Platform.OS === 'ios' ? 195 : 185,
     left: SPACING.md,
     right: SPACING.md,
     backgroundColor: COLORS.white,
@@ -725,17 +735,18 @@ const styles = StyleSheet.create({
     zIndex: 12,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
-    ...SHADOWS.medium,
+    ...SHADOWS.large,
   },
   routeBannerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: SPACING.xs,
   },
   routeIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -757,18 +768,18 @@ const styles = StyleSheet.create({
   clearRouteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#FEF2F2',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: BORDER_RADIUS.full,
-    gap: 3,
+    gap: 4,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderColor: '#FCA5A5',
   },
   clearRouteText: {
     fontSize: FONTS.sizes.xs,
     fontWeight: '700',
-    color: COLORS.secondary,
+    color: '#DC2626',
   },
   header: {
     backgroundColor: COLORS.white,
