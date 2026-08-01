@@ -183,6 +183,22 @@ const HomeScreen = ({ navigation }) => {
               {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </Text>
           </View>
+
+          <TouchableOpacity
+            style={styles.mapHeaderBtn}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Map' })}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={[COLORS.primary, '#EAB308']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.mapHeaderBtnGradient}
+            >
+              <Ionicons name="map" size={18} color={COLORS.white} />
+              <Text style={styles.mapHeaderBtnText}>Map</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -384,6 +400,24 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.md,
     color: COLORS.gray,
     fontWeight: FONTS.weights.medium,
+  },
+  mapHeaderBtn: {
+    borderRadius: BORDER_RADIUS.full,
+    overflow: 'hidden',
+    marginTop: 2,
+    ...SHADOWS.small,
+  },
+  mapHeaderBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+    gap: 6,
+  },
+  mapHeaderBtnText: {
+    color: COLORS.white,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.bold,
   },
   section: {
     marginTop: SPACING.xl,
