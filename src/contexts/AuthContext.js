@@ -33,17 +33,15 @@ export const AuthProvider = ({ children }) => {
     
     // Listen for auth changes (handles automatic session refresh, logout, etc.)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.warn('[Telegram Debug] onAuthStateChange triggered with event:', event, 'user:', session?.user?.id);
-      
       if (session?.user) {
-        console.warn('[Telegram Debug] onAuthStateChange: user exists, deferring loadUserProfile...');
         setTimeout(async () => {
-          console.warn('[Telegram Debug] onAuthStateChange (deferred): calling loadUserProfile...');
-          await loadUserProfile(session.user.id);
-          console.warn('[Telegram Debug] onAuthStateChange (deferred): loadUserProfile completed');
+          try {
+            await loadUserProfile(session.user.id);
+          } catch (err) {
+            console.log('[Auth] Error loading profile on auth state change:', err?.message || err);
+          }
         }, 0);
       } else {
-        console.warn('[Telegram Debug] onAuthStateChange: no user session');
         setUser(null);
         setIsAdmin(false);
         AsyncStorage.removeItem('user').catch(() => {});
@@ -56,57 +54,51 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkUser = async () => {
+    let cachedUserData = null;
     try {
-      // First, try to get cached user from AsyncStorage for faster initial load
+      // First, try to get cached user from AsyncStorage for faster initial load & offline capability
       const cachedUser = await AsyncStorage.getItem('user');
       if (cachedUser) {
         try {
-          const userData = JSON.parse(cachedUser);
-          // Ensure location field exists (for backward compatibility)
+          cachedUserData = JSON.parse(cachedUser);
           const userWithLocation = {
-            ...userData,
-            location: userData.location || '',
+            ...cachedUserData,
+            location: cachedUserData.location || '',
           };
           setUser(userWithLocation);
-          setIsAdmin(userData.is_admin || false);
+          setIsAdmin(cachedUserData.is_admin || false);
         } catch (e) {
           console.log('Error parsing cached user:', e);
         }
       }
 
-      // Then verify session with Supabase (this handles automatic session restoration)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.log('Session error:', sessionError);
-        // If session check fails, clear cached user
-        if (cachedUser) {
-          await AsyncStorage.removeItem('user');
+      // Then verify session with Supabase if online
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.log('Session check error:', sessionError?.message || sessionError);
+        } else if (session?.user) {
+          // Session is valid, load fresh user profile
+          await loadUserProfile(session.user.id);
+          try {
+            const pushToken = await registerForPushNotifications();
+            if (pushToken && session.user.id) {
+              await savePushToken(session.user.id, pushToken);
+            }
+          } catch (pushErr) {
+            console.log('Push notification registration skipped:', pushErr?.message || pushErr);
+          }
+        } else if (!cachedUserData) {
+          // No valid online session and no cached user, clear user state
           setUser(null);
           setIsAdmin(false);
         }
-      } else if (session?.user) {
-        // Session is valid, load fresh user profile
-        await loadUserProfile(session.user.id);
-        // Register for push notifications
-        const pushToken = await registerForPushNotifications();
-        if (pushToken && session.user.id) {
-          await savePushToken(session.user.id, pushToken);
-        }
-      } else {
-        // No valid session, clear user state
-        if (cachedUser) {
-          await AsyncStorage.removeItem('user');
-          setUser(null);
-          setIsAdmin(false);
-        }
+      } catch (networkErr) {
+        console.log('Supabase session fetch skipped (network error / offline mode):', networkErr?.message || networkErr);
       }
     } catch (error) {
-      console.log('Error checking user:', error);
-      // On error, clear any cached data
-      await AsyncStorage.removeItem('user');
-      setUser(null);
-      setIsAdmin(false);
+      console.log('Error in checkUser:', error?.message || error);
     } finally {
       setLoading(false);
     }

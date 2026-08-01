@@ -85,7 +85,7 @@ const HomeScreen = ({ navigation }) => {
       setDestinations(transformedDestinations);
       setLoading(false);
     } catch (err) {
-      console.error('Error loading destinations:', err);
+      console.log('Notice: Could not fetch remote destinations (network/offline):', err?.message || err);
       setLoading(false);
     }
   };
