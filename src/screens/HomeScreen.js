@@ -185,19 +185,12 @@ const HomeScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.mapHeaderBtn}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Map' })}
+            style={styles.notificationBtn}
+            onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={[COLORS.primary, '#EAB308']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.mapHeaderBtnGradient}
-            >
-              <Ionicons name="map" size={18} color={COLORS.white} />
-              <Text style={styles.mapHeaderBtnText}>Map</Text>
-            </LinearGradient>
+            <Ionicons name="notifications-outline" size={22} color={COLORS.secondary} />
+            <View style={styles.notificationBadgeDot} />
           </TouchableOpacity>
         </View>
       </View>
@@ -401,23 +394,28 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: FONTS.weights.medium,
   },
-  mapHeaderBtn: {
-    borderRadius: BORDER_RADIUS.full,
-    overflow: 'hidden',
+  notificationBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
     marginTop: 2,
     ...SHADOWS.small,
   },
-  mapHeaderBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
-    gap: 6,
-  },
-  mapHeaderBtnText: {
-    color: COLORS.white,
-    fontSize: FONTS.sizes.sm,
-    fontWeight: FONTS.weights.bold,
+  notificationBadgeDot: {
+    position: 'absolute',
+    top: 10,
+    right: 11,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
   },
   section: {
     marginTop: SPACING.xl,
