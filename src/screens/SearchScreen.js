@@ -8,8 +8,8 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme'
 import { getDestinations, getPlaceholderImage } from '../services/database';
 import { deduplicateDestinations } from '../utils/destinationUtils';
 import { SkeletonCard } from '../components/SkeletonLoader';
+import { ALL_DESTINATION_CATEGORIES } from '../constants/destinationCategories';
 
-const CATEGORIES = ['All', 'Historical', 'Nature', 'Adventure', 'Religious', 'Hiking', 'Cultural'];
 const SUGGESTIONS = ['Lalibela', 'Gondar', 'Nature', 'Adventure'];
 
 function normalizeDestination(destination) {
@@ -131,7 +131,7 @@ export default function SearchScreen({ navigation }) {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {CATEGORIES.map((item) => {
+          {ALL_DESTINATION_CATEGORIES.map((item) => {
             const selected = item === category;
             return (
               <TouchableOpacity

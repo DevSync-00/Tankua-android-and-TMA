@@ -51,7 +51,7 @@ const HomeScreen = ({ navigation }) => {
   const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     loadDestinations();
@@ -103,13 +103,13 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleCategoryPress = (categoryId) => {
-    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
+    setSelectedCategory(categoryId);
   };
 
   // Filter destinations by category
-  const filteredDestinations = selectedCategory
-    ? destinations.filter(d => d.category === selectedCategory)
-    : destinations;
+  const filteredDestinations = selectedCategory === 'all'
+    ? destinations
+    : destinations.filter(d => String(d.category || '').toLowerCase() === selectedCategory);
 
   const featuredDestinations = filteredDestinations.slice(0, 6);
   const popularDestinations = filteredDestinations.slice(0, 6).filter(Boolean);
