@@ -2776,6 +2776,534 @@ img {
   white-space: nowrap;
 }
 
+/* Booking steps: pickup, seats, passengers, and payment */
+.view-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #ebe8e1;
+}
+
+.view-toggle button {
+  height: 40px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.view-toggle button.active {
+  background: #ffffff;
+  color: var(--navy);
+  box-shadow: 0 3px 10px rgba(10, 26, 47, 0.08);
+}
+
+.view-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pickup-card {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px solid #eee9df;
+  background: #ffffff;
+  color: var(--navy);
+  text-align: left;
+  appearance: none;
+}
+
+.pickup-card.selected {
+  border-color: var(--gold);
+  background: #fffdf7;
+  box-shadow: 0 7px 20px rgba(255, 184, 0, 0.13);
+}
+
+.pickup-card > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(255, 184, 0, 0.14);
+  color: var(--gold-dark);
+}
+
+.pickup-card > span svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pickup-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pickup-card b {
+  font-size: 13px;
+}
+
+.pickup-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.pickup-card small {
+  color: var(--gold-dark);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pickup-card > svg {
+  width: 19px;
+  height: 19px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.pickup-map {
+  position: relative;
+  height: 360px;
+  overflow: hidden;
+  border: 1px solid #ddd9d0;
+  border-radius: 18px;
+  background: #e8e5dc;
+}
+
+.map-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background-color: #e5e9df;
+  background-image: linear-gradient(35deg, transparent 47%, #cbd3c4 48%, #cbd3c4 51%, transparent 52%), linear-gradient(125deg, transparent 47%, #d3cdbf 48%, #d3cdbf 51%, transparent 52%);
+  background-size: 68px 68px;
+}
+
+.pickup-pin {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pickup-pin svg {
+  width: 30px;
+  height: 30px;
+  color: var(--navy);
+  filter: drop-shadow(0 3px 4px rgba(10, 26, 47, 0.25));
+}
+
+.pickup-pin span {
+  max-width: 105px;
+  margin-top: 2px;
+  padding: 4px 7px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(10, 26, 47, 0.14);
+  font-size: 9px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickup-pin.selected svg {
+  color: var(--gold-dark);
+}
+
+.selected-pickup {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.selected-pickup > svg {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 9px;
+  background: rgba(32, 164, 107, 0.13);
+  color: var(--green);
+}
+
+.selected-pickup span,
+.selected-pickup b,
+.selected-pickup small {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-pickup b {
+  font-size: 11px;
+}
+
+.selected-pickup small {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.seat-picker {
+  padding: 24px 18px;
+  border: 1px solid #eee9df;
+  border-radius: 20px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 7px 22px rgba(10, 26, 47, 0.06);
+}
+
+.people-art {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 184, 0, 0.14);
+  color: var(--gold-dark);
+}
+
+.people-art svg {
+  width: 36px;
+  height: 36px;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+
+.counter button {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--navy);
+  display: grid;
+  place-items: center;
+}
+
+.counter button:disabled {
+  opacity: 0.3;
+}
+
+.counter button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.counter > div {
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+}
+
+.counter b {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.counter span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.seat-picker > p {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.summary {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #eee9df;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(10, 26, 47, 0.045);
+}
+
+.summary h3 {
+  margin: 0 0 13px;
+  font-size: 13px;
+}
+
+.summary p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 9px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.summary p span {
+  min-width: 0;
+}
+
+.summary p b {
+  flex: none;
+  color: var(--navy);
+}
+
+.summary hr {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px dashed #d9d5cc;
+}
+
+.summary .total {
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.summary > small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.passenger-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid #eee9df;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(10, 26, 47, 0.045);
+}
+
+.passenger-card h3 {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.passenger-card h3 svg {
+  width: 17px;
+  height: 17px;
+  color: var(--gold-dark);
+}
+
+.passenger-card h3 span {
+  margin-left: auto;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: rgba(255, 184, 0, 0.14);
+  color: var(--gold-dark);
+  font-size: 8px;
+}
+
+.passenger-card label {
+  display: block;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.passenger-card input {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 5px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--paper);
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.passenger-card input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.12);
+}
+
+.secure-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 13px;
+  border: 1px solid rgba(32, 164, 107, 0.2);
+  border-radius: 14px;
+  background: rgba(32, 164, 107, 0.08);
+}
+
+.secure-note > svg {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  color: var(--green);
+}
+
+.secure-note span,
+.secure-note b {
+  display: block;
+}
+
+.secure-note span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.secure-note b {
+  margin-bottom: 2px;
+  color: var(--green);
+  font-size: 11px;
+}
+
+.choice {
+  position: relative;
+  width: 100%;
+  min-height: 72px;
+  padding: 13px 44px 13px 13px;
+  border: 1.5px solid #eee9df;
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--navy);
+  text-align: left;
+}
+
+.choice.selected {
+  border-color: var(--gold);
+  background: #fffdf7;
+}
+
+.choice .radio {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #c9c5bd;
+  border-radius: 50%;
+}
+
+.choice.selected .radio {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.choice .radio svg {
+  width: 13px;
+  height: 13px;
+}
+
+.pay-logo {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f1eefb;
+}
+
+.pay-logo img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.pay-copy {
+  min-width: 0;
+  margin-left: 58px;
+}
+
+.pay-copy b {
+  display: block;
+  font-size: 13px;
+}
+
+.pay-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.flow-empty {
+  padding: 34px 20px;
+  border: 1px dashed #d8d3c8;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+
+.flow-empty > svg {
+  width: 34px;
+  height: 34px;
+  color: var(--gold-dark);
+}
+
+.flow-empty h3 {
+  margin: 10px 0 5px;
+  font-size: 15px;
+}
+
+.flow-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Passenger and payment currently render their action directly in flow-body. */
+.flow-body > .continue {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  bottom: 0;
+  width: min(calc(100% - 36px), 484px);
+  margin-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+}
+
 .map-page {
   height: 100vh;
   height: 100dvh;
