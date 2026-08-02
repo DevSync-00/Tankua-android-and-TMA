@@ -6,6 +6,17 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
 };
 
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object') {
+    const value = error as Record<string, unknown>;
+    const parts = [value.message, value.details, value.hint, value.code]
+      .filter((part): part is string => typeof part === 'string' && part.length > 0);
+    if (parts.length) return [...new Set(parts)].join(' | ');
+  }
+  return typeof error === 'string' && error ? error : 'Unknown authentication failure';
+}
+
 async function hasServiceRoleAccess(req: Request, supabaseUrl: string, runtimeServiceKey: string) {
   const authorization = req.headers.get('authorization') || '';
   const apiKey = req.headers.get('apikey') || '';
@@ -93,18 +104,19 @@ Deno.serve(async (req) => {
     console.info(JSON.stringify({ event: 'telegram_auth_success', payload_type: payloadType, telegram_id: telegramId }));
     return new Response(JSON.stringify({ session: verified.session }), { headers: { ...cors, 'content-type': 'application/json' } });
   } catch (error) {
+    const reason = errorMessage(error);
     console.error(JSON.stringify({
       event: 'telegram_auth_failed',
       payload_type: attemptedPayloadType,
       stage: failureStage,
-      reason: error instanceof Error ? error.message : 'Unknown authentication failure',
+      reason,
     }));
     const responseBody: Record<string, string> = {
       error: 'Telegram authentication failed. Please try again.',
       code: `TELEGRAM_AUTH_${failureStage.toUpperCase()}`,
     };
     if (trustedCaller) {
-      responseBody.internal_error = error instanceof Error ? error.message : 'Unknown authentication failure';
+      responseBody.internal_error = reason;
     }
     return new Response(JSON.stringify(responseBody), {
       status: 400, headers: { ...cors, 'content-type': 'application/json' },
