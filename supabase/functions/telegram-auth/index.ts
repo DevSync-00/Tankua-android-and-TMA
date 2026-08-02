@@ -6,6 +6,26 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
 };
 
+async function hasServiceRoleAccess(req: Request, supabaseUrl: string, runtimeServiceKey: string) {
+  const authorization = req.headers.get('authorization') || '';
+  const apiKey = req.headers.get('apikey') || '';
+  if (authorization === `Bearer ${runtimeServiceKey}` || apiKey === runtimeServiceKey) return true;
+  if (!authorization || !apiKey) return false;
+
+  // Supabase may issue more than one valid service credential (legacy JWT and
+  // sb_secret keys). Ask Auth's admin-only endpoint to validate the caller
+  // instead of comparing two potentially different valid key strings.
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1`, {
+      method: 'GET',
+      headers: { authorization, apikey: apiKey },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   let attemptedPayloadType: TelegramPayloadType | 'unknown' = 'unknown';
@@ -22,8 +42,7 @@ Deno.serve(async (req) => {
     if (!url || !anonKey || !serviceKey) throw new Error('Telegram auth service is not configured');
     const payload = await req.json();
     attemptedPayloadType = typeof payload?.init_data === 'string' ? 'mini_app' : 'login_widget';
-    const authorization = req.headers.get('authorization') || '';
-    const serviceRoleAuthorized = authorization === `Bearer ${serviceKey}`;
+    const serviceRoleAuthorized = await hasServiceRoleAccess(req, url, serviceKey);
     const workerUser = payload?.verified_telegram_user;
     const workerVerifiedAt = Number(payload?.verified_at);
     const freshWorkerAssertion = Number.isFinite(workerVerifiedAt)
