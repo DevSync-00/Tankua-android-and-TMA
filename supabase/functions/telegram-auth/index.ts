@@ -29,6 +29,8 @@ async function hasServiceRoleAccess(req: Request, supabaseUrl: string, runtimeSe
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   let attemptedPayloadType: TelegramPayloadType | 'unknown' = 'unknown';
+  let trustedCaller = false;
+  let failureStage = 'request_validation';
   try {
     const url = Deno.env.get('SUPABASE_URL')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -43,6 +45,7 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     attemptedPayloadType = typeof payload?.init_data === 'string' ? 'mini_app' : 'login_widget';
     const serviceRoleAuthorized = await hasServiceRoleAccess(req, url, serviceKey);
+    trustedCaller = serviceRoleAuthorized;
     const workerUser = payload?.verified_telegram_user;
     const workerVerifiedAt = Number(payload?.verified_at);
     const freshWorkerAssertion = Number.isFinite(workerVerifiedAt)
@@ -57,8 +60,10 @@ Deno.serve(async (req) => {
       telegram = workerUser;
       payloadType = 'mini_app_worker';
     } else {
+      failureStage = 'telegram_signature';
       ({ user: telegram, payloadType } = await verifyTelegram(payload, loginBotToken, miniAppBotToken));
     }
+    failureStage = 'supabase_auth_session';
     const telegramId = String(telegram.id);
     const email = `telegram-${telegramId}@auth.tankua.app`;
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -75,6 +80,7 @@ Deno.serve(async (req) => {
     if (verifyError || !verified.session?.user?.id) throw verifyError || new Error('Could not verify Telegram session');
 
     const name = [telegram.first_name, telegram.last_name].filter(Boolean).join(' ') || 'Telegram User';
+    failureStage = 'profile_reconciliation';
     const { error: profileError } = await admin.rpc('link_telegram_auth_user', {
       p_auth_user_id: verified.session.user.id,
       p_telegram_id: Number(telegram.id),
@@ -90,9 +96,17 @@ Deno.serve(async (req) => {
     console.error(JSON.stringify({
       event: 'telegram_auth_failed',
       payload_type: attemptedPayloadType,
+      stage: failureStage,
       reason: error instanceof Error ? error.message : 'Unknown authentication failure',
     }));
-    return new Response(JSON.stringify({ error: 'Telegram authentication failed. Please try again.' }), {
+    const responseBody: Record<string, string> = {
+      error: 'Telegram authentication failed. Please try again.',
+      code: `TELEGRAM_AUTH_${failureStage.toUpperCase()}`,
+    };
+    if (trustedCaller) {
+      responseBody.internal_error = error instanceof Error ? error.message : 'Unknown authentication failure';
+    }
+    return new Response(JSON.stringify(responseBody), {
       status: 400, headers: { ...cors, 'content-type': 'application/json' },
     });
   }

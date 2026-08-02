@@ -152,6 +152,12 @@ async function resolveTelegramAuthUser(env, initData, telegram) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload?.session?.user?.id) {
+    console.error(JSON.stringify({
+      event: 'telegram_auth_edge_failed',
+      status: response.status,
+      code: payload?.code || 'UNKNOWN',
+      internal_error: payload?.internal_error || null,
+    }));
     throw new Error(payload?.error || 'Unable to resolve the shared Telegram account');
   }
   return payload.session.user.id;
