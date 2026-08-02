@@ -27,6 +27,18 @@ BEGIN
   IF old_id IS NOT NULL AND old_id <> p_auth_user_id THEN
     -- Free the unique Telegram phone placeholder before inserting the Auth row.
     UPDATE public.users SET phone_number = 'legacy-telegram:' || old_id WHERE id = old_id;
+    -- Insert the Auth-owned parent row before moving any dependent rows. Child
+    -- tables reference public.users(id), so updating them first violates their
+    -- foreign keys even though everything happens in one transaction.
+    INSERT INTO public.users(id, name, email, phone_number, emergency_contact, location,
+      is_admin, created_at)
+    SELECT p_auth_user_id, name, email, 'telegram:' || p_telegram_id, emergency_contact, location,
+      is_admin, created_at
+    FROM public.users WHERE id = old_id
+    ON CONFLICT (id) DO UPDATE SET
+      emergency_contact = COALESCE(NULLIF(public.users.emergency_contact, ''), EXCLUDED.emergency_contact),
+      location = COALESCE(NULLIF(public.users.location, ''), EXCLUDED.location);
+
     -- Merge rows that have natural per-user uniqueness before moving ordinary FKs.
     INSERT INTO public.user_favorites(user_id, destination_id, created_at)
       SELECT p_auth_user_id, destination_id, created_at FROM public.user_favorites WHERE user_id = old_id
@@ -69,32 +81,33 @@ BEGIN
         AND EXISTS (SELECT 1 FROM public.saved_payment_methods WHERE user_id = p_auth_user_id AND is_default = TRUE);
     UPDATE public.saved_payment_methods SET user_id = p_auth_user_id WHERE user_id = old_id;
     UPDATE public.reviews SET user_id = p_auth_user_id WHERE user_id = old_id;
-    INSERT INTO public.review_votes(review_id, user_id, is_helpful, created_at)
-      SELECT review_id, p_auth_user_id, is_helpful, created_at FROM public.review_votes WHERE user_id = old_id
-      ON CONFLICT (review_id, user_id) DO NOTHING;
-    DELETE FROM public.review_votes WHERE user_id = old_id;
-    UPDATE public.support_tickets SET user_id = p_auth_user_id WHERE user_id = old_id;
+    IF to_regclass('public.review_votes') IS NOT NULL THEN
+      INSERT INTO public.review_votes(review_id, user_id, is_helpful, created_at)
+        SELECT review_id, p_auth_user_id, is_helpful, created_at FROM public.review_votes WHERE user_id = old_id
+        ON CONFLICT (review_id, user_id) DO NOTHING;
+      DELETE FROM public.review_votes WHERE user_id = old_id;
+    END IF;
+    IF to_regclass('public.support_tickets') IS NOT NULL THEN
+      UPDATE public.support_tickets SET user_id = p_auth_user_id WHERE user_id = old_id;
+    END IF;
     -- Promotion usage is historical; keep both rows unless the live schema's
     -- uniqueness rule makes them duplicates.
-    BEGIN
-      UPDATE public.promotion_usage SET user_id = p_auth_user_id WHERE user_id = old_id;
-    EXCEPTION WHEN unique_violation THEN
-      DELETE FROM public.promotion_usage WHERE user_id = old_id;
-    END;
+    IF to_regclass('public.promotion_usage') IS NOT NULL THEN
+      BEGIN
+        UPDATE public.promotion_usage SET user_id = p_auth_user_id WHERE user_id = old_id;
+      EXCEPTION WHEN unique_violation THEN
+        DELETE FROM public.promotion_usage WHERE user_id = old_id;
+      END;
+    END IF;
     UPDATE public.telegram_auth_events SET user_id = p_auth_user_id WHERE user_id = old_id;
-    UPDATE public.destination_image_candidates SET reviewed_by = p_auth_user_id WHERE reviewed_by = old_id;
-    UPDATE public.notifications SET recipient_id = p_auth_user_id
-      WHERE recipient_type = 'user' AND recipient_id = old_id;
+    IF to_regclass('public.destination_image_candidates') IS NOT NULL THEN
+      UPDATE public.destination_image_candidates SET reviewed_by = p_auth_user_id WHERE reviewed_by = old_id;
+    END IF;
+    IF to_regclass('public.notifications') IS NOT NULL THEN
+      UPDATE public.notifications SET recipient_id = p_auth_user_id
+        WHERE recipient_type = 'user' AND recipient_id = old_id;
+    END IF;
 
-    -- Create the Auth-owned profile while retaining useful legacy fields.
-    INSERT INTO public.users(id, name, email, phone_number, emergency_contact, location,
-      saved_destinations, saved_stations, is_admin, created_at)
-    SELECT p_auth_user_id, name, email, 'telegram:' || p_telegram_id, emergency_contact, location,
-      saved_destinations, saved_stations, is_admin, created_at
-    FROM public.users WHERE id = old_id
-    ON CONFLICT (id) DO UPDATE SET
-      emergency_contact = COALESCE(NULLIF(public.users.emergency_contact, ''), EXCLUDED.emergency_contact),
-      location = COALESCE(NULLIF(public.users.location, ''), EXCLUDED.location);
     DELETE FROM public.users WHERE id = old_id;
   END IF;
 

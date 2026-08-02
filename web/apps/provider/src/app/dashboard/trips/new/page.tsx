@@ -15,6 +15,29 @@ import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@tankua/ui";
 import { supabase } from "@/lib/supabase";
 
+const DESTINATION_CATEGORIES = [
+  ["adventure", "Adventure"], ["agritourism", "Agritourism"], ["ancestry", "Ancestry"],
+  ["accessible", "Accessible"], ["budget", "Budget"], ["business", "Business"],
+  ["cafe", "Cafés"], ["city", "City"], ["cruise", "Cruise"], ["culinary", "Culinary"],
+  ["cultural", "Cultural"], ["cultural_center", "Cultural Centers"], ["dark", "Dark Tourism"],
+  ["ecotourism", "Ecotourism"], ["educational", "Educational"], ["entertainment", "Entertainment"],
+  ["historical", "Historical"], ["hotel", "Hotels"], ["landmark", "Landmarks"],
+  ["luxury", "Luxury"], ["medical", "Medical"], ["monument", "Monuments"],
+  ["museum", "Museums"], ["nature", "Nature"], ["park", "Parks"],
+  ["photography", "Photography"], ["religious", "Religious"], ["restaurant", "Restaurants"],
+  ["rural", "Rural"], ["sacred", "Sacred Sites"], ["shopping", "Shopping"],
+  ["space", "Space"], ["sports", "Sports"], ["tourist_attraction", "Tourist Attractions"],
+  ["transport", "Transport"], ["urban", "Urban"], ["voluntourism", "Voluntourism"],
+  ["wellness", "Wellness"], ["wildlife", "Wildlife"], ["other", "Other"],
+] as const;
+
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const hours = Math.floor(index / 2);
+  const minutes = index % 2 ? "30" : "00";
+  const value = `${String(hours).padStart(2, "0")}:${minutes}`;
+  return { value, label: `${hours % 12 || 12}:${minutes} ${hours < 12 ? "AM" : "PM"}` };
+});
+
 export default function NewTripPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -134,6 +157,11 @@ export default function NewTripPage() {
 
     if (formData.tripType === "round_trip" && !formData.returnDate) {
       setErrorMessage("Add a return date for round trips.");
+      return;
+    }
+
+    if (formData.returnDate && formData.returnDate < formData.departureDate) {
+      setErrorMessage("Return date cannot be before the departure date.");
       return;
     }
 
@@ -277,38 +305,9 @@ export default function NewTripPage() {
                   className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
                 >
                   <option value="all">All Categories</option>
-                  <option value="adventure">Adventure</option>
-                  <option value="cultural">Cultural</option>
-                  <option value="medical">Medical</option>
-                  <option value="religious">Religious</option>
-                  <option value="ecotourism">Ecotourism</option>
-                  <option value="business">Business</option>
-                  <option value="wildlife">Wildlife</option>
-                  <option value="cruise">Cruise</option>
-                  <option value="rural">Rural</option>
-                  <option value="sports">Sports</option>
-                  <option value="shopping">Shopping</option>
-                  <option value="wellness">Wellness</option>
-                  <option value="dark">Dark Tourism</option>
-                  <option value="budget">Budget</option>
-                  <option value="culinary">Culinary</option>
-                  <option value="luxury">Luxury</option>
-                  <option value="voluntourism">Voluntourism</option>
-                  <option value="space">Space</option>
-                  <option value="accessible">Accessible</option>
-                  <option value="agritourism">Agritourism</option>
-                  <option value="photography">Photography</option>
-                  <option value="ancestry">Ancestry</option>
-                  <option value="educational">Educational</option>
-                  <option value="urban">Urban</option>
-                  <option value="historical">Historical</option>
-                  <option value="nature">Nature</option>
-                  <option value="sacred">Sacred</option>
-                  <option value="monument">Monuments</option>
-                  <option value="park">Parks</option>
-                  <option value="museum">Museums</option>
-                  <option value="city">City</option>
-                  <option value="other">Other</option>
+                  {DESTINATION_CATEGORIES.map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -389,13 +388,16 @@ export default function NewTripPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Departure Time *</label>
-                  <input
-                    type="time"
+                  <select
                     required
                     value={formData.departureTime}
                     onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
+                    className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
+                  >
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time.value} value={time.value}>{time.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -405,6 +407,7 @@ export default function NewTripPage() {
                   <input
                     type="date"
                     required={formData.tripType === "round_trip"}
+                    min={formData.departureDate || undefined}
                     value={formData.returnDate}
                     onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
@@ -434,13 +437,22 @@ export default function NewTripPage() {
                 return <div key={station.id} className={`rounded-xl border p-4 ${config.selected ? "border-primary bg-primary/5" : "border-border"}`}>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" checked={config.selected} className="mt-1"
-                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, selected: e.target.checked } }))}/>
+                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: {
+                        ...config,
+                        selected: e.target.checked,
+                        pickupTime: e.target.checked && !config.pickupTime ? formData.departureTime : config.pickupTime,
+                      } }))}/>
                     <span className="flex-1"><b className="block">{station.name}</b><small className="text-muted-foreground">{[station.address,station.city].filter(Boolean).join(", ")}</small></span>
                   </label>
                   {config.selected && <div className="grid grid-cols-2 gap-3 mt-3 pl-6">
-                    <label className="text-sm">Pickup time *<input type="time" value={config.pickupTime}
+                    <label className="text-sm">Pickup time *<select required value={config.pickupTime}
                       onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, pickupTime: e.target.value } }))}
-                      className="mt-1 w-full px-3 py-2 rounded-lg border bg-background"/></label>
+                      className="mt-1 w-full px-3 py-2 rounded-lg border bg-background">
+                        <option value="">Choose a time</option>
+                        {TIME_OPTIONS.map((time) => (
+                          <option key={time.value} value={time.value}>{time.label}</option>
+                        ))}
+                      </select></label>
                     <label className="text-sm">Extra price (ETB)<input type="number" min="0" value={config.extraPrice}
                       onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, extraPrice: e.target.value } }))}
                       className="mt-1 w-full px-3 py-2 rounded-lg border bg-background"/></label>
