@@ -665,16 +665,19 @@ function TripsView({trips,destinations,open,explore}) {
 function MapView({destinations,open,back}) {
   const mapElement=useRef(null);
   const mapInstance=useRef(null);
+  const markerCluster=useRef(null);
   const markers=useRef([]);
   const userMarker=useRef(null);
-  const [selected,setSelected]=useState(destinations[0]||null);
+  const [selected,setSelected]=useState(null);
   const [query,setQuery]=useState('');
   const [locating,setLocating]=useState(false);
   const [mapReady,setMapReady]=useState(false);
 
   useEffect(()=>{
     let disposed=false;
-    import('leaflet').then(({default:L})=>{
+    import('leaflet').then(async ({default:L})=>{
+      if(disposed||!mapElement.current||mapInstance.current) return;
+      await import('leaflet.markercluster');
       if(disposed||!mapElement.current||mapInstance.current) return;
       const map=L.map(mapElement.current,{zoomControl:false,attributionControl:true}).setView([9.03,38.74],6);
       L.control.zoom({position:'bottomright'}).addTo(map);
@@ -682,11 +685,30 @@ function MapView({destinations,open,back}) {
         maxZoom:19,
         attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
+      markerCluster.current=L.markerClusterGroup({
+        maxClusterRadius:45,
+        disableClusteringAtZoom:14,
+        spiderfyOnMaxZoom:true,
+        showCoverageOnHover:false,
+        zoomToBoundsOnClick:true,
+        removeOutsideVisibleBounds:true,
+        iconCreateFunction(cluster){
+          const count=cluster.getChildCount();
+          const size=count<10?'small':count<100?'medium':'large';
+          return L.divIcon({
+            html:`<div><span>${count}</span></div>`,
+            className:`map-marker-cluster map-marker-cluster-${size}`,
+            iconSize:L.point(44,44),
+          });
+        },
+      });
+      map.addLayer(markerCluster.current);
+      map.on('click',()=>setSelected(null));
       mapInstance.current=map;
       setMapReady(true);
       setTimeout(()=>map.invalidateSize(),100);
     });
-    return()=>{disposed=true;if(mapInstance.current){mapInstance.current.remove();mapInstance.current=null;}};
+    return()=>{disposed=true;if(mapInstance.current){mapInstance.current.remove();mapInstance.current=null;}markerCluster.current=null;};
   },[]);
 
   useEffect(()=>{
@@ -694,7 +716,7 @@ function MapView({destinations,open,back}) {
     let active=true;
     import('leaflet').then(({default:L})=>{
       if(!active||!mapInstance.current)return;
-      markers.current.forEach(m=>m.remove());
+      markerCluster.current?.clearLayers();
       markers.current=[];
       destinations.forEach(item=>{
         const coords=destinationCoordinates(item);
@@ -715,8 +737,14 @@ function MapView({destinations,open,back}) {
           iconAnchor:[34,14],
         });
 
-        const marker=L.marker(coords,{icon:customIcon}).addTo(mapInstance.current);
-        marker.on('click',()=>{setSelected(item);vibrate();});
+        const marker=L.marker(coords,{icon:customIcon});
+        marker.on('click',event=>{
+          L.DomEvent.stopPropagation(event);
+          setSelected(item);
+          mapInstance.current?.flyTo(coords,13,{duration:.7});
+          vibrate();
+        });
+        markerCluster.current?.addLayer(marker);
         markers.current.push(marker);
       });
       if(destinations.length>1 && !selected){
@@ -730,7 +758,7 @@ function MapView({destinations,open,back}) {
   const searchMap=(event)=>{
     event.preventDefault();
     const match=destinations.find(destination=>`${destination.name} ${destination.city} ${destination.region}`.toLowerCase().includes(query.trim().toLowerCase()));
-    if(match&&mapInstance.current){setSelected(match);mapInstance.current.flyTo(match.coordinates,11,{duration:.7});}
+    if(match&&mapInstance.current){const coords=destinationCoordinates(match);setSelected(match);if(coords)mapInstance.current.flyTo(coords,13,{duration:.7});}
   };
   const locate=()=>{
     if(!navigator.geolocation||!mapInstance.current)return;
