@@ -1,8 +1,60 @@
+const { withAndroidManifest, withProjectBuildGradle } = require('@expo/config-plugins');
+
+const telegramClientId = process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || '8974307872';
+
+/** Expo Config Plugin to inject Telegram Login Manifest Activity & Gradle Repositories */
+const withTelegramLogin = (config) => {
+  let updatedConfig = withAndroidManifest(config, (cfg) => {
+    const androidManifest = cfg.modResults;
+    const application = androidManifest.manifest.application[0];
+    
+    // Check if TelegramLoginCallbackActivity is already added
+    const existingActivity = application.activity?.find(
+      (a) => a.$['android:name'] === 'com.tankua.telegramlogin.TelegramLoginCallbackActivity'
+    );
+
+    if (!existingActivity) {
+      if (!application.activity) application.activity = [];
+      application.activity.push({
+        $: {
+          'android:name': 'com.tankua.telegramlogin.TelegramLoginCallbackActivity',
+          'android:exported': 'true',
+          'android:launchMode': 'singleTask',
+        },
+        'intent-filter': [
+          {
+            $: { 'android:autoVerify': 'true' },
+            action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+            category: [
+              { $: { 'android:name': 'android.intent.category.DEFAULT' } },
+              { $: { 'android:name': 'android.intent.category.BROWSABLE' } },
+            ],
+            data: [
+              {
+                $: {
+                  'android:scheme': 'https',
+                  'android:host': `app${telegramClientId}-login.tg.dev`,
+                  'android:pathPrefix': '/tglogin',
+                },
+              },
+            ],
+          },
+        ],
+      });
+    }
+    return cfg;
+  });
+
+  return updatedConfig;
+};
+
 /** @type {import('expo/config').ExpoConfig} */
 export default ({ config }) => {
+  const baseExpo = config.expo || {};
   return {
     ...config,
     expo: {
+      ...baseExpo,
       name: 'Tankua',
       slug: 'tankua',
       version: '1.0.0',
@@ -32,6 +84,20 @@ export default ({ config }) => {
         },
         package: 'com.tankua.co',
         permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'CAMERA'],
+        intentFilters: [
+          {
+            action: 'VIEW',
+            autoVerify: true,
+            data: [
+              {
+                scheme: 'https',
+                host: `app${telegramClientId}-login.tg.dev`,
+                pathPrefix: '/tglogin',
+              },
+            ],
+            category: ['BROWSABLE', 'DEFAULT'],
+          },
+        ],
       },
       web: {
         favicon: './assets/favicon.png',
@@ -69,12 +135,16 @@ export default ({ config }) => {
             },
           },
         ],
+        withTelegramLogin,
       ],
       extra: {
         eas: {
           projectId: 'c3026ea0-7f03-4a03-ad0a-6dda9f747582',
         },
+        telegramClientId: telegramClientId,
+        telegramAuthMode: process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native',
       },
     },
   };
 };
+

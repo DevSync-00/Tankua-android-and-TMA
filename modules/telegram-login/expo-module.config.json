@@ -1,0 +1,7 @@
+{
+  "name": "telegram-login",
+  "android": {
+    "package": "com.tankua.telegramlogin",
+    "modules": ["com.tankua.telegramlogin.TelegramLoginModule"]
+  }
+}

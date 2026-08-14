@@ -15,23 +15,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
 
+import {
+  isNativeTelegramLoginSupported,
+  performTelegramNativeLogin,
+} from '../services/telegramNativeAuth';
+
 // ---------------------------------------------------------------------------
 // Flow overview:
-//  1. Open oauth.telegram.org/auth?bot_id=...&origin=...&return_to=...
-//  2. User authenticates in the Telegram app (deep-linked automatically).
-//  3. Telegram redirects to return_to with #tgAuthResult=<base64url-json>
-//  4. We intercept that URL in the WebView and decode the payload.
-//  5. POST to our Edge Function → verify HMAC → get back a Supabase session.
-//  6. Set session on supabase client → AppNavigator detects user → navigate.
+//  Native Flow:
+//   1. Taps Telegram button -> performTelegramNativeLogin() launches native SDK intent.
+//   2. User authenticates inside Telegram app -> App Link callback fires -> id_token returned.
+//   3. POST id_token to Edge Function (/functions/v1/telegram-oidc) -> session set.
+//  Fallback Flow (WebView/Browser):
+//   1. Open oauth.telegram.org/auth?bot_id=...&origin=...&return_to=...
+//   2. User authenticates in web/app -> Telegram redirects to return_to with #tgAuthResult=...
+//   3. Intercept payload, decode, POST to /functions/v1/telegram-auth -> session set.
 // ---------------------------------------------------------------------------
 
 const BOT_ID = process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ?? '';
+const AUTH_MODE = process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native';
 
 const ORIGIN = 'https://oauth.telegram.org';
 const RETURN_TO = 'https://oauth.telegram.org/auth/callback';
 
-// A unique nonce per screen mount forces Telegram to show the account
-// chooser / phone prompt instead of silently re-using the last session.
 const buildAuthUrl = (nonce) =>
   `https://oauth.telegram.org/auth` +
   `?bot_id=${BOT_ID}` +
@@ -41,12 +47,8 @@ const buildAuthUrl = (nonce) =>
   `&embed=0` +
   `&nonce=${nonce}`;
 
-// Injected JS: clears any stored Telegram session cookies, then watches for
-// the tgAuthResult fragment so the user must authenticate fresh every time.
 const INJECTED_JS = `
 (function() {
-  // Clear all cookies for oauth.telegram.org so previous sessions don't
-  // auto-resume. This runs before the page renders its own JS.
   try {
     document.cookie.split(';').forEach(function(c) {
       var name = c.trim().split('=')[0];
@@ -91,23 +93,13 @@ const INJECTED_JS = `
 })();
 `;
 
-/** Decode a tgAuthResult value → JS object.
- *  Telegram encodes it as base64url(JSON). However the fragment may arrive
- *  URL-encoded (%7B...%7D) or with extra query params appended after a '&'.
- *  We handle all variants here.
- */
 function decodeTgAuthResult(raw) {
   try {
-    // Strip anything after the first '&' (extra query params)
     const str = raw.split('&')[0];
-
-    // If it looks like it's already URL-encoded JSON, decode it directly
     const urlDecoded = decodeURIComponent(str);
     if (urlDecoded.startsWith('{')) {
       return JSON.parse(urlDecoded);
     }
-
-    // Otherwise treat as base64url
     const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
     const padded = base64 + '=='.slice(0, (4 - (base64.length % 4)) % 4);
     const decoded = decodeURIComponent(
@@ -118,31 +110,66 @@ function decodeTgAuthResult(raw) {
     );
     return JSON.parse(decoded);
   } catch (e) {
-    console.warn('[TelegramLoginScreen] decodeTgAuthResult failed:', e.message, 'raw:', raw?.slice(0, 80));
+    console.warn('[TelegramLoginScreen] decodeTgAuthResult failed:', e.message);
     return null;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 const TelegramLoginScreen = ({ navigation }) => {
-  const { loginWithTelegram } = useAuth();
+  const { loginWithTelegram, loginWithTelegramNative } = useAuth();
   const webViewRef = useRef(null);
 
-  // Use refs for flags to avoid stale-closure bugs
   const processingRef = useRef(false);
   const pageLoadedRef = useRef(false);
+
+  const [useWebViewFallback, setUseWebViewFallback] = useState(
+    AUTH_MODE === 'legacy' || !isNativeTelegramLoginSupported()
+  );
 
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fatalError, setFatalError] = useState(null);
-  // webViewKey changes → WebView fully remounts → fresh session, no cached cookies
   const [webViewKey, setWebViewKey] = useState('initial');
-  // nonce makes the auth URL unique per mount so Telegram prompts fresh
   const [nonce, setNonce] = useState(() => Math.random().toString(36).slice(2));
 
-  // On mount, check if logout happened since last visit and force a fresh key
+  // Try Native SDK login on mount if supported
+  useEffect(() => {
+    if (AUTH_MODE !== 'legacy' && isNativeTelegramLoginSupported() && !useWebViewFallback) {
+      triggerNativeLogin();
+    }
+  }, []);
+
+  const triggerNativeLogin = async () => {
+    if (processingRef.current) return;
+    processingRef.current = true;
+    setIsProcessing(true);
+
+    try {
+      const { idToken, nonce: authNonce } = await performTelegramNativeLogin();
+      await loginWithTelegramNative(idToken, authNonce);
+    } catch (err) {
+      console.warn('[TelegramLoginScreen] Native login attempt error:', err);
+      processingRef.current = false;
+      setIsProcessing(false);
+
+      // Fallback to web flow if Telegram app is uninstalled or native module unavailable
+      if (
+        err.code === 'TELEGRAM_NOT_INSTALLED' ||
+        err.code === 'NATIVE_MODULE_UNAVAILABLE' ||
+        err.code === 'SDK_START_FAILED'
+      ) {
+        console.warn('[TelegramLoginScreen] Fallback to WebView auth triggered');
+        setUseWebViewFallback(true);
+      } else {
+        Alert.alert(
+          'Login Failed',
+          err.message || 'Could not complete Telegram login. Please try again.',
+          [{ text: 'OK' }],
+        );
+      }
+    }
+  };
+
   useEffect(() => {
     AsyncStorage.getItem('webview_reset_key').then((val) => {
       if (val) {
