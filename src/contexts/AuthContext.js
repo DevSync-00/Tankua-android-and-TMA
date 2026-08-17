@@ -551,9 +551,20 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
+      const isTelegramUser =
+        user?.provider === 'telegram' ||
+        user?.telegram_id != null ||
+        user?.phone_number?.startsWith('telegram:') ||
+        user?.email?.endsWith('@auth.tankua.app');
+
+      const sanitizedUpdates = { ...updates };
+      if (isTelegramUser) {
+        delete sanitizedUpdates.phone_number;
+      }
+
       const { error } = await supabase
         .from('users')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('id', user.id);
 
       if (error) throw error;

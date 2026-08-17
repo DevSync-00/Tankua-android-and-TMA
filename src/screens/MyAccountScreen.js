@@ -90,29 +90,60 @@ const MyAccountScreen = ({ navigation }) => {
     }
   };
 
-  const renderInputField = (label, value, onChangeText, placeholder, icon, keyboardType = 'default', required = false, autoCapitalize = 'sentences') => {
+  const isTelegramUser =
+    user?.provider === 'telegram' ||
+    user?.telegram_id != null ||
+    user?.phone_number?.startsWith('telegram:') ||
+    user?.email?.endsWith('@auth.tankua.app');
+
+  const renderInputField = (
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    icon,
+    keyboardType = 'default',
+    required = false,
+    autoCapitalize = 'sentences',
+    disabled = false,
+    disabledNotice = null
+  ) => {
     return (
       <View style={styles.inputGroup}>
         <View style={styles.labelContainer}>
           <Text style={styles.label}>{label}</Text>
           {required && <Text style={styles.required}>*</Text>}
+          {disabled && (
+            <View style={styles.lockedBadge}>
+              <Ionicons name="lock-closed" size={12} color={COLORS.gray} />
+              <Text style={styles.lockedBadgeText}>Locked</Text>
+            </View>
+          )}
         </View>
         <View style={styles.inputWrapper}>
           {icon && (
             <View style={styles.inputIcon}>
-              <Ionicons name={icon} size={20} color={COLORS.gray} />
+              <Ionicons name={icon} size={20} color={disabled ? COLORS.grayLight : COLORS.gray} />
             </View>
           )}
           <TextInput
-            style={[styles.input, icon && styles.inputWithIcon]}
+            style={[
+              styles.input,
+              icon && styles.inputWithIcon,
+              disabled && styles.disabledInput,
+            ]}
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
             placeholderTextColor={COLORS.grayLight}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
+            editable={!disabled}
           />
         </View>
+        {disabled && disabledNotice && (
+          <Text style={styles.disabledNoticeText}>{disabledNotice}</Text>
+        )}
       </View>
     );
   };
@@ -189,7 +220,12 @@ const MyAccountScreen = ({ navigation }) => {
               '+251 9XX XXX XXXX',
               'call',
               'phone-pad',
-              true
+              true,
+              'none',
+              isTelegramUser,
+              isTelegramUser
+                ? 'Phone number is bound to your Telegram account and cannot be modified or removed.'
+                : null
             )}
             {renderInputField(
               'Emergency Contact',
@@ -393,6 +429,21 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     marginLeft: SPACING.xs / 2,
   },
+  lockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.gray}15`,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+    marginLeft: SPACING.sm,
+  },
+  lockedBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: FONTS.weights.semibold,
+    marginLeft: 2,
+  },
   inputWrapper: {
     position: 'relative',
     flexDirection: 'row',
@@ -417,6 +468,17 @@ const styles = StyleSheet.create({
   },
   inputWithIcon: {
     paddingLeft: SPACING.xl + SPACING.md,
+  },
+  disabledInput: {
+    backgroundColor: `${COLORS.borderLight}80`,
+    color: COLORS.gray,
+    borderColor: COLORS.borderLight,
+  },
+  disabledNoticeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    marginTop: SPACING.xs,
+    fontStyle: 'italic',
   },
   infoBanner: {
     flexDirection: 'row',
