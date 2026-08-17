@@ -10,9 +10,9 @@ const CLIENT_ID =
   Constants.expoConfig?.extra?.telegramClientId ||
   process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
   process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
-  '8974307872';
+  '8319181574';
 
-const REDIRECT_URI = `https://app${CLIENT_ID}-login.tg.dev/tglogin`;
+const REDIRECT_URI = 'https://app112396380-login.tg.dev/tglogin';
 
 let isInitialized = false;
 

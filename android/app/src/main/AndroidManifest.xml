@@ -9,6 +9,9 @@
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
   <queries>
+    <package android:name="org.telegram.messenger" />
+    <package android:name="org.telegram.messenger.web" />
+    <package android:name="org.telegram.messenger.beta" />
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <category android:name="android.intent.category.BROWSABLE"/>
@@ -30,7 +33,7 @@
       </intent-filter>
       <intent-filter android:autoVerify="true" data-generated="true">
         <action android:name="android.intent.action.VIEW"/>
-        <data android:scheme="https" android:host="app8974307872-login.tg.dev" android:pathPrefix="/tglogin"/>
+        <data android:scheme="https" android:host="app112396380-login.tg.dev" android:pathPrefix="/tglogin"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>
@@ -40,7 +43,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="https" android:host="app8974307872-login.tg.dev" android:pathPrefix="/tglogin"/>
+        <data android:scheme="https" android:host="app112396380-login.tg.dev" android:pathPrefix="/tglogin"/>
       </intent-filter>
     </activity>
   </application>
