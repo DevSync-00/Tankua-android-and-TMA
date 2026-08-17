@@ -1,6 +1,6 @@
 const { withAndroidManifest, withProjectBuildGradle } = require('@expo/config-plugins');
 
-const telegramClientId = process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || '8974307872';
+const telegramClientId = process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || '8319181574';
 
 /** Expo Config Plugin to inject Telegram Login Manifest Activity & Gradle Repositories */
 const withTelegramLogin = (config) => {
@@ -12,6 +12,20 @@ const withTelegramLogin = (config) => {
     const existingActivity = application.activity?.find(
       (a) => a.$['android:name'] === 'com.tankua.telegramlogin.TelegramLoginCallbackActivity'
     );
+
+    // Ensure queries section has Telegram package for Android 11+ package visibility
+    if (!androidManifest.manifest.queries) {
+      androidManifest.manifest.queries = [{}];
+    }
+    const queriesObj = androidManifest.manifest.queries[0] || {};
+    if (!queriesObj.package) queriesObj.package = [];
+    const tgPackages = ['org.telegram.messenger', 'org.telegram.messenger.web', 'org.telegram.messenger.beta'];
+    tgPackages.forEach((pkg) => {
+      const exists = queriesObj.package.some((p) => p.$?.['android:name'] === pkg);
+      if (!exists) {
+        queriesObj.package.push({ $: { 'android:name': pkg } });
+      }
+    });
 
     if (!existingActivity) {
       if (!application.activity) application.activity = [];
@@ -33,7 +47,7 @@ const withTelegramLogin = (config) => {
               {
                 $: {
                   'android:scheme': 'https',
-                  'android:host': `app${telegramClientId}-login.tg.dev`,
+                  'android:host': 'app112396380-login.tg.dev',
                   'android:pathPrefix': '/tglogin',
                 },
               },
@@ -91,7 +105,7 @@ export default ({ config }) => {
             data: [
               {
                 scheme: 'https',
-                host: `app${telegramClientId}-login.tg.dev`,
+                host: 'app112396380-login.tg.dev',
                 pathPrefix: '/tglogin',
               },
             ],
@@ -132,6 +146,7 @@ export default ({ config }) => {
             android: {
               enableMinifyInReleaseBuilds: false,
               enableShrinkResourcesInReleaseBuilds: false,
+              ndkVersion: '27.1.12297006',
             },
           },
         ],

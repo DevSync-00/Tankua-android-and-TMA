@@ -36,4 +36,6 @@ rootProject.name = 'Tankua'
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
+include ':telegram-login'
+project(':telegram-login').projectDir = new File(rootProject.projectDir, '../modules/telegram-login/android')
 includeBuild(expoAutolinking.reactNativeGradlePlugin)

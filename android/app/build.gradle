@@ -179,4 +179,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    implementation project(':telegram-login')
 }
