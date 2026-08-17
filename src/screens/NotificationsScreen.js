@@ -131,6 +131,13 @@ const NotificationsScreen = ({ navigation }) => {
     );
   }
 
+  const handleNotificationPress = async (notification) => {
+    await markAsRead(notification.id);
+    if (notification.type === 'profile_completion' || notification.action_type === 'navigate_profile') {
+      navigation.navigate('MyAccount', { focusField: notification.target_field || 'name' });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Custom Header */}
@@ -152,18 +159,18 @@ const NotificationsScreen = ({ navigation }) => {
               setRefreshing(true);
               loadNotifications();
             }}
-            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
       >
         {notifications.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIconCircle}>
-              <Ionicons name="notifications-off-outline" size={38} color={COLORS.grayLight} />
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="notifications-off-outline" size={48} color={COLORS.grayLight} />
             </View>
-            <Text style={styles.emptyText}>All Caught Up!</Text>
-            <Text style={styles.emptySubtext}>
-              Booking updates, schedules, and promotion messages will appear here.
+            <Text style={styles.emptyTitle}>No Notifications</Text>
+            <Text style={styles.emptySubtitle}>
+              You're all caught up! We'll notify you when there are updates to your bookings or account.
             </Text>
           </View>
         ) : (
@@ -179,7 +186,7 @@ const NotificationsScreen = ({ navigation }) => {
                     styles.notificationCard,
                     isUnread && styles.unreadCard,
                   ]}
-                  onPress={() => markAsRead(notification.id)}
+                  onPress={() => handleNotificationPress(notification)}
                   activeOpacity={0.8}
                 >
                   <View style={[

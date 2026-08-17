@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,24 +7,70 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
 import ModernButton from '../components/ModernButton';
+import { getCurrentCityLocation } from '../services/locationService';
 
-const MyAccountScreen = ({ navigation }) => {
+const MyAccountScreen = ({ navigation, route }) => {
   const { user, updateProfile, deleteAccount } = useAuth();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+
+  const focusField = route && route.params ? route.params.focusField : null;
+  const scrollRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const emergencyContactInputRef = useRef(null);
+  const cityInputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone_number: user?.phone_number || '',
     emergency_contact: user?.emergency_contact || '',
+    city: user?.city || user?.location || '',
     location: user?.location || '',
   });
+
+  useEffect(() => {
+    if (focusField) {
+      setTimeout(() => {
+        if (focusField === 'name' && nameInputRef.current) {
+          nameInputRef.current.focus();
+        } else if (focusField === 'emergency_contact' && emergencyContactInputRef.current) {
+          emergencyContactInputRef.current.focus();
+        } else if (focusField === 'city' && cityInputRef.current) {
+          cityInputRef.current.focus();
+        }
+      }, 400);
+    }
+  }, [focusField]);
+
+  const handleAutoDetectLocation = async () => {
+    try {
+      setDetectingLocation(true);
+      const result = await getCurrentCityLocation();
+      if (result.success && result.city) {
+        setFormData((prev) => ({
+          ...prev,
+          city: result.city,
+          location: result.formattedLocation || result.city,
+        }));
+        Alert.alert('Location Detected', `Updated city to "${result.city}".`);
+      } else {
+        Alert.alert('Location Detection Failed', result.error || 'Could not detect your current city.');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to detect current location.');
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.name || !formData.phone_number) {
@@ -106,7 +152,9 @@ const MyAccountScreen = ({ navigation }) => {
     required = false,
     autoCapitalize = 'sentences',
     disabled = false,
-    disabledNotice = null
+    disabledNotice = null,
+    inputRef = null,
+    rightElement = null
   ) => {
     return (
       <View style={styles.inputGroup}>
@@ -127,9 +175,11 @@ const MyAccountScreen = ({ navigation }) => {
             </View>
           )}
           <TextInput
+            ref={inputRef}
             style={[
               styles.input,
               icon && styles.inputWithIcon,
+              rightElement && styles.inputWithRightElement,
               disabled && styles.disabledInput,
             ]}
             value={value}
@@ -140,6 +190,11 @@ const MyAccountScreen = ({ navigation }) => {
             autoCapitalize={autoCapitalize}
             editable={!disabled}
           />
+          {rightElement && (
+            <View style={styles.rightElementContainer}>
+              {rightElement}
+            </View>
+          )}
         </View>
         {disabled && disabledNotice && (
           <Text style={styles.disabledNoticeText}>{disabledNotice}</Text>
@@ -160,6 +215,7 @@ const MyAccountScreen = ({ navigation }) => {
       </View>
 
       <ScrollView 
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -191,7 +247,11 @@ const MyAccountScreen = ({ navigation }) => {
               'Enter your full name',
               'person',
               'default',
-              true
+              true,
+              'words',
+              false,
+              null,
+              nameInputRef
             )}
           </View>
         </View>
@@ -234,7 +294,11 @@ const MyAccountScreen = ({ navigation }) => {
               'Emergency contact phone number',
               'call',
               'phone-pad',
-              false
+              true,
+              'none',
+              false,
+              null,
+              emergencyContactInputRef
             )}
           </View>
         </View>
@@ -243,18 +307,44 @@ const MyAccountScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="location-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Location</Text>
+            <Text style={styles.sectionTitle}>Location & City</Text>
           </View>
           <View style={styles.sectionCard}>
             {renderInputField(
-              'Address',
-              formData.location,
-              (text) => setFormData({ ...formData, location: text }),
-              'Your location (city, address)',
+              'City / Region',
+              formData.city,
+              (text) => setFormData({ ...formData, city: text, location: text }),
+              'Enter your city (e.g. Addis Ababa)',
               'location',
               'default',
-              false
+              true,
+              'words',
+              false,
+              null,
+              cityInputRef
             )}
+
+            <TouchableOpacity
+              style={styles.gpsDetectBar}
+              onPress={handleAutoDetectLocation}
+              disabled={detectingLocation}
+              activeOpacity={0.8}
+            >
+              {detectingLocation ? (
+                <>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.gpsDetectBarText}>Detecting your location...</Text>
+                </>
+              ) : (
+                <>
+                  <View style={styles.gpsIconCircle}>
+                    <Ionicons name="navigate" size={16} color={COLORS.secondary} />
+                  </View>
+                  <Text style={styles.gpsDetectBarText}>Auto-detect location using GPS</Text>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.gray} />
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -399,6 +489,33 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     paddingHorizontal: SPACING.xs,
   },
+  sectionHeaderLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  sectionHeaderTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detectLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primary}15`,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
+    borderColor: `${COLORS.primary}30`,
+  },
+  detectLocationBtnText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.primary,
+    marginLeft: 4,
+  },
   sectionTitle: {
     fontSize: FONTS.sizes.md,
     fontWeight: FONTS.weights.bold,
@@ -468,6 +585,32 @@ const styles = StyleSheet.create({
   },
   inputWithIcon: {
     paddingLeft: SPACING.xl + SPACING.md,
+  },
+  gpsDetectBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBF0',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm + 2,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 184, 0, 0.4)',
+    marginTop: SPACING.xs,
+  },
+  gpsIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  gpsDetectBarText: {
+    flex: 1,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '700',
+    color: COLORS.secondary,
   },
   disabledInput: {
     backgroundColor: `${COLORS.borderLight}80`,
