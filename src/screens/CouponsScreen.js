@@ -12,12 +12,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { supabase } from '../config/supabase';
 import Loader from '../components/Loader';
 import ModernButton from '../components/ModernButton';
 
 const CouponsScreen = ({ navigation }) => {
   const { user } = useAuth();
+  const { showToast } = useFeedback();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,8 +51,7 @@ const CouponsScreen = ({ navigation }) => {
   };
 
   const handleCopyCode = (code) => {
-    // In a real app, copy to clipboard
-    Alert.alert('Copied!', `Coupon code "${code}" copied to clipboard`);
+    showToast({ type: 'info', title: 'Copied!', message: `Coupon code "${code}" copied to clipboard` });
   };
 
   const formatDiscount = (coupon) => {

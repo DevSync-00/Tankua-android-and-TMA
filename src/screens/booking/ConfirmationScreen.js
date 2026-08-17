@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,15 +12,16 @@ import { COLORS, FONTS, SPACING, SHADOWS, BORDER_RADIUS } from '../../config/the
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeedback } from '../../contexts/FeedbackContext';
 import ModernButton from '../../components/ModernButton';
 import TripTicketCard from '../../components/TripTicketCard';
-import Loader from '../../components/Loader';
 import { shareTicketAsImage } from '../../utils/shareTicketImage';
 
 const ConfirmationScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
   const { createBooking, resetBooking } = useBooking();
   const { user } = useAuth();
+  const { showToast, alert: customAlert } = useFeedback();
   const ticketRef = useRef(null);
   const [booking, setBooking] = useState(route.params?.booking || null);
   const [loading, setLoading] = useState(!route.params?.booking);
@@ -39,11 +40,13 @@ const ConfirmationScreen = ({ navigation, route }) => {
       setLoading(false);
     } catch (error) {
       if (error.code === 'PROFILE_INCOMPLETE') {
-        Alert.alert('Profile Incomplete', error.message, [
-          { text: 'OK', onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }) },
-        ]);
+        customAlert({
+          title: 'Profile Incomplete',
+          message: error.message,
+          variant: 'warning',
+        }).then(() => navigation.navigate('MainTabs', { screen: 'Profile' }));
       } else {
-        Alert.alert('Error', error.message || 'Failed to create booking');
+        showToast({ type: 'error', title: 'Error', message: error.message || 'Failed to create booking' });
       }
       setLoading(false);
     }
@@ -60,7 +63,7 @@ const ConfirmationScreen = ({ navigation, route }) => {
       await new Promise((resolve) => setTimeout(resolve, 300));
       await shareTicketAsImage(ticketRef);
     } catch (error) {
-      Alert.alert('Share failed', error.message || 'Could not share ticket image.');
+      showToast({ type: 'error', title: 'Share failed', message: error.message || 'Could not share ticket image.' });
     } finally {
       setSharing(false);
     }
@@ -70,7 +73,7 @@ const ConfirmationScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Loader />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Creating your booking...</Text>
         </View>
       </SafeAreaView>

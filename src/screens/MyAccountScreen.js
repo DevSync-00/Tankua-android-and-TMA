@@ -13,11 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import ModernButton from '../components/ModernButton';
 import { getCurrentCityLocation } from '../services/locationService';
 
 const MyAccountScreen = ({ navigation, route }) => {
   const { user, updateProfile, deleteAccount } = useAuth();
+  const { showToast, confirm } = useFeedback();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -61,12 +63,12 @@ const MyAccountScreen = ({ navigation, route }) => {
           city: result.city,
           location: result.formattedLocation || result.city,
         }));
-        Alert.alert('Location Detected', `Updated city to "${result.city}".`);
+        showToast({ type: 'success', title: 'Location Detected', message: `Updated city to "${result.city}".` });
       } else {
-        Alert.alert('Location Detection Failed', result.error || 'Could not detect your current city.');
+        showToast({ type: 'error', title: 'Location Detection Failed', message: result.error || 'Could not detect your current city.' });
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to detect current location.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to detect current location.' });
     } finally {
       setDetectingLocation(false);
     }
@@ -74,51 +76,33 @@ const MyAccountScreen = ({ navigation, route }) => {
 
   const handleSave = async () => {
     if (!formData.name || !formData.phone_number) {
-      Alert.alert('Error', 'Name and phone number are required');
+      showToast({ type: 'warning', title: 'Required Fields', message: 'Name and phone number are required' });
       return;
     }
 
     try {
       setLoading(true);
       await updateProfile(formData);
-      Alert.alert('Success', 'Profile updated successfully');
+      showToast({ type: 'success', title: 'Success', message: 'Profile updated successfully' });
       navigation.goBack();
     } catch (error) {
       console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to update profile. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your Tankua account, profile, saved payment methods, bookings, rewards, reviews, and notification data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: confirmDeleteAccount,
-        },
-      ]
-    );
-  };
-
-  const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Are you absolutely sure?',
-      'Your account and related data will be permanently removed. You will be signed out after deletion.',
-      [
-        { text: 'Keep Account', style: 'cancel' },
-        {
-          text: 'Delete Forever',
-          style: 'destructive',
-          onPress: performDeleteAccount,
-        },
-      ]
-    );
+    confirm({
+      title: 'Delete Account',
+      message: 'This will permanently delete your Tankua account, profile, saved payment methods, bookings, rewards, reviews, and notification data. Are you sure?',
+      confirmText: 'Delete Forever',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    }).then((ok) => {
+      if (ok) performDeleteAccount();
+    });
   };
 
   const performDeleteAccount = async () => {
@@ -127,10 +111,11 @@ const MyAccountScreen = ({ navigation, route }) => {
       await deleteAccount();
     } catch (error) {
       console.error('Error deleting account:', error);
-      Alert.alert(
-        'Delete Account Failed',
-        error.message || 'We could not delete your account right now. Please try again or contact support.'
-      );
+      showToast({
+        type: 'error',
+        title: 'Delete Account Failed',
+        message: error.message || 'We could not delete your account right now. Please try again or contact support.',
+      });
     } finally {
       setDeleting(false);
     }

@@ -7,6 +7,7 @@ import TankuaLogo from '../components/auth/TankuaLogo';
 import { authStyles, AUTH_COLORS } from '../components/auth/authTheme';
 import { AUTH_COPY } from '../constants/authCopy';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { COLORS } from '../config/theme';
 
 const TelegramIcon = ({ size = 28, color = '#FFFFFF' }) => (
@@ -20,6 +21,7 @@ const TelegramIcon = ({ size = 28, color = '#FFFFFF' }) => (
 
 const LoginScreen = ({ navigation }) => {
   const { sendOTP, verifyOTP, checkBypassCredentials, IS_SANDBOX_BUILD } = useAuth();
+  const { showToast } = useFeedback();
   
   const [showReviewerLogin, setShowReviewerLogin] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -36,11 +38,11 @@ const LoginScreen = ({ navigation }) => {
 
   const handleReviewerLogin = async () => {
     if (!phoneNumber.trim()) {
-      Alert.alert('Validation Error', 'Please enter your reviewer phone number.');
+      showToast({ type: 'warning', title: 'Validation Error', message: 'Please enter your reviewer phone number.' });
       return;
     }
     if (!bypassToken.trim()) {
-      Alert.alert('Validation Error', 'Please enter your verification token.');
+      showToast({ type: 'warning', title: 'Validation Error', message: 'Please enter your verification token.' });
       return;
     }
 
@@ -51,14 +53,10 @@ const LoginScreen = ({ navigation }) => {
         throw new Error('Invalid reviewer credentials or unauthorized environment.');
       }
 
-      // 1. Initialize Supabase Auth OTP challenge for the phone number (sends no real SMS for test numbers)
       await sendOTP(phoneNumber);
-
-      // 2. Log in with the Supabase test account via native OTP verify
       await verifyOTP(phoneNumber, bypassToken);
-      // AppNavigator will detect user update and transition.
     } catch (error) {
-      Alert.alert('Authentication Failed', error.message || 'Verification failed. Check credentials.');
+      showToast({ type: 'error', title: 'Authentication Failed', message: error.message || 'Verification failed. Check credentials.' });
     } finally {
       setIsLoggingIn(false);
     }

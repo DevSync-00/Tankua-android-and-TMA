@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 
 import {
   isNativeTelegramLoginSupported,
@@ -157,6 +158,7 @@ function decodeTgAuthResult(raw) {
 
 const TelegramLoginScreen = ({ navigation }) => {
   const { loginWithTelegram, loginWithTelegramNative } = useAuth();
+  const { showToast } = useFeedback();
   const webViewRef = useRef(null);
 
   const processingRef = useRef(false);
@@ -184,11 +186,11 @@ const TelegramLoginScreen = ({ navigation }) => {
       console.warn('[TelegramLoginScreen] Native login attempt error:', err);
       processingRef.current = false;
       setIsProcessing(false);
-      Alert.alert(
-        'Login Failed',
-        err.message || 'Could not complete Telegram login. Please try again.',
-        [{ text: 'OK' }],
-      );
+      showToast({
+        type: 'error',
+        title: 'Login Failed',
+        message: err.message || 'Could not complete Telegram login. Please try again.',
+      });
     }
   };
 
@@ -228,14 +230,14 @@ const TelegramLoginScreen = ({ navigation }) => {
       } catch (err) {
         processingRef.current = false;
         setIsProcessing(false);
-        Alert.alert(
-          'Login Failed',
-          err.message || 'Could not complete Telegram login. Please try again.',
-          [{ text: 'OK' }],
-        );
+        showToast({
+          type: 'error',
+          title: 'Login Failed',
+          message: err.message || 'Could not complete Telegram login. Please try again.',
+        });
       }
     },
-    [loginWithTelegram],
+    [loginWithTelegram, showToast],
   );
 
   // ── URL interception (fragment-based redirect) ───────────────────────────
@@ -283,11 +285,11 @@ const TelegramLoginScreen = ({ navigation }) => {
           } catch (err) {
             processingRef.current = false;
             setIsProcessing(false);
-            Alert.alert(
-              'Login Failed',
-              err.message || 'Could not complete Telegram login. Please try again.',
-              [{ text: 'OK' }],
-            );
+            showToast({
+              type: 'error',
+              title: 'Login Failed',
+              message: err.message || 'Could not complete Telegram login. Please try again.',
+            });
           }
         } else if (msg?.type === 'tgAuthResult' && msg?.data) {
           handleTelegramResult(msg.data);
@@ -298,7 +300,7 @@ const TelegramLoginScreen = ({ navigation }) => {
         // Ignore non-JSON messages
       }
     },
-    [handleTelegramResult, loginWithTelegram],
+    [handleTelegramResult, loginWithTelegram, showToast],
   );
 
   // ── Load state handlers ──────────────────────────────────────────────────

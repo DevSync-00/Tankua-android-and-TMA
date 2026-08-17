@@ -3,12 +3,14 @@ import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Text } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, SHADOWS, FONTS, BORDER_RADIUS } from '../config/theme';
+import { useFeedback } from '../contexts/FeedbackContext';
 import ModernButton from '../components/ModernButton';
 import TripTicketCard from '../components/TripTicketCard';
 import { shareTicketAsImage } from '../utils/shareTicketImage';
 
 const TicketScreen = ({ route, navigation }) => {
   const { booking } = route.params || {};
+  const { showToast } = useFeedback();
   const ticketRef = useRef(null);
   const [sharing, setSharing] = useState(false);
 
@@ -18,7 +20,7 @@ const TicketScreen = ({ route, navigation }) => {
       await new Promise((resolve) => setTimeout(resolve, 300));
       await shareTicketAsImage(ticketRef);
     } catch (error) {
-      Alert.alert('Share failed', error.message || 'Could not share ticket image.');
+      showToast({ type: 'error', title: 'Share failed', message: error.message || 'Could not share ticket image.' });
     } finally {
       setSharing(false);
     }

@@ -16,7 +16,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input, ConfirmDialog } from "@tankua/ui";
 import { getProviderApplications, updateProviderStatus, getProviders, type SupportTicket, type Provider } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 
@@ -60,41 +60,58 @@ export default function ProviderApplicationsPage() {
     }
   };
 
-  const handleApprove = async (providerId: string) => {
-    if (!confirm("Are you sure you want to approve this provider?")) return;
+  const [approveConfirmId, setApproveConfirmId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ providerId: string; ticketId: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
-    const success = await updateProviderStatus(providerId, "active");
-    if (success) {
-      // Update ticket status
-      await supabase
-        .from("support_tickets")
-        .update({ status: "resolved", resolution_notes: "Provider approved" })
-        .eq("provider_id", providerId)
-        .eq("status", "open");
+  const handleApprove = (providerId: string) => {
+    setApproveConfirmId(providerId);
+  };
 
-      loadApplications();
-      setSelectedApp(null);
+  const executeApprove = async () => {
+    if (!approveConfirmId) return;
+    try {
+      const success = await updateProviderStatus(approveConfirmId, "active");
+      if (success) {
+        await supabase
+          .from("support_tickets")
+          .update({ status: "resolved", resolution_notes: "Provider approved" })
+          .eq("provider_id", approveConfirmId)
+          .eq("status", "open");
+
+        loadApplications();
+        setSelectedApp(null);
+      }
+    } finally {
+      setApproveConfirmId(null);
     }
   };
 
-  const handleReject = async (providerId: string, ticketId: string) => {
-    const reason = prompt("Enter rejection reason:");
-    if (!reason) return;
+  const handleReject = (providerId: string, ticketId: string) => {
+    setRejectTarget({ providerId, ticketId });
+    setRejectReason("");
+  };
 
-    // Update provider status to suspended
-    await updateProviderStatus(providerId, "suspended");
+  const executeReject = async () => {
+    if (!rejectTarget || !rejectReason.trim()) return;
+    const { providerId, ticketId } = rejectTarget;
 
-    // Update ticket status
-    await supabase
-      .from("support_tickets")
-      .update({
-        status: "resolved",
-        resolution_notes: `Rejected: ${reason}`,
-      })
-      .eq("id", ticketId);
+    try {
+      await updateProviderStatus(providerId, "suspended");
+      await supabase
+        .from("support_tickets")
+        .update({
+          status: "closed",
+          resolution_notes: `Rejected: ${rejectReason.trim()}`,
+        })
+        .eq("id", ticketId);
 
-    loadApplications();
-    setSelectedApp(null);
+      loadApplications();
+      setSelectedApp(null);
+    } finally {
+      setRejectTarget(null);
+      setRejectReason("");
+    }
   };
 
   const parseApplicationData = (description: string) => {
@@ -519,6 +536,45 @@ export default function ProviderApplicationsPage() {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!approveConfirmId}
+        onOpenChange={(open) => !open && setApproveConfirmId(null)}
+        title="Approve Provider Application"
+        description="Are you sure you want to approve this provider application? They will gain active status immediately."
+        confirmText="Approve Provider"
+        cancelText="Cancel"
+        variant="info"
+        onConfirm={executeApprove}
+      />
+
+      {rejectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">Reject Provider Application</h3>
+            <p className="text-sm text-slate-300">Please provide a reason for rejecting this provider application:</p>
+            <textarea
+              className="w-full h-24 p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-red-500"
+              placeholder="e.g. Incomplete business documentation..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setRejectTarget(null)}>
+                Cancel
+              </Button>
+
+              <Button
+                className="bg-red-600 hover:bg-red-500 text-white"
+                disabled={!rejectReason.trim()}
+                onClick={executeReject}
+              >
+                Reject Application
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@
 import axios from 'axios';
 import { supabase } from '../config/supabase';
 import { PAYMENT_CONFIG, PAYMENT_STATUS, PAYMENT_METHODS } from '../config/payment';
+import { sanitizeEmailForChapa } from './payment';
 
 // ============================================
 // TRANSACTION REFERENCE GENERATION
@@ -130,7 +131,7 @@ export const initiateChapaPayment = async (paymentData) => {
     const payload = {
       amount: amount.toString(),
       currency,
-      email: customerEmail || `${phoneNumber?.replace(/\+/g, '') || 'customer'}@tankua.app`,
+      email: sanitizeEmailForChapa(customerEmail, phoneNumber),
       first_name: customerName?.split(' ')[0] || 'Customer',
       last_name: customerName?.split(' ').slice(1).join(' ') || '',
       phone_number: phoneNumber || '',

@@ -17,7 +17,7 @@ import {
   Copy,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, formatCurrency } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, formatCurrency, ConfirmDialog, InlineBanner } from "@tankua/ui";
 import { getProviderTrips, updateTripStatus, deleteTrip, type TripDetails } from "@/lib/queries";
 
 export default function TripsPage() {
@@ -28,7 +28,9 @@ export default function TripsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
     const loadProviderAndTrips = async () => {
@@ -125,26 +127,29 @@ export default function TripsPage() {
     router.push(`/dashboard/trips/${tripId}/edit`);
   };
 
-  const handleDelete = async (tripId: string) => {
-    if (!confirm("Are you sure you want to delete this trip? This action cannot be undone.")) {
-      return;
-    }
+  const handleDelete = (tripId: string) => {
+    setDeleteConfirmId(tripId);
+  };
 
-    setDeletingTripId(tripId);
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    setDeletingTripId(deleteConfirmId);
     try {
-      const result = await deleteTrip(tripId);
+      const result = await deleteTrip(deleteConfirmId);
       if (result.success) {
         if (providerId) {
           await fetchTrips(providerId);
         }
+        setBanner({ message: "Trip deleted successfully", variant: "success" });
       } else {
-        alert(result.error || "Failed to delete trip");
+        setBanner({ message: result.error || "Failed to delete trip", variant: "error" });
       }
     } catch (err) {
-      console.error("Error deleting trip:", err);
-      alert("Failed to delete trip. Please try again.");
+      console.error(err);
+      setBanner({ message: "Failed to delete trip. Please try again.", variant: "error" });
     } finally {
       setDeletingTripId(null);
+      setDeleteConfirmId(null);
     }
   };
 
@@ -155,12 +160,13 @@ export default function TripsPage() {
         if (providerId) {
           await fetchTrips(providerId);
         }
+        setBanner({ message: `Trip status updated to ${newStatus}`, variant: "success" });
       } else {
-        alert(result.error || "Failed to update trip status");
+        setBanner({ message: result.error || "Failed to update trip status", variant: "error" });
       }
     } catch (err) {
       console.error("Error updating trip status:", err);
-      alert("Failed to update trip status. Please try again.");
+      setBanner({ message: "Failed to update trip status. Please try again.", variant: "error" });
     }
   };
 
@@ -199,6 +205,13 @@ export default function TripsPage() {
       />
 
       <div className="p-4 sm:p-6 space-y-6">
+        {banner && (
+          <InlineBanner
+            message={banner.message}
+            variant={banner.variant}
+            onClose={() => setBanner(null)}
+          />
+        )}
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -467,6 +480,17 @@ export default function TripsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete Trip"
+        description="Are you sure you want to delete this trip schedule? Passenger bookings associated with this trip may be affected."
+        confirmText="Delete Trip"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 }

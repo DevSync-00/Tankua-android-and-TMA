@@ -14,7 +14,8 @@ import { isChapaKeyConfigured } from '../../config/payment';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { processPayment, verifyPayment } from '../../services/payment';
+import { useFeedback } from '../../contexts/FeedbackContext';
+import { processPayment, verifyPayment, sanitizeEmailForChapa } from '../../services/payment';
 import { verifyBookingBeforePayment, getTimeRemaining, checkAndCancelExpiredBookings } from '../../services/bookingService';
 import { validateProfile, getProfileIncompleteMessage } from '../../utils/profileValidation';
 import { supabase } from '../../config/supabase';
@@ -25,6 +26,7 @@ const PaymentScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
   const { currentBooking, updateBooking, calculateTotalPrice, createBooking } = useBooking();
   const { user } = useAuth();
+  const { showToast, confirm, alert: customAlert } = useFeedback();
   const paymentMethod = 'chapa';
   const [loading, setLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
@@ -72,19 +74,20 @@ const PaymentScreen = ({ navigation, route }) => {
         console.error('Error initializing booking:', error);
         if (isMounted) {
           if (error.code === 'PROFILE_INCOMPLETE') {
-            Alert.alert(
-              'Profile Incomplete',
-              error.message,
-              [
-                { text: 'Cancel', style: 'cancel', onPress: () => navigation.goBack() },
-                { 
-                  text: 'Update Profile', 
-                  onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' })
-                },
-              ]
-            );
+            confirm({
+              title: 'Profile Incomplete',
+              message: error.message,
+              confirmText: 'Update Profile',
+              cancelText: 'Cancel',
+            }).then((ok) => {
+              if (ok) {
+                navigation.navigate('MainTabs', { screen: 'Profile' });
+              } else {
+                navigation.goBack();
+              }
+            });
           } else {
-            Alert.alert('Error', error.message || 'Failed to create booking. Please try again.');
+            showToast({ type: 'error', title: 'Error', message: error.message || 'Failed to create booking. Please try again.' });
             navigation.goBack();
           }
         }
@@ -133,16 +136,11 @@ const PaymentScreen = ({ navigation, route }) => {
 
       if (error) throw error;
 
-      Alert.alert(
-        'Booking Expired',
-        'Your booking has been cancelled because payment was not completed within 2 hours. The seat has been released.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
-          },
-        ]
-      );
+      customAlert({
+        title: 'Booking Expired',
+        message: 'Your booking has been cancelled because payment was not completed within 2 hours. The seat has been released.',
+        variant: 'warning',
+      }).then(() => navigation.navigate('MainTabs', { screen: 'Home' }));
     } catch (error) {
       console.error('Error cancelling expired booking:', error);
     }
@@ -150,15 +148,16 @@ const PaymentScreen = ({ navigation, route }) => {
 
   const handlePayment = async () => {
     if (!chapaReady) {
-      Alert.alert(
-        'Payment Unavailable',
-        'Chapa Pay is not configured. Add EXPO_PUBLIC_CHAPA_SECRET_KEY to .env and restart the app.'
-      );
+      showToast({
+        type: 'error',
+        title: 'Payment Unavailable',
+        message: 'Chapa Pay is not configured. Add EXPO_PUBLIC_CHAPA_SECRET_KEY to .env and restart the app.',
+      });
       return;
     }
 
     if (!user) {
-      Alert.alert('Error', 'Please login to continue');
+      showToast({ type: 'warning', title: 'Sign In Required', message: 'Please login to continue' });
       navigation.navigate('Login');
       return;
     }
@@ -171,16 +170,11 @@ const PaymentScreen = ({ navigation, route }) => {
       if (!booking || !booking.id) {
         setLoading(false);
         setPaymentProcessing(false);
-        Alert.alert(
-          'Booking Error',
-          'Booking not found. Please try creating a new booking.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
-            },
-          ]
-        );
+        customAlert({
+          title: 'Booking Error',
+          message: 'Booking not found. Please try creating a new booking.',
+          variant: 'error',
+        }).then(() => navigation.navigate('MainTabs', { screen: 'Home' }));
         return;
       }
 
@@ -189,16 +183,11 @@ const PaymentScreen = ({ navigation, route }) => {
       if (!verification.valid) {
         setLoading(false);
         setPaymentProcessing(false);
-        Alert.alert(
-          'Booking Invalid',
-          verification.reason || 'This booking is no longer valid.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
-            },
-          ]
-        );
+        customAlert({
+          title: 'Booking Invalid',
+          message: verification.reason || 'This booking is no longer valid.',
+          variant: 'warning',
+        }).then(() => navigation.navigate('MainTabs', { screen: 'Home' }));
         return;
       }
 
@@ -206,7 +195,7 @@ const PaymentScreen = ({ navigation, route }) => {
       const priceObj = calculateTotalPrice();
       const phoneNumber = user?.phone_number || user?.phoneNumber || '';
       const customerName = user?.name || 'Customer';
-      const customerEmail = user?.email || (phoneNumber ? `${phoneNumber}@tankua.app` : 'customer@tankua.app');
+      const customerEmail = sanitizeEmailForChapa(user?.email, phoneNumber);
 
       const paymentData = {
         amount: priceObj.total,
@@ -245,19 +234,9 @@ const PaymentScreen = ({ navigation, route }) => {
         errorMessage = 'Payment gateway authentication failed. Please check your payment configuration.';
       }
       
-      Alert.alert(
-        'Payment Error',
-        errorMessage,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setLoading(false);
-              setPaymentProcessing(false);
-            },
-          },
-        ]
-      );
+      showToast({ type: 'error', title: 'Payment Error', message: errorMessage });
+      setLoading(false);
+      setPaymentProcessing(false);
     }
   };
 
@@ -301,48 +280,37 @@ const PaymentScreen = ({ navigation, route }) => {
 
         setLoading(false);
         setPaymentProcessing(false);
-        Alert.alert('Success', 'Payment verified successfully!', [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Confirmation', { booking: updatedBooking }),
-          },
-        ]);
+        customAlert({
+          title: 'Success',
+          message: 'Payment verified successfully!',
+          variant: 'info',
+        }).then(() => navigation.navigate('Confirmation', { booking: updatedBooking }));
       } else {
-        Alert.alert(
-          'Payment Pending',
-          'Your payment is being processed. We will notify you once it is confirmed.',
-          [
-            {
-              text: 'Check Again',
-              onPress: () => verifyPaymentStatus(txRef, bookingId),
-            },
-            {
-              text: 'OK',
-              style: 'cancel',
-              onPress: () => {
-                setLoading(false);
-                setPaymentProcessing(false);
-                navigation.navigate('MainTabs', { screen: 'Trips' });
-              },
-            },
-          ]
-        );
+        confirm({
+          title: 'Payment Pending',
+          message: 'Your payment is being processed. We will notify you once it is confirmed.',
+          confirmText: 'Check Again',
+          cancelText: 'OK',
+          variant: 'info',
+        }).then((checkAgain) => {
+          if (checkAgain) {
+            verifyPaymentStatus(txRef, bookingId);
+          } else {
+            setLoading(false);
+            setPaymentProcessing(false);
+            navigation.navigate('MainTabs', { screen: 'Trips' });
+          }
+        });
       }
     } catch (error) {
       console.error('Verification error:', error);
-      Alert.alert(
-        'Verification Error',
-        'Unable to verify payment. Please contact support if payment was deducted.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setLoading(false);
-              setPaymentProcessing(false);
-            },
-          },
-        ]
-      );
+      showToast({
+        type: 'error',
+        title: 'Verification Error',
+        message: 'Unable to verify payment. Please contact support if payment was deducted.',
+      });
+      setLoading(false);
+      setPaymentProcessing(false);
     }
   };
 
@@ -577,7 +545,7 @@ const PaymentScreen = ({ navigation, route }) => {
           setCheckoutVisible(false);
           setLoading(false);
           setPaymentProcessing(false);
-          Alert.alert('Payment Error', message || 'Could not complete checkout.');
+          showToast({ type: 'error', title: 'Payment Error', message: message || 'Could not complete checkout.' });
         }}
       />
     </SafeAreaView>

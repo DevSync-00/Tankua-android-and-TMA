@@ -12,10 +12,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import ModernButton from '../components/ModernButton';
 
 const ReferFriendScreen = ({ navigation }) => {
   const { user } = useAuth();
+  const { showToast } = useFeedback();
   const [referralCode, setReferralCode] = useState('');
   const [referralCount, setReferralCount] = useState(0);
   const [earnings, setEarnings] = useState(0);
@@ -42,8 +44,7 @@ const ReferFriendScreen = ({ navigation }) => {
   };
 
   const handleCopyCode = () => {
-    // In real app, copy to clipboard
-    Alert.alert('Copied!', `Referral code "${referralCode}" copied to clipboard`);
+    showToast({ type: 'info', title: 'Copied!', message: `Referral code "${referralCode}" copied to clipboard` });
   };
 
   return (

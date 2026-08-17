@@ -12,27 +12,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { supabase } from '../config/supabase';
 import ModernButton from '../components/ModernButton';
 
 const SuggestRouteScreen = ({ navigation }) => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const { showToast } = useFeedback();
+
   const [formData, setFormData] = useState({
     origin: '',
     destination: '',
+    frequency: '',
     description: '',
-    frequency: 'weekly',
   });
-
+  const [loading, setLoading] = useState(false);
   const handleSubmit = async () => {
     if (!user?.id) {
-      Alert.alert('Sign in required', 'Please sign in to suggest a trip.');
+      showToast({ type: 'warning', title: 'Sign in required', message: 'Please sign in to suggest a trip.' });
       return;
     }
 
     if (!formData.origin || !formData.destination) {
-      Alert.alert('Error', 'Please fill in origin and destination');
+      showToast({ type: 'warning', title: 'Error', message: 'Please fill in origin and destination' });
       return;
     }
 
@@ -48,22 +50,16 @@ const SuggestRouteScreen = ({ navigation }) => {
 
       if (error) throw error;
       
-      Alert.alert(
-        'Thank You!',
-        'Your route suggestion has been submitted. We\'ll review it and consider adding it to our routes.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setFormData({ origin: '', destination: '', description: '', frequency: 'weekly' });
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+      showToast({
+        type: 'success',
+        title: 'Thank You!',
+        message: "Your route suggestion has been submitted. We'll review it and consider adding it to our routes.",
+      });
+      setFormData({ origin: '', destination: '', description: '', frequency: 'weekly' });
+      navigation.goBack();
     } catch (error) {
       console.error('Error submitting suggestion:', error);
-      Alert.alert('Error', 'Failed to submit suggestion. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to submit suggestion. Please try again.' });
     } finally {
       setLoading(false);
     }

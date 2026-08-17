@@ -47,6 +47,31 @@ const formatPhoneForChapa = (phone) => {
   return digits;
 };
 
+export const sanitizeEmailForChapa = (email, phone) => {
+  let emailStr = typeof email === 'string' ? email.trim() : '';
+  const strictEmailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  if (emailStr && !emailStr.startsWith('+') && strictEmailRegex.test(emailStr)) {
+    return emailStr.toLowerCase();
+  }
+
+  let phoneStr = '';
+  if (phone) {
+    if (typeof phone === 'string' || typeof phone === 'number') {
+      phoneStr = String(phone);
+    } else if (typeof phone === 'object') {
+      phoneStr = String(phone.number || phone.phone || phone.phoneNumber || '');
+    }
+  }
+
+  const cleanPhone = phoneStr.replace(/\D/g, '');
+  if (cleanPhone.length >= 7) {
+    return `customer${cleanPhone}@gmail.com`;
+  }
+
+  return `customer${Date.now()}@gmail.com`;
+};
+
 /**
  * Chapa Payment Integration
  * https://developer.chapa.co/
@@ -73,7 +98,7 @@ export const initiateChapaPayment = async (paymentData) => {
     const payload = {
       amount: numericAmount.toFixed(2),
       currency,
-      email: customerEmail || `${formatPhoneForChapa(phoneNumber) || 'customer'}@tankua.app`,
+      email: sanitizeEmailForChapa(customerEmail, phoneNumber),
       first_name: (customerName || 'Customer').split(' ')[0] || 'Customer',
       last_name: (customerName || '').split(' ').slice(1).join(' ') || 'Guest',
       phone_number: formatPhoneForChapa(phoneNumber),

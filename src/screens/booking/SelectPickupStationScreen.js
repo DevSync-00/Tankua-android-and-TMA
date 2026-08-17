@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useFeedback } from '../../contexts/FeedbackContext';
 import { OSM_TILE_URL } from '../../config/osm';
 import ModernPickupStationCard from '../../components/ModernPickupStationCard';
 import ModernButton from '../../components/ModernButton';
@@ -30,6 +31,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
   const { width, height } = useWindowDimensions();
   const { t } = useLanguage();
   const { currentBooking, updateBooking } = useBooking();
+  const { showToast } = useFeedback();
   const [selectedStation, setSelectedStation] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [stations, setStations] = useState([]);
@@ -98,7 +100,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error loading pickup stations:', error);
-      Alert.alert('Error', 'Failed to load pickup stations. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to load pickup stations. Please try again.' });
     } finally {
       setLoading(false);
     }
