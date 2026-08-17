@@ -35,25 +35,65 @@ import {
 const BOT_ID = process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ?? '';
 const AUTH_MODE = process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native';
 
-const ORIGIN = 'https://oauth.telegram.org';
-const RETURN_TO = 'https://oauth.telegram.org/auth/callback';
+const ORIGIN = 'https://www.tankua.co';
+const RETURN_TO = 'https://dotjlikaurcjwabarqcy.supabase.co/functions/v1/telegram-auth';
 
-const buildAuthUrl = (nonce) =>
-  `https://oauth.telegram.org/auth` +
-  `?bot_id=${BOT_ID}` +
-  `&origin=${encodeURIComponent(ORIGIN)}` +
-  `&return_to=${encodeURIComponent(RETURN_TO)}` +
-  `&request_access=write` +
-  `&embed=0` +
-  `&nonce=${nonce}`;
+const getWidgetHtml = () => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #FAF8F5;
+      font-family: -apple-system, Roboto, sans-serif;
+    }
+  </style>
+  <script type="text/javascript">
+    function onTelegramAuth(user) {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'TELEGRAM_AUTH_USER',
+          user: user
+        }));
+      }
+    }
+  </script>
+</head>
+<body>
+  <script async src="https://telegram.org/js/telegram-widget.js?22"
+          data-telegram-login="tankua_auth_bot"
+          data-size="large"
+          data-radius="10"
+          data-onauth="onTelegramAuth(user)"
+          data-request-access="write"></script>
+</body>
+</html>
+`;
 
 const INJECTED_JS = `
 (function() {
   try {
+    window.open = function(url) {
+      if (url) window.location.href = url;
+    };
+    document.addEventListener('click', function(e) {
+      var a = e.target && e.target.closest && e.target.closest('a');
+      if (a && a.target === '_blank') {
+        a.target = '_self';
+      }
+    }, true);
+  } catch(e) {}
+  try {
     document.cookie.split(';').forEach(function(c) {
       var name = c.trim().split('=')[0];
       document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.telegram.org';
-      document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=oauth.telegram.org';
+      document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/domain=oauth.telegram.org';
       document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
     });
   } catch(e) {}
@@ -123,7 +163,7 @@ const TelegramLoginScreen = ({ navigation }) => {
   const pageLoadedRef = useRef(false);
 
   const [useWebViewFallback, setUseWebViewFallback] = useState(
-    AUTH_MODE === 'legacy' || !isNativeTelegramLoginSupported()
+    AUTH_MODE === 'webview',
   );
 
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -131,13 +171,6 @@ const TelegramLoginScreen = ({ navigation }) => {
   const [fatalError, setFatalError] = useState(null);
   const [webViewKey, setWebViewKey] = useState('initial');
   const [nonce, setNonce] = useState(() => Math.random().toString(36).slice(2));
-
-  // Try Native SDK login on mount if supported
-  useEffect(() => {
-    if (AUTH_MODE !== 'legacy' && isNativeTelegramLoginSupported() && !useWebViewFallback) {
-      triggerNativeLogin();
-    }
-  }, []);
 
   const triggerNativeLogin = async () => {
     if (processingRef.current) return;
@@ -151,24 +184,19 @@ const TelegramLoginScreen = ({ navigation }) => {
       console.warn('[TelegramLoginScreen] Native login attempt error:', err);
       processingRef.current = false;
       setIsProcessing(false);
-
-      // Fallback to web flow if Telegram app is uninstalled or native module unavailable
-      if (
-        err.code === 'TELEGRAM_NOT_INSTALLED' ||
-        err.code === 'NATIVE_MODULE_UNAVAILABLE' ||
-        err.code === 'SDK_START_FAILED'
-      ) {
-        console.warn('[TelegramLoginScreen] Fallback to WebView auth triggered');
-        setUseWebViewFallback(true);
-      } else {
-        Alert.alert(
-          'Login Failed',
-          err.message || 'Could not complete Telegram login. Please try again.',
-          [{ text: 'OK' }],
-        );
-      }
+      Alert.alert(
+        'Login Failed',
+        err.message || 'Could not complete Telegram login. Please try again.',
+        [{ text: 'OK' }],
+      );
     }
   };
+
+  useEffect(() => {
+    if (AUTH_MODE === 'native') {
+      triggerNativeLogin();
+    }
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem('webview_reset_key').then((val) => {
@@ -227,13 +255,14 @@ const TelegramLoginScreen = ({ navigation }) => {
 
   const handleShouldStartLoadWithRequest = useCallback(
     (request) => {
-      // Let tg:// deep links through (Telegram app opens natively)
-      if (request.url?.startsWith('tg://')) return true;
-
+      if (request.url?.startsWith('tg://')) {
+        Linking.openURL(request.url).catch(() => {});
+        return false;
+      }
       const result = extractResult(request.url);
       if (result) {
         handleTelegramResult(result);
-        return false; // stop WebView from navigating
+        return false;
       }
       return true;
     },
@@ -242,10 +271,25 @@ const TelegramLoginScreen = ({ navigation }) => {
 
   // ── Messages from injected JS ────────────────────────────────────────────
   const handleMessage = useCallback(
-    (event) => {
+    async (event) => {
       try {
         const msg = JSON.parse(event.nativeEvent.data);
-        if (msg?.type === 'tgAuthResult' && msg?.data) {
+        if (msg?.type === 'TELEGRAM_AUTH_USER' && msg?.user?.id) {
+          if (processingRef.current) return;
+          processingRef.current = true;
+          setIsProcessing(true);
+          try {
+            await loginWithTelegram(msg.user);
+          } catch (err) {
+            processingRef.current = false;
+            setIsProcessing(false);
+            Alert.alert(
+              'Login Failed',
+              err.message || 'Could not complete Telegram login. Please try again.',
+              [{ text: 'OK' }],
+            );
+          }
+        } else if (msg?.type === 'tgAuthResult' && msg?.data) {
           handleTelegramResult(msg.data);
         } else if (msg?.type === 'consoleError') {
           console.warn('[TelegramWebView]', msg.msg);
@@ -254,7 +298,7 @@ const TelegramLoginScreen = ({ navigation }) => {
         // Ignore non-JSON messages
       }
     },
-    [handleTelegramResult],
+    [handleTelegramResult, loginWithTelegram],
   );
 
   // ── Load state handlers ──────────────────────────────────────────────────
@@ -358,7 +402,10 @@ const TelegramLoginScreen = ({ navigation }) => {
             <WebView
               key={webViewKey}
               ref={webViewRef}
-              source={{ uri: buildAuthUrl(nonce) }}
+              source={{
+                html: getWidgetHtml(),
+                baseUrl: 'https://www.tankua.co',
+              }}
               style={styles.webView}
               injectedJavaScript={INJECTED_JS}
               onNavigationStateChange={handleNavigationStateChange}
@@ -370,6 +417,7 @@ const TelegramLoginScreen = ({ navigation }) => {
               onHttpError={handleHttpError}
               javaScriptEnabled
               domStorageEnabled
+              setSupportMultipleWindows={false}
               incognito={true}
               allowsInlineMediaPlayback
               originWhitelist={['https://*', 'http://*', 'tg://*']}
