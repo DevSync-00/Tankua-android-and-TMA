@@ -27,6 +27,7 @@ const MyAccountScreen = ({ navigation, route }) => {
   const focusField = route && route.params ? route.params.focusField : null;
   const scrollRef = useRef(null);
   const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
   const emergencyContactInputRef = useRef(null);
   const cityInputRef = useRef(null);
 
@@ -44,6 +45,8 @@ const MyAccountScreen = ({ navigation, route }) => {
       setTimeout(() => {
         if (focusField === 'name' && nameInputRef.current) {
           nameInputRef.current.focus();
+        } else if (focusField === 'email' && emailInputRef.current) {
+          emailInputRef.current.focus();
         } else if (focusField === 'emergency_contact' && emergencyContactInputRef.current) {
           emergencyContactInputRef.current.focus();
         } else if (focusField === 'city' && cityInputRef.current) {
@@ -75,14 +78,26 @@ const MyAccountScreen = ({ navigation, route }) => {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.phone_number) {
-      showToast({ type: 'warning', title: 'Required Fields', message: 'Name and phone number are required' });
+    const emailTrimmed = (formData.email || '').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isPlaceholderEmail = emailTrimmed.endsWith('@auth.tankua.app');
+
+    if (!formData.name || !formData.phone_number || !emailTrimmed || isPlaceholderEmail || !formData.emergency_contact || !(formData.city || formData.location)) {
+      showToast({ type: 'warning', title: 'Required Fields', message: 'Name, phone, valid email, emergency contact, and location are required.' });
+      return;
+    }
+
+    if (!emailRegex.test(emailTrimmed)) {
+      showToast({ type: 'warning', title: 'Invalid Email', message: 'Please enter a valid email address.' });
       return;
     }
 
     try {
       setLoading(true);
-      await updateProfile(formData);
+      await updateProfile({
+        ...formData,
+        email: emailTrimmed,
+      });
       showToast({ type: 'success', title: 'Success', message: 'Profile updated successfully' });
       navigation.goBack();
     } catch (error) {
@@ -252,11 +267,14 @@ const MyAccountScreen = ({ navigation, route }) => {
               'Email Address',
               formData.email,
               (text) => setFormData({ ...formData, email: text }),
-              'Enter your email',
+              'Enter your email address',
               'mail',
               'email-address',
+              true,
+              'none',
               false,
-              'none'
+              null,
+              emailInputRef
             )}
             {renderInputField(
               'Phone Number',

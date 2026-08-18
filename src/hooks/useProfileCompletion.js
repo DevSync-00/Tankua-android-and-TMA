@@ -41,9 +41,15 @@ export const useProfileCompletion = () => {
       missing.push({ key: 'name', label: 'Full Name', category: 'Personal' });
     }
 
-    // 2. Contact Info check (phone_number & emergency_contact)
+    // 2. Contact Info check (phone_number, email & emergency_contact)
     if (!user.phone_number || user.phone_number.trim() === '') {
       missing.push({ key: 'phone_number', label: 'Phone Number', category: 'Contact' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isPlaceholderEmail = typeof user.email === 'string' && user.email.endsWith('@auth.tankua.app');
+    if (!user.email || typeof user.email !== 'string' || user.email.trim() === '' || isPlaceholderEmail || !emailRegex.test(user.email.trim())) {
+      missing.push({ key: 'email', label: 'Email Address', category: 'Contact' });
     }
 
     if (!user.emergency_contact || user.emergency_contact.trim() === '') {
@@ -56,7 +62,7 @@ export const useProfileCompletion = () => {
       missing.push({ key: 'city', label: 'City Location', category: 'Location' });
     }
 
-    const totalFields = 4;
+    const totalFields = 5;
     const completedCount = totalFields - missing.length;
     const percentage = Math.round((completedCount / totalFields) * 100);
     const isComplete = missing.length === 0;
