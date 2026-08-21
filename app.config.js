@@ -71,6 +71,7 @@ export default ({ config }) => {
       ...baseExpo,
       name: 'Tankua',
       slug: 'tankua',
+      scheme: 'tankua',
       version: '1.0.0',
       orientation: 'portrait',
       icon: './assets/icon.png',

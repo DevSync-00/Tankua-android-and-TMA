@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../config/supabase';
 import {
   cancelAllNotifications,
@@ -14,6 +16,25 @@ const AuthContext = createContext();
 const IS_SANDBOX_BUILD = process.env.EXPO_PUBLIC_APP_ENV !== 'production';
 const GOOGLE_REVIEW_PHONE = process.env.EXPO_PUBLIC_REVIEW_PHONE;
 const GOOGLE_REVIEW_BYPASS = process.env.EXPO_PUBLIC_REVIEW_BYPASS_TOKEN;
+
+WebBrowser.maybeCompleteAuthSession();
+
+const getOAuthParameters = (url) => {
+  const queryIndex = url.indexOf('?');
+  const hashIndex = url.indexOf('#');
+  const parts = [];
+
+  if (queryIndex >= 0) {
+    parts.push(url.slice(queryIndex + 1, hashIndex >= 0 ? hashIndex : undefined));
+  }
+  if (hashIndex >= 0) {
+    parts.push(url.slice(hashIndex + 1));
+  }
+
+  return Object.fromEntries(
+    parts.flatMap((part) => Array.from(new URLSearchParams(part).entries())),
+  );
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -211,6 +232,96 @@ export const AuthProvider = ({ children }) => {
       return data.user;
     } catch (error) {
       throw error;
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    const redirectTo = makeRedirectUri({
+      scheme: 'tankua',
+      path: 'auth/callback',
+    });
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error('Google sign-in could not be started.');
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type === 'cancel' || result.type === 'dismiss') return null;
+      if (result.type !== 'success' || !result.url) {
+        throw new Error('Google sign-in did not complete.');
+      }
+
+      const params = getOAuthParameters(result.url);
+      if (params.error || params.error_description) {
+        throw new Error(params.error_description || params.error);
+      }
+
+      let authResult;
+      if (params.code) {
+        authResult = await supabase.auth.exchangeCodeForSession(params.code);
+      } else if (params.access_token && params.refresh_token) {
+        authResult = await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+      } else {
+        throw new Error('Google returned an invalid authentication response.');
+      }
+
+      if (authResult.error) throw authResult.error;
+      const authUser = authResult.data?.user || authResult.data?.session?.user;
+      if (!authUser) throw new Error('Google sign-in returned no user.');
+
+      const { data: existingUser, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      let profile = existingUser;
+      if (!profile) {
+        const metadata = authUser.user_metadata || {};
+        profile = {
+          id: authUser.id,
+          phone_number: authUser.phone || `google:${authUser.id}`,
+          name: metadata.full_name || metadata.name || '',
+          email: authUser.email || '',
+          emergency_contact: '',
+          location: '',
+          saved_destinations: [],
+          saved_stations: [],
+          is_admin: false,
+          created_at: new Date().toISOString(),
+        };
+
+        const { error: insertError } = await supabase.from('users').insert([profile]);
+        if (insertError) throw insertError;
+      }
+
+      setUser(profile);
+      setIsAdmin(profile.is_admin || false);
+      await AsyncStorage.setItem('user', JSON.stringify(profile));
+      return authUser;
+    } catch (error) {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      setUser(null);
+      setIsAdmin(false);
+      await AsyncStorage.removeItem('user');
+      throw new Error(error.message || 'Google sign-in failed. Please try again.');
     }
   };
 
@@ -614,6 +725,7 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         sendOTP,
         verifyOTP,
+        loginWithGoogle,
         loginWithTelegram,
         loginWithTelegramNative,
         logout,

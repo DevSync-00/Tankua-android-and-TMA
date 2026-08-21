@@ -20,13 +20,14 @@ const TelegramIcon = ({ size = 28, color = '#FFFFFF' }) => (
 );
 
 const LoginScreen = ({ navigation }) => {
-  const { sendOTP, verifyOTP, checkBypassCredentials, IS_SANDBOX_BUILD } = useAuth();
+  const { sendOTP, verifyOTP, loginWithGoogle, checkBypassCredentials, IS_SANDBOX_BUILD } = useAuth();
   const { showToast } = useFeedback();
   
   const [showReviewerLogin, setShowReviewerLogin] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [bypassToken, setBypassToken] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -62,6 +63,21 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Google Sign-In Failed',
+        message: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <AuthScreenLayout onBack={handleBack}>
       <View style={styles.header}>
@@ -72,6 +88,22 @@ const LoginScreen = ({ navigation }) => {
       <Text style={authStyles.subtitle}>{AUTH_COPY.signInSubheadline}</Text>
 
       <View style={styles.buttonWrap}>
+        <TouchableOpacity
+          style={[styles.googleButton, isGoogleLoading && styles.authButtonDisabled]}
+          onPress={handleGoogleLogin}
+          disabled={isGoogleLoading}
+          activeOpacity={0.85}
+        >
+          {isGoogleLoading ? (
+            <ActivityIndicator color="#1F1F1F" />
+          ) : (
+            <>
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.telegramButton}
           onPress={() => navigation.navigate('TelegramLogin')}
@@ -179,6 +211,32 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DADCE0',
+    gap: 12,
+    marginBottom: 14,
+  },
+  googleIcon: {
+    color: '#4285F4',
+    fontSize: 21,
+    fontWeight: '800',
+  },
+  googleButtonText: {
+    color: '#1F1F1F',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  authButtonDisabled: {
+    opacity: 0.65,
   },
   telegramButtonText: {
     color: '#FFFFFF',
