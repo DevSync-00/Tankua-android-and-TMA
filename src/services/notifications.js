@@ -69,7 +69,7 @@ export async function registerForPushNotifications() {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Push notification permission not granted');
+      console.log('Push notifications are disabled by the user; sign-in and core app features remain available.');
       return null;
     }
 

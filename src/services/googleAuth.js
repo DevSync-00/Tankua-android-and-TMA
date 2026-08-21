@@ -49,6 +49,17 @@ export async function signInWithGoogle() {
       throw new Error('Google Play Services is unavailable or out of date on this device.');
     }
 
+    if (
+      error?.code === '8' ||
+      error?.code === '10' ||
+      error?.message?.includes('INTERNAL_ERROR') ||
+      error?.message?.includes('DEVELOPER_ERROR')
+    ) {
+      throw new Error(
+        'This app build is not registered for Google Sign-In. Add this APK signing certificate SHA-1 to the com.tankua.co Android OAuth client in Google Cloud, then try again.',
+      );
+    }
+
     throw error;
   }
 }

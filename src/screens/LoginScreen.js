@@ -9,6 +9,7 @@ import { AUTH_COPY } from '../constants/authCopy';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from '../contexts/FeedbackContext';
 import { COLORS } from '../config/theme';
+import GoogleIcon from '../components/auth/GoogleIcon';
 
 const TelegramIcon = ({ size = 28, color = '#FFFFFF' }) => (
   <Svg width={size} height={size} viewBox="0 0 640 640">
@@ -98,7 +99,7 @@ const LoginScreen = ({ navigation }) => {
             <ActivityIndicator color="#1F1F1F" />
           ) : (
             <>
-              <Text style={styles.googleIcon}>G</Text>
+              <GoogleIcon size={24} />
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </>
           )}
@@ -224,11 +225,6 @@ const styles = StyleSheet.create({
     borderColor: '#DADCE0',
     gap: 12,
     marginBottom: 14,
-  },
-  googleIcon: {
-    color: '#4285F4',
-    fontSize: 21,
-    fontWeight: '800',
   },
   googleButtonText: {
     color: '#1F1F1F',

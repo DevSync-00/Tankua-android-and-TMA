@@ -16,6 +16,7 @@ import Svg, { Path } from 'react-native-svg';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from '../contexts/FeedbackContext';
+import GoogleIcon from '../components/auth/GoogleIcon';
 
 const TelegramIcon = ({ size = 12, color = '#1a85c0' }) => (
   <Svg width={size} height={size} viewBox="0 0 640 640">
@@ -184,8 +185,9 @@ const MenuRow = ({ item, onPress, isLast }) => (
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user, authProvider, logout } = useAuth();
   const { confirm } = useFeedback();
+  const isGoogleUser = authProvider === 'google';
 
   const handleLogout = () => {
     confirm({
@@ -229,9 +231,15 @@ const ProfileScreen = ({ navigation }) => {
                   ? `@${user.telegram_username}`
                   : user?.email || 'Tap to complete profile'}
               </Text>
-              <View style={styles.telegramBadge}>
-                <TelegramIcon size={12} color="#1a85c0" />
-                <Text style={styles.telegramBadgeText}>Telegram</Text>
+              <View style={[styles.providerBadge, isGoogleUser && styles.googleBadge]}>
+                {isGoogleUser ? (
+                  <GoogleIcon size={12} />
+                ) : (
+                  <TelegramIcon size={12} color="#1a85c0" />
+                )}
+                <Text style={[styles.providerBadgeText, isGoogleUser && styles.googleBadgeText]}>
+                  {isGoogleUser ? 'Google' : 'Telegram'}
+                </Text>
               </View>
             </View>
           </View>
@@ -342,7 +350,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: FONTS.weights.medium,
   },
-  telegramBadge: {
+  providerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
@@ -353,10 +361,16 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.full,
     gap: 4,
   },
-  telegramBadgeText: {
+  providerBadgeText: {
     fontSize: FONTS.sizes.xs,
     color: '#1a85c0',
     fontWeight: FONTS.weights.semibold,
+  },
+  googleBadge: {
+    backgroundColor: '#4285F415',
+  },
+  googleBadgeText: {
+    color: '#3c4043',
   },
   editChip: {
     flexDirection: 'row',

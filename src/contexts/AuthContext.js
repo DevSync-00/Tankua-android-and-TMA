@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authProvider, setAuthProvider] = useState(null);
 
   useEffect(() => {
     checkUser();
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes (handles automatic session refresh, logout, etc.)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
+        setAuthProvider(session.user.app_metadata?.provider || null);
         setTimeout(async () => {
           try {
             await loadUserProfile(session.user.id);
@@ -46,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setIsAdmin(false);
+        setAuthProvider(null);
         AsyncStorage.removeItem('user').catch(() => {});
       }
     });
@@ -81,6 +84,7 @@ export const AuthProvider = ({ children }) => {
         if (sessionError) {
           console.log('Session check error:', sessionError?.message || sessionError);
         } else if (session?.user) {
+          setAuthProvider(session.user.app_metadata?.provider || null);
           // Session is valid, load fresh user profile
           await loadUserProfile(session.user.id);
           try {
@@ -95,6 +99,7 @@ export const AuthProvider = ({ children }) => {
           // No valid online session and no cached user, clear user state
           setUser(null);
           setIsAdmin(false);
+          setAuthProvider(null);
         }
       } catch (networkErr) {
         console.log('Supabase session fetch skipped (network error / offline mode):', networkErr?.message || networkErr);
@@ -243,6 +248,7 @@ export const AuthProvider = ({ children }) => {
       if (profileError) throw profileError;
 
       setUser(profile);
+      setAuthProvider('google');
       setIsAdmin(profile.is_admin || false);
       await AsyncStorage.setItem('user', JSON.stringify(profile));
       return authUser;
@@ -653,6 +659,7 @@ export const AuthProvider = ({ children }) => {
         user,
         loading,
         isAdmin,
+        authProvider,
         sendOTP,
         verifyOTP,
         loginWithGoogle,
