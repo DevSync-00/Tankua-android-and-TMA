@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Image, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet,
+  Image, RefreshControl, ScrollView, StatusBar, StyleSheet,
   Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { getDestinations, getPlaceholderImage } from '../services/database';
@@ -99,7 +100,7 @@ export default function SearchScreen({ navigation }) {
   const filteredMode = Boolean(cleanQuery) || category !== 'All';
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -187,8 +188,8 @@ export default function SearchScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.backgroundSecondary },
-  content: { paddingBottom: 110 },
+  screen: { flex: 1, backgroundColor: COLORS.white },
+  content: { backgroundColor: COLORS.backgroundSecondary, paddingBottom: 110 },
   hero: { backgroundColor: COLORS.white, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.md },
   eyebrow: { color: COLORS.primary, fontSize: 11, fontWeight: FONTS.weights.black, letterSpacing: 1.4, marginBottom: 6 },
   title: { color: COLORS.secondary, fontSize: 30, lineHeight: 37, fontWeight: FONTS.weights.black, letterSpacing: -0.7 },
