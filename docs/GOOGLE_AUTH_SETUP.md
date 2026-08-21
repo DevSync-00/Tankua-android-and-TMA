@@ -14,8 +14,14 @@ a Supabase session. No Google client secret belongs in the Expo app.
 ## 2. Configure Supabase
 
 1. Open **Authentication > Providers > Google**.
-2. Enable Google and enter the Google web client ID and client secret.
-3. Add the Android OAuth client ID to **Authorized Client IDs**.
+2. Enable Google and enter the Client IDs as one comma-separated value, with
+   the web client first and Android client second:
+
+   ```text
+   849559330972-bn0deoee271ra367kds05j72vlt6vms0.apps.googleusercontent.com,849559330972-eo76kc966avdk44g9h3qnhjcv80eqkf4.apps.googleusercontent.com
+   ```
+
+3. Enter the secret belonging to the first (web) client ID and save.
 
 ## 3. Build and test
 

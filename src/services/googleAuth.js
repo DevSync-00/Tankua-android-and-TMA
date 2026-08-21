@@ -35,7 +35,14 @@ export async function signInWithGoogle() {
       token: idToken,
     });
 
-    if (error) throw error;
+    if (error) {
+      if (error.message?.toLowerCase().includes('unacceptable audience')) {
+        throw new Error(
+          'Google Sign-In is not enabled for this app in Supabase yet. Please contact support.',
+        );
+      }
+      throw error;
+    }
     return data;
   } catch (error) {
     if (
