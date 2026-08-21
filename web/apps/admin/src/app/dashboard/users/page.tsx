@@ -21,7 +21,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input, ConfirmDialog } from "@tankua/ui";
 import { getUsers, updateUser, deleteUser, type User } from "@/lib/queries";
 
 export default function UsersPage() {
@@ -123,14 +123,25 @@ export default function UsersPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-    const success = await deleteUser(id);
-    if (success) {
-      loadUsers();
-    } else {
-      alert("Failed to delete user");
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      const success = await deleteUser(deleteConfirmId);
+      if (success) {
+        loadUsers();
+      } else {
+        setError("Failed to delete user account.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to delete user.");
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -451,6 +462,17 @@ export default function UsersPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete User Account"
+        description="Are you sure you want to delete this user account? This action cannot be undone."
+        confirmText="Delete User"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 }

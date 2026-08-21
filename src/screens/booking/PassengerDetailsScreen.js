@@ -5,11 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useFeedback } from '../../contexts/FeedbackContext';
 import ModernButton from '../../components/ModernButton';
 
 const PassengerDetailsScreen = ({ navigation }) => {
   const { t } = useLanguage();
   const { currentBooking, updateBooking } = useBooking();
+  const { showToast } = useFeedback();
   const [passengers, setPassengers] = useState([]);
   const [activeField, setActiveField] = useState(null); // tracking focus
 
@@ -33,16 +35,16 @@ const PassengerDetailsScreen = ({ navigation }) => {
     for (let i = 0; i < passengers.length; i++) {
       const passenger = passengers[i];
       if (!passenger.name || passenger.name.trim() === '') {
-        Alert.alert('Missing Information', `Please enter the name for passenger ${i + 1}`);
+        showToast({ type: 'warning', title: 'Missing Information', message: `Please enter the name for passenger ${i + 1}` });
         return false;
       }
       if (!passenger.age || passenger.age.trim() === '') {
-        Alert.alert('Missing Information', `Please enter the age for passenger ${i + 1}`);
+        showToast({ type: 'warning', title: 'Missing Information', message: `Please enter the age for passenger ${i + 1}` });
         return false;
       }
       const age = parseInt(passenger.age);
       if (isNaN(age) || age < 1 || age > 120) {
-        Alert.alert('Invalid Age', `Please enter a valid age (1-120) for passenger ${i + 1}`);
+        showToast({ type: 'warning', title: 'Invalid Age', message: `Please enter a valid age (1-120) for passenger ${i + 1}` });
         return false;
       }
     }

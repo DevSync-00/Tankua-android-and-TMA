@@ -878,10 +878,16 @@ function MyAccountView({ user, back, notify, api, onUpdated }) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) return;
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  const executeDelete = async () => {
     try {
       setDeleting(true);
+      setShowDeleteModal(false);
       const res = await fetch('/api/profile', { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete account');
       window.Telegram?.WebApp?.close();
@@ -945,6 +951,24 @@ function MyAccountView({ user, back, notify, api, onUpdated }) {
       <div className="flow-sticky">
         <button className="continue" disabled={loading} onClick={handleSave}>{loading ? 'Saving...' : 'Save Changes'}</button>
       </div>
+
+      {showDeleteModal && (
+        <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <ShieldAlert color="#ef4444" size={24} />
+              <h3>Delete Account</h3>
+            </div>
+            <p className="modal-text">Are you absolutely sure you want to delete your account? This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <button className="btn-danger" disabled={deleting} onClick={executeDelete}>
+                {deleting ? 'Deleting...' : 'Confirm Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

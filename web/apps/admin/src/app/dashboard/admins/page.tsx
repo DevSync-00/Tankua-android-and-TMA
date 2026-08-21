@@ -20,7 +20,7 @@ import {
   Lock,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, Input, ConfirmDialog } from "@tankua/ui";
 import {
   getAdminUsers,
   createAdminUser,
@@ -210,15 +210,20 @@ export default function AdminsPage() {
   };
 
   const handleDeleteAdmin = async (id: string) => {
-    if (!confirm("Are you sure you want to deactivate this admin?")) return;
+    setConfirmDeleteId(id);
+  };
 
+  const executeDeleteAdmin = async () => {
+    if (!confirmDeleteId) return;
     try {
-      const success = await deleteAdminUser(id);
+      const success = await deleteAdminUser(confirmDeleteId);
       if (success) {
         fetchAdmins();
       }
     } catch (error) {
       console.error("Error deleting admin:", error);
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
@@ -858,6 +863,17 @@ export default function AdminsPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+        title="Deactivate Admin"
+        description="Are you sure you want to deactivate this admin account? They will lose access immediately."
+        confirmText="Deactivate Admin"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeDeleteAdmin}
+      />
     </div>
   );
 }

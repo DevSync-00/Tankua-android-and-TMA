@@ -15,13 +15,14 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, ConfirmDialog, InlineBanner } from "@tankua/ui";
 import { getPromotions, deletePromotion, updatePromotion, type Promotion } from "@/lib/queries";
 
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [banner, setBanner] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
     loadPromotions();
@@ -39,15 +40,23 @@ export default function PromotionsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this promotion?")) {
-      return;
-    }
-    const success = await deletePromotion(id);
-    if (success) {
-      loadPromotions();
-    } else {
-      alert("Failed to delete promotion");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      const success = await deletePromotion(deleteConfirmId);
+      if (success) {
+        loadPromotions();
+      }
+    } catch (error) {
+      console.error("Error deleting promotion:", error);
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -56,7 +65,7 @@ export default function PromotionsPage() {
     if (success) {
       loadPromotions();
     } else {
-      alert("Failed to update promotion");
+      setBanner({ message: "Failed to update promotion", variant: "error" });
     }
   };
 
@@ -111,6 +120,13 @@ export default function PromotionsPage() {
       />
 
       <div className="p-4 sm:p-6 space-y-6">
+        {banner && (
+          <InlineBanner
+            message={banner.message}
+            variant={banner.variant}
+            onClose={() => setBanner(null)}
+          />
+        )}
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           <Card className="p-6">
@@ -218,7 +234,7 @@ export default function PromotionsPage() {
                             title="Copy code"
                             onClick={() => {
                               navigator.clipboard.writeText(promo.code);
-                              alert("Code copied to clipboard!");
+                              setBanner({ message: `Code "${promo.code}" copied to clipboard!`, variant: "info" });
                             }}
                           >
                             <Copy className="h-4 w-4" />
@@ -298,7 +314,7 @@ export default function PromotionsPage() {
                                     title="Copy code"
                                     onClick={() => {
                                       navigator.clipboard.writeText(promo.code);
-                                      alert("Code copied to clipboard!");
+                                      setBanner({ message: `Code "${promo.code}" copied to clipboard!`, variant: "info" });
                                     }}
                                   >
                                     <Copy className="h-4 w-4" />
@@ -329,6 +345,17 @@ export default function PromotionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete Promotion"
+        description="Are you sure you want to delete this promotional offer? It will no longer be available for users."
+        confirmText="Delete Promotion"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 }

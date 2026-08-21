@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { BookingProvider } from './src/contexts/BookingContext';
+import { FeedbackProvider } from './src/contexts/FeedbackContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { addNotificationReceivedListener, addNotificationResponseListener, setBadgeCount } from './src/services/notifications';
@@ -86,28 +87,30 @@ export default function App() {
         <SafeAreaProvider>
           <LanguageProvider>
             <AuthProvider>
-              <NotificationHandler>
-                <BookingProvider>
-                  <View style={{ flex: 1, backgroundColor: '#FFF8E6' }}>
-                    <NavigationContainer
-                      theme={{
-                        dark: false,
-                        colors: {
-                          primary: '#FFB800',
-                          background: '#FFF8E6',
-                          card: '#FFFFFF',
-                          text: '#1A1A2E',
-                          border: '#E5E7EB',
-                          notification: '#FFB800',
-                        },
-                      }}
-                    >
-                      <StatusBar style="dark" />
-                      <AppNavigator />
-                    </NavigationContainer>
-                  </View>
-                </BookingProvider>
-              </NotificationHandler>
+              <FeedbackProvider>
+                <NotificationHandler>
+                  <BookingProvider>
+                    <View style={{ flex: 1, backgroundColor: '#FFF8E6' }}>
+                      <NavigationContainer
+                        theme={{
+                          dark: false,
+                          colors: {
+                            primary: '#FFB800',
+                            background: '#FFF8E6',
+                            card: '#FFFFFF',
+                            text: '#1A1A2E',
+                            border: '#E5E7EB',
+                            notification: '#FFB800',
+                          },
+                        }}
+                      >
+                        <StatusBar style="dark" />
+                        <AppNavigator />
+                      </NavigationContainer>
+                    </View>
+                  </BookingProvider>
+                </NotificationHandler>
+              </FeedbackProvider>
             </AuthProvider>
           </LanguageProvider>
         </SafeAreaProvider>

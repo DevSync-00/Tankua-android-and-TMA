@@ -378,6 +378,105 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithTelegramNative = async (idToken, nonce) => {
+    try {
+      const supabaseUrl =
+        process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://dotjlikaurcjwabarqcy.supabase.co';
+      const supabaseAnonKey =
+        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvdGpsaWthdXJjandhYmFycWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwODY5MTQsImV4cCI6MjA4MDY2MjkxNH0.zZ0GeY_sV0TtP9jGVQRKPoXoDBCSpyNDlRKruAisa9A';
+
+      console.warn('[Telegram OIDC Debug] loginWithTelegramNative started...');
+
+      // Security: wipe existing state before attaching new session
+      setUser(null);
+      setIsAdmin(false);
+      await AsyncStorage.removeItem('user');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      let response;
+      try {
+        response = await fetch(`${supabaseUrl}/functions/v1/telegram-oidc`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({ idToken, nonce }),
+          signal: controller.signal,
+        });
+      } catch (fetchErr) {
+        throw new Error(`Network error calling Telegram OIDC verifier: ${fetchErr.message}`);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      const bodyText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(bodyText);
+      } catch {
+        throw new Error(`Edge function returned invalid response (HTTP ${response.status})`);
+      }
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || `HTTP ${response.status} from OIDC edge function`);
+      }
+
+      const { session } = result;
+      if (!session?.access_token) {
+        throw new Error('No valid session returned from Telegram OIDC verification');
+      }
+
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+
+      if (setSessionError) {
+        throw setSessionError;
+      }
+
+      // Query database for updated profile
+      const { data: userProfile, error: getProfileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (getProfileError && getProfileError.code !== 'PGRST116') {
+        throw getProfileError;
+      }
+
+      if (userProfile) {
+        const userData = {
+          ...userProfile,
+          name: userProfile.name || '',
+          phone_number: userProfile.phone_number || '',
+          emergency_contact: userProfile.emergency_contact || '',
+          location: userProfile.location || '',
+        };
+        setUser(userData);
+        setIsAdmin(userProfile.is_admin || false);
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+      } else {
+        await loadUserProfile(session.user.id);
+      }
+
+      console.warn('[Telegram OIDC Debug] Native login complete for user:', session.user.id);
+    } catch (error) {
+      console.warn('[Telegram OIDC Debug] Exception in loginWithTelegramNative:', error.message);
+      await supabase.auth.signOut().catch(() => {});
+      setUser(null);
+      setIsAdmin(false);
+      await AsyncStorage.removeItem('user');
+      throw new Error(error.message || 'Telegram OIDC login failed. Please try again.');
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -452,9 +551,20 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
+      const isTelegramUser =
+        user?.provider === 'telegram' ||
+        user?.telegram_id != null ||
+        user?.phone_number?.startsWith('telegram:') ||
+        user?.email?.endsWith('@auth.tankua.app');
+
+      const sanitizedUpdates = { ...updates };
+      if (isTelegramUser) {
+        delete sanitizedUpdates.phone_number;
+      }
+
       const { error } = await supabase
         .from('users')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('id', user.id);
 
       if (error) throw error;
@@ -505,6 +615,7 @@ export const AuthProvider = ({ children }) => {
         sendOTP,
         verifyOTP,
         loginWithTelegram,
+        loginWithTelegramNative,
         logout,
         deleteAccount,
         updateProfile,

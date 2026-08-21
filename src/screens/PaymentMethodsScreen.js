@@ -13,12 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { supabase } from '../config/supabase';
 import ModernButton from '../components/ModernButton';
 import Loader from '../components/Loader';
 
 const PaymentMethodsScreen = ({ navigation }) => {
   const { user } = useAuth();
+  const { showToast, confirm } = useFeedback();
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -53,7 +55,7 @@ const PaymentMethodsScreen = ({ navigation }) => {
       setPaymentMethods(data || []);
     } catch (error) {
       console.error('Error loading payment methods:', error);
-      Alert.alert('Error', 'Failed to load payment methods');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to load payment methods' });
     } finally {
       setLoading(false);
     }
@@ -71,13 +73,12 @@ const PaymentMethodsScreen = ({ navigation }) => {
 
   const handleSaveMethod = async () => {
     if (!formData.name || !formData.account_number) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      showToast({ type: 'warning', title: 'Error', message: 'Please fill in all required fields' });
       return;
     }
 
-    // Validate phone number format (basic validation)
     if (formData.type === 'mobile_money' && !/^(\+251|0)?9\d{8}$/.test(formData.account_number.replace(/\s/g, ''))) {
-      Alert.alert('Error', 'Please enter a valid phone number');
+      showToast({ type: 'warning', title: 'Error', message: 'Please enter a valid phone number' });
       return;
     }
 
@@ -95,30 +96,28 @@ const PaymentMethodsScreen = ({ navigation }) => {
           name: formData.name,
           account_number: formData.account_number,
           masked_number: maskedNumber,
-          is_default: paymentMethods.length === 0, // First method is default
+          is_default: paymentMethods.length === 0,
         });
 
       if (error) throw error;
 
-      Alert.alert('Success', 'Payment method added successfully');
+      showToast({ type: 'success', title: 'Success', message: 'Payment method added successfully' });
       setShowAddModal(false);
       loadPaymentMethods();
     } catch (error) {
       console.error('Error saving payment method:', error);
-      Alert.alert('Error', 'Failed to save payment method');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to save payment method' });
     }
   };
 
   const handleSetDefault = async (id) => {
     try {
-      // First, unset all defaults
       await supabase
         .from('saved_payment_methods')
         .update({ is_default: false })
         .eq('user_id', user.id)
         .eq('is_default', true);
 
-      // Then set the selected one as default
       const { error } = await supabase
         .from('saved_payment_methods')
         .update({ is_default: true })
@@ -129,37 +128,34 @@ const PaymentMethodsScreen = ({ navigation }) => {
       loadPaymentMethods();
     } catch (error) {
       console.error('Error setting default:', error);
-      Alert.alert('Error', 'Failed to set default payment method');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to set default payment method' });
     }
   };
 
   const handleDelete = async (id) => {
-    Alert.alert(
-      'Delete Payment Method',
-      'Are you sure you want to remove this payment method?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from('saved_payment_methods')
-                .update({ is_active: false })
-                .eq('id', id);
+    confirm({
+      title: 'Delete Payment Method',
+      message: 'Are you sure you want to remove this payment method?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    }).then(async (ok) => {
+      if (ok) {
+        try {
+          const { error } = await supabase
+            .from('saved_payment_methods')
+            .update({ is_active: false })
+            .eq('id', id);
 
-              if (error) throw error;
+          if (error) throw error;
 
-              loadPaymentMethods();
-            } catch (error) {
-              console.error('Error deleting payment method:', error);
-              Alert.alert('Error', 'Failed to delete payment method');
-            }
-          },
-        },
-      ]
-    );
+          loadPaymentMethods();
+        } catch (error) {
+          console.error('Error deleting payment method:', error);
+          showToast({ type: 'error', title: 'Error', message: 'Failed to delete payment method' });
+        }
+      }
+    });
   };
 
   const getPaymentIcon = (type) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,72 +7,117 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import ModernButton from '../components/ModernButton';
+import { getCurrentCityLocation } from '../services/locationService';
 
-const MyAccountScreen = ({ navigation }) => {
+const MyAccountScreen = ({ navigation, route }) => {
   const { user, updateProfile, deleteAccount } = useAuth();
+  const { showToast, confirm } = useFeedback();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+
+  const focusField = route && route.params ? route.params.focusField : null;
+  const scrollRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const emergencyContactInputRef = useRef(null);
+  const cityInputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone_number: user?.phone_number || '',
     emergency_contact: user?.emergency_contact || '',
+    city: user?.city || user?.location || '',
     location: user?.location || '',
   });
 
+  useEffect(() => {
+    if (focusField) {
+      setTimeout(() => {
+        if (focusField === 'name' && nameInputRef.current) {
+          nameInputRef.current.focus();
+        } else if (focusField === 'email' && emailInputRef.current) {
+          emailInputRef.current.focus();
+        } else if (focusField === 'emergency_contact' && emergencyContactInputRef.current) {
+          emergencyContactInputRef.current.focus();
+        } else if (focusField === 'city' && cityInputRef.current) {
+          cityInputRef.current.focus();
+        }
+      }, 400);
+    }
+  }, [focusField]);
+
+  const handleAutoDetectLocation = async () => {
+    try {
+      setDetectingLocation(true);
+      const result = await getCurrentCityLocation();
+      if (result.success && result.city) {
+        setFormData((prev) => ({
+          ...prev,
+          city: result.city,
+          location: result.formattedLocation || result.city,
+        }));
+        showToast({ type: 'success', title: 'Location Detected', message: `Updated city to "${result.city}".` });
+      } else {
+        showToast({ type: 'error', title: 'Location Detection Failed', message: result.error || 'Could not detect your current city.' });
+      }
+    } catch (err) {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to detect current location.' });
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.name || !formData.phone_number) {
-      Alert.alert('Error', 'Name and phone number are required');
+    const emailTrimmed = (formData.email || '').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isPlaceholderEmail = emailTrimmed.endsWith('@auth.tankua.app');
+
+    if (!formData.name || !formData.phone_number || !emailTrimmed || isPlaceholderEmail || !formData.emergency_contact || !(formData.city || formData.location)) {
+      showToast({ type: 'warning', title: 'Required Fields', message: 'Name, phone, valid email, emergency contact, and location are required.' });
+      return;
+    }
+
+    if (!emailRegex.test(emailTrimmed)) {
+      showToast({ type: 'warning', title: 'Invalid Email', message: 'Please enter a valid email address.' });
       return;
     }
 
     try {
       setLoading(true);
-      await updateProfile(formData);
-      Alert.alert('Success', 'Profile updated successfully');
+      await updateProfile({
+        ...formData,
+        email: emailTrimmed,
+      });
+      showToast({ type: 'success', title: 'Success', message: 'Profile updated successfully' });
       navigation.goBack();
     } catch (error) {
       console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to update profile. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your Tankua account, profile, saved payment methods, bookings, rewards, reviews, and notification data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: confirmDeleteAccount,
-        },
-      ]
-    );
-  };
-
-  const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Are you absolutely sure?',
-      'Your account and related data will be permanently removed. You will be signed out after deletion.',
-      [
-        { text: 'Keep Account', style: 'cancel' },
-        {
-          text: 'Delete Forever',
-          style: 'destructive',
-          onPress: performDeleteAccount,
-        },
-      ]
-    );
+    confirm({
+      title: 'Delete Account',
+      message: 'This will permanently delete your Tankua account, profile, saved payment methods, bookings, rewards, reviews, and notification data. Are you sure?',
+      confirmText: 'Delete Forever',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    }).then((ok) => {
+      if (ok) performDeleteAccount();
+    });
   };
 
   const performDeleteAccount = async () => {
@@ -81,38 +126,79 @@ const MyAccountScreen = ({ navigation }) => {
       await deleteAccount();
     } catch (error) {
       console.error('Error deleting account:', error);
-      Alert.alert(
-        'Delete Account Failed',
-        error.message || 'We could not delete your account right now. Please try again or contact support.'
-      );
+      showToast({
+        type: 'error',
+        title: 'Delete Account Failed',
+        message: error.message || 'We could not delete your account right now. Please try again or contact support.',
+      });
     } finally {
       setDeleting(false);
     }
   };
 
-  const renderInputField = (label, value, onChangeText, placeholder, icon, keyboardType = 'default', required = false, autoCapitalize = 'sentences') => {
+  const isTelegramUser =
+    user?.provider === 'telegram' ||
+    user?.telegram_id != null ||
+    user?.phone_number?.startsWith('telegram:') ||
+    user?.email?.endsWith('@auth.tankua.app');
+
+  const renderInputField = (
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    icon,
+    keyboardType = 'default',
+    required = false,
+    autoCapitalize = 'sentences',
+    disabled = false,
+    disabledNotice = null,
+    inputRef = null,
+    rightElement = null
+  ) => {
     return (
       <View style={styles.inputGroup}>
         <View style={styles.labelContainer}>
           <Text style={styles.label}>{label}</Text>
           {required && <Text style={styles.required}>*</Text>}
+          {disabled && (
+            <View style={styles.lockedBadge}>
+              <Ionicons name="lock-closed" size={12} color={COLORS.gray} />
+              <Text style={styles.lockedBadgeText}>Locked</Text>
+            </View>
+          )}
         </View>
         <View style={styles.inputWrapper}>
           {icon && (
             <View style={styles.inputIcon}>
-              <Ionicons name={icon} size={20} color={COLORS.gray} />
+              <Ionicons name={icon} size={20} color={disabled ? COLORS.grayLight : COLORS.gray} />
             </View>
           )}
           <TextInput
-            style={[styles.input, icon && styles.inputWithIcon]}
+            ref={inputRef}
+            style={[
+              styles.input,
+              icon && styles.inputWithIcon,
+              rightElement && styles.inputWithRightElement,
+              disabled && styles.disabledInput,
+            ]}
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
             placeholderTextColor={COLORS.grayLight}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
+            editable={!disabled}
           />
+          {rightElement && (
+            <View style={styles.rightElementContainer}>
+              {rightElement}
+            </View>
+          )}
         </View>
+        {disabled && disabledNotice && (
+          <Text style={styles.disabledNoticeText}>{disabledNotice}</Text>
+        )}
       </View>
     );
   };
@@ -129,6 +215,7 @@ const MyAccountScreen = ({ navigation }) => {
       </View>
 
       <ScrollView 
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -160,7 +247,11 @@ const MyAccountScreen = ({ navigation }) => {
               'Enter your full name',
               'person',
               'default',
-              true
+              true,
+              'words',
+              false,
+              null,
+              nameInputRef
             )}
           </View>
         </View>
@@ -176,11 +267,14 @@ const MyAccountScreen = ({ navigation }) => {
               'Email Address',
               formData.email,
               (text) => setFormData({ ...formData, email: text }),
-              'Enter your email',
+              'Enter your email address',
               'mail',
               'email-address',
+              true,
+              'none',
               false,
-              'none'
+              null,
+              emailInputRef
             )}
             {renderInputField(
               'Phone Number',
@@ -189,7 +283,12 @@ const MyAccountScreen = ({ navigation }) => {
               '+251 9XX XXX XXXX',
               'call',
               'phone-pad',
-              true
+              true,
+              'none',
+              isTelegramUser,
+              isTelegramUser
+                ? 'Phone number is bound to your Telegram account and cannot be modified or removed.'
+                : null
             )}
             {renderInputField(
               'Emergency Contact',
@@ -198,7 +297,11 @@ const MyAccountScreen = ({ navigation }) => {
               'Emergency contact phone number',
               'call',
               'phone-pad',
-              false
+              true,
+              'none',
+              false,
+              null,
+              emergencyContactInputRef
             )}
           </View>
         </View>
@@ -207,18 +310,44 @@ const MyAccountScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="location-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Location</Text>
+            <Text style={styles.sectionTitle}>Location & City</Text>
           </View>
           <View style={styles.sectionCard}>
             {renderInputField(
-              'Address',
-              formData.location,
-              (text) => setFormData({ ...formData, location: text }),
-              'Your location (city, address)',
+              'City / Region',
+              formData.city,
+              (text) => setFormData({ ...formData, city: text, location: text }),
+              'Enter your city (e.g. Addis Ababa)',
               'location',
               'default',
-              false
+              true,
+              'words',
+              false,
+              null,
+              cityInputRef
             )}
+
+            <TouchableOpacity
+              style={styles.gpsDetectBar}
+              onPress={handleAutoDetectLocation}
+              disabled={detectingLocation}
+              activeOpacity={0.8}
+            >
+              {detectingLocation ? (
+                <>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.gpsDetectBarText}>Detecting your location...</Text>
+                </>
+              ) : (
+                <>
+                  <View style={styles.gpsIconCircle}>
+                    <Ionicons name="navigate" size={16} color={COLORS.secondary} />
+                  </View>
+                  <Text style={styles.gpsDetectBarText}>Auto-detect location using GPS</Text>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.gray} />
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -363,6 +492,33 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     paddingHorizontal: SPACING.xs,
   },
+  sectionHeaderLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  sectionHeaderTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detectLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primary}15`,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
+    borderColor: `${COLORS.primary}30`,
+  },
+  detectLocationBtnText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.primary,
+    marginLeft: 4,
+  },
   sectionTitle: {
     fontSize: FONTS.sizes.md,
     fontWeight: FONTS.weights.bold,
@@ -393,6 +549,21 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     marginLeft: SPACING.xs / 2,
   },
+  lockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.gray}15`,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+    marginLeft: SPACING.sm,
+  },
+  lockedBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    fontWeight: FONTS.weights.semibold,
+    marginLeft: 2,
+  },
   inputWrapper: {
     position: 'relative',
     flexDirection: 'row',
@@ -417,6 +588,43 @@ const styles = StyleSheet.create({
   },
   inputWithIcon: {
     paddingLeft: SPACING.xl + SPACING.md,
+  },
+  gpsDetectBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBF0',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm + 2,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 184, 0, 0.4)',
+    marginTop: SPACING.xs,
+  },
+  gpsIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  gpsDetectBarText: {
+    flex: 1,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  disabledInput: {
+    backgroundColor: `${COLORS.borderLight}80`,
+    color: COLORS.gray,
+    borderColor: COLORS.borderLight,
+  },
+  disabledNoticeText: {
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    marginTop: SPACING.xs,
+    fontStyle: 'italic',
   },
   infoBanner: {
     flexDirection: 'row',

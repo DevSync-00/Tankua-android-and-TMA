@@ -1,4 +1,3 @@
-import { Alert } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 
@@ -18,8 +17,7 @@ export const shareTicketAsImage = async (ticketRef) => {
 
   const canShare = await Sharing.isAvailableAsync();
   if (!canShare) {
-    Alert.alert('Sharing unavailable', 'Sharing is not supported on this device.');
-    return;
+    throw new Error('Sharing is not supported on this device.');
   }
 
   await Sharing.shareAsync(uri, {

@@ -15,12 +15,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { supabase } from '../config/supabase';
 import Button from '../components/Button';
 
 const ReviewScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { showToast } = useFeedback();
   const { booking } = route.params || {};
 
   const [rating, setRating] = useState(0);
@@ -30,15 +32,14 @@ const ReviewScreen = ({ navigation, route }) => {
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDetailedRatings, setShowDetailedRatings] = useState(false);
-
   const handleSubmit = async () => {
     if (rating === 0) {
-      Alert.alert('Rating Required', 'Please select an overall rating');
+      showToast({ type: 'warning', title: 'Rating Required', message: 'Please select an overall rating' });
       return;
     }
 
     if (!booking?.id) {
-      Alert.alert('Error', 'Invalid booking information');
+      showToast({ type: 'error', title: 'Error', message: 'Invalid booking information' });
       return;
     }
 
@@ -63,26 +64,18 @@ const ReviewScreen = ({ navigation, route }) => {
 
       if (error) {
         if (error.code === '23505') {
-          Alert.alert('Already Reviewed', 'You have already submitted a review for this trip.');
+          showToast({ type: 'info', title: 'Already Reviewed', message: 'You have already submitted a review for this trip.' });
         } else {
           throw error;
         }
         return;
       }
 
-      Alert.alert(
-        'Thank You!',
-        'Your review has been submitted successfully.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      showToast({ type: 'success', title: 'Thank You!', message: 'Your review has been submitted successfully.' });
+      navigation.goBack();
     } catch (error) {
       console.error('Error submitting review:', error);
-      Alert.alert('Error', 'Failed to submit review. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to submit review. Please try again.' });
     } finally {
       setLoading(false);
     }

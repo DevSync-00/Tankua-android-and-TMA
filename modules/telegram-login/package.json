@@ -1,0 +1,10 @@
+{
+  "name": "telegram-login",
+  "version": "1.0.0",
+  "description": "Telegram Native Login SDK Expo Module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "peerDependencies": {
+    "expo": "*"
+  }
+}

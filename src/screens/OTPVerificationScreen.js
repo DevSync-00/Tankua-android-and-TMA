@@ -7,9 +7,11 @@ import OtpDigitInput from '../components/auth/OtpDigitInput';
 import { authStyles, AUTH_COLORS } from '../components/auth/authTheme';
 import { AUTH_COPY } from '../constants/authCopy';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 
 const OTPVerificationScreen = ({ navigation, route }) => {
   const { verifyOTP, sendOTP } = useAuth();
+  const { showToast } = useFeedback();
   const phoneNumber = route?.params?.phoneNumber || '';
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     if (!phoneNumber) {
-      Alert.alert('Error', 'Missing phone number');
+      showToast({ type: 'error', title: 'Error', message: 'Missing phone number' });
       navigation.goBack();
     }
   }, [navigation, phoneNumber]);
@@ -49,7 +51,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
   const handleVerify = async () => {
     if (otpValue.length !== 6) {
-      Alert.alert('Error', 'Please enter the 6-digit OTP');
+      showToast({ type: 'warning', title: 'Error', message: 'Please enter the 6-digit OTP' });
       return;
     }
 
@@ -57,7 +59,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
     try {
       await verifyOTP(phoneNumber, otpValue);
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showToast({ type: 'error', title: 'Verification Error', message: error.message });
     } finally {
       setLoading(false);
     }
@@ -71,8 +73,9 @@ const OTPVerificationScreen = ({ navigation, route }) => {
       await sendOTP(phoneNumber);
       setTimerSeconds(86);
       setOtpDigits(['', '', '', '', '', '']);
+      showToast({ type: 'success', title: 'OTP Sent', message: 'A new OTP has been sent to your phone.' });
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showToast({ type: 'error', title: 'Resend Error', message: error.message });
     } finally {
       setLoading(false);
     }

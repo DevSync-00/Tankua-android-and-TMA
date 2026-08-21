@@ -12,65 +12,61 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { canCancelBooking, cancelBooking } from '../services/bookingManagement';
 import Button from '../components/Button';
 
 const CancelBookingScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { booking } = route.params || {};
+  const { showToast, confirm, alert: customAlert } = useFeedback();
 
+  const { booking } = route.params || {};
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [cancellationInfo, setCancellationInfo] = useState(null);
+  const [checkingEligibility, setCheckingEligibility] = useState(true);
 
   useEffect(() => {
-    if (booking) {
-      const info = canCancelBooking(booking);
-      setCancellationInfo(info);
+    if (booking?.id) {
+      canCancelBooking(booking.id).then((info) => {
+        setCancellationInfo(info);
+        setCheckingEligibility(false);
+      });
     }
-  }, [booking]);
-
+  }, [booking?.id]);
   const handleCancel = async () => {
     if (!cancellationInfo?.canCancel) {
-      Alert.alert('Cannot Cancel', cancellationInfo?.reason || 'This booking cannot be cancelled.');
+      showToast({ type: 'warning', title: 'Cannot Cancel', message: cancellationInfo?.reason || 'This booking cannot be cancelled.' });
       return;
     }
 
-    Alert.alert(
-      'Confirm Cancellation',
-      `Are you sure you want to cancel this booking?\n\n${cancellationInfo.refundInfo.message}`,
-      [
-        { text: 'No, Keep Booking', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const result = await cancelBooking(booking.id, user.id, reason.trim() || null);
-              
-              Alert.alert(
-                'Booking Cancelled',
-                result.refundAmount > 0
-                  ? `Your booking has been cancelled. Refund of ${result.refundAmount} ETB will be processed within 3-5 business days.`
-                  : 'Your booking has been cancelled.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => navigation.navigate('MainTabs', { screen: 'Trips' }),
-                  },
-                ]
-              );
-            } catch (error) {
-              Alert.alert('Error', error.message || 'Failed to cancel booking. Please try again.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    confirm({
+      title: 'Confirm Cancellation',
+      message: `Are you sure you want to cancel this booking?\n\n${cancellationInfo.refundInfo.message}`,
+      confirmText: 'Yes, Cancel',
+      cancelText: 'No, Keep Booking',
+      variant: 'danger',
+    }).then(async (ok) => {
+      if (ok) {
+        setLoading(true);
+        try {
+          const result = await cancelBooking(booking.id, user.id, reason.trim() || null);
+          
+          customAlert({
+            title: 'Booking Cancelled',
+            message: result.refundAmount > 0
+              ? `Your booking has been cancelled. Refund of ${result.refundAmount} ETB will be processed within 3-5 business days.`
+              : 'Your booking has been cancelled.',
+            variant: 'info',
+          }).then(() => navigation.navigate('MainTabs', { screen: 'Trips' }));
+        } catch (error) {
+          showToast({ type: 'error', title: 'Error', message: error.message || 'Failed to cancel booking. Please try again.' });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   if (!booking) {

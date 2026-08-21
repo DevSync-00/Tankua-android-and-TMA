@@ -14,7 +14,7 @@ export const validateProfile = (user) => {
   if (!user) {
     return {
       isValid: false,
-      missingFields: ['name', 'phone_number', 'emergency_contact', 'location'],
+      missingFields: ['name', 'phone_number', 'email', 'emergency_contact', 'location'],
       message: 'User profile not found',
     };
   }
@@ -23,6 +23,7 @@ export const validateProfile = (user) => {
   console.log('Validating profile:', {
     name: user.name,
     phone_number: user.phone_number,
+    email: user.email,
     emergency_contact: user.emergency_contact,
     location: user.location,
   });
@@ -33,28 +34,32 @@ export const validateProfile = (user) => {
   const name = user.name;
   if (!name || (typeof name === 'string' && name.trim() === '')) {
     missingFields.push('name');
-    console.log('Missing name:', { name, type: typeof name, isEmpty: typeof name === 'string' && name.trim() === '' });
   }
   
   // Check phone number (handle null, undefined, and empty strings)
   const phoneNumber = user.phone_number;
   if (!phoneNumber || (typeof phoneNumber === 'string' && phoneNumber.trim() === '')) {
     missingFields.push('phone_number');
-    console.log('Missing phone_number:', { phoneNumber, type: typeof phoneNumber, isEmpty: typeof phoneNumber === 'string' && phoneNumber.trim() === '' });
+  }
+
+  // Check email (handle null, undefined, empty strings, or placeholder auth emails)
+  const email = user.email;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isPlaceholderEmail = typeof email === 'string' && email.endsWith('@auth.tankua.app');
+  if (!email || typeof email !== 'string' || email.trim() === '' || isPlaceholderEmail || !emailRegex.test(email.trim())) {
+    missingFields.push('email');
   }
   
   // Check emergency contact (handle null, undefined, and empty strings)
   const emergencyContact = user.emergency_contact;
   if (!emergencyContact || (typeof emergencyContact === 'string' && emergencyContact.trim() === '')) {
     missingFields.push('emergency_contact');
-    console.log('Missing emergency_contact:', { emergencyContact, type: typeof emergencyContact, isEmpty: typeof emergencyContact === 'string' && emergencyContact.trim() === '' });
   }
   
   // Check location (handle null, undefined, and empty strings)
-  const location = user.location;
+  const location = user.location || user.city;
   if (!location || (typeof location === 'string' && location.trim() === '')) {
     missingFields.push('location');
-    console.log('Missing location:', { location, type: typeof location, isEmpty: typeof location === 'string' && location.trim() === '' });
   }
   
   console.log('Validation result:', { isValid: missingFields.length === 0, missingFields });
@@ -78,6 +83,7 @@ export const getProfileIncompleteMessage = (missingFields) => {
   const fieldLabels = {
     name: 'Name',
     phone_number: 'Phone Number',
+    email: 'Email Address',
     emergency_contact: 'Emergency Contact',
     location: 'Location',
   };

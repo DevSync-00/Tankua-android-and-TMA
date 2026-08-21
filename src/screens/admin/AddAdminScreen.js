@@ -13,8 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
 import { createAdminUser } from '../../services/admin';
+import { useFeedback } from '../../contexts/FeedbackContext';
 
 const AddAdminScreen = ({ navigation }) => {
+  const { showToast, alert: customAlert } = useFeedback();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -64,24 +66,19 @@ const AddAdminScreen = ({ navigation }) => {
       const result = await createAdminUser(formData);
 
       if (result.success) {
-        Alert.alert(
-          'Success',
-          'Admin user created successfully!\n\nNote: Make sure the user exists in Supabase Auth with the same email address.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setFormData({ name: '', email: '', phone: '', role: 'admin' });
-                navigation.goBack();
-              },
-            },
-          ]
-        );
+        customAlert({
+          title: 'Success',
+          message: 'Admin user created successfully!\n\nNote: Make sure the user exists in Supabase Auth with the same email address.',
+          variant: 'info',
+        }).then(() => {
+          setFormData({ name: '', email: '', phone: '', role: 'admin' });
+          navigation.goBack();
+        });
       } else {
-        Alert.alert('Error', result.error || 'Failed to create admin user');
+        showToast({ type: 'error', title: 'Error', message: result.error || 'Failed to create admin user' });
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'An unexpected error occurred');
+      showToast({ type: 'error', title: 'Error', message: error.message || 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }

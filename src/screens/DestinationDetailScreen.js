@@ -30,9 +30,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useBooking } from '../contexts/BookingContext';
 import { getOsmSearchUrl } from '../config/osm';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
-import ModernButton from '../components/ModernButton';
 import { isFavorited, toggleFavorite } from '../services/favorites';
+import ModernButton from '../components/ModernButton';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_HEIGHT = 380;
@@ -42,6 +43,7 @@ const DestinationDetailScreen = ({ route, navigation }) => {
   const { t } = useLanguage();
   const { updateBooking } = useBooking();
   const { user } = useAuth();
+  const { showToast, confirm } = useFeedback();
   const insets = useSafeAreaInsets();
 
   // State
@@ -99,21 +101,17 @@ const DestinationDetailScreen = ({ route, navigation }) => {
     return 'ETB 500+';
   };
 
-  // Actions
   const handleBookTrip = () => {
     const validation = validateProfile(user);
     if (!validation.isValid) {
-      Alert.alert(
-        'Profile Incomplete',
-        getProfileIncompleteMessage(validation.missingFields),
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Update Profile',
-            onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }),
-          },
-        ]
-      );
+      confirm({
+        title: 'Profile Incomplete',
+        message: getProfileIncompleteMessage(validation.missingFields),
+        confirmText: 'Update Profile',
+        cancelText: 'Cancel',
+      }).then((ok) => {
+        if (ok) navigation.navigate('MainTabs', { screen: 'Profile' });
+      });
       return;
     }
 
@@ -126,7 +124,7 @@ const DestinationDetailScreen = ({ route, navigation }) => {
       const next = await toggleFavorite(destination.id);
       setIsSaved(next);
     } catch (error) {
-      Alert.alert('Could not update favorites', error.message || 'Please try again.');
+      showToast({ type: 'error', title: 'Could not update favorites', message: error.message || 'Please try again.' });
     }
   };
 

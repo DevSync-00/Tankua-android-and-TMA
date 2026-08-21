@@ -14,12 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useFeedback } from '../../contexts/FeedbackContext';
 import { getProviders } from '../../services/database';
 import Button from '../../components/Button';
 
 const SelectProviderScreen = ({ navigation }) => {
   const { t } = useLanguage();
   const { currentBooking, updateBooking } = useBooking();
+  const { showToast } = useFeedback();
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState(currentBooking.provider || null);
@@ -51,7 +53,7 @@ const SelectProviderScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error loading providers:', error);
-      Alert.alert('Error', 'Failed to load travel providers. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to load travel providers. Please try again.' });
     } finally {
       setLoading(false);
     }

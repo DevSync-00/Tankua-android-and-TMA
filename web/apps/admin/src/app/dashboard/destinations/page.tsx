@@ -16,10 +16,9 @@ import {
   AlertCircle,
   CheckCircle,
   Upload,
-  Image as ImageIcon,
   XCircle,
 } from "lucide-react";
-};
+import { ConfirmDialog } from "@tankua/ui";
 
 export default function DestinationsPage() {
   const [destinations, setDestinations] = useState<DestinationType[]>([]);
@@ -87,15 +86,22 @@ export default function DestinationsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this destination?")) {
-      try {
-        await deleteDestination(id);
-        loadDestinations();
-      } catch (error) {
-        console.error("Error deleting destination:", error);
-        alert("Failed to delete destination");
-      }
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      await deleteDestination(deleteConfirmId);
+      loadDestinations();
+    } catch (error) {
+      console.error("Error deleting destination:", error);
+      setError("Failed to delete destination. Please try again.");
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -740,6 +746,17 @@ export default function DestinationsPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete Destination"
+        description="Are you sure you want to delete this destination? Existing trip references may be affected."
+        confirmText="Delete Destination"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 }

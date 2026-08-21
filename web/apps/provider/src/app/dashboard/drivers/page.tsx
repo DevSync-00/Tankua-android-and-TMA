@@ -16,7 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, Avatar } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, Avatar, ConfirmDialog, InlineBanner } from "@tankua/ui";
 import { getDrivers, deleteDriver, updateDriverStatus, type Driver } from "@/lib/queries";
 
 export default function DriversPage() {
@@ -26,6 +26,7 @@ export default function DriversPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingDriverId, setDeletingDriverId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
     loadProviderSession();
@@ -73,26 +74,31 @@ export default function DriversPage() {
     driver.license_number?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDelete = async (driverId: string) => {
-    if (!confirm("Are you sure you want to delete this driver?")) {
-      return;
-    }
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-    setDeletingDriverId(driverId);
+  const handleDelete = (driverId: string) => {
+    setConfirmDeleteId(driverId);
+  };
+
+  const executeDelete = async () => {
+    if (!confirmDeleteId) return;
+    setDeletingDriverId(confirmDeleteId);
     try {
-      const result = await deleteDriver(driverId);
+      const result = await deleteDriver(confirmDeleteId);
       if (result.success) {
         if (providerId) {
-          await loadDrivers(providerId);
+          loadDrivers(providerId);
         }
+        setBanner({ message: "Driver deleted successfully", variant: "success" });
       } else {
-        alert(result.error || "Failed to delete driver");
+        setBanner({ message: result.error || "Failed to delete driver", variant: "error" });
       }
     } catch (err) {
-      console.error("Error deleting driver:", err);
-      alert("Failed to delete driver. Please try again.");
+      console.error(err);
+      setBanner({ message: "Failed to delete driver. Please try again.", variant: "error" });
     } finally {
       setDeletingDriverId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -104,11 +110,11 @@ export default function DriversPage() {
           await loadDrivers(providerId);
         }
       } else {
-        alert("Failed to update driver status");
+        setBanner({ message: "Failed to update driver status", variant: "error" });
       }
     } catch (err) {
       console.error("Error updating driver status:", err);
-      alert("Failed to update driver status. Please try again.");
+      setBanner({ message: "Failed to update driver status. Please try again.", variant: "error" });
     }
   };
 
@@ -279,6 +285,17 @@ export default function DriversPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+        title="Delete Driver"
+        description="Are you sure you want to delete this driver? Trip assignments will be affected."
+        confirmText="Delete Driver"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 }

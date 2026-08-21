@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Avatar, InlineBanner } from "@tankua/ui";
 import { getSupportTickets, updateSupportTicket, type SupportTicket } from "@/lib/queries";
 
 export default function SupportPage() {
@@ -24,6 +24,8 @@ export default function SupportPage() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [replyText, setReplyText] = useState("");
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
   useEffect(() => {
     loadTickets();
@@ -98,7 +100,7 @@ export default function SupportPage() {
       }
     } catch (error) {
       console.error("Error updating ticket status:", error);
-      alert("Failed to update ticket status");
+      setErrorBanner("Failed to update ticket status");
     }
   };
 

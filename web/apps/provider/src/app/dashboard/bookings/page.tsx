@@ -16,7 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, Avatar, formatCurrency } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, Avatar, formatCurrency, InlineBanner } from "@tankua/ui";
 import { getProviderBookings, updateBookingStatus, type BookingDetails } from "@/lib/queries";
 
 export default function BookingsPage() {
@@ -210,12 +210,13 @@ export default function BookingsPage() {
         if (providerId) {
           await loadBookings(providerId);
         }
+        setBanner({ message: `Booking status updated to ${newStatus}`, variant: "success" });
       } else {
-        alert(result.error || "Failed to update booking status");
+        setBanner({ message: result.error || "Failed to update booking status", variant: "error" });
       }
     } catch (err) {
       console.error("Error updating booking status:", err);
-      alert("Failed to update booking status. Please try again.");
+      setBanner({ message: "Failed to update booking status. Please try again.", variant: "error" });
     }
   };
 

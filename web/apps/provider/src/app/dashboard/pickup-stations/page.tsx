@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { MapPin, Plus, Trash2 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Button, Card } from "@tankua/ui";
+import { Button, Card, ConfirmDialog } from "@tankua/ui";
 import { supabase } from "@/lib/supabase";
 
 type Station = {
@@ -57,11 +57,21 @@ export default function PickupStationsPage() {
     setSaving(false);
   }
 
-  async function removeStation(id: string) {
-    if (!confirm("Delete this pickup station? Existing trip links will also be removed.")) return;
-    const result = await supabase.from("pickup_stations").delete().eq("id", id);
-    if (result.error) setError(result.error.message);
-    else if (providerId) await loadStations(providerId);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  function removeStation(id: string) {
+    setDeleteConfirmId(id);
+  }
+
+  async function executeRemove() {
+    if (!deleteConfirmId) return;
+    try {
+      const result = await supabase.from("pickup_stations").delete().eq("id", deleteConfirmId);
+      if (result.error) setError(result.error.message);
+      else if (providerId) await loadStations(providerId);
+    } finally {
+      setDeleteConfirmId(null);
+    }
   }
 
   return (
@@ -114,6 +124,17 @@ export default function PickupStationsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete Pickup Station"
+        description="Are you sure you want to delete this pickup station? Existing trip links will be removed."
+        confirmText="Delete Station"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={executeRemove}
+      />
     </div>
   );
 }

@@ -14,12 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useFeedback } from '../../contexts/FeedbackContext';
 import { getTrips } from '../../services/database';
 import ModernButton from '../../components/ModernButton';
 
 const SelectTripScreen = ({ navigation }) => {
   const { t } = useLanguage();
   const { currentBooking, updateBooking } = useBooking();
+  const { showToast } = useFeedback();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState(currentBooking.trip || null);
@@ -44,7 +46,7 @@ const SelectTripScreen = ({ navigation }) => {
           return;
         }
         
-        Alert.alert('Error', 'Please select a destination first');
+        showToast({ type: 'warning', title: 'Destination Required', message: 'Please select a destination first' });
         if (navigation.canGoBack()) {
           navigation.goBack();
         } else {
@@ -58,7 +60,7 @@ const SelectTripScreen = ({ navigation }) => {
       setTrips(data);
     } catch (error) {
       console.error('Error loading trips:', error);
-      Alert.alert('Error', 'Failed to load available trips. Please try again.');
+      showToast({ type: 'error', title: 'Error', message: 'Failed to load available trips. Please try again.' });
     } finally {
       setLoading(false);
     }

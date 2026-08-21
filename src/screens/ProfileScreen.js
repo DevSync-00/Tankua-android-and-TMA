@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 
 const TelegramIcon = ({ size = 12, color = '#1a85c0' }) => (
   <Svg width={size} height={size} viewBox="0 0 640 640">
@@ -184,20 +185,18 @@ const MenuRow = ({ item, onPress, isLast }) => (
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
+  const { confirm } = useFeedback();
 
   const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: logout,
-        },
-      ],
-    );
+    confirm({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    }).then((ok) => {
+      if (ok) logout();
+    });
   };
 
   const navigate = (screen) => navigation.navigate(screen);
