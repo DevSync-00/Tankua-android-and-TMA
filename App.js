@@ -13,6 +13,9 @@ import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { addNotificationReceivedListener, addNotificationResponseListener, setBadgeCount } from './src/services/notifications';
 import { supabase } from './src/config/supabase';
+import { configureGoogleSignIn } from './src/services/googleAuth';
+
+configureGoogleSignIn();
 
 // Component to handle notification listeners
 function NotificationHandler({ children }) {
