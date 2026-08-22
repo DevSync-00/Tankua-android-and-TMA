@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, FONTS, SPACING, BORDER_RADIUS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchDestinationsFresh } from '../services/destinationCache';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -141,6 +142,13 @@ const LiquidGlassTabBar = ({ state, descriptors, navigation }) => {
 const MainTabNavigator = () => {
   const { t } = useLanguage();
   const { isAdmin } = useAuth();
+
+  useEffect(() => {
+    // Warm up destination cache on app boot
+    fetchDestinationsFresh().catch((err) =>
+      console.log('Notice: Warmup destination fetch notice:', err?.message || err)
+    );
+  }, []);
 
   return (
     <Tab.Navigator

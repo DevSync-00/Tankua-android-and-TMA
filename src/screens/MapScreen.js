@@ -31,12 +31,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getDestinations, getPlaceholderImage } from '../services/database';
+import { getPlaceholderImage } from '../services/database';
+import {
+  getDestinationsSWR,
+  subscribeDestinationUpdates,
+  getInstantCachedDestinations
+} from '../services/destinationCache';
 import { OSM_TILE_URL, getOsmDirectionsUrl, fetchOsmRoute } from '../config/osm';
 import AnimatedCard from '../components/AnimatedCard';
 import ModernButton from '../components/ModernButton';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const transformMapItems = (rawList) =>
+  (rawList || [])
+    .filter(destination => destination.location && typeof destination.location === 'object')
+    .map(destination => ({
+      id: destination.id,
+      name: destination.name,
+      city: destination.city || '',
+      region: destination.region || '',
+      category: destination.category || 'other',
+      lat: destination.location?.lat || destination.location?.coordinates?.[1] || 0,
+      lng: destination.location?.lng || destination.location?.coordinates?.[0] || 0,
+      images: destination.images || [],
+      description: destination.description || '',
+      rating: destination.rating || 4.5,
+      review_count: destination.review_count || 0,
+      price: destination.price || null,
+      tags: destination.tags || [],
+      fullData: destination,
+      distance: null,
+    }));
 
 const MapScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
@@ -53,8 +79,9 @@ const MapScreen = ({ navigation, route }) => {
   });
   const [userLocation, setUserLocation] = useState(null);
   const [selectedDestination, setSelectedDestination] = useState(null);
-  const [destinations, setDestinations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCache = getInstantCachedDestinations();
+  const [destinations, setDestinations] = useState(transformMapItems(initialCache));
+  const [loading, setLoading] = useState(initialCache.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,9 +143,25 @@ const MapScreen = ({ navigation, route }) => {
     return filtered;
   }, [destinations, selectedCategory, searchQuery]);
 
+  const loadDestinations = async (forceRefresh = false) => {
+    try {
+      const { data } = await getDestinationsSWR({ forceRefresh });
+      setDestinations(transformMapItems(data));
+    } catch (error) {
+      console.error('Error loading destinations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     requestLocationPermission();
     loadDestinations();
+    const unsubscribe = subscribeDestinationUpdates((freshData) => {
+      setDestinations(transformMapItems(freshData));
+      setLoading(false);
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -198,42 +241,9 @@ const MapScreen = ({ navigation, route }) => {
     }, [route?.params, userLocation])
   );
 
-  const loadDestinations = async () => {
-    try {
-      setLoading(true);
-      const data = await getDestinations({});
-      
-      const transformedDestinations = data
-        .filter(destination => destination.location && typeof destination.location === 'object')
-        .map(destination => ({
-          id: destination.id,
-          name: destination.name,
-          city: destination.city || '',
-          region: destination.region || '',
-          category: destination.category || 'other',
-          lat: destination.location?.lat || destination.location?.coordinates?.[1] || 0,
-          lng: destination.location?.lng || destination.location?.coordinates?.[0] || 0,
-          images: destination.images || [],
-          description: destination.description || '',
-          rating: destination.rating || 4.5,
-          review_count: destination.review_count || 0,
-          price: destination.price || null,
-          tags: destination.tags || [],
-          fullData: destination,
-          distance: null, // Will be calculated
-        }));
-      
-      setDestinations(transformedDestinations);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading destinations:', error);
-      setLoading(false);
-    }
-  };
-
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDestinations();
+    await loadDestinations(true);
     setRefreshing(false);
   };
 
