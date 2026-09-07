@@ -746,6 +746,48 @@ export async function createProvider(provider: {
   }
 }
 
+export interface Destination {
+  id: string;
+  name: string;
+  description: string | null;
+  region: string | null;
+  city: string | null;
+  distance: number | null;
+  images: string[];
+  tags: string[];
+  location: unknown;
+  category: string | null;
+  is_featured: boolean;
+}
+
+export async function getDestinations(options?: {
+  search?: string;
+  category?: string;
+  region?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ destinations: Destination[]; total: number }> {
+  let query = supabase
+    .from('destinations')
+    .select('*', { count: 'exact' })
+    .order('name');
+
+  if (options?.search) {
+    const search = options.search.replace(/[,%()]/g, ' ').trim();
+    if (search) query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,region.ilike.%${search}%`);
+  }
+  if (options?.category) query = query.eq('category', options.category);
+  if (options?.region) query = query.eq('region', options.region);
+  if (options?.limit) {
+    const from = options.offset || 0;
+    query = query.range(from, from + options.limit - 1);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { destinations: (data || []) as Destination[], total: count || 0 };
+}
+
 export async function createDestination(destination: {
   name: string;
   description?: string;
@@ -756,6 +798,7 @@ export async function createDestination(destination: {
   tags?: string[];
   location?: any;
   category?: string;
+  is_featured?: boolean;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     // Try destinations table first
@@ -771,6 +814,7 @@ export async function createDestination(destination: {
         tags: destination.tags || [],
         location: destination.location || null,
         category: destination.category || 'other',
+        is_featured: destination.is_featured || false,
       })
       .select('id')
       .single();
@@ -803,6 +847,7 @@ export async function updateDestination(
     tags?: string[];
     location?: any;
     category?: string;
+    is_featured?: boolean;
   }
 ): Promise<boolean> {
   try {

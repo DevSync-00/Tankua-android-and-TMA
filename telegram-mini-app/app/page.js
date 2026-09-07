@@ -417,14 +417,7 @@ const ALL_CATEGORIES = [
 ];
 
 function HomeView({ user, destinations, category, setCategory, open, goSearch, openNotifications }) {
-  // Featured destinations: Top 4 most booked, clicked, and featured attractions
-  const featured = [...destinations]
-    .sort((a, b) => {
-      const scoreA = (a.is_featured ? 1000 : 0) + (Number(a.bookings_count || 0) * 10) + Number(a.views_count || 0) + Number(a.rating || 0);
-      const scoreB = (b.is_featured ? 1000 : 0) + (Number(b.bookings_count || 0) * 10) + Number(b.views_count || 0) + Number(b.rating || 0);
-      return scoreB - scoreA;
-    })
-    .slice(0, 4);
+  const featured = destinations.filter(destination => destination.is_featured);
 
   // Popular destinations: Top 6 iconic tourist attractions in Ethiopia (not dumping all DB entries)
   const categoryFiltered = category === 'All'
@@ -451,8 +444,10 @@ function HomeView({ user, destinations, category, setCategory, open, goSearch, o
     <div className="chips">
       {ALL_CATEGORIES.slice(0, 16).map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}
     </div>
-    <SectionHeader title="Featured" />
-    <div className="featured-row">{featured.map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
+    {featured.length > 0 && <>
+      <SectionHeader title="Featured" />
+      <div className="featured-row">{featured.map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
+    </>}
     <SectionHeader title="Popular destinations" action="See all" onAction={goSearch}/>
     <div className="destination-grid">{popular.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
     <section className="how">

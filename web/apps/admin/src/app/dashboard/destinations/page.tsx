@@ -17,8 +17,32 @@ import {
   CheckCircle,
   Upload,
   XCircle,
+  Star,
 } from "lucide-react";
-import { ConfirmDialog } from "@tankua/ui";
+import { Header } from "@/components/header";
+import { supabase } from "@/lib/supabase";
+import {
+  createDestination,
+  deleteDestination,
+  getDestinations,
+  updateDestination,
+  type Destination as DestinationType,
+} from "@/lib/queries";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, ConfirmDialog, Input } from "@tankua/ui";
+
+const CATEGORIES = [
+  { value: "all", label: "All", icon: "🗺️" },
+  { value: "religious", label: "Religious", icon: "⛪" },
+  { value: "historical", label: "Historical", icon: "🏛️" },
+  { value: "nature", label: "Nature", icon: "🌿" },
+  { value: "adventure", label: "Adventure", icon: "🥾" },
+  { value: "cultural", label: "Cultural", icon: "🎭" },
+  { value: "wildlife", label: "Wildlife", icon: "🦁" },
+  { value: "other", label: "Other", icon: "📍" },
+];
+
+const getCategoryIcon = (category: string) =>
+  CATEGORIES.find(item => item.value === category)?.icon || "📍";
 
 export default function DestinationsPage() {
   const [destinations, setDestinations] = useState<DestinationType[]>([]);
@@ -49,6 +73,7 @@ export default function DestinationsPage() {
     category: "other",
     tags: "",
     images: "",
+    is_featured: false,
   });
   
   // File upload state
@@ -115,6 +140,7 @@ export default function DestinationsPage() {
       category: "other",
       tags: "",
       images: "",
+      is_featured: false,
     });
     setSelectedDestination(null);
     setUploadedImages([]);
@@ -137,6 +163,7 @@ export default function DestinationsPage() {
       category: destination.category || "other",
       tags: destination.tags?.join(", ") || "",
       images: existingImages.join(", ") || "",
+      is_featured: destination.is_featured || false,
     });
     setUploadedImages([]);
     setExistingImageUrls(existingImages);
@@ -290,6 +317,7 @@ export default function DestinationsPage() {
         category: formData.category,
         tags: formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
         images: imageUrls,
+        is_featured: formData.is_featured,
       };
 
       if (selectedDestination) {
@@ -469,6 +497,13 @@ export default function DestinationsPage() {
                       <span className="capitalize">{destination.category || "other"}</span>
                     </Badge>
                   </div>
+                  {destination.is_featured && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className="gap-1 bg-amber-500 text-white">
+                        <Star className="h-3 w-3" fill="currentColor" /> Featured
+                      </Badge>
+                    </div>
+                  )}
                   {/* Overlay actions */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button size="sm" variant="secondary" onClick={() => handleEdit(destination)}>
@@ -665,6 +700,21 @@ export default function DestinationsPage() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
                 </div>
+
+                <label className="flex items-start gap-3 rounded-xl border border-border p-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_featured}
+                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                    className="mt-1 h-4 w-4 accent-amber-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Show in Telegram Featured</span>
+                    <span className="block text-xs text-muted-foreground mt-1">
+                      Featured destinations appear in the Telegram mini app home section.
+                    </span>
+                  </span>
+                </label>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Images</label>
