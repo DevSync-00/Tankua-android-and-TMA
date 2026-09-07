@@ -1,35 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  Image, RefreshControl, ScrollView, StatusBar, StyleSheet,
-  Text, TextInput, TouchableOpacity, View,
+  FlatList, Image, RefreshControl, StatusBar, StyleSheet,
+  Text, TextInput, TouchableOpacity, View, Platform, ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
-import { getDestinations, getPlaceholderImage } from '../services/database';
-import { deduplicateDestinations } from '../utils/destinationUtils';
+import { getPlaceholderImage } from '../services/database';
+import {
+  getDestinationsSWR,
+  subscribeDestinationUpdates,
+  getInstantCachedDestinations
+} from '../services/destinationCache';
 import { SkeletonCard } from '../components/SkeletonLoader';
 import { ALL_DESTINATION_CATEGORIES } from '../constants/destinationCategories';
 
 const SUGGESTIONS = ['Lalibela', 'Gondar', 'Nature', 'Adventure'];
 
-function normalizeDestination(destination) {
-  return {
-    ...destination,
-    description: destination.description || '',
-    region: destination.region || '',
-    city: destination.city || '',
-    images: Array.isArray(destination.images) ? destination.images : [],
-    tags: Array.isArray(destination.tags) ? destination.tags : [],
-    category: destination.category || 'other',
-    rating: Number(destination.rating || 0),
-    price: Number(destination.price || 0),
-  };
-}
-
-function ResultCard({ destination, onPress }) {
+const ResultCard = React.memo(({ destination, onPress }) => {
   const image = destination.images[0]
     || getPlaceholderImage(destination.id, destination.name, destination.category);
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.86}>
       <View style={styles.imageWrap}>
@@ -61,36 +52,52 @@ function ResultCard({ destination, onPress }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 export default function SearchScreen({ navigation }) {
-  const [destinations, setDestinations] = useState([]);
+  // Synchronous state seeding from cache for instant first paint
+  const initialCache = getInstantCachedDestinations();
+  const [destinations, setDestinations] = useState(initialCache);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialCache.length === 0);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
+  const loadData = useCallback(async (forceRefresh = false) => {
     try {
-      const rows = await getDestinations({});
-      setDestinations(deduplicateDestinations(rows.map(normalizeDestination)));
+      const { data } = await getDestinationsSWR({ forceRefresh });
+      setDestinations(data);
     } catch (error) {
       console.error('Could not load destinations:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    loadData();
+    // Subscribe to silent background SWR updates
+    const unsubscribe = subscribeDestinationUpdates((freshData) => {
+      setDestinations(freshData);
+    });
+    return unsubscribe;
+  }, [loadData]);
 
   const cleanQuery = query.trim().toLowerCase();
-  const filtered = useMemo(() => destinations.filter((destination) => {
-    const categoryMatches = category === 'All'
-      || destination.category.toLowerCase() === category.toLowerCase();
-    const searchable = `${destination.name} ${destination.city} ${destination.region} ${destination.category}`.toLowerCase();
-    return categoryMatches && (!cleanQuery || searchable.includes(cleanQuery));
-  }), [destinations, category, cleanQuery]);
+  const queryTokens = useMemo(() => (cleanQuery ? cleanQuery.split(/\s+/) : []), [cleanQuery]);
+
+  const filtered = useMemo(() => {
+    return destinations.filter((dest) => {
+      const categoryMatches = category === 'All'
+        || String(dest.category || '').toLowerCase() === category.toLowerCase();
+      if (!categoryMatches) return false;
+      if (queryTokens.length === 0) return true;
+
+      const searchable = dest._searchTokens || `${dest.name} ${dest.city} ${dest.region} ${dest.category}`.toLowerCase();
+      return queryTokens.every((token) => searchable.includes(token));
+    });
+  }, [destinations, category, queryTokens]);
 
   const reset = () => {
     setQuery('');
@@ -99,90 +106,113 @@ export default function SearchScreen({ navigation }) {
 
   const filteredMode = Boolean(cleanQuery) || category !== 'All';
 
+  const renderItem = useCallback(({ item }) => (
+    <ResultCard
+      destination={item}
+      onPress={() => navigation.navigate('DestinationDetail', { destination: item })}
+    />
+  ), [navigation]);
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
+      <FlatList
+        data={loading ? [] : filtered}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={COLORS.primary} />}
-      >
-        <View style={styles.hero}>
-          <Text style={styles.eyebrow}>DISCOVER ETHIOPIA</Text>
-          <Text style={styles.title}>Find a place you'll <Text style={styles.titleAccent}>love.</Text></Text>
-        </View>
-
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={19} color={COLORS.gray} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            style={styles.searchInput}
-            placeholder="Search places or cities"
-            placeholderTextColor={COLORS.grayLight}
-            returnKeyType="search"
-            autoCorrect={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); loadData(true); }}
+            tintColor={COLORS.primary}
           />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Clear search">
-              <Ionicons name="close" size={18} color={COLORS.gray} />
-            </TouchableOpacity>
-          )}
-        </View>
+        }
+        ListHeaderComponent={
+          <View style={styles.headerWrap}>
+            <View style={styles.hero}>
+              <Text style={styles.eyebrow}>DISCOVER ETHIOPIA</Text>
+              <Text style={styles.title}>Find a place you'll <Text style={styles.titleAccent}>love.</Text></Text>
+            </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {ALL_DESTINATION_CATEGORIES.map((item) => {
-            const selected = item === category;
-            return (
-              <TouchableOpacity
-                key={item}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => setCategory(item)}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={19} color={COLORS.gray} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                style={styles.searchInput}
+                placeholder="Search places or cities"
+                placeholderTextColor={COLORS.grayLight}
+                returnKeyType="search"
+                autoCorrect={false}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Clear search">
+                  <Ionicons name="close" size={18} color={COLORS.gray} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-        {!cleanQuery && (
-          <View style={styles.suggestions}>
-            <Text style={styles.tryText}>Try</Text>
-            {SUGGESTIONS.map((item) => (
-              <TouchableOpacity key={item} style={styles.suggestion} onPress={() => setQuery(item)}>
-                <Text style={styles.suggestionText}>{item}</Text>
-              </TouchableOpacity>
-            ))}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {ALL_DESTINATION_CATEGORIES.map((item) => {
+                const selected = item === category;
+                return (
+                  <TouchableOpacity
+                    key={item}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => setCategory(item)}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {!cleanQuery && (
+              <View style={styles.suggestions}>
+                <Text style={styles.tryText}>Try</Text>
+                {SUGGESTIONS.map((item) => (
+                  <TouchableOpacity key={item} style={styles.suggestion} onPress={() => setQuery(item)}>
+                    <Text style={styles.suggestionText}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.resultHeader}>
+              <Text style={styles.resultTitle}>
+                {filteredMode ? `${filtered.length} match${filtered.length === 1 ? '' : 'es'}` : 'Places for you'}
+              </Text>
+              <Text style={styles.resultSubtitle}>{filteredMode ? 'Filtered results' : 'Handpicked by Tankua'}</Text>
+            </View>
           </View>
-        )}
-
-        <View style={styles.resultHeader}>
-          <Text style={styles.resultTitle}>
-            {filteredMode ? `${filtered.length} match${filtered.length === 1 ? '' : 'es'}` : 'Places for you'}
-          </Text>
-          <Text style={styles.resultSubtitle}>{filteredMode ? 'Filtered results' : 'Handpicked by Tankua'}</Text>
-        </View>
-
-        {loading ? [0, 1, 2, 3].map((item) => (
-          <View key={item} style={styles.skeleton}><SkeletonCard width="100%" height={108} /></View>
-        )) : filtered.length ? filtered.map((destination) => (
-          <ResultCard
-            key={destination.id}
-            destination={destination}
-            onPress={() => navigation.navigate('DestinationDetail', { destination })}
-          />
-        )) : (
-          <View style={styles.empty}>
-            <Ionicons name="compass-outline" size={54} color={COLORS.primary} />
-            <Text style={styles.emptyTitle}>No journeys found</Text>
-            <Text style={styles.emptyText}>Try another place, city, or experience.</Text>
-            <TouchableOpacity style={styles.showAllButton} onPress={reset}>
-              <Text style={styles.showAllText}>Show all places</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View>
+              {[0, 1, 2, 3].map((item) => (
+                <View key={item} style={styles.skeleton}>
+                  <SkeletonCard width="100%" height={108} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Ionicons name="compass-outline" size={54} color={COLORS.primary} />
+              <Text style={styles.emptyTitle}>No journeys found</Text>
+              <Text style={styles.emptyText}>Try another place, city, or experience.</Text>
+              <TouchableOpacity style={styles.showAllButton} onPress={reset}>
+                <Text style={styles.showAllText}>Show all places</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -190,6 +220,7 @@ export default function SearchScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.white },
   content: { backgroundColor: COLORS.backgroundSecondary, paddingBottom: 110 },
+  headerWrap: { backgroundColor: COLORS.backgroundSecondary },
   hero: { backgroundColor: COLORS.white, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.md },
   eyebrow: { color: COLORS.primary, fontSize: 11, fontWeight: FONTS.weights.black, letterSpacing: 1.4, marginBottom: 6 },
   title: { color: COLORS.secondary, fontSize: 30, lineHeight: 37, fontWeight: FONTS.weights.black, letterSpacing: -0.7 },

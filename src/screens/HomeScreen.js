@@ -17,7 +17,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { getDestinations, getPlaceholderImage } from '../services/database';
+import { getPlaceholderImage } from '../services/database';
+import {
+  getDestinationsSWR,
+  subscribeDestinationUpdates,
+  getInstantCachedDestinations
+} from '../services/destinationCache';
 import EnhancedDestinationCard from '../components/EnhancedDestinationCard';
 import CategoryRibbon from '../components/CategoryRibbon';
 import { SkeletonCard } from '../components/SkeletonLoader';
@@ -48,51 +53,55 @@ const HomeScreen = ({ navigation }) => {
     return 375; // Default width
   }, [windowDimensions]);
 
-  const [destinations, setDestinations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCache = getInstantCachedDestinations();
+  const [destinations, setDestinations] = useState(initialCache);
+  const [loading, setLoading] = useState(initialCache.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  useEffect(() => {
-    loadDestinations();
-  }, []);
+  const transformItems = (data) => deduplicateDestinations(data.map(destination => ({
+    id: destination.id,
+    name: destination.name,
+    description: destination.description || '',
+    region: destination.region || '',
+    city: destination.city || '',
+    distance: destination.distance || 0,
+    images: destination.images || [],
+    tags: destination.tags || [],
+    category: destination.category || 'other',
+    location: destination.location || { lat: 0, lng: 0 },
+    rating: destination.rating || 4.5,
+    review_count: destination.review_count || 0,
+    price: destination.price || null,
+    estimated_duration: destination.estimated_duration || null,
+    price_range: destination.price_range || (destination.price ? `$${Math.floor(destination.price / 100)}` : null),
+    is_verified: Boolean(destination.is_verified),
+  })));
 
-  const loadDestinations = async () => {
+  const loadDestinations = async (forceRefresh = false) => {
     try {
-      setLoading(true);
-      const data = await getDestinations({});
-
-      let transformedDestinations = data.map(destination => ({
-        id: destination.id,
-        name: destination.name,
-        description: destination.description || '',
-        region: destination.region || '',
-        city: destination.city || '',
-        distance: destination.distance || 0,
-        images: destination.images || [],
-        tags: destination.tags || [],
-        category: destination.category || 'other',
-        location: destination.location || { lat: 0, lng: 0 },
-        rating: destination.rating || 4.5,
-        review_count: destination.review_count || 0,
-        price: destination.price || null,
-        estimated_duration: destination.estimated_duration || null,
-        price_range: destination.price_range || (destination.price ? `$${Math.floor(destination.price / 100)}` : null),
-        is_verified: Boolean(destination.is_verified),
-      }));
-
-      transformedDestinations = deduplicateDestinations(transformedDestinations);
-      setDestinations(transformedDestinations);
-      setLoading(false);
+      const { data } = await getDestinationsSWR({ forceRefresh });
+      setDestinations(transformItems(data));
     } catch (err) {
       console.log('Notice: Could not fetch remote destinations (network/offline):', err?.message || err);
+    } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  useEffect(() => {
+    loadDestinations();
+    const unsubscribe = subscribeDestinationUpdates((freshData) => {
+      setDestinations(transformItems(freshData));
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDestinations();
+    await loadDestinations(true);
     setRefreshing(false);
   };
 

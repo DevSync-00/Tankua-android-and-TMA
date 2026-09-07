@@ -12,11 +12,6 @@ import {
 
 const AuthContext = createContext();
 
-const IS_SANDBOX_BUILD = process.env.EXPO_PUBLIC_APP_ENV !== 'production';
-const GOOGLE_REVIEW_PHONE = process.env.EXPO_PUBLIC_REVIEW_PHONE;
-const GOOGLE_REVIEW_BYPASS = process.env.EXPO_PUBLIC_REVIEW_BYPASS_TOKEN;
-
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -623,36 +618,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkBypassCredentials = async (phoneNumber, tokenInput) => {
-    console.warn('[Reviewer Debug] IS_SANDBOX_BUILD:', IS_SANDBOX_BUILD);
-    console.warn('[Reviewer Debug] GOOGLE_REVIEW_PHONE:', GOOGLE_REVIEW_PHONE);
-    console.warn('[Reviewer Debug] GOOGLE_REVIEW_BYPASS:', GOOGLE_REVIEW_BYPASS);
-    console.warn('[Reviewer Debug] Input Phone:', phoneNumber);
-    console.warn('[Reviewer Debug] Input Token:', tokenInput);
-
-    if (!IS_SANDBOX_BUILD) {
-      console.warn('[Reviewer Debug] Failed because IS_SANDBOX_BUILD is false');
-      return false;
-    }
-
-    const formattedInputPhone = phoneNumber?.trim();
-    const formattedReviewPhone = GOOGLE_REVIEW_PHONE?.trim();
-    const formattedInputToken = tokenInput?.trim();
-    const formattedReviewToken = GOOGLE_REVIEW_BYPASS?.trim();
-
-    if (!formattedReviewPhone || !formattedReviewToken) {
-      console.warn('[Reviewer Debug] Failed because configured phone or token is missing/empty');
-      return false;
-    }
-
-    const isMatch = (
-      formattedInputPhone === formattedReviewPhone &&
-      formattedInputToken === formattedReviewToken
-    );
-    console.warn('[Reviewer Debug] Match result:', isMatch);
-    return isMatch;
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -668,8 +633,6 @@ export const AuthProvider = ({ children }) => {
         logout,
         deleteAccount,
         updateProfile,
-        IS_SANDBOX_BUILD,
-        checkBypassCredentials,
       }}
     >
       {children}
