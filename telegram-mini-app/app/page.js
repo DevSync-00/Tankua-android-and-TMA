@@ -613,7 +613,23 @@ function Payment({step,back,d,booking,finish,submitting}) {
 }
 
 function Confirmation({booking,home,ticket}) { return <div className="confirmation"><div className="success-orbit"><span><Check/></span></div><p className="eyebrow">BOOKING CONFIRMED</p><h1>You’re going to<br/>{booking.destination.name}!</h1><p>Your trip is reserved. We’ve added your ticket to the Trips tab.</p><div className="confirmation-card"><img src={booking.destination.image}/><div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div><strong>{booking.id}</strong></div><button className="continue" onClick={ticket}>View QR ticket <Ticket/></button><button className="text-button" onClick={home}>Back to home</button></div>; }
-function TicketView({booking,back}) { return <div className="ticket-page"><header className="simple-head"><button onClick={back}><ArrowLeft/></button><h1>Your ticket</h1><span/></header><div className="ticket-card"><div className="ticket-top"><img src="/tankua-logo.png"/><span><b>TANKUA</b><small>EXPLORE ETHIOPIA</small></span></div><div className="ticket-destination" style={{backgroundImage:`linear-gradient(180deg,transparent,rgba(5,15,28,.85)),url("${booking.destination.image}")`}}><h2>{booking.destination.name}</h2><p>{booking.trip.date}</p></div><div className="ticket-info"><p><span>DEPARTURE<b>{booking.trip.time}</b></span><span>SEATS<b>{booking.seats}</b></span></p><p><span>PICKUP<b>{booking.pickup.name}</b></span><span>BOOKING<b>{booking.id}</b></span></p><div className="qr"><div className="qr-pattern">{Array.from({length:81},(_,i)=><i key={i} className={(i*7+i%5)%3===0?'on':''}/>)}</div><small>Present this code at pickup</small></div></div></div><div className="info-note"><Info/><p><b>Ready for your trip?</b>Arrive 15 minutes before departure with a valid ID.</p></div></div>; }
+function TicketView({booking,back}) {
+  return <div className="ticket-page">
+    <header className="simple-head"><button onClick={back} aria-label="Back"><ArrowLeft/></button><h1>Your ticket</h1><span/></header>
+    <main className="ticket-page-body">
+      <div className="ticket-card">
+        <div className="ticket-top"><img src="/tankua-logo.png" alt="Tankua"/><span><b>TANKUA</b><small>EXPLORE ETHIOPIA</small></span></div>
+        <div className="ticket-destination" style={{backgroundImage:`linear-gradient(180deg,transparent 20%,rgba(5,15,28,.9)),url("${booking.destination.image}")`}}><div><h2>{booking.destination.name}</h2><p>{booking.trip.date}</p></div></div>
+        <div className="ticket-info">
+          <div className="ticket-info-row"><span><small>Departure</small><b>{booking.trip.time}</b></span><span><small>Seats</small><b>{booking.seats}</b></span></div>
+          <div className="ticket-info-row"><span><small>Pickup</small><b>{booking.pickup.name}</b></span><span><small>Booking</small><b className="ticket-booking-id">{booking.id}</b></span></div>
+          <div className="qr"><div className="qr-pattern" aria-hidden="true">{Array.from({length:81},(_,i)=><i key={i} className={(i*7+i%5)%3===0?'on':''}/>)}</div><small>Present this ticket at pickup</small></div>
+        </div>
+      </div>
+      <div className="info-note ticket-note"><Info/><p><b>Ready for your trip?</b><span>Arrive 15 minutes before departure with a valid ID.</span></p></div>
+    </main>
+  </div>;
+}
 
 function SearchView({destinations,query,setQuery,open}) {
   const [selectedCat, setSelectedCat] = useState('All');
