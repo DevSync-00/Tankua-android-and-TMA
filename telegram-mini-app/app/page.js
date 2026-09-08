@@ -548,6 +548,7 @@ function Continue({disabled,onClick,label='Continue'}) { return <button classNam
 
 function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
   const providerById=new Map(providers.map(provider=>[provider.id,provider]));
+  const durationLabel=(minutes)=>{const value=Number(minutes||0);if(!value)return '';const hours=Math.floor(value/60),mins=value%60;return [hours?`${hours} hr${hours===1?'':'s'}`:'',mins?`${mins} min`:''].filter(Boolean).join(' ');};
   return <FlowPage step="trip" back={back} title="Select Trip" sub={`Available trips to ${destination.name}`}>
     <div className="mobile-trip-list">{trips.map(trip=>{
       const provider=providerById.get(trip.provider_id);
@@ -556,6 +557,20 @@ function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
         {provider&&<div className="trip-provider">{provider.logo_url?<img src={provider.logo_url} alt={`${provider.name} logo`}/>:<span><Building2/></span>}<div><small className="provider-eyebrow">OPERATED BY</small><b>{provider.name}</b><small><Star fill="currentColor"/>{Number(provider.rating||0).toFixed(1)} · Verified provider</small></div>{selected&&<Check/>}</div>}
         <div className="trip-schedule"><div><span>DEPARTURE</span><b>{trip.date}</b><small>{trip.time}</small></div><i><Bus/><span>{String(trip.trip_type||'scheduled').split('_').join(' ')}</span></i>{trip.return_date?<div><span>RETURN</span><b>{new Date(trip.return_date).toLocaleDateString([],{month:'short',day:'numeric'})}</b><small>{trip.arrival}</small></div>:<div><span>TRIP</span><b>One way</b><small>Scheduled</small></div>}</div>
         <div className="trip-card-foot"><span><UsersRound/>{trip.left} seats available</span><b>{money(trip.price)} <small>/ seat</small></b></div>
+        {selected&&<div className="trip-details">
+          {trip.summary&&<p className="trip-summary">{trip.summary}</p>}
+          {(trip.duration_minutes||trip.transportation_type||trip.difficulty_level)&&<div className="trip-detail-facts">
+            {trip.duration_minutes&&<span><Clock3/><small>Duration</small><b>{durationLabel(trip.duration_minutes)}</b></span>}
+            {trip.transportation_type&&<span><Bus/><small>Transport</small><b>{trip.transportation_type}</b></span>}
+            {trip.difficulty_level&&<span><UsersRound/><small>Activity</small><b>{trip.difficulty_level}</b></span>}
+          </div>}
+          {trip.itinerary&&<section><h4>Itinerary</h4><p>{trip.itinerary}</p></section>}
+          {!!trip.inclusions?.length&&<section><h4>What's included</h4><ul>{trip.inclusions.map((item,index)=><li key={index}><Check/>{item}</li>)}</ul></section>}
+          {!!trip.exclusions?.length&&<section><h4>Not included</h4><ul>{trip.exclusions.map((item,index)=><li key={index}><X/>{item}</li>)}</ul></section>}
+          {trip.meeting_instructions&&<section><h4>Meeting instructions</h4><p>{trip.meeting_instructions}</p></section>}
+          {trip.what_to_bring&&<section><h4>What to bring</h4><p>{trip.what_to_bring}</p></section>}
+          {trip.cancellation_policy&&<section><h4>Cancellation policy</h4><p>{trip.cancellation_policy}</p></section>}
+        </div>}
       </button>;
     })}</div>
     {!trips.length&&<div className="flow-empty"><CalendarDays/><h3>No trips available</h3><p>Please check back later or choose another destination.</p></div>}

@@ -2727,6 +2727,47 @@ img {
   font-weight: 600;
 }
 
+.trip-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(15, 23, 42, .1);
+  text-align: left;
+}
+
+.trip-summary {
+  margin: 0 0 14px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.trip-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.trip-detail-facts > span {
+  display: grid;
+  gap: 3px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.trip-detail-facts svg { width: 16px; height: 16px; color: #0f766e; }
+.trip-detail-facts small { color: #64748b; font-size: 10px; text-transform: uppercase; }
+.trip-detail-facts b { color: #0f172a; font-size: 12px; overflow-wrap: anywhere; text-transform: capitalize; }
+
+.trip-details section { margin-top: 13px; }
+.trip-details h4 { margin: 0 0 5px; color: #0f172a; font-size: 13px; }
+.trip-details section p { margin: 0; color: #475569; font-size: 13px; line-height: 1.55; white-space: pre-line; }
+.trip-details ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.trip-details li { display: flex; align-items: flex-start; gap: 7px; color: #475569; font-size: 13px; line-height: 1.4; }
+.trip-details li svg { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; color: #0f766e; }
+.trip-details section:nth-of-type(3) li svg { color: #dc2626; }
+
 .flow-info {
   display: flex;
   align-items: flex-start;

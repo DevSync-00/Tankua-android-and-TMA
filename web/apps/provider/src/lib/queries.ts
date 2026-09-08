@@ -561,6 +561,15 @@ export async function createTrip(trip: {
   max_seats: number;
   tour_category?: string;
   itinerary?: string;
+  summary?: string;
+  duration_minutes?: number;
+  transportation_type?: string;
+  difficulty_level?: string;
+  inclusions?: string[];
+  exclusions?: string[];
+  meeting_instructions?: string;
+  what_to_bring?: string;
+  cancellation_policy?: string;
   pickup_stations?: Array<{ station_id: string; pickup_time: string; extra_price: number }>;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   // Prepare trip data - handle both departure_date and date columns
@@ -580,6 +589,9 @@ export async function createTrip(trip: {
 
   if (trip.itinerary) {
     tripData.itinerary = trip.itinerary;
+  }
+  for (const field of ['summary', 'duration_minutes', 'transportation_type', 'difficulty_level', 'inclusions', 'exclusions', 'meeting_instructions', 'what_to_bring', 'cancellation_policy'] as const) {
+    if (trip[field] !== undefined) tripData[field] = trip[field];
   }
   
   // Set departure_date and also set date for backward compatibility

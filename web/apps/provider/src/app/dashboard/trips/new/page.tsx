@@ -59,7 +59,16 @@ export default function NewTripPage() {
     price: "",
     maxSeats: "",
     tourCategory: "",
+    summary: "",
     itinerary: "",
+    durationHours: "",
+    transportationType: "",
+    difficultyLevel: "easy",
+    inclusions: "",
+    exclusions: "",
+    meetingInstructions: "",
+    whatToBring: "",
+    cancellationPolicy: "",
   });
 
   useEffect(() => {
@@ -211,7 +220,16 @@ export default function NewTripPage() {
         price: priceValue,
         max_seats: seatsValue,
         tour_category: formData.tourCategory || undefined,
+        summary: formData.summary.trim() || undefined,
         itinerary: formData.itinerary?.trim() || undefined,
+        duration_minutes: formData.durationHours ? Math.round(Number(formData.durationHours) * 60) : undefined,
+        transportation_type: formData.transportationType.trim() || undefined,
+        difficulty_level: formData.difficultyLevel || undefined,
+        inclusions: formData.inclusions.split("\n").map((item) => item.trim()).filter(Boolean),
+        exclusions: formData.exclusions.split("\n").map((item) => item.trim()).filter(Boolean),
+        meeting_instructions: formData.meetingInstructions.trim() || undefined,
+        what_to_bring: formData.whatToBring.trim() || undefined,
+        cancellation_policy: formData.cancellationPolicy.trim() || undefined,
         pickup_stations: selectedStations.map((station) => ({
           station_id: station.id,
           pickup_time: stationConfig[station.id].pickupTime,
@@ -345,6 +363,14 @@ export default function NewTripPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Short summary *</label>
+                <textarea required maxLength={280} rows={2} value={formData.summary}
+                  onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                  placeholder="Give travelers the most important reason to choose this departure."
+                  className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background resize-none" />
+                <p className="mt-1 text-xs text-muted-foreground">{formData.summary.length}/280 characters</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Trip Type *</label>
                 <div className="grid grid-cols-2 gap-4">
@@ -497,6 +523,21 @@ export default function NewTripPage() {
                   className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background resize-none"
                 />
               </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <label className="text-sm font-medium">Duration (hours)<input type="number" min="0.5" step="0.5" value={formData.durationHours} onChange={(e) => setFormData({ ...formData, durationHours: e.target.value })} placeholder="e.g., 8" className="mt-2 w-full px-4 py-3 rounded-xl border bg-background" /></label>
+                <label className="text-sm font-medium">Transportation<input value={formData.transportationType} onChange={(e) => setFormData({ ...formData, transportationType: e.target.value })} placeholder="e.g., Air-conditioned minibus" className="mt-2 w-full px-4 py-3 rounded-xl border bg-background" /></label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Activity level</label>
+                <select value={formData.difficultyLevel} onChange={(e) => setFormData({ ...formData, difficultyLevel: e.target.value })} className="w-full px-4 py-3 rounded-xl border bg-background"><option value="easy">Easy</option><option value="moderate">Moderate</option><option value="challenging">Challenging</option></select>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <label className="text-sm font-medium">What's included<textarea rows={4} value={formData.inclusions} onChange={(e) => setFormData({ ...formData, inclusions: e.target.value })} placeholder={'Transport\nGuide\nEntrance fees'} className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /><small className="text-muted-foreground">One item per line</small></label>
+                <label className="text-sm font-medium">Not included<textarea rows={4} value={formData.exclusions} onChange={(e) => setFormData({ ...formData, exclusions: e.target.value })} placeholder={'Meals\nPersonal expenses'} className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /><small className="text-muted-foreground">One item per line</small></label>
+              </div>
+              <label className="block text-sm font-medium">Meeting instructions<textarea rows={3} value={formData.meetingInstructions} onChange={(e) => setFormData({ ...formData, meetingInstructions: e.target.value })} placeholder="Where to meet, when to arrive, and who to contact." className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /></label>
+              <label className="block text-sm font-medium">What to bring<textarea rows={2} value={formData.whatToBring} onChange={(e) => setFormData({ ...formData, whatToBring: e.target.value })} placeholder="Comfortable shoes, ID, water..." className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /></label>
+              <label className="block text-sm font-medium">Cancellation policy<textarea rows={2} value={formData.cancellationPolicy} onChange={(e) => setFormData({ ...formData, cancellationPolicy: e.target.value })} placeholder="Explain refund deadlines and cancellation charges." className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /></label>
             </CardContent>
           </Card>
 
