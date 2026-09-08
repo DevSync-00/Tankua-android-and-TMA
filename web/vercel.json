@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "turbo build --filter=marketing",
+  "outputDirectory": "apps/marketing/.next",
+  "installCommand": "npm install"
+}
