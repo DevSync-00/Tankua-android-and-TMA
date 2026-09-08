@@ -136,6 +136,20 @@ async function supabase(env, path, { method = 'GET', body, headers = {} } = {}) 
   return data;
 }
 
+async function supabaseAll(env, path, pageSize = 1000) {
+  const rows = [];
+
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await supabase(env, path, {
+      headers: { Range: `${offset}-${offset + pageSize - 1}` },
+    });
+
+    if (!Array.isArray(page)) return page;
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+
 async function resolveTelegramAuthUser(env, initData, telegram) {
   const response = await fetch(`${env.SUPABASE_URL}/functions/v1/telegram-auth`, {
     method: 'POST',
@@ -261,7 +275,7 @@ async function authenticate(request, env) {
 
 async function getCatalog(env) {
   const [destinations, trips, providers, stations, links] = await Promise.all([
-    supabase(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,is_featured,is_popular&order=name.asc'),
+    supabaseAll(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,is_featured,is_popular&order=name.asc'),
     supabase(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,itinerary,status&status=in.(active,upcoming)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc`),
     supabase(env, 'providers?select=id,name,description,logo_url,rating,total_trips&status=eq.active&order=name.asc'),
     supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,is_active&is_active=eq.true&order=name.asc'),
