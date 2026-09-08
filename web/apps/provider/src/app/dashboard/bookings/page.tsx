@@ -7,7 +7,6 @@ import {
   Filter, 
   Calendar,
   ChevronDown,
-  MoreHorizontal,
   Eye,
   CheckCircle2,
   XCircle,
@@ -37,6 +36,7 @@ export default function BookingsPage() {
     message: string;
     variant: "success" | "error";
   } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
 
   useEffect(() => {
     loadProviderSession();
@@ -224,6 +224,15 @@ export default function BookingsPage() {
     }
   };
 
+  const exportBookings = () => {
+    const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const rows = filteredBookings.map((booking) => [booking.id, booking.user?.name || "Unknown", booking.trip?.destination?.name || booking.destination_name || "Unknown", booking.trip?.departure_date || "", booking.seats, booking.total_price, booking.status, booking.payment_status]);
+    const csv = [["Booking ID", "Customer", "Destination", "Departure", "Seats", "Amount (ETB)", "Status", "Payment"], ...rows].map((row) => row.map(escape).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = `tankua-bookings-${new Date().toISOString().slice(0, 10)}.csv`; anchor.click(); URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -252,7 +261,7 @@ export default function BookingsPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />}>
+            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={exportBookings} disabled={!filteredBookings.length}>
               Export
             </Button>
           </div>
@@ -479,11 +488,8 @@ export default function BookingsPage() {
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedBooking(booking)} title="View booking details">
                           <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -593,11 +599,8 @@ export default function BookingsPage() {
                                   </Button>
                                 </>
                               )}
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedBooking(booking)} title="View booking details">
                                 <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
@@ -611,6 +614,7 @@ export default function BookingsPage() {
           </CardContent>
         </Card>
       </div>
+      {selectedBooking && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" onClick={() => setSelectedBooking(null)}><Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Booking #{selectedBooking.id.slice(0, 8)}</p><h2 className="mt-1 text-xl font-bold">{selectedBooking.trip?.destination?.name || selectedBooking.destination_name || "Booking details"}</h2></div><Button variant="ghost" size="sm" onClick={() => setSelectedBooking(null)}>Close</Button></div><div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-4 text-sm"><span><small className="block text-muted-foreground">Customer</small><b>{selectedBooking.user?.name || "Unknown"}</b></span><span><small className="block text-muted-foreground">Phone</small><b>{selectedBooking.user?.phone_number || "Not provided"}</b></span><span><small className="block text-muted-foreground">Seats</small><b>{selectedBooking.seats}</b></span><span><small className="block text-muted-foreground">Amount</small><b>{formatCurrency(selectedBooking.total_price)}</b></span><span><small className="block text-muted-foreground">Status</small>{getStatusBadge(selectedBooking.status)}</span><span><small className="block text-muted-foreground">Payment</small>{getPaymentBadge(selectedBooking.payment_status)}</span></div></Card></div>}
     </div>
   );
 }

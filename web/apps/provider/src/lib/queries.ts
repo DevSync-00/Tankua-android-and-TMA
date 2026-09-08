@@ -633,6 +633,28 @@ export async function createTrip(trip: {
   return { success: true, id: data.id };
 }
 
+export interface ProviderReview {
+  id: string; rating: number; comment: string | null; provider_response: string | null;
+  created_at: string; helpful_count: number; customer: string; trip: string;
+}
+
+export async function getProviderReviews(providerId: string): Promise<ProviderReview[]> {
+  const { data, error } = await supabase.from('reviews')
+    .select('id,rating,comment,provider_response,created_at,helpful_count,users(name),bookings(trips(destinations(name)))')
+    .eq('provider_id', providerId).eq('is_visible', true).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((review: any) => ({
+    id: review.id, rating: review.rating, comment: review.comment, provider_response: review.provider_response,
+    created_at: review.created_at, helpful_count: review.helpful_count || 0,
+    customer: review.users?.name || 'Anonymous', trip: review.bookings?.trips?.destinations?.name || 'Unknown trip',
+  }));
+}
+
+export async function respondToReview(id: string, response: string) {
+  const { error } = await supabase.from('reviews').update({ provider_response: response, provider_response_at: new Date().toISOString() }).eq('id', id);
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
 export async function getProviderTrip(providerId: string, tripId: string) {
   const [{ data: trip, error }, { data: stations, error: stationsError }] = await Promise.all([
     supabase.from('trips').select('*').eq('id', tripId).eq('provider_id', providerId).single(),
@@ -771,6 +793,7 @@ export interface Driver {
   phone: string | null;
   license_number: string | null;
   avatar_url: string | null;
+  emergency_contact?: string | null;
   rating: number;
   status: 'available' | 'on_trip' | 'offline';
   created_at: string;
@@ -796,6 +819,7 @@ export async function createDriver(driver: {
   name: string;
   phone?: string;
   license_number?: string;
+  emergency_contact?: string;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   const { data, error } = await supabase
     .from('drivers')
@@ -813,6 +837,48 @@ export async function createDriver(driver: {
   }
 
   return { success: true, id: data.id };
+}
+
+export interface Vehicle {
+  id: string;
+  provider_id: string;
+  driver_id: string | null;
+  plate_number: string;
+  vehicle_type: string;
+  capacity: number;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  image_url: string | null;
+  inspection_expiry: string | null;
+  status: 'active' | 'maintenance' | 'inactive';
+  driver: { id: string; name: string } | null;
+}
+
+export async function getVehicles(providerId: string): Promise<Vehicle[]> {
+  const { data, error } = await supabase.from('vehicles')
+    .select('id,provider_id,driver_id,plate_number,vehicle_type,capacity,make,model,year,image_url,inspection_expiry,status,driver:drivers(id,name)')
+    .eq('provider_id', providerId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((vehicle: any) => ({ ...vehicle, driver: Array.isArray(vehicle.driver) ? vehicle.driver[0] || null : vehicle.driver })) as Vehicle[];
+}
+
+export async function createVehicle(vehicle: {
+  provider_id: string; plate_number: string; vehicle_type: string; capacity: number;
+  make?: string; model?: string; year?: number;
+}): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase.from('vehicles').insert(vehicle);
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+export async function updateVehicleStatus(id: string, status: Vehicle['status']) {
+  const { error } = await supabase.from('vehicles').update({ status }).eq('id', id);
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+export async function deleteVehicle(id: string) {
+  const { error } = await supabase.from('vehicles').delete().eq('id', id);
+  return error ? { success: false, error: error.message } : { success: true };
 }
 
 export async function updateDriver(
@@ -963,6 +1029,28 @@ export async function getEarningsSummary(providerId: string): Promise<EarningsSu
       earnings,
     })),
   };
+}
+
+export interface ProviderSupportTicket {
+  id: string;
+  ticket_number: string;
+  subject: string;
+  status: string;
+  created_at: string;
+}
+
+export async function getProviderSupportTickets(providerId: string): Promise<ProviderSupportTicket[]> {
+  const { data, error } = await supabase.from('support_tickets')
+    .select('id,ticket_number,subject,status,created_at').eq('provider_id', providerId)
+    .order('created_at', { ascending: false }).limit(10);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createProviderSupportTicket(providerId: string, subject: string, description: string) {
+  const ticketNumber = `TKT-${Date.now().toString(36).toUpperCase()}`;
+  const { error } = await supabase.from('support_tickets').insert({ provider_id: providerId, ticket_number: ticketNumber, subject, description, category: 'technical', priority: 'medium', status: 'open' });
+  return error ? { success: false, error: error.message } : { success: true };
 }
 
 

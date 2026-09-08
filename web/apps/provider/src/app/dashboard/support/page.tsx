@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   HelpCircle,
   MessageSquare,
   Phone,
   Mail,
-  FileText,
   ChevronRight,
   Send,
-  ExternalLink,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@tankua/ui";
+import { createProviderSupportTicket, getProviderSupportTickets, type ProviderSupportTicket } from "@/lib/queries";
 
 const faqs = [
   { question: "How do I create a new trip?", answer: "Go to 'My Trips' and click 'Create Trip'. Fill in the destination, dates, pricing, and capacity details." },
@@ -22,13 +22,36 @@ const faqs = [
   { question: "How do I handle a cancellation?", answer: "Cancellations are handled through the 'Bookings' section. Click on the booking and select 'Cancel'. Refunds are processed automatically based on the cancellation policy." },
 ];
 
-const recentTickets = [
-  { id: "TKT-001", subject: "Payout delay inquiry", status: "resolved", date: "Jan 14, 2024" },
-  { id: "TKT-002", subject: "Trip scheduling help", status: "in_progress", date: "Jan 15, 2024" },
-];
-
 export default function SupportPage() {
+  const router = useRouter();
   const [showContact, setShowContact] = useState(false);
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [tickets, setTickets] = useState<ProviderSupportTicket[]>([]);
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("provider_user") || "{}");
+      const id = stored.provider_id || stored.provider?.id;
+      if (!id) return router.replace("/login");
+      setProviderId(id);
+      getProviderSupportTickets(id).then(setTickets).catch(() => setFeedback("Could not load support tickets."));
+    } catch { router.replace("/login"); }
+  }, [router]);
+
+  const submitTicket = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!providerId) return;
+    setSubmitting(true); setFeedback("");
+    const result = await createProviderSupportTicket(providerId, subject.trim(), message.trim());
+    setSubmitting(false);
+    if (!result.success) return setFeedback(result.error || "Could not create the ticket.");
+    setSubject(""); setMessage(""); setShowContact(false); setFeedback("Support ticket created successfully.");
+    setTickets(await getProviderSupportTickets(providerId));
+  };
 
   return (
     <div className="min-h-screen">
@@ -38,6 +61,7 @@ export default function SupportPage() {
       />
 
       <div className="portal-content">
+        {feedback && <div className="rounded-xl border border-border bg-white p-4 text-sm">{feedback}</div>}
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-3 gap-6">
           <Card className="p-6 hover:border-primary transition-colors cursor-pointer" onClick={() => setShowContact(true)}>
@@ -102,13 +126,13 @@ export default function SupportPage() {
               <CardTitle>Your Tickets</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {recentTickets.length === 0 ? (
+              {tickets.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No support tickets</p>
                 </div>
               ) : (
-                recentTickets.map((ticket) => (
+                tickets.map((ticket) => (
                   <div key={ticket.id} className="p-4 bg-muted/30 rounded-xl">
                     <div className="flex items-start justify-between mb-2">
                       <p className="font-medium text-sm">{ticket.subject}</p>
@@ -117,8 +141,8 @@ export default function SupportPage() {
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{ticket.id}</span>
-                      <span>{ticket.date}</span>
+                      <span>{ticket.ticket_number}</span>
+                      <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))
@@ -130,51 +154,19 @@ export default function SupportPage() {
           </Card>
         </div>
 
-        {/* Resources */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Helpful Resources</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-3 gap-4">
-              <a href="#" className="flex items-center gap-3 p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
-                <FileText className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">Provider Guide</p>
-                  <p className="text-xs text-muted-foreground">Getting started tutorial</p>
-                </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto" />
-              </a>
-              <a href="#" className="flex items-center gap-3 p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
-                <FileText className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">Pricing Policy</p>
-                  <p className="text-xs text-muted-foreground">Commission & payouts</p>
-                </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto" />
-              </a>
-              <a href="#" className="flex items-center gap-3 p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
-                <FileText className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">Terms of Service</p>
-                  <p className="text-xs text-muted-foreground">Provider agreement</p>
-                </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto" />
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Contact Modal */}
         {showContact && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <Card className="w-full max-w-lg p-6">
               <h2 className="text-xl font-bold mb-4">Contact Support</h2>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={submitTicket}>
                 <div>
                   <label className="block text-sm font-medium mb-2">Subject</label>
                   <input
                     type="text"
+                    required
+                    value={subject}
+                    onChange={(event) => setSubject(event.target.value)}
                     placeholder="Brief description of your issue"
                     className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   />
@@ -183,13 +175,16 @@ export default function SupportPage() {
                   <label className="block text-sm font-medium mb-2">Message</label>
                   <textarea
                     rows={4}
+                    required
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
                     placeholder="Describe your issue in detail..."
                     className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setShowContact(false)}>Cancel</Button>
-                  <Button type="submit" leftIcon={<Send className="h-4 w-4" />}>Send Message</Button>
+                  <Button type="submit" isLoading={submitting} leftIcon={<Send className="h-4 w-4" />}>Create Ticket</Button>
                 </div>
               </form>
             </Card>

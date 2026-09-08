@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -9,14 +9,16 @@ import {
   Phone,
   CreditCard,
   CheckCircle,
-  Upload,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@tankua/ui";
+import { createDriver } from "@/lib/queries";
 
 export default function NewDriverPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -24,11 +26,23 @@ export default function NewDriverPage() {
     emergencyContact: "",
   });
 
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("provider_user") || "{}");
+      const id = stored.provider_id || stored.provider?.id;
+      if (!id) return router.replace("/login");
+      setProviderId(id);
+    } catch { router.replace("/login"); }
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!providerId) return setError("Please sign in again before adding a driver.");
+    setError("");
     setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const result = await createDriver({ provider_id: providerId, name: formData.name.trim(), phone: formData.phone.trim(), license_number: formData.licenseNumber.trim(), emergency_contact: formData.emergencyContact.trim() || undefined });
     setSaving(false);
+    if (!result.success) return setError(result.error || "Could not add the driver.");
     router.push("/dashboard/drivers");
   };
 
@@ -48,24 +62,12 @@ export default function NewDriverPage() {
 
       <div className="portal-content !max-w-4xl">
         <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-6">
+          {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
           <Card>
             <CardHeader>
               <CardTitle>Driver Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Photo Upload */}
-              <div className="flex items-center gap-6 pb-4 border-b border-border">
-                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-                  <User className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <div>
-                  <Button type="button" variant="outline" size="sm" leftIcon={<Upload className="h-4 w-4" />}>
-                    Upload Photo
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">JPG, PNG. Max 2MB</p>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2">Full Name *</label>
                 <div className="relative">

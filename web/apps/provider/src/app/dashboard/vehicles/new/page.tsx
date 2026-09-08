@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,14 +10,16 @@ import {
   Calendar,
   CreditCard,
   CheckCircle,
-  Upload,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@tankua/ui";
+import { createVehicle } from "@/lib/queries";
 
 export default function NewVehiclePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     type: "",
@@ -26,11 +28,24 @@ export default function NewVehiclePage() {
     year: "",
   });
 
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("provider_user") || "{}");
+      const id = stored.provider_id || stored.provider?.id;
+      if (!id) return router.replace("/login");
+      setProviderId(id);
+    } catch { router.replace("/login"); }
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!providerId) return setError("Please sign in again before adding a vehicle.");
+    setError("");
     setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const parts = formData.name.trim().split(/\s+/);
+    const result = await createVehicle({ provider_id: providerId, vehicle_type: formData.type, plate_number: formData.plate.trim().toUpperCase(), capacity: Number(formData.capacity), year: Number(formData.year), make: parts.shift(), model: parts.join(" ") || undefined });
     setSaving(false);
+    if (!result.success) return setError(result.error || "Could not add the vehicle.");
     router.push("/dashboard/vehicles");
   };
 
@@ -50,6 +65,7 @@ export default function NewVehiclePage() {
 
       <div className="portal-content !max-w-4xl">
         <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-6">
+          {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
           <Card>
             <CardHeader>
               <CardTitle>Vehicle Information</CardTitle>
@@ -65,9 +81,10 @@ export default function NewVehiclePage() {
                 >
                   <option value="">Select type</option>
                   <option value="minibus">Minibus (15-20 seats)</option>
-                  <option value="coaster">Coaster (25-30 seats)</option>
+                  <option value="van">Van / Coaster (15-30 seats)</option>
                   <option value="bus">Bus (45-50 seats)</option>
-                  <option value="luxury">Luxury Bus</option>
+                  <option value="suv">SUV</option>
+                  <option value="sedan">Sedan</option>
                 </select>
               </div>
 
@@ -109,7 +126,7 @@ export default function NewVehiclePage() {
                       type="number"
                       required
                       min="2000"
-                      max="2024"
+                      max={new Date().getFullYear() + 1}
                       placeholder="e.g., 2022"
                       value={formData.year}
                       onChange={(e) => setFormData({ ...formData, year: e.target.value })}
@@ -136,14 +153,6 @@ export default function NewVehiclePage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Vehicle Photo</label>
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary transition-colors cursor-pointer">
-                  <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                  <p className="font-medium">Click to upload vehicle photo</p>
-                  <p className="text-sm text-muted-foreground mt-1">JPG, PNG (max 5MB)</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 

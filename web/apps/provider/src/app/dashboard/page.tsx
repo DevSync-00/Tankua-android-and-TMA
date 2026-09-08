@@ -149,10 +149,12 @@ export default function DashboardPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Trip
-            </Button>
+            <Link href="/dashboard/trips/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Trip
+              </Button>
+            </Link>
           </div>
         }
       />

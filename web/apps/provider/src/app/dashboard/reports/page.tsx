@@ -1,166 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import {
-  BarChart3,
-  TrendingUp,
-  Users,
-  CreditCard,
-  CalendarCheck,
-  Download,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { TrendingUp, Users, CreditCard, CalendarCheck, Download, RefreshCw } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, StatCard, formatCurrency } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, StatCard, formatCurrency } from "@tankua/ui";
+import { getProviderBookings, getProviderTrips, type BookingDetails, type TripDetails } from "@/lib/queries";
 
-const monthlyData = [
-  { month: "Aug", revenue: 125000, bookings: 34, trips: 8 },
-  { month: "Sep", revenue: 145000, bookings: 42, trips: 10 },
-  { month: "Oct", revenue: 168000, bookings: 48, trips: 12 },
-  { month: "Nov", revenue: 189000, bookings: 56, trips: 14 },
-  { month: "Dec", revenue: 234000, bookings: 72, trips: 18 },
-  { month: "Jan", revenue: 215000, bookings: 65, trips: 16 },
-];
-
-const tripPerformance = [
-  { destination: "Lalibela Heritage", trips: 45, revenue: 560000, avgOccupancy: 94 },
-  { destination: "Lake Tana Monasteries", trips: 32, revenue: 234000, avgOccupancy: 87 },
-  { destination: "Debre Damo", trips: 18, revenue: 189000, avgOccupancy: 78 },
-  { destination: "Abuna Yemata Guh", trips: 12, revenue: 167000, avgOccupancy: 92 },
-];
+const rangeDays: Record<string, number> = { "7d": 7, "30d": 30, "6m": 183, "1y": 365 };
 
 export default function ReportsPage() {
-  const [timeRange, setTimeRange] = useState("6m");
+  const router = useRouter();
+  const [providerId,setProviderId]=useState<string|null>(null);
+  const [timeRange,setTimeRange]=useState("6m");
+  const [bookings,setBookings]=useState<BookingDetails[]>([]);
+  const [trips,setTrips]=useState<TripDetails[]>([]);
+  const [loading,setLoading]=useState(true);
 
-  const totalRevenue = monthlyData.reduce((sum, m) => sum + m.revenue, 0);
-  const totalBookings = monthlyData.reduce((sum, m) => sum + m.bookings, 0);
-  const totalTrips = monthlyData.reduce((sum, m) => sum + m.trips, 0);
+  const load=async(id:string)=>{setLoading(true);try{const [bookingResult,tripResult]=await Promise.all([getProviderBookings(id,{limit:1000}),getProviderTrips(id,{limit:1000})]);setBookings(bookingResult.bookings);setTrips(tripResult.trips);}finally{setLoading(false);}};
+  useEffect(()=>{try{const stored=JSON.parse(localStorage.getItem("provider_user")||"{}");const id=stored.provider_id||stored.provider?.id;if(!id)return router.replace("/login");setProviderId(id);load(id);}catch{router.replace("/login");}},[router]);
 
-  return (
-    <div className="min-h-screen">
-      <Header
-        title="Reports"
-        subtitle="Analyze your business performance"
-        actions={
-          <div className="flex items-center gap-2">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-border bg-background text-sm"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="6m">Last 6 months</option>
-              <option value="1y">Last year</option>
-            </select>
-            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />}>
-              Export
-            </Button>
-          </div>
-        }
-      />
+  const report=useMemo(()=>{
+    const cutoff=Date.now()-rangeDays[timeRange]*86400000;
+    const selected=bookings.filter(item=>new Date(item.created_at).getTime()>=cutoff);
+    const paid=selected.filter(item=>item.payment_status==="paid");
+    const revenue=paid.reduce((sum,item)=>sum+Number(item.total_price||0),0);
+    const relevantTrips=trips.filter(item=>new Date(item.departure_date).getTime()>=cutoff);
+    const seats=relevantTrips.reduce((sum,item)=>sum+item.max_seats,0);
+    const bookedSeats=relevantTrips.reduce((sum,item)=>sum+Math.max(0,item.max_seats-item.available_seats),0);
+    const byDestination=new Map<string,{bookings:number;revenue:number}>();paid.forEach(item=>{const name=item.trip?.destination?.name||item.destination_name||"Unknown";const current=byDestination.get(name)||{bookings:0,revenue:0};byDestination.set(name,{bookings:current.bookings+1,revenue:current.revenue+Number(item.total_price||0)});});
+    const months=new Map<string,{label:string;revenue:number}>();for(let i=5;i>=0;i--){const date=new Date();date.setDate(1);date.setMonth(date.getMonth()-i);months.set(`${date.getFullYear()}-${date.getMonth()}`,{label:date.toLocaleDateString(undefined,{month:"short"}),revenue:0});}paid.forEach(item=>{const date=new Date(item.created_at);const key=`${date.getFullYear()}-${date.getMonth()}`;const month=months.get(key);if(month)month.revenue+=Number(item.total_price||0);});
+    return{selected,paid,revenue,relevantTrips,occupancy:seats?Math.round(bookedSeats/seats*100):0,destinations:Array.from(byDestination.entries()).map(([destination,data])=>({destination,...data})).sort((a,b)=>b.revenue-a.revenue),months:Array.from(months.values())};
+  },[bookings,trips,timeRange]);
 
-      <div className="portal-content">
-        {/* Stats */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Revenue"
-            value={formatCurrency(totalRevenue)}
-            change={15}
-            changeLabel="vs last period"
-            icon={<CreditCard className="h-6 w-6" />}
-            variant="primary"
-          />
-          <StatCard
-            title="Total Bookings"
-            value={totalBookings.toString()}
-            change={12}
-            changeLabel="vs last period"
-            icon={<CalendarCheck className="h-6 w-6" />}
-          />
-          <StatCard
-            title="Trips Completed"
-            value={totalTrips.toString()}
-            change={8}
-            changeLabel="vs last period"
-            icon={<TrendingUp className="h-6 w-6" />}
-          />
-          <StatCard
-            title="Avg. Occupancy"
-            value="88%"
-            change={5}
-            changeLabel="vs last period"
-            icon={<Users className="h-6 w-6" />}
-          />
-        </div>
+  const exportReport=()=>{const rows=[["Destination","Paid bookings","Revenue (ETB)"],...report.destinations.map(item=>[item.destination,item.bookings,item.revenue])];const csv=rows.map(row=>row.map(value=>`"${String(value).replaceAll('"','""')}"`).join(",")).join("\n");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=`tankua-report-${timeRange}.csv`;a.click();URL.revokeObjectURL(url);};
+  const maxRevenue=Math.max(1,...report.months.map(item=>item.revenue));
 
-        {/* Revenue Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-end justify-between gap-2">
-              {monthlyData.map((data) => (
-                <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
-                  <div 
-                    className="w-full bg-primary/80 rounded-t-lg transition-all hover:bg-primary"
-                    style={{ height: `${(data.revenue / 250000) * 200}px` }}
-                  />
-                  <span className="text-xs text-muted-foreground">{data.month}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Trip Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Trip Performance by Destination</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Destination</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Trips</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Occupancy</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tripPerformance.map((trip, index) => (
-                    <tr key={index} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="py-4 px-6">
-                        <p className="font-medium text-sm">{trip.destination}</p>
-                      </td>
-                      <td className="py-4 px-6">
-                        <p className="text-sm">{trip.trips} trips</p>
-                      </td>
-                      <td className="py-4 px-6">
-                        <p className="font-semibold text-sm text-primary">{formatCurrency(trip.revenue)}</p>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-emerald-500 rounded-full"
-                              style={{ width: `${trip.avgOccupancy}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium">{trip.avgOccupancy}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen"><Header title="Reports" subtitle="Live performance from your bookings and trips" actions={<div className="flex gap-2"><select value={timeRange} onChange={event=>setTimeRange(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-sm"><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="6m">Last 6 months</option><option value="1y">Last year</option></select><Button variant="outline" size="sm" onClick={exportReport} disabled={!report.destinations.length} leftIcon={<Download className="h-4 w-4"/>}>Export</Button><Button variant="ghost" size="sm" isLoading={loading} onClick={()=>providerId&&load(providerId)}><RefreshCw className="h-4 w-4"/></Button></div>}/><div className="portal-content">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"><StatCard title="Paid revenue" value={formatCurrency(report.revenue)} icon={<CreditCard className="h-6 w-6"/>} variant="primary"/><StatCard title="Paid bookings" value={String(report.paid.length)} icon={<CalendarCheck className="h-6 w-6"/>}/><StatCard title="Scheduled trips" value={String(report.relevantTrips.length)} icon={<TrendingUp className="h-6 w-6"/>}/><StatCard title="Average occupancy" value={`${report.occupancy}%`} icon={<Users className="h-6 w-6"/>}/></div>
+    <Card><CardHeader><CardTitle>Revenue trend</CardTitle></CardHeader><CardContent><div className="flex h-64 items-end justify-between gap-2">{report.months.map(item=><div key={item.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] text-muted-foreground">{item.revenue?formatCurrency(item.revenue):""}</span><div className="w-full rounded-t-lg bg-primary/80" style={{height:`${Math.max(item.revenue?8:2,item.revenue/maxRevenue*190)}px`}}/><span className="text-xs text-muted-foreground">{item.label}</span></div>)}</div></CardContent></Card>
+    <Card><CardHeader><CardTitle>Performance by destination</CardTitle></CardHeader><CardContent className="p-0">{!report.destinations.length?<p className="p-10 text-center text-muted-foreground">No paid bookings in this period.</p>:<div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b bg-muted/50"><th className="px-6 py-4 text-left text-xs uppercase text-muted-foreground">Destination</th><th className="px-6 py-4 text-left text-xs uppercase text-muted-foreground">Bookings</th><th className="px-6 py-4 text-left text-xs uppercase text-muted-foreground">Revenue</th></tr></thead><tbody>{report.destinations.map(item=><tr key={item.destination} className="border-b last:border-0"><td className="px-6 py-4 font-medium">{item.destination}</td><td className="px-6 py-4">{item.bookings}</td><td className="px-6 py-4 font-semibold text-primary">{formatCurrency(item.revenue)}</td></tr>)}</tbody></table></div>}</CardContent></Card>
+  </div></div>;
 }
-

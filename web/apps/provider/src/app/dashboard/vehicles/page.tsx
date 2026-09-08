@@ -1,232 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Car,
-  Plus,
-  Search,
-  Users,
-  Calendar,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Car, Plus, Search, Users, Calendar, Trash2, RefreshCw } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, Avatar } from "@tankua/ui";
-
-const vehicles = [
-  { id: "1", name: "Toyota Coaster", plate: "AA-12345", capacity: 25, year: 2022, status: "active", nextService: "Feb 15, 2024", driver: "Bekele T." },
-  { id: "2", name: "Isuzu NQR", plate: "AA-23456", capacity: 45, year: 2021, status: "active", nextService: "Mar 1, 2024", driver: "Dawit H." },
-  { id: "3", name: "Toyota Hiace", plate: "AA-34567", capacity: 15, year: 2023, status: "maintenance", nextService: "Jan 20, 2024", driver: null },
-  { id: "4", name: "Yutong Bus", plate: "AA-45678", capacity: 50, year: 2020, status: "active", nextService: "Feb 28, 2024", driver: "Solomon A." },
-  { id: "5", name: "Toyota Coaster", plate: "AA-56789", capacity: 25, year: 2022, status: "active", nextService: "Mar 15, 2024", driver: "Tesfaye M." },
-];
+import { Card, CardContent, Button, Badge, Avatar, ConfirmDialog, InlineBanner } from "@tankua/ui";
+import { deleteVehicle, getVehicles, updateVehicleStatus, type Vehicle } from "@/lib/queries";
 
 export default function VehiclesPage() {
+  const router = useRouter();
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ message: string; variant: "success" | "error" } | null>(null);
 
-  const filteredVehicles = vehicles.filter((vehicle) =>
-    vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vehicle.plate.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="success" dot>Active</Badge>;
-      case "maintenance":
-        return <Badge variant="warning" dot>Maintenance</Badge>;
-      case "inactive":
-        return <Badge variant="secondary" dot>Inactive</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+  const loadVehicles = async (id: string) => {
+    setLoading(true);
+    try { setVehicles(await getVehicles(id)); }
+    catch (error) { setBanner({ message: error instanceof Error ? error.message : "Could not load vehicles.", variant: "error" }); }
+    finally { setLoading(false); }
   };
 
-  const totalCapacity = vehicles.filter(v => v.status === "active").reduce((sum, v) => sum + v.capacity, 0);
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("provider_user") || "{}");
+      const id = stored.provider_id || stored.provider?.id;
+      if (!id) return router.replace("/login");
+      setProviderId(id);
+      loadVehicles(id);
+    } catch { router.replace("/login"); }
+  }, [router]);
 
-  return (
-    <div className="min-h-screen">
-      <Header
-        title="Vehicles"
-        subtitle={`${vehicles.length} vehicles in your fleet`}
-        actions={
-          <Link href="/dashboard/vehicles/new">
-            <Button size="sm" leftIcon={<Plus className="h-4 w-4" />}>
-              Add Vehicle
-            </Button>
-          </Link>
-        }
-      />
+  const filteredVehicles = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return vehicles.filter((vehicle) => `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.plate_number}`.toLowerCase().includes(query));
+  }, [vehicles, searchQuery]);
 
-      <div className="portal-content">
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search vehicles..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-11 pl-11 pr-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
-        </div>
+  const changeStatus = async (id: string, status: Vehicle["status"]) => {
+    const result = await updateVehicleStatus(id, status);
+    if (!result.success) return setBanner({ message: result.error || "Could not update vehicle.", variant: "error" });
+    setVehicles((current) => current.map((vehicle) => vehicle.id === id ? { ...vehicle, status } : vehicle));
+    setBanner({ message: "Vehicle status updated.", variant: "success" });
+  };
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total Vehicles</p>
-            <p className="text-2xl font-bold mt-1">{vehicles.length}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Active</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-600">
-              {vehicles.filter(v => v.status === "active").length}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">In Maintenance</p>
-            <p className="text-2xl font-bold mt-1 text-amber-600">
-              {vehicles.filter(v => v.status === "maintenance").length}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total Capacity</p>
-            <p className="text-2xl font-bold mt-1 text-primary">{totalCapacity} seats</p>
-          </Card>
-        </div>
+  const removeVehicle = async () => {
+    if (!confirmDeleteId) return;
+    const result = await deleteVehicle(confirmDeleteId);
+    if (!result.success) setBanner({ message: result.error || "Could not delete vehicle.", variant: "error" });
+    else {
+      setVehicles((current) => current.filter((vehicle) => vehicle.id !== confirmDeleteId));
+      setBanner({ message: "Vehicle deleted.", variant: "success" });
+    }
+    setConfirmDeleteId(null);
+  };
 
-        {/* Vehicles Table */}
-        <Card>
-          <CardContent className="p-0">
-            {/* Mobile Card View */}
-            <div className="lg:hidden divide-y divide-border">
-              {filteredVehicles.map((vehicle) => (
-                <div key={vehicle.id} className="p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Car className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{vehicle.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{vehicle.plate} • {vehicle.year}</p>
-                      </div>
-                    </div>
-                    {getStatusBadge(vehicle.status)}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Capacity</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm font-medium">{vehicle.capacity} seats</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Driver</p>
-                      {vehicle.driver ? (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Avatar name={vehicle.driver} size="sm" />
-                          <span className="text-sm truncate">{vehicle.driver}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground mt-1 block">Unassigned</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-border">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>Next service: {vehicle.nextService}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+  const badge = (status: Vehicle["status"]) => <Badge variant={status === "active" ? "success" : status === "maintenance" ? "warning" : "secondary"} dot>{status === "active" ? "Active" : status === "maintenance" ? "Maintenance" : "Inactive"}</Badge>;
+  const totalCapacity = vehicles.filter((vehicle) => vehicle.status === "active").reduce((sum, vehicle) => sum + vehicle.capacity, 0);
 
-            {/* Desktop Table View */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vehicle</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Capacity</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assigned Driver</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Next Service</th>
-                    <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th className="text-left py-4 px-6"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredVehicles.map((vehicle) => (
-                    <tr key={vehicle.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Car className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{vehicle.name}</p>
-                            <p className="text-xs text-muted-foreground">{vehicle.plate} • {vehicle.year}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">{vehicle.capacity} seats</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        {vehicle.driver ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar name={vehicle.driver} size="sm" />
-                            <span className="text-sm">{vehicle.driver}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Unassigned</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>{vehicle.nextService}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        {getStatusBadge(vehicle.status)}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  return <div className="min-h-screen">
+    <Header title="Vehicles" subtitle={loading ? "Loading fleet..." : `${vehicles.length} vehicles in your fleet`} actions={<div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => providerId && loadVehicles(providerId)} isLoading={loading} leftIcon={<RefreshCw className="h-4 w-4"/>}>Refresh</Button><Link href="/dashboard/vehicles/new"><Button size="sm" leftIcon={<Plus className="h-4 w-4"/>}>Add Vehicle</Button></Link></div>}/>
+    <div className="portal-content">
+      {banner && (
+        <InlineBanner message={banner.message} variant={banner.variant} onDismiss={() => setBanner(null)}/>
+      )}
+      <div className="portal-toolbar"><div className="relative w-full max-w-md"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search by model or plate..." className="h-11 w-full rounded-xl border bg-muted/30 pl-11 pr-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"/></div></div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[["Total vehicles",vehicles.length],["Active",vehicles.filter(v=>v.status==="active").length],["Maintenance",vehicles.filter(v=>v.status==="maintenance").length],["Active capacity",`${totalCapacity} seats`]].map(([label,value])=><Card key={label} className="p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></Card>)}</div>
+      {!loading && !filteredVehicles.length ? <Card><CardContent className="py-12 text-center"><Car className="mx-auto mb-3 h-10 w-10 text-muted-foreground"/><p className="font-medium">{searchQuery ? "No matching vehicles" : "No vehicles yet"}</p>{!searchQuery && <Link href="/dashboard/vehicles/new"><Button className="mt-4" leftIcon={<Plus className="h-4 w-4"/>}>Add your first vehicle</Button></Link>}</CardContent></Card> : null}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filteredVehicles.map((vehicle) => {
+        const name=[vehicle.make,vehicle.model].filter(Boolean).join(" ") || vehicle.vehicle_type;
+        return <Card key={vehicle.id} className="p-5"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10"><Car className="h-5 w-5 text-primary"/></span><div className="min-w-0"><h3 className="truncate font-semibold">{name}</h3><p className="text-sm text-muted-foreground">{vehicle.plate_number} · {vehicle.year || "Year not set"}</p></div></div>{badge(vehicle.status)}</div><div className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-muted/40 p-3 text-sm"><span><small className="block text-muted-foreground">Capacity</small><b className="flex items-center gap-1"><Users className="h-3.5 w-3.5"/>{vehicle.capacity} seats</b></span><span><small className="block text-muted-foreground">Driver</small><b>{vehicle.driver ? <span className="flex items-center gap-1"><Avatar name={vehicle.driver.name} size="sm"/>{vehicle.driver.name}</span> : "Unassigned"}</b></span>{vehicle.inspection_expiry && <span className="col-span-2"><small className="block text-muted-foreground">Inspection expiry</small><b className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5"/>{new Date(vehicle.inspection_expiry).toLocaleDateString()}</b></span>}</div><div className="mt-4 flex gap-2 border-t pt-4"><select aria-label={`Status for ${name}`} value={vehicle.status} onChange={(event)=>changeStatus(vehicle.id,event.target.value as Vehicle["status"])} className="h-9 min-w-0 flex-1 rounded-lg border bg-background px-3 text-xs font-semibold"><option value="active">Active</option><option value="maintenance">Maintenance</option><option value="inactive">Inactive</option></select><Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={()=>setConfirmDeleteId(vehicle.id)} title="Delete vehicle"><Trash2 className="h-4 w-4"/></Button></div></Card>;
+      })}</div>
     </div>
-  );
+    <ConfirmDialog isOpen={!!confirmDeleteId} onOpenChange={(open)=>!open&&setConfirmDeleteId(null)} title="Delete Vehicle" description="Remove this vehicle from your fleet? Existing trip assignments may be affected." confirmText="Delete Vehicle" variant="danger" onConfirm={removeVehicle}/>
+  </div>;
 }
-

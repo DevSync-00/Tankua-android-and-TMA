@@ -73,11 +73,14 @@ export default function EarningsPage() {
 
       // Load recent bookings as transactions
       const { bookings } = await getProviderBookings(providerId, {
-        limit: 20,
+        limit: 100,
         status: undefined,
       });
 
+      const rangeDays = timeRange === '7d' ? 7 : timeRange === '90d' ? 90 : 30;
+      const cutoff = Date.now() - rangeDays * 86400000;
       const transactionList = bookings
+        .filter(b => new Date(b.created_at).getTime() >= cutoff)
         .filter(b => b.payment_status === 'paid')
         .map(b => ({
           id: b.id.substring(0, 8),
@@ -138,6 +141,12 @@ export default function EarningsPage() {
     }
   };
 
+  const exportTransactions = () => {
+    const rows = [["Reference","Description","Date","Amount (ETB)","Status"], ...transactions.map(item=>[item.id,item.description,item.date,item.amount,item.status])];
+    const csv=rows.map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`tankua-earnings-${timeRange}.csv`;anchor.click();URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen">
       <Header 
@@ -154,10 +163,10 @@ export default function EarningsPage() {
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />}>
+            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={exportTransactions} disabled={!transactions.length}>
               Export
             </Button>
-            <Button size="sm" leftIcon={<Wallet className="h-4 w-4" />}>
+            <Button size="sm" leftIcon={<Wallet className="h-4 w-4" />} onClick={()=>{window.location.href="mailto:provider-support@tankua.et?subject=Payout request";}}>
               Request Payout
             </Button>
           </div>
@@ -316,8 +325,8 @@ export default function EarningsPage() {
                       </div>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full mt-4">
-                    Update Bank Details
+                  <Button variant="outline" className="w-full mt-4" onClick={()=>{window.location.href="mailto:provider-support@tankua.et?subject=Update bank details";}}>
+                    Contact Finance to Update
                   </Button>
                 </CardContent>
               </Card>
