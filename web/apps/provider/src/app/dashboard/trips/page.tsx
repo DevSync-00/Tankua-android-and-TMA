@@ -209,7 +209,7 @@ export default function TripsPage() {
           <InlineBanner
             message={banner.message}
             variant={banner.variant}
-            onClose={() => setBanner(null)}
+            onDismiss={() => setBanner(null)}
           />
         )}
         {/* Filters */}

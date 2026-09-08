@@ -33,6 +33,10 @@ export default function BookingsPage() {
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
   const [totalBookings, setTotalBookings] = useState(0);
   const [destinations, setDestinations] = useState<Array<{ id: string; name: string }>>([]);
+  const [banner, setBanner] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     loadProviderSession();
@@ -256,6 +260,14 @@ export default function BookingsPage() {
       />
 
       <div className="p-4 sm:p-6 space-y-6">
+        {banner && (
+          <InlineBanner
+            message={banner.message}
+            variant={banner.variant}
+            onDismiss={() => setBanner(null)}
+          />
+        )}
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
