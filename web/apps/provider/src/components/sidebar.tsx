@@ -55,8 +55,8 @@ function SidebarNavItem({ item, active, onNavigate }: { item: NavigationItem; ac
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
         active
-          ? "bg-amber-50 text-stone-950 shadow-sm ring-1 ring-amber-200"
-          : "text-stone-600 hover:bg-stone-100 hover:text-stone-950"
+          ? "bg-stone-100 text-stone-950"
+          : "text-stone-600 hover:bg-stone-50 hover:text-stone-950"
       )}
     >
       <item.icon className="h-5 w-5" />
@@ -106,7 +106,7 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-[60] p-2.5 bg-stone-950 text-white border border-stone-800 rounded-xl shadow-lg shadow-stone-950/15"
+        className="lg:hidden fixed top-3 left-3 z-[60] p-2.5 bg-white text-stone-800 border border-stone-200 rounded-lg"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
@@ -123,15 +123,15 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 bottom-0 w-[min(18rem,88vw)] lg:w-64 bg-white/95 backdrop-blur-xl border-r border-stone-200 flex flex-col z-50 transition-transform duration-300 shadow-2xl lg:shadow-none",
+          "fixed left-0 top-0 bottom-0 w-[min(18rem,88vw)] lg:w-64 bg-white border-r border-stone-200 flex flex-col z-50 transition-transform duration-200 shadow-xl lg:shadow-none",
           "lg:translate-x-0",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-stone-200 flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center overflow-hidden">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center overflow-hidden">
             <Image src="/favicon.png" alt="Tankua" width={28} height={28} className="object-contain" />
           </div>
           <div>

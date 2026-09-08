@@ -2,15 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Search, 
-  Bell, 
-  ChevronDown, 
-  Settings,
-  User,
-  LogOut,
-  Calendar,
-} from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button, Badge, Avatar } from "@tankua/ui";
 import {
   getInAppNotifications,
@@ -97,7 +89,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-white/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white">
       <div className="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         {/* Left side - Title */}
         <div className="min-w-0 flex-1 pl-12 sm:pl-0">
@@ -108,18 +100,6 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
         {/* Right side - Actions */}
         <div className="flex w-full min-w-0 items-center justify-end gap-2 sm:w-auto sm:gap-3 sm:flex-shrink-0">
           {actions && <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 sm:flex-initial sm:overflow-visible sm:pb-0">{actions}</div>}
-
-          {/* Today's date */}
-          <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-xl text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              {new Date().toLocaleDateString("en-US", { 
-                weekday: "short", 
-                month: "short", 
-                day: "numeric" 
-              })}
-            </span>
-          </div>
 
           {/* Notifications */}
           <div className="relative" ref={notificationsRef}>
@@ -175,7 +155,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
           </div>
 
           {/* User */}
-          <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-border">
+          <div className="hidden items-center gap-3 border-l border-border pl-3 sm:flex">
             <Avatar name={currentUser.name} size="sm" />
             <div className="hidden lg:block text-left">
               <p className="max-w-36 truncate text-sm font-medium">{currentUser.name}</p>
