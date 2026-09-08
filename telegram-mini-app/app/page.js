@@ -73,6 +73,7 @@ export default function App() {
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'telebirr' });
+  const [ticketBackScreen, setTicketBackScreen] = useState('confirmation');
   const [bookedTrips, setBookedTrips] = useState([
     {
       id: 'TNK-92041',
@@ -288,6 +289,7 @@ export default function App() {
   const openTrip = async (trip) => {
     if (trip.payment_status === 'paid') {
       setBooking(normalizeBookingForUi(trip, liveDestinations));
+      setTicketBackScreen(null);
       setScreen('ticket');
       return;
     }
@@ -309,8 +311,8 @@ export default function App() {
     if (screen === 'detail') return <Detail destination={selected} catalog={catalog} back={goBack} book={startBooking} notify={notify} favorites={favorites} toggleFavorite={toggleFavorite} />;
     if (['trip','pickup','seats','passengers','payment'].includes(screen))
       return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
-    if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => setScreen('ticket')} />;
-    if (screen === 'ticket') return <TicketView booking={booking} back={() => setScreen('confirmation')} />;
+    if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => { setTicketBackScreen('confirmation'); setScreen('ticket'); }} />;
+    if (screen === 'ticket') return <TicketView booking={booking} back={() => setScreen(ticketBackScreen)} />;
     if (screen === 'notifications') return <NotificationsView back={goBack} notifications={profileData.notifications} api={api} onChange={loadProfileData} />;
     if (screen === 'notification_settings') return <NotificationSettingsView back={goBack} preferences={profileData.notification_preferences} api={api} notify={notify} onChange={loadProfileData} />;
     if (screen === 'rewards') return <RewardsView back={goBack} rewards={profileData.rewards} transactions={profileData.reward_transactions} />;
@@ -601,9 +603,8 @@ function SeatStep({destination,booking,setBooking,back,next}) {
 function PriceSummary({d,booking}) { const perSeat=Number(booking.trip?.price || d.price), base=perSeat*booking.seats+Number(booking.pickup?.extraPrice||0), fee=Math.round(base*.05); return <div className="summary"><h3>Estimated price</h3><p><span>{money(perSeat)} × {booking.seats}</span><b>{money(perSeat*booking.seats)}</b></p>{booking.pickup?.extraPrice>0&&<p><span>Pickup supplement</span><b>{money(booking.pickup.extraPrice)}</b></p>}<p><span>Service fee</span><b>{money(fee)}</b></p><hr/><p className="total"><span>Total</span><b>{money(base+fee)}</b></p><small>Final price is recalculated securely when you book.</small></div>; }
 
 function PassengerForm({step,back,booking,setBooking,next}) {
-  const initial=Array.from({length:booking.seats},(_,i)=>booking.passengers[i]||{name:i===0?'Abel Traveler':'',age:''});
-  const [people,setPeople]=useState(initial);
-  const update=(i,k,v)=>{const p=[...people];p[i]={...p[i],[k]:v};setPeople(p)};
+  const [people,setPeople]=useState(()=>Array.from({length:booking.seats},(_,i)=>booking.passengers[i]||{name:'',age:''}));
+  const update=(i,k,v)=>setPeople(current=>current.map((person,index)=>index===i?{...person,[k]:v}:person));
   const valid=people.every(p=>p.name.trim()&&p.age);
   return <FlowPage step={step} back={back} title="Who’s traveling?" sub="Enter passenger details exactly as shown on an ID.">{people.map((p,i)=><div className="passenger-card" key={i}><h3><UserRound/> Passenger {i+1}{i===0&&<span>Primary</span>}</h3><label>Full name<input value={p.name} onChange={e=>update(i,'name',e.target.value)} placeholder="Full legal name"/></label><label>Age<input inputMode="numeric" value={p.age} onChange={e=>update(i,'age',e.target.value.replace(/\\D/g,''))} placeholder="Age"/></label></div>)}<Continue disabled={!valid} onClick={()=>{setBooking({...booking,passengers:people});next()}}/></FlowPage>;
 }
@@ -612,7 +613,21 @@ function Payment({step,back,d,booking,finish,submitting}) {
   return <FlowPage step={step} back={back} title="Secure payment" sub="You’ll continue to Chapa’s encrypted checkout."><div className="secure-note"><ShieldCheck/><span><b>Server-verified checkout</b>Price and seat availability are checked again before payment.</span></div><Choice selected><div className="pay-logo chapa"><img src="/chapa-logo.svg" alt="Chapa"/></div><div className="pay-copy"><b>Chapa</b><p>Card, bank or mobile money</p></div></Choice><PriceSummary d={d} booking={booking}/><Continue disabled={submitting} onClick={finish} label={submitting?'Creating secure checkout…':`Continue · ${money(total)}`}/></FlowPage>;
 }
 
-function Confirmation({booking,home,ticket}) { return <div className="confirmation"><div className="success-orbit"><span><Check/></span></div><p className="eyebrow">BOOKING CONFIRMED</p><h1>You’re going to<br/>{booking.destination.name}!</h1><p>Your trip is reserved. We’ve added your ticket to the Trips tab.</p><div className="confirmation-card"><img src={booking.destination.image}/><div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div><strong>{booking.id}</strong></div><button className="continue" onClick={ticket}>View QR ticket <Ticket/></button><button className="text-button" onClick={home}>Back to home</button></div>; }
+function Confirmation({booking,home,ticket}) {
+  return <div className="confirmation">
+    <div className="success-orbit"><span><Check/></span></div>
+    <p className="eyebrow">BOOKING CONFIRMED</p>
+    <h1>You’re going to<br/>{booking.destination.name}!</h1>
+    <p className="confirmation-message">Your trip is reserved. We’ve added your ticket to the Trips tab.</p>
+    <div className="confirmation-card">
+      <img src={booking.destination.image} alt=""/>
+      <div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div>
+      <strong>{booking.id}</strong>
+    </div>
+    <button className="continue" onClick={ticket}>View QR ticket <Ticket/></button>
+    <button className="text-button" onClick={home}>Back to home</button>
+  </div>;
+}
 function TicketView({booking,back}) {
   return <div className="ticket-page">
     <header className="simple-head"><button onClick={back} aria-label="Back"><ArrowLeft/></button><h1>Your ticket</h1><span/></header>
