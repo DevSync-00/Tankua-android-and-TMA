@@ -47,7 +47,7 @@ export default function ReviewsPage() {
         subtitle={`${ratingStats.total} customer reviews`}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="portal-content">
         {/* Stats */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Overall Rating */}

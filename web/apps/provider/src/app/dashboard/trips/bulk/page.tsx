@@ -389,7 +389,7 @@ export default function BulkTripPage() {
         }
       />
 
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="portal-content !max-w-7xl">
         {errorMessage && (
           <Card className="border-red-500 bg-red-50">
             <CardContent className="p-4 flex items-center gap-3">

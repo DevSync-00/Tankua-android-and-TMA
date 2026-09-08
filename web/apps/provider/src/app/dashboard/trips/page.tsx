@@ -12,7 +12,6 @@ import {
   Users,
   Edit,
   Trash2,
-  Eye,
   RefreshCw,
   Copy,
 } from "lucide-react";
@@ -204,7 +203,7 @@ export default function TripsPage() {
         }
       />
 
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="portal-content">
         {banner && (
           <InlineBanner
             message={banner.message}
@@ -213,7 +212,7 @@ export default function TripsPage() {
           />
         )}
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="portal-toolbar">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
@@ -345,15 +344,6 @@ export default function TripsPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8"
-                          onClick={() => router.push(`/dashboard/trips/${trip.id}`)}
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
                           onClick={() => handleEdit(trip.id)}
                           title="Edit Trip"
                         >
@@ -441,15 +431,6 @@ export default function TripsPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={() => router.push(`/dashboard/trips/${trip.id}`)}
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
                             <Button 
                               variant="ghost" 
                               size="icon" 

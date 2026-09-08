@@ -164,7 +164,7 @@ export default function EarningsPage() {
         }
       />
 
-      <div className="p-6 space-y-6">
+      <div className="portal-content">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />

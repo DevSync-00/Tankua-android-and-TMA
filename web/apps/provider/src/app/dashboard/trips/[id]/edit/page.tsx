@@ -82,7 +82,7 @@ export default function EditTripPage() {
   if(loading)return <div><Header title="Edit Trip" subtitle="Loading trip…"/><p className="p-6">Loading…</p></div>;
   return <div className="min-h-screen">
     <Header title="Edit Trip" subtitle="Update schedule, capacity, pricing, and pickup stations" actions={<Link href="/dashboard/trips"><Button variant="outline" size="sm" leftIcon={<ArrowLeft className="h-4 w-4"/>}>Back to Trips</Button></Link>}/>
-    <form onSubmit={submit} className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <form onSubmit={submit} className="portal-form p-4 sm:p-6 lg:p-8">
       {error&&<div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{error}</div>}
       <Card className="p-5 grid md:grid-cols-2 gap-4">
         <label>Destination *<select required value={form.destinationId} onChange={e=>setForm({...form,destinationId:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border bg-background">{destinations.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>

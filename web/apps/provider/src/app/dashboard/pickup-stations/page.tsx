@@ -77,7 +77,7 @@ export default function PickupStationsPage() {
   return (
     <div className="min-h-screen">
       <Header title="Pickup Stations" subtitle="Manage the locations customers can select" />
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="portal-content">
         <Card className="p-5">
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
             {[

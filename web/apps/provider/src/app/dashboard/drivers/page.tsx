@@ -10,7 +10,6 @@ import {
   Phone,
   Star,
   MoreHorizontal,
-  Edit,
   Trash2,
   MapPin,
   RefreshCw,
@@ -165,7 +164,7 @@ export default function DriversPage() {
         }
       />
 
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="portal-content">
         {/* Search */}
         <div className="relative max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -260,15 +259,18 @@ export default function DriversPage() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-border">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1" 
-                    leftIcon={<Edit className="h-4 w-4" />}
-                    onClick={() => router.push(`/dashboard/drivers/${driver.id}/edit`)}
-                  >
-                    Edit
-                  </Button>
+                  <label className="flex-1">
+                    <span className="sr-only">Driver status</span>
+                    <select
+                      value={driver.status}
+                      onChange={(event) => handleStatusChange(driver.id, event.target.value as 'available' | 'on_trip' | 'offline')}
+                      className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="available">Available</option>
+                      <option value="on_trip">On trip</option>
+                      <option value="offline">Offline</option>
+                    </select>
+                  </label>
                   <Button 
                     variant="outline" 
                     size="sm" 

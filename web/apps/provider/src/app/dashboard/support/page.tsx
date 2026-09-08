@@ -37,7 +37,7 @@ export default function SupportPage() {
         subtitle="Get help with your account"
       />
 
-      <div className="p-6 space-y-6">
+      <div className="portal-content">
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-3 gap-6">
           <Card className="p-6 hover:border-primary transition-colors cursor-pointer" onClick={() => setShowContact(true)}>

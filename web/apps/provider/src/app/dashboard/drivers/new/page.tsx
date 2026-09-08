@@ -46,7 +46,7 @@ export default function NewDriverPage() {
         }
       />
 
-      <div className="p-6">
+      <div className="portal-content !max-w-4xl">
         <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-6">
           <Card>
             <CardHeader>

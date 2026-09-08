@@ -71,7 +71,7 @@ export default function SettingsPage() {
 
   return <div className="min-h-screen">
     <Header title="Provider Profile" subtitle="This information appears to travelers during booking"/>
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+    <div className="portal-content !max-w-5xl">
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary"/>Company profile</CardTitle></CardHeader>
         <CardContent>{loading?<p>Loading profile…</p>:<form onSubmit={save} className="space-y-6">
           {error&&<div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>}

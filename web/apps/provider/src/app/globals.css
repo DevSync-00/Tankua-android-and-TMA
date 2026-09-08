@@ -44,6 +44,22 @@
 
   body {
     background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    min-width: 320px;
+  }
+}
+
+@layer components {
+  .portal-content {
+    @apply mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8;
+  }
+
+  .portal-form {
+    @apply mx-auto w-full max-w-5xl space-y-6;
+  }
+
+  .portal-toolbar {
+    @apply flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center;
   }
 }
 

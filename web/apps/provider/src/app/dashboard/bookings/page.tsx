@@ -259,7 +259,7 @@ export default function BookingsPage() {
         }
       />
 
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="portal-content">
         {banner && (
           <InlineBanner
             message={banner.message}

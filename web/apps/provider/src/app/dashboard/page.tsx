@@ -157,7 +157,7 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="p-6 space-y-6">
+      <div className="portal-content">
         {/* Stats Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsCards.map((stat, index) => (

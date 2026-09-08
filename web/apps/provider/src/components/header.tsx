@@ -97,17 +97,17 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-xl">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-white/90 backdrop-blur-xl">
+      <div className="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         {/* Left side - Title */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1 pl-12 sm:pl-0">
           <h1 className="truncate text-lg font-semibold tracking-tight text-stone-950 sm:text-xl">{title}</h1>
           {subtitle && <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>}
         </div>
 
         {/* Right side - Actions */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-          {actions}
+        <div className="flex w-full min-w-0 items-center justify-end gap-2 sm:w-auto sm:gap-3 sm:flex-shrink-0">
+          {actions && <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 sm:flex-initial sm:overflow-visible sm:pb-0">{actions}</div>}
 
           {/* Today's date */}
           <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-xl text-sm">

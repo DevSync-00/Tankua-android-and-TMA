@@ -62,7 +62,7 @@ export default function VehiclesPage() {
         }
       />
 
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="portal-content">
         {/* Search */}
         <div className="relative max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

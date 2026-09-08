@@ -267,7 +267,7 @@ export default function NewTripPage() {
             </Link>
           }
         />
-        <div className="p-6">
+        <div className="portal-content">
           <Card className="max-w-2xl mx-auto">
             <CardContent className="p-6 text-muted-foreground">Preparing the trip form…</CardContent>
           </Card>
@@ -294,8 +294,8 @@ export default function NewTripPage() {
         }
       />
 
-      <div className="p-6">
-        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
+      <div className="portal-content">
+        <form onSubmit={handleSubmit} className="portal-form">
           {errorMessage && (
             <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
               {errorMessage}

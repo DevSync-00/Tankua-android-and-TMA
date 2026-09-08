@@ -20,6 +20,7 @@ import {
   BarChart3,
   X,
   MapPin,
+  Menu,
 } from "lucide-react";
 import { cn } from "@tankua/ui";
 
@@ -42,6 +43,28 @@ const otherItems = [
   { label: "Support", href: "/dashboard/support", icon: HelpCircle },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
+
+type NavigationItem = (typeof mainNavItems)[number];
+
+function SidebarNavItem({ item, active, onNavigate }: { item: NavigationItem; active: boolean; onNavigate: () => void }) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+        active
+          ? "bg-amber-50 text-stone-950 shadow-sm ring-1 ring-amber-200"
+          : "text-stone-600 hover:bg-stone-100 hover:text-stone-950"
+      )}
+    >
+      <item.icon className="h-5 w-5" />
+      <span>{item.label}</span>
+      {active ? <ChevronRight className="ml-auto h-4 w-4" /> : null}
+    </Link>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -78,36 +101,15 @@ export function Sidebar() {
     };
   }, [isMobileMenuOpen]);
 
-  const NavItem = ({ item }: { item: typeof mainNavItems[0] }) => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-    
-    return (
-      <Link
-        href={item.href}
-        onClick={() => setIsMobileMenuOpen(false)}
-        className={cn(
-          "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-          isActive
-            ? "bg-amber-50 text-stone-950 shadow-sm ring-1 ring-amber-200"
-            : "text-stone-600 hover:bg-stone-100 hover:text-stone-950"
-        )}
-      >
-        <item.icon className="h-5 w-5" />
-        <span>{item.label}</span>
-        {isActive && <ChevronRight className="ml-auto h-4 w-4" />}
-      </Link>
-    );
-  };
-
   return (
     <>
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-white text-stone-800 border border-stone-200 rounded-xl shadow-sm"
+        className="lg:hidden fixed top-3 left-3 z-[60] p-2.5 bg-stone-950 text-white border border-stone-800 rounded-xl shadow-lg shadow-stone-950/15"
         aria-label="Open menu"
       >
-        <LayoutDashboard className="h-6 w-6" />
+        <Menu className="h-5 w-5" />
       </button>
 
       {/* Mobile Overlay */}
@@ -121,7 +123,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-stone-200 flex flex-col z-50 transition-transform duration-300",
+          "fixed left-0 top-0 bottom-0 w-[min(18rem,88vw)] lg:w-64 bg-white/95 backdrop-blur-xl border-r border-stone-200 flex flex-col z-50 transition-transform duration-300 shadow-2xl lg:shadow-none",
           "lg:translate-x-0",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -155,7 +157,7 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             {mainNavItems.map((item) => (
-              <NavItem key={item.href} item={item} />
+              <SidebarNavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setIsMobileMenuOpen(false)} />
             ))}
           </div>
         </div>
@@ -167,7 +169,7 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             {financeItems.map((item) => (
-              <NavItem key={item.href} item={item} />
+              <SidebarNavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setIsMobileMenuOpen(false)} />
             ))}
           </div>
         </div>
@@ -179,7 +181,7 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             {otherItems.map((item) => (
-              <NavItem key={item.href} item={item} />
+              <SidebarNavItem key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} onNavigate={() => setIsMobileMenuOpen(false)} />
             ))}
           </div>
         </div>
