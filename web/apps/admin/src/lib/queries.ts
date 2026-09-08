@@ -758,6 +758,7 @@ export interface Destination {
   location: unknown;
   category: string | null;
   is_featured: boolean;
+  is_popular: boolean;
 }
 
 export async function getDestinations(options?: {
@@ -799,6 +800,7 @@ export async function createDestination(destination: {
   location?: any;
   category?: string;
   is_featured?: boolean;
+  is_popular?: boolean;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     // Try destinations table first
@@ -815,6 +817,7 @@ export async function createDestination(destination: {
         location: destination.location || null,
         category: destination.category || 'other',
         is_featured: destination.is_featured || false,
+        is_popular: destination.is_popular || false,
       })
       .select('id')
       .single();
@@ -848,6 +851,7 @@ export async function updateDestination(
     location?: any;
     category?: string;
     is_featured?: boolean;
+    is_popular?: boolean;
   }
 ): Promise<boolean> {
   try {

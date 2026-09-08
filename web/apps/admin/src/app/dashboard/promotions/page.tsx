@@ -124,7 +124,7 @@ export default function PromotionsPage() {
           <InlineBanner
             message={banner.message}
             variant={banner.variant}
-            onClose={() => setBanner(null)}
+            onDismiss={() => setBanner(null)}
           />
         )}
         {/* Stats */}

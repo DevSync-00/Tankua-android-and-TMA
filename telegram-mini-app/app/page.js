@@ -419,14 +419,7 @@ const ALL_CATEGORIES = [
 function HomeView({ user, destinations, category, setCategory, open, goSearch, openNotifications }) {
   const featured = destinations.filter(destination => destination.is_featured);
 
-  // Popular destinations: Top 6 iconic tourist attractions in Ethiopia (not dumping all DB entries)
-  const categoryFiltered = category === 'All'
-    ? destinations
-    : destinations.filter(d => (d.category || '').toLowerCase() === category.toLowerCase());
-
-  const popular = [...categoryFiltered]
-    .sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)))
-    .slice(0, 6);
+  const popular = destinations.filter(destination => destination.is_popular).slice(0, 6);
 
   return <div className="page home-page">
     <header className="home-header">
@@ -448,8 +441,10 @@ function HomeView({ user, destinations, category, setCategory, open, goSearch, o
       <SectionHeader title="Featured" />
       <div className="featured-row">{featured.map(d => <DestinationHero key={d.id} d={d} open={open}/>)}</div>
     </>}
-    <SectionHeader title="Popular destinations" action="See all" onAction={goSearch}/>
-    <div className="destination-grid">{popular.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
+    {popular.length > 0 && <>
+      <SectionHeader title="Popular destinations" action="See all" onAction={goSearch}/>
+      <div className="destination-grid">{popular.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
+    </>}
     <section className="how">
       <SectionHeader title="How it works"/>
       {[['01','Choose destination','Find a place that inspires you.'],['02','Select your trip','Pick a date, pickup and seats.'],['03','Book & pay','Pay securely and get your QR ticket.']].map(x=><div className="how-row" key={x[0]}><b>{x[0]}</b><div><strong>{x[1]}</strong><p>{x[2]}</p></div></div>)}

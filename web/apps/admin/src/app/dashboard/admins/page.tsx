@@ -41,6 +41,7 @@ export default function AdminsPage() {
   const [selectedAdmin, setSelectedAdmin] = useState<AdminUser | null>(null);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   // Add admin form state
