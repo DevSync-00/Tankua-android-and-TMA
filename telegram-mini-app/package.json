@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "build:sites": "next build && node scripts/package-sites.mjs",
+    "telegram:previews": "node --env-file=.env.telegram.local scripts/upload-telegram-previews.mjs",
+    "telegram:previews:check": "node --env-file=.env.telegram.local scripts/upload-telegram-previews.mjs --dry-run",
     "start": "next start",
     "lint": "next lint",
     "test": "node --test tests/*.test.mjs"
@@ -17,6 +19,7 @@
     "next": "^14.2.35",
     "qrcode": "^1.5.4",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "teleproto": "^1.229.0"
   }
 }
