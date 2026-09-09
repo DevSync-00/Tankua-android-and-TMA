@@ -626,10 +626,15 @@ h1, h2, h3, h4, b, strong {
 .ticket-booking-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px !important; }
 
 .qr { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 0 2px; text-align: center; }
-.qr-pattern { display: grid; width: 148px; height: 148px; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); gap: 2px; padding: 9px; border: 7px solid #fff; outline: 1px solid rgba(15,35,55,.12); background: #fff; }
-.qr-pattern i { display: block; min-width: 0; min-height: 0; background: transparent; }
-.qr-pattern i.on { background: #081a2c; }
+.qr-code-image { display: block; width: 180px; height: 180px; padding: 8px; border: 1px solid rgba(15,35,55,.12); border-radius: 12px; background: #fff; image-rendering: pixelated; }
+.qr-loading { width: 180px; height: 180px; border: 1px solid rgba(15,35,55,.12); border-radius: 12px; background: linear-gradient(110deg,#f0eee8 8%,#faf9f6 18%,#f0eee8 33%); background-size: 200% 100%; animation: qr-shimmer 1.2s linear infinite; }
+@keyframes qr-shimmer { to { background-position-x: -200%; } }
 .qr > small { color: #536273; font-size: 12px; }
+
+.ticket-actions { width: 100%; }
+.ticket-actions .continue { margin-top: 16px; }
+.ticket-actions .continue svg { width: 18px; height: 18px; }
+.ticket-actions > p { margin: 8px 0 0; color: #536273; font-size: 12px; text-align: center; }
 
 .ticket-note { margin-top: 16px; background: rgba(22,135,189,.07); }
 .ticket-note p { display: flex; flex-direction: column; gap: 2px; }

@@ -7,6 +7,7 @@ import {
   MapPin, Minus, Navigation, Plus, Search, Share2, ShieldCheck, Star,
   Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings, Phone, ShieldAlert
 } from 'lucide-react';
+import QRCode from 'qrcode';
 
 const fallbackDestinations = [
   { id: 1, name: 'Church of St. George (Biete Ghiorgis)', city: 'Lalibela', region: 'Amhara', category: 'religious', rating: 4.9, reviews: 492, price: 3200, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'The iconic monolith rock-hewn church carved from red volcanic tuff in the shape of a Greek cross. The most famous symbol of Lalibela.', location: { lat: 12.0319, lng: 39.0411 } },
@@ -629,6 +630,38 @@ function Confirmation({booking,home,ticket}) {
   </div>;
 }
 function TicketView({booking,back}) {
+  const [qrImage,setQrImage]=useState('');
+  const [shareStatus,setShareStatus]=useState('');
+  const ticketCode=`TANKUA|BOOKING|${booking.id}`;
+  useEffect(()=>{
+    let active=true;
+    QRCode.toDataURL(ticketCode,{errorCorrectionLevel:'H',margin:2,width:640,color:{dark:'#081a2cff',light:'#ffffffff'}})
+      .then(image=>{if(active)setQrImage(image);})
+      .catch(()=>{if(active)setShareStatus('Could not generate the ticket QR.');});
+    return()=>{active=false;};
+  },[ticketCode]);
+  const shareTicket=async()=>{
+    const text=`Tankua ticket for ${booking.destination.name}\n${booking.trip.date} at ${booking.trip.time}\nBooking: ${booking.id}`;
+    try {
+      if(qrImage&&navigator.share){
+        const blob=await (await fetch(qrImage)).blob();
+        const file=new File([blob],`tankua-ticket-${String(booking.id).slice(0,8)}.png`,{type:'image/png'});
+        if(!navigator.canShare||navigator.canShare({files:[file]})){
+          await navigator.share({title:'My Tankua ticket',text,files:[file]});
+          setShareStatus('Ticket shared.');
+          return;
+        }
+        await navigator.share({title:'My Tankua ticket',text});
+        setShareStatus('Ticket details shared.');
+        return;
+      }
+      const shareUrl=`https://t.me/share/url?url=${encodeURIComponent('https://t.me/tankua_tma_bot')}&text=${encodeURIComponent(text)}`;
+      if(window.Telegram?.WebApp?.openTelegramLink)window.Telegram.WebApp.openTelegramLink(shareUrl);
+      else window.open(shareUrl,'_blank','noopener,noreferrer');
+    } catch(error) {
+      if(error?.name!=='AbortError')setShareStatus('Sharing is not available on this device.');
+    }
+  };
   return <div className="ticket-page">
     <header className="simple-head"><button onClick={back} aria-label="Back"><ArrowLeft/></button><h1>Your ticket</h1><span/></header>
     <main className="ticket-page-body">
@@ -638,9 +671,10 @@ function TicketView({booking,back}) {
         <div className="ticket-info">
           <div className="ticket-info-row"><span><small>Departure</small><b>{booking.trip.time}</b></span><span><small>Seats</small><b>{booking.seats}</b></span></div>
           <div className="ticket-info-row"><span><small>Pickup</small><b>{booking.pickup.name}</b></span><span><small>Booking</small><b className="ticket-booking-id">{booking.id}</b></span></div>
-          <div className="qr"><div className="qr-pattern" aria-hidden="true">{Array.from({length:81},(_,i)=><i key={i} className={(i*7+i%5)%3===0?'on':''}/>)}</div><small>Present this ticket at pickup</small></div>
+          <div className="qr">{qrImage?<img className="qr-code-image" src={qrImage} alt={`QR code for booking ${booking.id}`}/>:<div className="qr-loading" aria-label="Generating QR code"/>}<small>Scan to read booking {String(booking.id).slice(0,8).toUpperCase()}</small></div>
         </div>
       </div>
+      <div className="ticket-actions"><button className="continue" onClick={shareTicket} disabled={!qrImage}><Share2/> Share ticket</button>{shareStatus&&<p role="status">{shareStatus}</p>}</div>
       <div className="info-note ticket-note"><Info/><p><b>Ready for your trip?</b><span>Arrive 15 minutes before departure with a valid ID.</span></p></div>
     </main>
   </div>;
