@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getTours } from "@/lib/queries";
@@ -188,9 +189,10 @@ const tours = [
 const regions = ["All Regions", "Amhara", "Tigray", "Oromia", "SNNPR", "Addis Ababa", "Afar", "Harari"];
 
 export default function ToursPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") || "");
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get("category") || "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [toursData, setToursData] = useState(tours);
   const [loading, setLoading] = useState(true);
