@@ -6,7 +6,10 @@
     "start": "npx expo start",
     "android": "npx expo start --android",
     "ios": "npx expo start --ios",
-    "web": "npx expo start --web"
+    "web": "npx expo start --web",
+    "telegram:previews": "npm --prefix telegram-mini-app run telegram:previews",
+    "telegram:previews:qr": "npm --prefix telegram-mini-app run telegram:previews:qr",
+    "telegram:previews:check": "npm --prefix telegram-mini-app run telegram:previews:check"
   },
   "dependencies": {
     "@expo/cli": "^54.0.18",

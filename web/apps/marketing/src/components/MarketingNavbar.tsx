@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Menu, Smartphone, X } from "lucide-react";
+import { Globe, Menu, Send, Smartphone, X } from "lucide-react";
 import { AppDownloadButton } from "@/components/AppDownloadButton";
+import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
 type NavItem = { label: string; href: string };
 
@@ -155,16 +156,19 @@ export function MarketingNavbar() {
               <Globe className="h-3.5 w-3.5" />
               {langLabel}
             </button>
-            <AppDownloadButton
+            <a
+              href={TELEGRAM_MINI_APP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-[13px] font-medium transition-all ${
                 solid
                   ? "bg-brand-gold/15 text-brand-ink border border-brand-gold/35 hover:bg-brand-gold/25"
                   : "bg-white/12 text-white border border-white/22 hover:bg-white/18"
               }`}
             >
-              <Smartphone className="h-4 w-4 shrink-0 opacity-90" />
-              Download the app
-            </AppDownloadButton>
+              <Send className="h-4 w-4 shrink-0 opacity-90" />
+              Open in Telegram
+            </a>
             <Link href="/login">
               <button
                 type="button"
@@ -223,8 +227,18 @@ export function MarketingNavbar() {
               ))}
             </nav>
             <div className="pt-8 flex flex-col gap-3">
-              <AppDownloadButton
+              <a
+                href={TELEGRAM_MINI_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
                 className="w-full py-3 rounded-[10px] bg-brand-gold text-brand-ink font-medium text-[15px] inline-flex items-center justify-center gap-2 shadow-btn"
+              >
+                <Send className="h-5 w-5" />
+                Open in Telegram
+              </a>
+              <AppDownloadButton
+                className="w-full py-3 rounded-[10px] border border-white/15 text-white font-medium text-[15px] inline-flex items-center justify-center gap-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Smartphone className="h-5 w-5" />

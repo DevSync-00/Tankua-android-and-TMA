@@ -21,4 +21,12 @@ npm.cmd run telegram:previews:check
 npm.cmd run telegram:previews
 ```
 
+If Telegram does not deliver a login code, use QR login instead:
+
+```powershell
+npm.cmd run telegram:previews:qr
+```
+
+Then open Telegram on your phone and choose **Settings → Devices → Link Desktop Device** to scan the terminal QR.
+
 The first upload asks for the account phone number, login code, and optional two-step verification password. Later runs reuse the ignored local session. The command appends previews, so review existing previews before running it again to avoid duplicates.

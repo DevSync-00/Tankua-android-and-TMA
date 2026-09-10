@@ -5,12 +5,14 @@ import path from 'node:path';
 import { TelegramClient, Api, utils } from 'teleproto';
 import { StringSession } from 'teleproto/sessions/index.js';
 import { CustomFile } from 'teleproto/client/uploads.js';
+import QRCode from 'qrcode';
 
 const BOT_USERNAME = 'tankua_tma_bot';
 const MEDIA_DIR = path.resolve('preview-media');
 const SESSION_FILE = path.resolve('.telegram-preview.session');
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const dryRun = process.argv.includes('--dry-run');
+const qrLogin = process.argv.includes('--qr-login');
 
 function requiredEnv(name) {
   const value = process.env[name]?.trim();
@@ -81,15 +83,44 @@ async function main() {
   const terminal = createInterface({ input, output });
   const client = new TelegramClient(new StringSession(await loadSession()), apiId, apiHash, { connectionRetries: 5 });
   try {
-    await client.start({
-      phoneNumber: () => terminal.question('Telegram phone number (international format): '),
-      phoneCode: () => terminal.question('Telegram login code: '),
-      password: hint => terminal.question(`Telegram 2FA password${hint ? ` (${hint})` : ''}: `),
-      onError: error => {
-        console.error(`Telegram login error: ${error.message}`);
-        return false;
-      },
-    });
+    if (qrLogin) {
+      await client.connect();
+      if (!(await client.checkAuthorization())) {
+        console.log('Open Telegram on your phone: Settings → Devices → Link Desktop Device.');
+        for (let attempt = 1; attempt <= 3 && !(await client.checkAuthorization()); attempt += 1) {
+          try {
+            await client.signInUserWithQrCode({ apiId, apiHash }, {
+              qrCode: async ({ token }) => {
+                const loginUrl=`tg://login?token=${token.toString('base64url')}`;
+                console.log(await QRCode.toString(loginUrl,{type:'terminal',small:true}));
+                console.log('Scan the newest QR immediately. It refreshes automatically until accepted.');
+              },
+              password: hint => terminal.question(`Telegram 2FA password${hint ? ` (${hint})` : ''}: `),
+              onError: error => {
+                console.error(`Telegram QR login error: ${error.message}`);
+                return false;
+              },
+            });
+          } catch (error) {
+            const expired = /token has expired|AUTH_TOKEN_EXPIRED/i.test(error.message);
+            if (!expired || attempt === 3) throw error;
+            console.log('The QR expired during Telegram’s data-center handoff. Generating a fresh one…');
+            await client.connect();
+          }
+        }
+        if (!(await client.checkAuthorization())) throw new Error('Telegram QR authorization was not completed.');
+      }
+    } else {
+      await client.start({
+        phoneNumber: () => terminal.question('Telegram phone number (international format): '),
+        phoneCode: () => terminal.question('Telegram login code (usually sent inside Telegram): '),
+        password: hint => terminal.question(`Telegram 2FA password${hint ? ` (${hint})` : ''}: `),
+        onError: error => {
+          console.error(`Telegram login error: ${error.message}`);
+          return false;
+        },
+      });
+    }
     await writeFile(SESSION_FILE, client.session.save(), { encoding: 'utf8', mode: 0o600 });
     const bot = await client.getInputEntity(BOT_USERNAME);
     for (const [index, file] of files.entries()) {

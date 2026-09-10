@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Smartphone, Download, QrCode, CheckCircle2, ArrowRight } from "lucide-react";
+import { QrCode, CheckCircle2, Send } from "lucide-react";
 import { Button, Card, Badge } from "@tankua/ui";
+import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
 const features = [
   "Browse 250+ tours and destinations",
@@ -45,12 +46,12 @@ export default function DownloadPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
-              <Badge className="mb-4">Download Now</Badge>
+              <Badge className="mb-4">Use Tankua your way</Badge>
               <h1 className="text-5xl font-bold text-[#0A1A2F]">
-                Get the Tankua App
+                Open Tankua instantly
               </h1>
               <p className="text-xl text-[#0A1A2F]/70">
-                Book tours, manage bookings, and explore Ethiopia's amazing destinations - all from your phone.
+                Launch Tankua inside Telegram with no installation, or download the mobile app.
               </p>
 
               <div className="space-y-4">
@@ -63,6 +64,17 @@ export default function DownloadPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <a
+                  href={TELEGRAM_MINI_APP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
+                >
+                  <Button size="lg" className="w-full sm:w-auto bg-[#229ED9] hover:bg-[#1c8fc5] text-white">
+                    <Send className="h-5 w-5 mr-2" />
+                    Open in Telegram
+                  </Button>
+                </a>
                 <a 
                   href="https://apps.apple.com/app/tankua" 
                   target="_blank" 

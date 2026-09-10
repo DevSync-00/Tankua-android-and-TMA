@@ -20,9 +20,11 @@ import {
   CheckCircle2,
   Leaf,
   Mountain,
-  Camera
+  Camera,
+  Send,
 } from "lucide-react";
 import { Button, Card, Badge } from "@tankua/ui";
+import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
 // Tour categories
 const tourCategories = [
@@ -238,11 +240,11 @@ export default function HomePage() {
                 Sign In
               </Button>
               </Link>
-              <Link href="/download">
+              <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer">
                 <Button size="sm" className="bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold shadow-md">
-                Download App
+                Open in Telegram
               </Button>
-              </Link>
+              </a>
             </div>
 
             {/* Mobile menu button */}
@@ -271,13 +273,20 @@ export default function HomePage() {
               <Link href="/contact" className="block text-sm font-medium text-[#4A3A2A]/70 hover:text-[#FFB800]">
                 Contact
               </Link>
-              <div className="pt-4 border-t border-[#FFB800]/20 flex gap-4">
-                <Link href="/login" className="flex-1">
-                  <Button variant="outline" className="w-full border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">Sign In</Button>
-                </Link>
-                <Link href="/download" className="flex-1">
-                  <Button className="w-full bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold">Download App</Button>
-                </Link>
+              <div className="pt-4 border-t border-[#FFB800]/20 grid gap-3">
+                <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold">
+                    <Send className="mr-2 h-4 w-4" /> Open in Telegram
+                  </Button>
+                </a>
+                <div className="flex gap-3">
+                  <Link href="/login" className="flex-1">
+                    <Button variant="outline" className="w-full border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">Sign In</Button>
+                  </Link>
+                  <Link href="/download" className="flex-1">
+                    <Button variant="outline" className="w-full border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">Mobile Apps</Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -305,14 +314,18 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="xl" className="bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold shadow-lg">
-                  Download the App
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button variant="outline" size="xl" className="border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">
-                  Explore Tours
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
+                <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer">
+                  <Button size="xl" className="w-full bg-[#FFB800] hover:bg-[#E5A500] text-white font-semibold shadow-lg">
+                    Open Telegram Mini App
+                    <Send className="ml-2 h-5 w-5" />
+                  </Button>
+                </a>
+                <Link href="/tours">
+                  <Button variant="outline" size="xl" className="w-full border-[#FFB800]/40 text-[#4A3A2A] hover:bg-[#FFB800]/10">
+                    Explore Tours
+                    <ChevronRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
 
               {/* Stats */}
@@ -656,9 +669,20 @@ export default function HomePage() {
               Ready to Begin Your Adventure?
             </h2>
             <p className="text-lg text-white/60 mb-8">
-              Download Tankua now and start exploring Ethiopia's amazing destinations.
+              Open Tankua instantly in Telegram, or download the mobile app to start exploring Ethiopia.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href={TELEGRAM_MINI_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block"
+              >
+                <Button size="xl" className="bg-[#FFB800] text-[#2A1F15] hover:bg-[#E5A500]">
+                  <Send className="h-6 w-6 mr-2" />
+                  Open in Telegram
+                </Button>
+              </a>
               <a 
                 href="https://apps.apple.com/app/tankua" 
                 target="_blank" 
@@ -749,6 +773,11 @@ export default function HomePage() {
                   <Link href="/faq" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
                     FAQ
                   </Link>
+                </li>
+                <li>
+                  <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
+                    Telegram Mini App
+                  </a>
                 </li>
                 <li>
                   <Link href="/download" className="text-white/60 hover:text-[#FFB800] text-sm transition-colors">
