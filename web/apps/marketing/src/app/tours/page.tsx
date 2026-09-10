@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { getTours } from "@/lib/queries";
 import { 
   Search, 
