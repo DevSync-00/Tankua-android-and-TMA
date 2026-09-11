@@ -110,17 +110,17 @@ export default function HomePage() {
         </nav>
 
         <div className="relative z-10 mx-auto flex min-h-[700px] max-w-[1440px] items-center px-5 pb-36 pt-20 sm:px-8 lg:px-12">
-          <div className="max-w-[680px]">
-            <p className="mb-6 text-xs font-bold uppercase tracking-[.24em] text-[#ffc83d]">Travel Ethiopia differently</p>
-            <h1 className="text-[3.5rem] font-extrabold leading-[.96] tracking-[-.055em] sm:text-7xl lg:text-[5.6rem]">
-              Go beyond<br />the expected.
+          <div className="max-w-[720px] font-sans">
+            <p className="mb-5 text-sm font-semibold text-[#ffc83d]">Explore Ethiopia</p>
+            <h1 className="max-w-[700px] text-5xl font-bold leading-[1.04] tracking-[-.04em] sm:text-6xl lg:text-[4.75rem]">
+              Discover Ethiopia.<br />Travel deeper.
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-white/78 sm:text-xl">
-              Remarkable journeys across Ethiopia, led by trusted local providers and made simple from discovery to ticket.
+            <p className="mt-6 max-w-[620px] text-lg leading-8 text-white/80 sm:text-xl">
+              Find unforgettable places, compare trips from verified local providers, and book with confidence.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-5">
-              <Link href="/tours" className="inline-flex h-14 items-center gap-3 bg-[#ffb800] px-7 font-bold text-[#181714] transition hover:bg-[#ffc83d]">Explore journeys <ArrowRight className="h-5 w-5" /></Link>
-              <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center gap-2 px-1 font-semibold text-white underline decoration-white/35 underline-offset-8 hover:decoration-white"><Send className="h-4 w-4" /> Open the Mini App</a>
+              <Link href="/tours" className="inline-flex h-14 items-center gap-3 bg-[#ffb800] px-7 font-semibold text-[#181714] transition hover:bg-[#ffc83d]">Explore trips <ArrowRight className="h-5 w-5" /></Link>
+              <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center gap-2 px-1 font-semibold text-white underline decoration-white/35 underline-offset-8 hover:decoration-white"><Send className="h-4 w-4" /> Open in Telegram</a>
             </div>
           </div>
         </div>
