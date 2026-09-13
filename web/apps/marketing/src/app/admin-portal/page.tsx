@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function AdminPortalPage() {
   return (
-    <main className="min-h-screen bg-[#FAF8F3]">
+    <main className="min-h-screen bg-[#f7f5f0]">
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <Card className="p-8 md:p-10">
           <Badge className="mb-5 bg-[#A67C52]/10 text-[#8B6B47] border-[#A67C52]/20">
@@ -27,14 +27,14 @@ export default function AdminPortalPage() {
             <Lock className="h-7 w-7" />
           </div>
 
-          <h1 className="text-3xl font-bold text-[#4A3A2A] mb-3">
+          <h1 className="text-3xl font-bold text-[#181714] mb-3">
             Tankua Admin Portal
           </h1>
-          <p className="text-[#4A3A2A]/70 mb-8">
+          <p className="text-[#181714]/70 mb-8">
             This page is protected and intended only for authorized Tankua staff.
           </p>
 
-          <div className="flex items-center gap-3 text-[#4A3A2A]/80 mb-8">
+          <div className="flex items-center gap-3 text-[#181714]/80 mb-8">
             <ShieldCheck className="h-5 w-5 text-[#6B8E5A]" />
             <span>Authentication is required before access is granted.</span>
           </div>

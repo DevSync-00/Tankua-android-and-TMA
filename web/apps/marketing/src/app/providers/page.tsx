@@ -80,16 +80,16 @@ export default function ProvidersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
-              <span className="text-xl font-bold text-[#0A1A2F]">Tankua</span>
+              <span className="text-xl font-bold text-[#181714]">Tankua</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/about" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">About</Link>
-              <Link href="/how-it-works" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">How It Works</Link>
-              <Link href="/tours" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Tours</Link>
-              <Link href="/providers" className="text-[#D4A017] font-medium">For Providers</Link>
+              <Link href="/about" className="text-[#181714]/70 hover:text-[#181714]">About</Link>
+              <Link href="/how-it-works" className="text-[#181714]/70 hover:text-[#181714]">How It Works</Link>
+              <Link href="/tours" className="text-[#181714]/70 hover:text-[#181714]">Tours</Link>
+              <Link href="/providers" className="text-[#ffb800] font-medium">For Providers</Link>
             </div>
             <Link href="https://provider.tankua.co">
               <Button>Provider Login</Button>
@@ -99,14 +99,14 @@ export default function ProvidersPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-[#0A1A2F] to-[#1a2d4a]">
+      <section className="pt-32 pb-20 bg-gradient-to-b from-[#181714] to-[#1a2d4a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <Badge className="mb-4 bg-[#D4A017]/20 text-[#D4A017]">For Travel Providers</Badge>
+              <Badge className="mb-4 bg-[#ffb800]/20 text-[#ffb800]">For Travel Providers</Badge>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Grow Your Travel Business with 
-                <span className="text-[#D4A017]"> Tankua</span>
+                <span className="text-[#ffb800]"> Tankua</span>
               </h1>
               <p className="text-lg text-white/70 mb-8">
                 Join Ethiopia's leading tour and travel platform. Reach thousands of 
@@ -114,7 +114,7 @@ export default function ProvidersPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="https://provider.tankua.co/register">
-                  <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+                  <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
                     Become a Provider
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -130,19 +130,19 @@ export default function ProvidersPage() {
               <Card className="p-8 bg-white/10 backdrop-blur border-white/20">
                 <div className="grid grid-cols-2 gap-4 text-center text-white">
                   <div className="p-4">
-                    <p className="text-4xl font-bold text-[#D4A017]">50+</p>
+                    <p className="text-4xl font-bold text-[#ffb800]">50+</p>
                     <p className="text-sm text-white/70">Active Providers</p>
                   </div>
                   <div className="p-4">
-                    <p className="text-4xl font-bold text-[#D4A017]">10K+</p>
+                    <p className="text-4xl font-bold text-[#ffb800]">10K+</p>
                     <p className="text-sm text-white/70">Bookings Made</p>
                   </div>
                   <div className="p-4">
-                    <p className="text-4xl font-bold text-[#D4A017]">95%</p>
+                    <p className="text-4xl font-bold text-[#ffb800]">95%</p>
                     <p className="text-sm text-white/70">Provider Satisfaction</p>
                   </div>
                   <div className="p-4">
-                    <p className="text-4xl font-bold text-[#D4A017]">5%</p>
+                    <p className="text-4xl font-bold text-[#ffb800]">5%</p>
                     <p className="text-sm text-white/70">Service Fee</p>
                   </div>
                 </div>
@@ -157,16 +157,16 @@ export default function ProvidersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">Why Tankua</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">Benefits of Partnering with Us</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">Benefits of Partnering with Us</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => (
               <Card key={index} hoverable className="p-6">
-                <div className="w-14 h-14 mb-4 rounded-2xl bg-[#D4A017]/10 flex items-center justify-center text-[#D4A017]">
+                <div className="w-14 h-14 mb-4 rounded-2xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
                   {benefit.icon}
                 </div>
-                <h3 className="text-lg font-bold text-[#0A1A2F] mb-2">{benefit.title}</h3>
-                <p className="text-[#0A1A2F]/70">{benefit.description}</p>
+                <h3 className="text-lg font-bold text-[#181714] mb-2">{benefit.title}</h3>
+                <p className="text-[#181714]/70">{benefit.description}</p>
               </Card>
             ))}
           </div>
@@ -174,30 +174,30 @@ export default function ProvidersPage() {
       </section>
 
       {/* Features List */}
-      <section className="py-20 bg-[#F8F6F0]">
+      <section className="py-20 bg-[#f7f5f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <Badge className="mb-4">Provider Portal</Badge>
-              <h2 className="text-3xl font-bold text-[#0A1A2F] mb-6">
+              <h2 className="text-3xl font-bold text-[#181714] mb-6">
                 Everything You Need to Run Your Business
               </h2>
-              <p className="text-lg text-[#0A1A2F]/70 mb-8">
+              <p className="text-lg text-[#181714]/70 mb-8">
                 Our provider portal gives you all the tools you need to manage 
                 your travel business efficiently and professionally.
               </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 {features.map((feature, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-[#D4A017] flex-shrink-0" />
-                    <span className="text-sm text-[#0A1A2F]/70">{feature}</span>
+                    <CheckCircle2 className="h-5 w-5 text-[#ffb800] flex-shrink-0" />
+                    <span className="text-sm text-[#181714]/70">{feature}</span>
                   </div>
                 ))}
               </div>
             </div>
             <Card className="p-8">
-              <div className="aspect-video bg-gradient-to-br from-[#0A1A2F] to-[#1a2d4a] rounded-xl flex items-center justify-center">
-                <BarChart3 className="h-20 w-20 text-[#D4A017]/50" />
+              <div className="aspect-video bg-gradient-to-br from-[#181714] to-[#1a2d4a] rounded-xl flex items-center justify-center">
+                <BarChart3 className="h-20 w-20 text-[#ffb800]/50" />
               </div>
             </Card>
           </div>
@@ -209,7 +209,7 @@ export default function ProvidersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">Getting Started</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">How to Become a Provider</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">How to Become a Provider</h2>
           </div>
           <div className="grid md:grid-cols-4 gap-8">
             {[
@@ -219,11 +219,11 @@ export default function ProvidersPage() {
               { step: "4", title: "Start Earning", description: "Accept bookings and grow your business" },
             ].map((item, index) => (
               <div key={index} className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#D4A017] flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#ffb800] flex items-center justify-center text-white text-2xl font-bold">
                   {item.step}
                 </div>
-                <h3 className="text-lg font-bold text-[#0A1A2F] mb-2">{item.title}</h3>
-                <p className="text-sm text-[#0A1A2F]/70">{item.description}</p>
+                <h3 className="text-lg font-bold text-[#181714] mb-2">{item.title}</h3>
+                <p className="text-sm text-[#181714]/70">{item.description}</p>
               </div>
             ))}
           </div>
@@ -231,19 +231,19 @@ export default function ProvidersPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-[#F8F6F0]">
+      <section className="py-20 bg-[#f7f5f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">Testimonials</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">What Providers Say</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">What Providers Say</h2>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="p-8">
-                <p className="text-lg text-[#0A1A2F] mb-6 italic">"{testimonial.quote}"</p>
+                <p className="text-lg text-[#181714] mb-6 italic">"{testimonial.quote}"</p>
                 <div>
-                  <p className="font-bold text-[#0A1A2F]">{testimonial.author}</p>
-                  <p className="text-sm text-[#0A1A2F]/50">{testimonial.role}</p>
+                  <p className="font-bold text-[#181714]">{testimonial.author}</p>
+                  <p className="text-sm text-[#181714]/50">{testimonial.role}</p>
                 </div>
               </Card>
             ))}
@@ -252,7 +252,7 @@ export default function ProvidersPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#0A1A2F]">
+      <section className="py-20 bg-[#181714]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to Grow Your Business?
@@ -261,7 +261,7 @@ export default function ProvidersPage() {
             Join Tankua today and start reaching thousands of travelers looking for trusted tour providers.
           </p>
           <Link href="https://provider.tankua.co/register">
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               Apply to Become a Provider
               <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
@@ -273,11 +273,11 @@ export default function ProvidersPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] border-t border-white/10 py-12">
+      <footer className="bg-[#181714] border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>

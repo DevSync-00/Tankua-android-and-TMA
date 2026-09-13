@@ -1,12 +1,12 @@
+import Image from "next/image";
+
 export default function Loading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#F8F6F0] to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f7f5f0] to-white">
       <div className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
-          <span className="text-white font-bold text-2xl">T</span>
-        </div>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017] mx-auto"></div>
-        <p className="mt-4 text-[#0A1A2F]/60">Loading...</p>
+        <Image src="/favicon.png" alt="Tankua" width={64} height={64} className="mx-auto mb-4 rounded-2xl object-contain shadow-lg" priority />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ffb800] mx-auto"></div>
+        <p className="mt-4 text-[#181714]/60">Loading...</p>
       </div>
     </div>
   );

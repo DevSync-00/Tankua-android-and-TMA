@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "@tankua/ui/styles.css";
 import "./globals.css";
+import { MarketingNavbar } from "@/components/MarketingNavbar";
+import { MarketingFooter } from "@/components/MarketingFooter";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -38,7 +40,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
-        {children}
+        <MarketingNavbar />
+        <div className="site-content">{children}</div>
+        <MarketingFooter />
       </body>
     </html>
   );

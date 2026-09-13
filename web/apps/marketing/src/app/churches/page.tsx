@@ -180,15 +180,15 @@ export default function DestinationsPage() {
     <main className="min-h-screen">
 
       {/* Hero */}
-      <section className="pt-32 pb-12 bg-gradient-to-b from-[#F8F6F0] to-white">
+      <section className="pt-32 pb-12 bg-gradient-to-b from-[#f7f5f0] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <Badge className="mb-4">Explore</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#0A1A2F] mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#181714] mb-6">
               Discover Amazing 
-              <span className="text-[#D4A017]"> Destinations</span>
+              <span className="text-[#ffb800]"> Destinations</span>
             </h1>
-            <p className="text-lg text-[#0A1A2F]/70">
+            <p className="text-lg text-[#181714]/70">
               Explore hundreds of destinations across Ethiopia - from adventure treks to cultural 
               experiences, historical sites to wildlife safaris, and everything in between.
             </p>
@@ -206,8 +206,8 @@ export default function DestinationsPage() {
                 onClick={() => setSelectedCategory(category.id)}
                 className={`px-4 py-2 rounded-xl border transition-all flex items-center gap-2 ${
                   selectedCategory === category.id
-                    ? "bg-[#D4A017] text-white border-[#D4A017]"
-                    : "bg-white text-[#0A1A2F]/70 border-gray-200 hover:border-[#D4A017]"
+                    ? "bg-[#ffb800] text-white border-[#ffb800]"
+                    : "bg-white text-[#181714]/70 border-gray-200 hover:border-[#ffb800]"
                 }`}
               >
                 <span>{category.icon}</span>
@@ -224,13 +224,13 @@ export default function DestinationsPage() {
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             {/* Search */}
             <div className="relative w-full md:w-96">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#0A1A2F]/40" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#181714]/40" />
               <input
                 type="text"
                 placeholder="Search destinations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 pl-12 pr-4 rounded-xl border border-gray-200 focus:border-[#D4A017] focus:ring-2 focus:ring-[#D4A017]/20 outline-none transition-all"
+                className="w-full h-12 pl-12 pr-4 rounded-xl border border-gray-200 focus:border-[#ffb800] focus:ring-2 focus:ring-[#ffb800]/20 outline-none transition-all"
               />
             </div>
 
@@ -239,7 +239,7 @@ export default function DestinationsPage() {
               <select
                 value={selectedRegion}
                 onChange={(e) => setSelectedRegion(e.target.value)}
-                className="h-12 px-4 rounded-xl border border-gray-200 focus:border-[#D4A017] focus:ring-2 focus:ring-[#D4A017]/20 outline-none bg-white"
+                className="h-12 px-4 rounded-xl border border-gray-200 focus:border-[#ffb800] focus:ring-2 focus:ring-[#ffb800]/20 outline-none bg-white"
               >
                 {regions.map((region) => (
                   <option key={region} value={region}>{region}</option>
@@ -250,13 +250,13 @@ export default function DestinationsPage() {
               <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-3 ${viewMode === "grid" ? "bg-[#D4A017] text-white" : "hover:bg-gray-100"}`}
+                  className={`p-3 ${viewMode === "grid" ? "bg-[#ffb800] text-white" : "hover:bg-gray-100"}`}
                 >
                   <Grid className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-3 ${viewMode === "list" ? "bg-[#D4A017] text-white" : "hover:bg-gray-100"}`}
+                  className={`p-3 ${viewMode === "list" ? "bg-[#ffb800] text-white" : "hover:bg-gray-100"}`}
                 >
                   <List className="h-5 w-5" />
                 </button>
@@ -270,24 +270,24 @@ export default function DestinationsPage() {
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
-            <p className="text-[#0A1A2F]/60">
+            <p className="text-[#181714]/60">
               {loading ? (
                 "Loading destinations..."
               ) : (
                 <>
-              Showing <span className="font-semibold text-[#0A1A2F]">{filteredDestinations.length}</span> destinations
+              Showing <span className="font-semibold text-[#181714]">{filteredDestinations.length}</span> destinations
                 </>
               )}
             </p>
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-[#0A1A2F]/60">
+            <div className="text-center py-12 text-[#181714]/60">
               Loading destinations...
             </div>
           ) : filteredDestinations.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-[#0A1A2F]/60 mb-4">No destinations found matching your criteria.</p>
+              <p className="text-[#181714]/60 mb-4">No destinations found matching your criteria.</p>
               <Button variant="outline" onClick={() => {
                 setSearchQuery("");
                 setSelectedRegion("All Regions");
@@ -315,19 +315,19 @@ export default function DestinationsPage() {
                     </div>
                     <div className="absolute bottom-4 left-4 right-4">
                       <div className="flex items-center gap-1 text-white mb-1">
-                        <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
+                        <Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
                         <span className="font-semibold">{destination.rating}</span>
                         <span className="text-sm opacity-80">({destination.reviews})</span>
                       </div>
                     </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold text-[#0A1A2F] mb-1 line-clamp-1">{destination.name}</h3>
-                    <div className="flex items-center text-sm text-[#0A1A2F]/60 mb-3">
+                    <h3 className="font-semibold text-[#181714] mb-1 line-clamp-1">{destination.name}</h3>
+                    <div className="flex items-center text-sm text-[#181714]/60 mb-3">
                       <MapPin className="h-4 w-4 mr-1" />
                       {destination.location}
                     </div>
-                    <p className="text-sm text-[#0A1A2F]/60 mb-3 line-clamp-2">{destination.description}</p>
+                    <p className="text-sm text-[#181714]/60 mb-3 line-clamp-2">{destination.description}</p>
                     <div className="flex flex-wrap gap-1 mb-4">
                       {destination.tags.slice(0, 2).map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
@@ -335,8 +335,8 @@ export default function DestinationsPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-lg font-bold text-[#D4A017]">{destination.price} ETB</span>
-                        <span className="text-sm text-[#0A1A2F]/60"> /person</span>
+                        <span className="text-lg font-bold text-[#ffb800]">{destination.price} ETB</span>
+                        <span className="text-sm text-[#181714]/60"> /person</span>
                       </div>
                       <Link href={`/churches/${destination.id}`}>
                       <Button size="sm">Book Now</Button>
@@ -367,12 +367,12 @@ export default function DestinationsPage() {
                               {tourCategories.find(c => c.id === destination.category)?.name || destination.category}
                             </Badge>
                           </div>
-                          <h3 className="text-xl font-semibold text-[#0A1A2F] mb-2">{destination.name}</h3>
-                          <div className="flex items-center text-sm text-[#0A1A2F]/60 mb-3">
+                          <h3 className="text-xl font-semibold text-[#181714] mb-2">{destination.name}</h3>
+                          <div className="flex items-center text-sm text-[#181714]/60 mb-3">
                             <MapPin className="h-4 w-4 mr-1" />
                             {destination.location}
                           </div>
-                          <p className="text-[#0A1A2F]/60 mb-4">{destination.description}</p>
+                          <p className="text-[#181714]/60 mb-4">{destination.description}</p>
                           <div className="flex flex-wrap gap-2">
                             {destination.tags.map((tag) => (
                               <Badge key={tag} variant="secondary">{tag}</Badge>
@@ -381,13 +381,13 @@ export default function DestinationsPage() {
                         </div>
                         <div className="text-right">
                           <div className="flex items-center gap-1 justify-end mb-2">
-                            <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
+                            <Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
                             <span className="font-semibold">{destination.rating}</span>
-                            <span className="text-sm text-[#0A1A2F]/60">({destination.reviews} reviews)</span>
+                            <span className="text-sm text-[#181714]/60">({destination.reviews} reviews)</span>
                           </div>
                           <div className="mb-4">
-                            <span className="text-2xl font-bold text-[#D4A017]">{destination.price} ETB</span>
-                            <span className="text-[#0A1A2F]/60"> /person</span>
+                            <span className="text-2xl font-bold text-[#ffb800]">{destination.price} ETB</span>
+                            <span className="text-[#181714]/60"> /person</span>
                           </div>
                           <Link href={`/churches/${destination.id}`}>
                           <Button>
@@ -407,7 +407,7 @@ export default function DestinationsPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#0A1A2F]">
+      <section className="py-20 bg-[#181714]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
             Ready to Explore?
@@ -415,18 +415,18 @@ export default function DestinationsPage() {
           <p className="text-lg text-white/70 mb-8">
             Download the Tankua app to book tours, compare prices, and get instant digital tickets.
           </p>
-          <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+          <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
             Download the App
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] border-t border-white/10 py-12">
+      <footer className="bg-[#181714] border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>

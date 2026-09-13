@@ -15,7 +15,7 @@ function navLinks(): NavItem[] {
   return [
     { label: "Tours", href: "/tours" },
     { label: "Destinations", href: "/destinations" },
-    { label: "Provider Portal", href: "/providers" },
+    { label: "For Providers", href: "https://provider.tankua.co" },
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
   ];
@@ -58,7 +58,7 @@ function NavAnchor({
 
 function BoatLogo({ size = 34, className = "" }: { size?: number; className?: string }) {
   return (
-    <Image src="/icon.jpg" alt="Tankua" width={size} height={size} className={`rounded-lg object-contain ${className}`} priority />
+    <Image src="/favicon.png" alt="Tankua" width={size} height={size} className={`rounded-lg object-contain ${className}`} priority />
   );
 }
 
@@ -100,18 +100,18 @@ export function MarketingNavbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         solid
-          ? "bg-[rgba(255,248,236,0.96)] backdrop-blur-sm border-b border-[rgba(245,168,0,0.2)] shadow-sm"
+          ? "bg-white/95 backdrop-blur-md border-b border-black/10 shadow-sm"
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
+        <div className="flex h-20 items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
             <motion.div whileHover={{ rotate: [-6, 6, 0], transition: { duration: 0.5, ease: "easeInOut" } }}>
               <BoatLogo size={34} />
             </motion.div>
             <span
-              className={`font-syne font-extrabold text-lg tracking-tight transition-colors ${
+              className={`font-sans text-xl font-extrabold tracking-[-.03em] transition-colors ${
                 solid ? "text-brand-ink" : "text-white"
               }`}
             >
@@ -197,12 +197,12 @@ export function MarketingNavbar() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="md:hidden fixed inset-0 top-0 bg-brand-dark z-50 flex flex-col px-6 py-8"
+            className="md:hidden fixed inset-0 top-0 bg-[#151713] z-50 flex flex-col px-6 py-8"
           >
             <div className="flex items-center justify-between mb-10">
               <div className="flex items-center gap-2">
                 <BoatLogo size={34} />
-                <span className="font-syne font-extrabold text-lg text-white">Tankua</span>
+                <span className="font-sans font-extrabold text-lg text-white">Tankua</span>
               </div>
               <button
                 type="button"
@@ -218,7 +218,7 @@ export function MarketingNavbar() {
                   key={l.href}
                   href={l.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block py-3.5 font-syne font-bold text-xl border-b border-white/5 ${
+                  className={`block py-3.5 font-sans font-bold text-xl border-b border-white/5 ${
                     navLinkActive(pathname, l.href) ? "text-brand-gold" : "text-white/80 hover:text-brand-gold"
                   }`}
                 >

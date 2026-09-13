@@ -73,16 +73,16 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
-              <span className="text-xl font-bold text-[#0A1A2F]">Tankua</span>
+              <span className="text-xl font-bold text-[#181714]">Tankua</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/about" className="text-[#D4A017] font-medium">About</Link>
-              <Link href="/how-it-works" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">How It Works</Link>
-              <Link href="/tours" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Tours</Link>
-              <Link href="/providers" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">For Providers</Link>
+              <Link href="/about" className="text-[#ffb800] font-medium">About</Link>
+              <Link href="/how-it-works" className="text-[#181714]/70 hover:text-[#181714]">How It Works</Link>
+              <Link href="/tours" className="text-[#181714]/70 hover:text-[#181714]">Tours</Link>
+              <Link href="/providers" className="text-[#181714]/70 hover:text-[#181714]">For Providers</Link>
             </div>
             <Button>Download App</Button>
           </div>
@@ -90,15 +90,15 @@ export default function AboutPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-[#F8F6F0] to-white">
+      <section className="pt-32 pb-20 bg-gradient-to-b from-[#f7f5f0] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <Badge className="mb-4">Our Story</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#0A1A2F] mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#181714] mb-6">
               Connecting Travelers with 
-              <span className="text-[#D4A017]"> Amazing Experiences</span>
+              <span className="text-[#ffb800]"> Amazing Experiences</span>
             </h1>
-            <p className="text-lg text-[#0A1A2F]/70 mb-8">
+            <p className="text-lg text-[#181714]/70 mb-8">
               Tankua was founded with a simple mission: to make Ethiopia's incredible destinations 
               and tour experiences accessible to everyone through technology while supporting local communities.
             </p>
@@ -110,17 +110,17 @@ export default function AboutPage() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12">
-            <Card className="p-8 border-l-4 border-l-[#D4A017]">
-              <h2 className="text-2xl font-bold text-[#0A1A2F] mb-4">Our Mission</h2>
-              <p className="text-[#0A1A2F]/70 leading-relaxed">
+            <Card className="p-8 border-l-4 border-l-[#ffb800]">
+              <h2 className="text-2xl font-bold text-[#181714] mb-4">Our Mission</h2>
+              <p className="text-[#181714]/70 leading-relaxed">
                 To democratize access to Ethiopia's amazing destinations by providing a seamless, 
                 trustworthy platform that connects travelers with verified tour providers, 
                 ensuring safe, affordable, and unforgettable travel experiences.
               </p>
             </Card>
-            <Card className="p-8 border-l-4 border-l-[#0A1A2F]">
-              <h2 className="text-2xl font-bold text-[#0A1A2F] mb-4">Our Vision</h2>
-              <p className="text-[#0A1A2F]/70 leading-relaxed">
+            <Card className="p-8 border-l-4 border-l-[#181714]">
+              <h2 className="text-2xl font-bold text-[#181714] mb-4">Our Vision</h2>
+              <p className="text-[#181714]/70 leading-relaxed">
                 To become Ethiopia's leading tour and travel platform, promoting tourism 
                 while empowering local businesses and creating economic opportunities 
                 for communities across the country.
@@ -131,20 +131,20 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="py-20 bg-[#F8F6F0]">
+      <section className="py-20 bg-[#f7f5f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">Our Values</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">What Drives Us</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">What Drives Us</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
               <Card key={index} className="p-6 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D4A017]/10 flex items-center justify-center text-[#D4A017]">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
                   {value.icon}
                 </div>
-                <h3 className="text-lg font-bold text-[#0A1A2F] mb-2">{value.title}</h3>
-                <p className="text-sm text-[#0A1A2F]/70">{value.description}</p>
+                <h3 className="text-lg font-bold text-[#181714] mb-2">{value.title}</h3>
+                <p className="text-sm text-[#181714]/70">{value.description}</p>
               </Card>
             ))}
           </div>
@@ -156,23 +156,23 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">Our Journey</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">Key Milestones</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">Key Milestones</h2>
           </div>
           <div className="max-w-3xl mx-auto">
             {milestones.map((milestone, index) => (
               <div key={index} className="flex gap-6 mb-8 last:mb-0">
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-[#D4A017] flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-[#ffb800] flex items-center justify-center text-white font-bold">
                     <Clock className="h-5 w-5" />
                   </div>
                   {index < milestones.length - 1 && (
-                    <div className="w-0.5 h-16 bg-[#D4A017]/20" />
+                    <div className="w-0.5 h-16 bg-[#ffb800]/20" />
                   )}
                 </div>
                 <div className="flex-1 pb-8">
-                  <span className="text-sm font-semibold text-[#D4A017]">{milestone.year}</span>
-                  <h3 className="text-lg font-bold text-[#0A1A2F] mt-1">{milestone.title}</h3>
-                  <p className="text-[#0A1A2F]/70 mt-1">{milestone.description}</p>
+                  <span className="text-sm font-semibold text-[#ffb800]">{milestone.year}</span>
+                  <h3 className="text-lg font-bold text-[#181714] mt-1">{milestone.title}</h3>
+                  <p className="text-[#181714]/70 mt-1">{milestone.description}</p>
                 </div>
               </div>
             ))}
@@ -181,11 +181,11 @@ export default function AboutPage() {
       </section>
 
       {/* Team */}
-      <section className="py-20 bg-[#F8F6F0]">
+      <section className="py-20 bg-[#f7f5f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">Our Team</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">Meet the People Behind Tankua</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">Meet the People Behind Tankua</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {team.map((member, index) => (
@@ -199,9 +199,9 @@ export default function AboutPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <h3 className="text-lg font-bold text-[#0A1A2F]">{member.name}</h3>
-                <p className="text-sm text-[#D4A017] font-medium mb-3">{member.role}</p>
-                <p className="text-sm text-[#0A1A2F]/70">{member.bio}</p>
+                <h3 className="text-lg font-bold text-[#181714]">{member.name}</h3>
+                <p className="text-sm text-[#ffb800] font-medium mb-3">{member.role}</p>
+                <p className="text-sm text-[#181714]/70">{member.bio}</p>
               </Card>
             ))}
           </div>
@@ -209,7 +209,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#0A1A2F]">
+      <section className="py-20 bg-[#181714]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Join Our Journey
@@ -219,7 +219,7 @@ export default function AboutPage() {
             looking to reach more customers, we'd love to have you on board.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               Download the App
             </Button>
             <Link href="/providers">
@@ -232,11 +232,11 @@ export default function AboutPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] border-t border-white/10 py-12">
+      <footer className="bg-[#181714] border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>

@@ -23,16 +23,16 @@ export default function DownloadPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
-              <span className="text-xl font-bold text-[#0A1A2F]">Tankua</span>
+              <span className="text-xl font-bold text-[#181714]">Tankua</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/about" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">About</Link>
-              <Link href="/how-it-works" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">How It Works</Link>
-              <Link href="/tours" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Tours</Link>
-              <Link href="/contact" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Contact</Link>
+              <Link href="/about" className="text-[#181714]/70 hover:text-[#181714]">About</Link>
+              <Link href="/how-it-works" className="text-[#181714]/70 hover:text-[#181714]">How It Works</Link>
+              <Link href="/tours" className="text-[#181714]/70 hover:text-[#181714]">Tours</Link>
+              <Link href="/contact" className="text-[#181714]/70 hover:text-[#181714]">Contact</Link>
             </div>
             <Link href="/">
               <Button variant="ghost" size="sm">Back to Home</Button>
@@ -42,23 +42,23 @@ export default function DownloadPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-[#F8F6F0] to-white">
+      <section className="pt-32 pb-20 bg-gradient-to-b from-[#f7f5f0] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <Badge className="mb-4">Use Tankua your way</Badge>
-              <h1 className="text-5xl font-bold text-[#0A1A2F]">
+              <h1 className="text-5xl font-bold text-[#181714]">
                 Open Tankua instantly
               </h1>
-              <p className="text-xl text-[#0A1A2F]/70">
+              <p className="text-xl text-[#181714]/70">
                 Launch Tankua inside Telegram with no installation, or download the mobile app.
               </p>
 
               <div className="space-y-4">
                 {features.map((feature, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-[#D4A017] flex-shrink-0" />
-                    <span className="text-[#0A1A2F]/80">{feature}</span>
+                    <CheckCircle2 className="h-5 w-5 text-[#ffb800] flex-shrink-0" />
+                    <span className="text-[#181714]/80">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -106,14 +106,12 @@ export default function DownloadPage() {
 
             <div className="relative">
               <div className="relative mx-auto w-[280px] h-[580px]">
-                <div className="absolute inset-0 bg-[#0A1A2F] rounded-[3rem] shadow-2xl">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#0A1A2F] rounded-b-2xl" />
+                <div className="absolute inset-0 bg-[#181714] rounded-[3rem] shadow-2xl">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#181714] rounded-b-2xl" />
                   <div className="absolute inset-2 bg-white rounded-[2.5rem] overflow-hidden">
-                    <div className="h-full bg-gradient-to-b from-[#0A1A2F] to-[#1a2d47] p-4">
+                    <div className="h-full bg-gradient-to-b from-[#181714] to-[#1a2d47] p-4">
                       <div className="text-center pt-8">
-                        <div className="w-16 h-16 mx-auto rounded-2xl bg-[#D4A017] flex items-center justify-center mb-4">
-                          <span className="text-white text-2xl font-bold">T</span>
-                        </div>
+                        <Image src="/favicon.png" alt="Tankua" width={64} height={64} className="mx-auto mb-4 rounded-2xl object-contain" />
                         <h3 className="text-white font-semibold">Tankua</h3>
                         <p className="text-white/60 text-sm mt-2">Your adventure awaits</p>
                       </div>
@@ -121,7 +119,7 @@ export default function DownloadPage() {
                       <div className="mt-8 space-y-3">
                         {[1, 2, 3].map((i) => (
                           <div key={i} className="glass-card rounded-xl p-3 flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg bg-[#D4A017]/20" />
+                            <div className="w-12 h-12 rounded-lg bg-[#ffb800]/20" />
                             <div className="flex-1">
                               <div className="h-3 bg-white/20 rounded w-3/4" />
                               <div className="h-2 bg-white/10 rounded w-1/2 mt-2" />
@@ -141,30 +139,30 @@ export default function DownloadPage() {
       {/* QR Code Section */}
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D4A017]/10 flex items-center justify-center text-[#D4A017]">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
             <QrCode className="h-8 w-8" />
           </div>
-          <h2 className="text-3xl font-bold text-[#0A1A2F] mb-4">
+          <h2 className="text-3xl font-bold text-[#181714] mb-4">
             Scan to Download
           </h2>
-          <p className="text-lg text-[#0A1A2F]/70 mb-8">
+          <p className="text-lg text-[#181714]/70 mb-8">
             Use your phone's camera to scan the QR code and download the app directly.
           </p>
           <Card className="inline-block p-8">
-            <div className="w-48 h-48 bg-[#0A1A2F] rounded-lg flex items-center justify-center mb-4">
+            <div className="w-48 h-48 bg-[#181714] rounded-lg flex items-center justify-center mb-4">
               <QrCode className="h-32 w-32 text-white" />
             </div>
-            <p className="text-sm text-[#0A1A2F]/60">Scan with your phone camera</p>
+            <p className="text-sm text-[#181714]/60">Scan with your phone camera</p>
           </Card>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] py-12">
+      <footer className="bg-[#181714] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>

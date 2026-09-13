@@ -55,6 +55,17 @@
   }
 }
 
+.site-content > main > nav,
+.site-content > main > footer,
+.site-content > main > header:first-child,
+.site-content > main > section:first-child > nav {
+  display: none;
+}
+
+.site-content > main {
+  color: #181714;
+}
+
 /* Natural hero background */
 .hero-natural {
   background: 

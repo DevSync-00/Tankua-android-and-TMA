@@ -84,16 +84,16 @@ export default function HowItWorksPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
-              <span className="text-xl font-bold text-[#0A1A2F]">Tankua</span>
+              <span className="text-xl font-bold text-[#181714]">Tankua</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/about" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">About</Link>
-              <Link href="/how-it-works" className="text-[#D4A017] font-medium">How It Works</Link>
-              <Link href="/tours" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Tours</Link>
-              <Link href="/providers" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">For Providers</Link>
+              <Link href="/about" className="text-[#181714]/70 hover:text-[#181714]">About</Link>
+              <Link href="/how-it-works" className="text-[#ffb800] font-medium">How It Works</Link>
+              <Link href="/tours" className="text-[#181714]/70 hover:text-[#181714]">Tours</Link>
+              <Link href="/providers" className="text-[#181714]/70 hover:text-[#181714]">For Providers</Link>
             </div>
             <Button>Download App</Button>
           </div>
@@ -101,19 +101,19 @@ export default function HowItWorksPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-[#F8F6F0] to-white">
+      <section className="pt-32 pb-20 bg-gradient-to-b from-[#f7f5f0] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <Badge className="mb-4">Simple Process</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#0A1A2F] mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#181714] mb-6">
               Booking Your Perfect Tour is 
-              <span className="text-[#D4A017]"> Easy</span>
+              <span className="text-[#ffb800]"> Easy</span>
             </h1>
-            <p className="text-lg text-[#0A1A2F]/70 mb-8">
+            <p className="text-lg text-[#181714]/70 mb-8">
               From discovering amazing destinations to receiving your digital ticket, 
               we've made the entire process seamless and straightforward.
             </p>
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               <Download className="h-5 w-5 mr-2" />
               Get Started - Download App
             </Button>
@@ -134,18 +134,18 @@ export default function HowItWorksPage() {
               {/* Content */}
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-4">
-                  <span className="text-5xl font-bold text-[#D4A017]/20">{step.number}</span>
-                  <div className="w-14 h-14 rounded-2xl bg-[#D4A017]/10 flex items-center justify-center text-[#D4A017]">
+                  <span className="text-5xl font-bold text-[#ffb800]/20">{step.number}</span>
+                  <div className="w-14 h-14 rounded-2xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
                     {step.icon}
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold text-[#0A1A2F] mb-4">{step.title}</h2>
-                <p className="text-lg text-[#0A1A2F]/70 mb-6">{step.description}</p>
+                <h2 className="text-3xl font-bold text-[#181714] mb-4">{step.title}</h2>
+                <p className="text-lg text-[#181714]/70 mb-6">{step.description}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {step.features.map((feature, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-[#D4A017]" />
-                      <span className="text-sm text-[#0A1A2F]/70">{feature}</span>
+                      <CheckCircle2 className="h-5 w-5 text-[#ffb800]" />
+                      <span className="text-sm text-[#181714]/70">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -153,8 +153,8 @@ export default function HowItWorksPage() {
               
               {/* Illustration */}
               <div className="flex-1">
-                <Card className="p-8 bg-gradient-to-br from-[#F8F6F0] to-white aspect-square flex items-center justify-center">
-                  <div className="w-32 h-32 rounded-3xl bg-[#D4A017]/10 flex items-center justify-center text-[#D4A017]">
+                <Card className="p-8 bg-gradient-to-br from-[#f7f5f0] to-white aspect-square flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-3xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
                     {step.icon}
                   </div>
                 </Card>
@@ -165,17 +165,17 @@ export default function HowItWorksPage() {
       </section>
 
       {/* FAQs */}
-      <section className="py-20 bg-[#F8F6F0]">
+      <section className="py-20 bg-[#f7f5f0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <Badge className="mb-4">FAQs</Badge>
-            <h2 className="text-3xl font-bold text-[#0A1A2F]">Frequently Asked Questions</h2>
+            <h2 className="text-3xl font-bold text-[#181714]">Frequently Asked Questions</h2>
           </div>
           <div className="space-y-4">
             {faqs.map((faq, index) => (
               <Card key={index} className="p-6">
-                <h3 className="text-lg font-bold text-[#0A1A2F] mb-2">{faq.question}</h3>
-                <p className="text-[#0A1A2F]/70">{faq.answer}</p>
+                <h3 className="text-lg font-bold text-[#181714] mb-2">{faq.question}</h3>
+                <p className="text-[#181714]/70">{faq.answer}</p>
               </Card>
             ))}
           </div>
@@ -183,9 +183,9 @@ export default function HowItWorksPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#0A1A2F]">
+      <section className="py-20 bg-[#181714]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#D4A017] flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#ffb800] flex items-center justify-center">
             <Smartphone className="h-10 w-10 text-white" />
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -195,11 +195,11 @@ export default function HowItWorksPage() {
             Download Tankua today and book your first tour to one of Ethiopia's amazing destinations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               <Download className="h-5 w-5 mr-2" />
               Download for iOS
             </Button>
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               <Download className="h-5 w-5 mr-2" />
               Download for Android
             </Button>
@@ -208,11 +208,11 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] border-t border-white/10 py-12">
+      <footer className="bg-[#181714] border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>

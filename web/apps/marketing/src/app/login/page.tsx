@@ -32,16 +32,16 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#F8F6F0] to-white">
+    <main className="min-h-screen bg-gradient-to-b from-[#f7f5f0] to-white">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
-              <span className="text-xl font-bold text-[#0A1A2F]">Tankua</span>
+              <span className="text-xl font-bold text-[#181714]">Tankua</span>
             </Link>
             <Link href="/">
               <Button variant="ghost" size="sm">Back to Home</Button>
@@ -54,14 +54,14 @@ export default function LoginPage() {
       <section className="pt-32 pb-20">
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D4A017]/10 flex items-center justify-center text-[#D4A017]">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
               <LogIn className="h-8 w-8" />
             </div>
             <Badge className="mb-4">Sign In</Badge>
-            <h1 className="text-4xl font-bold text-[#0A1A2F] mb-2">
+            <h1 className="text-4xl font-bold text-[#181714] mb-2">
               Welcome Back
             </h1>
-            <p className="text-[#0A1A2F]/70">
+            <p className="text-[#181714]/70">
               Sign in to access your account and manage your bookings
             </p>
           </div>
@@ -75,11 +75,11 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-[#0A1A2F] mb-2">
+                <label className="block text-sm font-medium text-[#181714] mb-2">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#0A1A2F]/40" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#181714]/40" />
                   <Input
                     type="email"
                     required
@@ -92,11 +92,11 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#0A1A2F] mb-2">
+                <label className="block text-sm font-medium text-[#181714] mb-2">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#0A1A2F]/40" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#181714]/40" />
                   <Input
                     type={showPassword ? "text" : "password"}
                     required
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#0A1A2F]/40 hover:text-[#0A1A2F]"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#181714]/40 hover:text-[#181714]"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -116,18 +116,18 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-[#0A1A2F]/70">
+                <label className="flex items-center gap-2 text-sm text-[#181714]/70">
                   <input type="checkbox" className="rounded" />
                   <span>Remember me</span>
                 </label>
-                <Link href="/forgot-password" className="text-sm text-[#D4A017] hover:underline">
+                <Link href="/forgot-password" className="text-sm text-[#ffb800] hover:underline">
                   Forgot password?
                 </Link>
               </div>
 
               <Button
                 type="submit"
-                className="w-full bg-[#D4A017] hover:bg-[#B8860B]"
+                className="w-full bg-[#ffb800] hover:bg-[#d99c00]"
                 size="lg"
                 disabled={loading}
               >
@@ -146,7 +146,7 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-center text-sm text-[#0A1A2F]/70 mb-4">
+              <p className="text-center text-sm text-[#181714]/70 mb-4">
                 Don't have an account?
               </p>
               <div className="space-y-3">
@@ -155,7 +155,7 @@ export default function LoginPage() {
                     Download App to Sign Up
                   </Button>
                 </Link>
-                <p className="text-xs text-center text-[#0A1A2F]/60">
+                <p className="text-xs text-center text-[#181714]/60">
                   Account creation is available in the Tankua mobile app. Download now to get started!
                 </p>
               </div>
@@ -163,13 +163,13 @@ export default function LoginPage() {
           </Card>
 
           <div className="mt-8 text-center">
-            <p className="text-sm text-[#0A1A2F]/60">
+            <p className="text-sm text-[#181714]/60">
               By signing in, you agree to our{" "}
-              <Link href="/terms" className="text-[#D4A017] hover:underline">
+              <Link href="/terms" className="text-[#ffb800] hover:underline">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-[#D4A017] hover:underline">
+              <Link href="/privacy" className="text-[#ffb800] hover:underline">
                 Privacy Policy
               </Link>
             </p>
@@ -178,11 +178,11 @@ export default function LoginPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] py-12">
+      <footer className="bg-[#181714] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>

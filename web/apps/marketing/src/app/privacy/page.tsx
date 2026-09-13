@@ -147,14 +147,14 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-[#FFF8EC] text-[#0A1A2F]">
-      <header className="border-b border-[#0A1A2F]/10 bg-[#FFF8EC]/95 backdrop-blur">
+    <main className="min-h-screen bg-[#FFF8EC] text-[#181714]">
+      <header className="border-b border-[#181714]/10 bg-[#FFF8EC]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-3" aria-label="Tankua home">
-            <Image src="/icon.jpg" width={36} height={36} alt="" className="rounded-lg object-cover" priority />
+            <Image src="/favicon.png" width={36} height={36} alt="Tankua" className="rounded-lg object-contain" priority />
             <span className="text-lg font-extrabold tracking-tight">Tankua</span>
           </Link>
-          <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors hover:bg-[#0A1A2F]/5">
+          <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors hover:bg-[#181714]/5">
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back to home</span>
             <span className="sm:hidden">Back</span>
@@ -162,24 +162,24 @@ export default function PrivacyPage() {
         </div>
       </header>
 
-      <section className="border-b border-[#0A1A2F]/10 bg-gradient-to-b from-[#FFE9AD] to-[#FFF8EC]">
+      <section className="border-b border-[#181714]/10 bg-gradient-to-b from-[#FFE9AD] to-[#FFF8EC]">
         <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-[#FFB800] shadow-lg shadow-[#FFB800]/20">
             <ShieldCheck className="h-7 w-7" />
           </div>
           <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-[#9B6900]">Trust and transparency</p>
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">Privacy Policy</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#0A1A2F]/70">
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#181714]/70">
             This policy explains what information Tankua handles, why we use it, and the choices available to you.
           </p>
-          <p className="mt-5 text-sm font-medium text-[#0A1A2F]/55">Effective September 8, 2026</p>
+          <p className="mt-5 text-sm font-medium text-[#181714]/55">Effective September 8, 2026</p>
         </div>
       </section>
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-16">
-        <aside className="h-fit rounded-2xl border border-[#0A1A2F]/10 bg-white/70 p-5 lg:sticky lg:top-6">
+        <aside className="h-fit rounded-2xl border border-[#181714]/10 bg-white/70 p-5 lg:sticky lg:top-6">
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#9B6900]">At a glance</p>
-          <p className="mt-3 text-sm leading-6 text-[#0A1A2F]/65">
+          <p className="mt-3 text-sm leading-6 text-[#181714]/65">
             We use information to operate bookings and protect your account. We do not sell personal information.
           </p>
           <a href="mailto:support@tankua.et" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#8A5C00] hover:underline">
@@ -187,8 +187,8 @@ export default function PrivacyPage() {
           </a>
         </aside>
 
-        <article className="min-w-0 rounded-3xl border border-[#0A1A2F]/10 bg-white p-6 shadow-[0_18px_60px_rgba(10,26,47,0.07)] sm:p-10">
-          <div className="space-y-10 text-[15px] leading-7 text-[#0A1A2F]/75 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-tight [&_h2]:text-[#0A1A2F] [&_li]:pl-1 [&_p+p]:mt-4 [&_strong]:font-bold [&_strong]:text-[#0A1A2F] [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6">
+        <article className="min-w-0 rounded-3xl border border-[#181714]/10 bg-white p-6 shadow-[0_18px_60px_rgba(10,26,47,0.07)] sm:p-10">
+          <div className="space-y-10 text-[15px] leading-7 text-[#181714]/75 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:tracking-tight [&_h2]:text-[#181714] [&_li]:pl-1 [&_p+p]:mt-4 [&_strong]:font-bold [&_strong]:text-[#181714] [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6">
             <section>
               <h2>Introduction</h2>
               <p className="mt-3">
@@ -217,7 +217,7 @@ export default function PrivacyPage() {
       <footer className="bg-[#2A1F15] px-4 py-9 text-white sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
           <div className="flex items-center gap-3">
-            <Image src="/icon.jpg" width={32} height={32} alt="" className="rounded-lg object-cover" />
+            <Image src="/favicon.png" width={32} height={32} alt="Tankua" className="rounded-lg object-contain" />
             <span className="font-bold">Tankua</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-white/65">

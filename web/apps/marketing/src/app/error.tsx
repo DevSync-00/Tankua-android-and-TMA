@@ -17,15 +17,15 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#F8F6F0] to-white flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-b from-[#f7f5f0] to-white flex items-center justify-center p-4">
       <div className="max-w-2xl mx-auto text-center">
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-100 flex items-center justify-center text-red-500">
           <AlertCircle className="h-8 w-8" />
         </div>
-        <h1 className="text-4xl font-bold text-[#0A1A2F] mb-4">
+        <h1 className="text-4xl font-bold text-[#181714] mb-4">
           Something went wrong!
         </h1>
-        <p className="text-lg text-[#0A1A2F]/70 mb-8">
+        <p className="text-lg text-[#181714]/70 mb-8">
           We encountered an unexpected error. Please try again or return to the homepage.
         </p>
         {error.message && (
@@ -39,7 +39,7 @@ export default function Error({
             Try Again
           </Button>
           <Link href="/">
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               <Home className="h-5 w-5 mr-2" />
               Go Home
             </Button>

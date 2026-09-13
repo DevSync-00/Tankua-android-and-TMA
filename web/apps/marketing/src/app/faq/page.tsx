@@ -102,16 +102,16 @@ export default function FAQPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-[#F4C430] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
-              <span className="text-xl font-bold text-[#0A1A2F]">Tankua</span>
+              <span className="text-xl font-bold text-[#181714]">Tankua</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/about" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">About</Link>
-              <Link href="/how-it-works" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">How It Works</Link>
-              <Link href="/tours" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Tours</Link>
-              <Link href="/contact" className="text-[#0A1A2F]/70 hover:text-[#0A1A2F]">Contact</Link>
+              <Link href="/about" className="text-[#181714]/70 hover:text-[#181714]">About</Link>
+              <Link href="/how-it-works" className="text-[#181714]/70 hover:text-[#181714]">How It Works</Link>
+              <Link href="/tours" className="text-[#181714]/70 hover:text-[#181714]">Tours</Link>
+              <Link href="/contact" className="text-[#181714]/70 hover:text-[#181714]">Contact</Link>
             </div>
             <Link href="/download">
               <Button>Download App</Button>
@@ -121,15 +121,15 @@ export default function FAQPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-12 bg-gradient-to-b from-[#F8F6F0] to-white">
+      <section className="pt-32 pb-12 bg-gradient-to-b from-[#f7f5f0] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <Badge className="mb-4">Help Center</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#0A1A2F] mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#181714] mb-6">
               Frequently Asked
-              <span className="text-[#D4A017]"> Questions</span>
+              <span className="text-[#ffb800]"> Questions</span>
             </h1>
-            <p className="text-lg text-[#0A1A2F]/70">
+            <p className="text-lg text-[#181714]/70">
               Find answers to common questions about booking tours, using the app, and becoming a provider.
             </p>
           </div>
@@ -142,8 +142,8 @@ export default function FAQPage() {
           <div className="space-y-8">
             {faqs.map((category, categoryIndex) => (
               <div key={categoryIndex}>
-                <h2 className="text-2xl font-bold text-[#0A1A2F] mb-4 flex items-center gap-2">
-                  <HelpCircle className="h-6 w-6 text-[#D4A017]" />
+                <h2 className="text-2xl font-bold text-[#181714] mb-4 flex items-center gap-2">
+                  <HelpCircle className="h-6 w-6 text-[#ffb800]" />
                   {category.category}
                 </h2>
                 <div className="space-y-3">
@@ -154,17 +154,17 @@ export default function FAQPage() {
                       <Card key={index} className="overflow-hidden">
                         <button
                           onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
-                          className="w-full p-6 flex items-center justify-between text-left hover:bg-[#F8F6F0] transition-colors"
+                          className="w-full p-6 flex items-center justify-between text-left hover:bg-[#f7f5f0] transition-colors"
                         >
-                          <span className="font-semibold text-[#0A1A2F] pr-4">{faq.q}</span>
+                          <span className="font-semibold text-[#181714] pr-4">{faq.q}</span>
                           <ChevronDown
-                            className={`h-5 w-5 text-[#D4A017] flex-shrink-0 transition-transform ${
+                            className={`h-5 w-5 text-[#ffb800] flex-shrink-0 transition-transform ${
                               isOpen ? "rotate-180" : ""
                             }`}
                           />
                         </button>
                         {isOpen && (
-                          <div className="px-6 pb-6 text-[#0A1A2F]/70">
+                          <div className="px-6 pb-6 text-[#181714]/70">
                             {faq.a}
                           </div>
                         )}
@@ -179,7 +179,7 @@ export default function FAQPage() {
       </section>
 
       {/* Still Have Questions */}
-      <section className="py-20 bg-[#0A1A2F]">
+      <section className="py-20 bg-[#181714]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
             Still Have Questions?
@@ -188,7 +188,7 @@ export default function FAQPage() {
             Can't find what you're looking for? Our support team is here to help.
           </p>
           <Link href="/contact">
-            <Button size="lg" className="bg-[#D4A017] hover:bg-[#B8860B]">
+            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
               Contact Support
             </Button>
           </Link>
@@ -196,11 +196,11 @@ export default function FAQPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1A2F] border-t border-white/10 py-12">
+      <footer className="bg-[#181714] border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#D4A017] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
                 <span className="text-white font-bold">T</span>
               </div>
               <span className="text-white font-bold">Tankua</span>
