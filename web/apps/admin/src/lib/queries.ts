@@ -885,6 +885,122 @@ export async function deleteDestination(id: string): Promise<boolean> {
 }
 
 // ============================================
+// CHURCHES MANAGEMENT
+// ============================================
+
+/**
+ * Compatibility model for the dedicated churches admin page. Churches now live
+ * in the destinations table and store their coordinates in the location JSONB
+ * column.
+ */
+export interface Church extends Omit<Destination, 'location'> {
+  latitude: number | null;
+  longitude: number | null;
+}
+
+interface ChurchInput {
+  name: string;
+  description?: string | null;
+  region?: string | null;
+  city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  images?: string[] | null;
+  tags?: string[] | null;
+}
+
+function toChurch(destination: Destination): Church {
+  const location = destination.location as { lat?: unknown; lng?: unknown } | null;
+  const latitude = typeof location?.lat === 'number' ? location.lat : null;
+  const longitude = typeof location?.lng === 'number' ? location.lng : null;
+
+  return {
+    ...destination,
+    latitude,
+    longitude,
+  };
+}
+
+export async function getChurches(options?: {
+  limit?: number;
+  offset?: number;
+  search?: string;
+}): Promise<{ churches: Church[]; total: number }> {
+  let query = supabase
+    .from('destinations')
+    .select('*', { count: 'exact' })
+    .in('category', ['church', 'religious'])
+    .order('name');
+
+  if (options?.search) {
+    const search = options.search.replace(/[,%()]/g, ' ').trim();
+    if (search) query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,region.ilike.%${search}%`);
+  }
+
+  if (options?.limit) {
+    const from = options.offset || 0;
+    query = query.range(from, from + options.limit - 1);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  return {
+    churches: ((data || []) as Destination[]).map(toChurch),
+    total: count || 0,
+  };
+}
+
+export async function createChurch(church: ChurchInput): Promise<Church | null> {
+  const { data, error } = await supabase
+    .from('destinations')
+    .insert({
+      name: church.name,
+      description: church.description || null,
+      region: church.region || null,
+      city: church.city || null,
+      images: church.images || [],
+      tags: church.tags || [],
+      location: church.latitude != null || church.longitude != null
+        ? { lat: church.latitude ?? null, lng: church.longitude ?? null }
+        : null,
+      category: 'church',
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error creating church:', error);
+    return null;
+  }
+
+  return toChurch(data as Destination);
+}
+
+export async function updateChurch(id: string, church: Partial<ChurchInput>): Promise<boolean> {
+  const { latitude, longitude, ...updates } = church;
+  const payload: Record<string, unknown> = { ...updates };
+
+  if (latitude !== undefined || longitude !== undefined) {
+    payload.location = latitude != null || longitude != null
+      ? { lat: latitude ?? null, lng: longitude ?? null }
+      : null;
+  }
+
+  const { error } = await supabase.from('destinations').update(payload).eq('id', id);
+  if (error) {
+    console.error('Error updating church:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteChurch(id: string): Promise<boolean> {
+  return deleteDestination(id);
+}
+
+// ============================================
 // SUPPORT TICKETS MANAGEMENT
 // ============================================
 
