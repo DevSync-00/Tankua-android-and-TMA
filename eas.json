@@ -12,7 +12,13 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_TELEGRAM_AUTH_MODE": "native",
+        "EXPO_PUBLIC_TELEGRAM_APP_ID": "731553455",
+        "EXPO_PUBLIC_TELEGRAM_BOT_ID": "8319181574",
+        "EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID": "8319181574"
+      }
     }
   },
   "submit": {

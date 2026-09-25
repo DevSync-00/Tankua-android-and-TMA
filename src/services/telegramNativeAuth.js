@@ -15,7 +15,7 @@ const CLIENT_ID =
 const TELEGRAM_APP_ID =
   process.env.EXPO_PUBLIC_TELEGRAM_APP_ID ||
   Constants.expoConfig?.extra?.telegramAppId ||
-  (process.env.NODE_ENV === 'production' ? '731553455' : '112396380');
+  '112396380';
 
 const REDIRECT_URI = `https://app${TELEGRAM_APP_ID}-login.tg.dev/tglogin`;
 
