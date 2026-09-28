@@ -10,12 +10,12 @@ const CLIENT_ID =
   Constants.expoConfig?.extra?.telegramClientId ||
   process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
   process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
-  '8319181574';
+  '8974307872';
 
 const TELEGRAM_APP_ID =
   process.env.EXPO_PUBLIC_TELEGRAM_APP_ID ||
   Constants.expoConfig?.extra?.telegramAppId ||
-  '112396380';
+  '731553455';
 
 const REDIRECT_URI = `https://app${TELEGRAM_APP_ID}-login.tg.dev/tglogin`;
 
