@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
+import { travelGuides } from "@/lib/travel-guides";
 
 const routes = [
   ["", 1, "weekly"], ["/tours", 0.9, "daily"], ["/destinations", 0.9, "weekly"],
@@ -9,5 +10,12 @@ const routes = [
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return routes.map(([path, priority, changeFrequency]) => ({ url: `${SITE_URL}${path}`, priority, changeFrequency }));
+  const staticRoutes: MetadataRoute.Sitemap = routes.map(([path, priority, changeFrequency]) => ({ url: `${SITE_URL}${path}`, priority, changeFrequency }));
+  const guideRoutes: MetadataRoute.Sitemap = travelGuides.map((guide) => ({
+    url: `${SITE_URL}/guides/${guide.slug}`,
+    lastModified: guide.updatedAt,
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
+  return [...staticRoutes, ...guideRoutes];
 }
