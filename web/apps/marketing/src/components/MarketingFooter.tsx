@@ -18,6 +18,7 @@ export function MarketingFooter() {
         <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-7 gap-y-3 text-sm">
           <Link href="/tours" className="hover:text-white">Explore</Link>
           <Link href="/destinations" className="hover:text-white">Destinations</Link>
+          <Link href="/guides" className="hover:text-white">Travel guides</Link>
           <Link href="/about" className="hover:text-white">About</Link>
           <Link href="/contact" className="hover:text-white">Support</Link>
           <a href="https://provider.tankua.co" className="hover:text-white">Provider portal</a>

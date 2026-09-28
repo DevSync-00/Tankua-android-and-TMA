@@ -40,7 +40,7 @@ const AUTH_MODE = process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native';
 const ORIGIN = 'https://www.tankua.co';
 const RETURN_TO = 'https://dotjlikaurcjwabarqcy.supabase.co/functions/v1/telegram-auth';
 
-const BOT_USERNAME = process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || 'tankua_auth_bot';
+const BOT_USERNAME = process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || 'tankuaverifybot';
 
 const getWidgetHtml = () => `
 <!DOCTYPE html>

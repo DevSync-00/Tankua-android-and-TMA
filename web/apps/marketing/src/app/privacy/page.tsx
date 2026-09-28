@@ -4,8 +4,15 @@ import Link from "next/link";
 import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Tankua",
+  title: "Privacy Policy",
   description: "Learn how Tankua collects, uses, shares, and protects information across its website, mobile apps, and Telegram Mini App.",
+  alternates: { canonical: "/privacy" },
+  openGraph: {
+    title: "Privacy Policy",
+    description: "Learn how Tankua collects, uses, shares, and protects information across its website, mobile apps, and Telegram Mini App.",
+    url: "/privacy",
+    type: "website",
+  },
 };
 
 const sections = [

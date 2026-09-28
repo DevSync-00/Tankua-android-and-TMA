@@ -15,6 +15,7 @@ function navLinks(): NavItem[] {
   return [
     { label: "Tours", href: "/tours" },
     { label: "Destinations", href: "/destinations" },
+    { label: "Travel Guides", href: "/guides" },
     { label: "For Providers", href: "https://provider.tankua.co" },
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
