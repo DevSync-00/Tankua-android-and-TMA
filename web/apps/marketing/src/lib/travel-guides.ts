@@ -18,6 +18,94 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "7-day-ethiopia-itinerary-first-time-visitors",
+    title: "A Practical 7-Day Ethiopia Itinerary for First-Time Visitors",
+    description: "Plan one rewarding week in Ethiopia with a realistic route through Addis Ababa, Lalibela, Gondar, and the Simien Mountains.",
+    category: "Itineraries",
+    location: "Addis Ababa to Northern Ethiopia",
+    image: "/images/eth-photo-4.jpg",
+    imageAlt: "Historic landscape on a journey through northern Ethiopia",
+    publishedAt: "2026-09-29",
+    updatedAt: "2026-09-29",
+    readingMinutes: 8,
+    intro: "Seven days is enough for a memorable introduction to Ethiopia, but not enough to cover the whole country. The best first itinerary chooses one connected region, protects time for delays, and leaves room to understand each place. This route combines the capital with Lalibela, Gondar, and a short Simien Mountains experience.",
+    sections: [
+      {
+        heading: "Before you choose this route",
+        paragraphs: [
+          "This itinerary relies on domestic flights or an equivalent organized transport plan. Flight times, routes, road conditions, and site access can change, so confirm the sequence with your provider before paying for non-refundable arrangements. Avoid planning a same-day international connection after a domestic journey.",
+          "The route also involves high elevations, uneven walking, and several transfers. Travelers who prefer a slower pace should remove either Gondar or the Simien Mountains and add the extra night to Lalibela or Addis Ababa.",
+        ],
+        bullets: [
+          "Arrive with at least six full sightseeing days",
+          "Keep the final night in Addis Ababa before departure",
+          "Confirm baggage limits on every domestic flight",
+        ],
+      },
+      {
+        heading: "Day 1: arrive and settle into Addis Ababa",
+        paragraphs: [
+          "Treat your first day as an arrival day rather than a race through the capital. Check in, hydrate, and adjust to Addis Ababa's elevation. If your arrival time and energy allow, take a guided neighborhood walk or visit one carefully chosen museum instead of crossing the city repeatedly.",
+          "Use the evening to review the week with your provider. Confirm tomorrow's pickup, luggage arrangements, emergency contacts, and any recent schedule changes. A relaxed first night makes the early travel days easier.",
+        ],
+      },
+      {
+        heading: "Days 2 and 3: Lalibela's living heritage",
+        paragraphs: [
+          "Travel to Lalibela and spend the first afternoon orienting yourself in town or visiting one church group with a licensed local guide. The rock-hewn churches are active places of worship, so access can shift around services and religious events.",
+          "Use the second day for the remaining principal churches and the context that connects them. Wear clothing that covers shoulders and knees, bring socks for walking on stone after removing your shoes, and ask permission before photographing people or ceremonies.",
+          "If you prefer landscapes to a full second day around the main complex, discuss a nearby highland excursion. Do not squeeze a distant monastery and every central church into the same rushed schedule.",
+        ],
+        bullets: [
+          "Allow more time than a quick photo stop",
+          "Carry water, sun protection, and easy-off shoes",
+          "Let worship take priority over sightseeing",
+        ],
+      },
+      {
+        heading: "Day 4: travel to Gondar",
+        paragraphs: [
+          "Continue to Gondar, allowing most of the day for the transfer and check-in. If timing permits, begin with a gentle introduction to the city rather than attempting every major site before closing time.",
+          "Gondar works as both a historical destination and the practical gateway for many Simien Mountains trips. Ask your provider to confirm the next morning's vehicle, park arrangements, guide, meals, and the clothing you should keep in your daypack.",
+        ],
+      },
+      {
+        heading: "Day 5: Gondar's royal history",
+        paragraphs: [
+          "Spend the morning exploring Gondar's royal and religious heritage with a guide who can connect the architecture to the city's wider history. Focus on a few sites with proper context instead of treating the day as a checklist.",
+          "Keep the afternoon flexible. Depending on the following day's departure plan, you may need to prepare for an early drive, reorganize luggage, or rest before reaching higher ground.",
+        ],
+      },
+      {
+        heading: "Day 6: a first look at the Simien Mountains",
+        paragraphs: [
+          "A day trip can introduce the escarpment scenery and highland wildlife, although it cannot replace a multi-day trek. Travel times are significant, and conditions affect how much walking is sensible. Ask for the expected driving time, walking distance, elevation, and return hour in advance.",
+          "Bring warm layers, rain protection, sun protection, water, and walking shoes with dependable grip. Move slowly and tell your guide if you develop a headache, dizziness, nausea, or unusual fatigue. Never feed or crowd geladas or other wildlife for photographs.",
+        ],
+        bullets: [
+          "Choose viewpoints and walks that match your fitness",
+          "Expect quick changes in highland weather",
+          "Follow your guide's wildlife-distance instructions",
+        ],
+      },
+      {
+        heading: "Day 7: return to Addis Ababa",
+        paragraphs: [
+          "Return to Addis Ababa and keep the night in the capital. This buffer protects your international departure from delays elsewhere in the itinerary. If you arrive early, use the remaining time for a relaxed meal, coffee experience, or locally made gifts from a reputable shop.",
+          "If your international flight leaves late that evening, confirm the connection carefully rather than assuming it is safe. Separate tickets, baggage collection, traffic, and schedule changes can all consume more time than expected.",
+        ],
+      },
+      {
+        heading: "How to adapt the itinerary",
+        paragraphs: [
+          "For a gentler cultural trip, skip the Simien day and add time in Lalibela or Gondar. For stronger hikers, replace Gondar sightseeing with a properly planned multi-day Simien trek and extend the total journey beyond one week. Travelers interested in Harar, the Omo Valley, Bale Mountains, or Danakil should build a separate regional itinerary rather than adding another long transfer.",
+          "Before departure, review official travel advice, local conditions, insurance coverage, health needs, and every transport booking. The strongest itinerary is not the one with the most pins on a map; it is the one that still works when a journey takes longer than expected.",
+        ],
+      },
+    ],
+    relatedTourQuery: "Lalibela",
+  },
+  {
     slug: "best-time-to-visit-ethiopia",
     title: "Best Time to Visit Ethiopia: A Month-by-Month Guide",
     description: "Choose the best season for Ethiopia based on weather, trekking conditions, festivals, landscapes, and the regions you want to explore.",
