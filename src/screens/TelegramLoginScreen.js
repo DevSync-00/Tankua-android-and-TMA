@@ -40,6 +40,8 @@ const AUTH_MODE = process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native';
 const ORIGIN = 'https://www.tankua.co';
 const RETURN_TO = 'https://dotjlikaurcjwabarqcy.supabase.co/functions/v1/telegram-auth';
 
+const BOT_USERNAME = process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || 'tankuaverifybot';
+
 const getWidgetHtml = () => `
 <!DOCTYPE html>
 <html>
@@ -69,7 +71,7 @@ const getWidgetHtml = () => `
 </head>
 <body>
   <script async src="https://telegram.org/js/telegram-widget.js?22"
-          data-telegram-login="tankuaverifybot"
+          data-telegram-login="${BOT_USERNAME}"
           data-size="large"
           data-radius="10"
           data-onauth="onTelegramAuth(user)"

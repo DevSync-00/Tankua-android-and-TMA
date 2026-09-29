@@ -33,6 +33,7 @@
       </intent-filter>
       <intent-filter android:autoVerify="true" data-generated="true">
         <action android:name="android.intent.action.VIEW"/>
+        <data android:scheme="https" android:host="app112396380-login.tg.dev" android:pathPrefix="/tglogin"/>
         <data android:scheme="https" android:host="app731553455-login.tg.dev" android:pathPrefix="/tglogin"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <category android:name="android.intent.category.DEFAULT"/>
@@ -49,6 +50,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="https" android:host="app112396380-login.tg.dev" android:pathPrefix="/tglogin"/>
         <data android:scheme="https" android:host="app731553455-login.tg.dev" android:pathPrefix="/tglogin"/>
       </intent-filter>
     </activity>

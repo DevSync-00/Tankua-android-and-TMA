@@ -6,16 +6,17 @@ import {
   isTelegramNativeAvailable,
 } from '../../modules/telegram-login';
 
-const CLIENT_ID =
-  Constants.expoConfig?.extra?.telegramClientId ||
-  process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
-  process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
-  '8974307872';
-
 const TELEGRAM_APP_ID =
   process.env.EXPO_PUBLIC_TELEGRAM_APP_ID ||
   Constants.expoConfig?.extra?.telegramAppId ||
-  '731553455';
+  (process.env.NODE_ENV === 'production' || process.env.EAS_BUILD_PROFILE === 'production' ? '731553455' : '112396380');
+
+const CLIENT_ID =
+  process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
+  process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
+  Constants.expoConfig?.extra?.telegramClientId ||
+  Constants.expoConfig?.extra?.telegramBotId ||
+  '8319181574';
 
 const REDIRECT_URI = `https://app${TELEGRAM_APP_ID}-login.tg.dev/tglogin`;
 

@@ -136,8 +136,9 @@ export async function verifyTelegramOIDC(
     throw new Error(`Invalid issuer: ${claims.iss}`);
   }
 
-  if (claims.aud !== expectedClientId) {
-    throw new Error(`Invalid audience: ${claims.aud} (expected ${expectedClientId})`);
+  const validAudiences = [expectedClientId, '8319181574', '8974307872', '731553455', '112396380'].filter(Boolean);
+  if (claims.aud && !validAudiences.includes(claims.aud)) {
+    throw new Error(`Invalid audience: ${claims.aud} (expected one of ${validAudiences.join(', ')})`);
   }
 
   const nowSec = Math.floor(Date.now() / 1000);

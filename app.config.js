@@ -1,9 +1,10 @@
 const { withAndroidManifest, withProjectBuildGradle } = require('@expo/config-plugins');
 
-const telegramClientId = process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || '8974307872';
-// BotFather issues this Android App ID separately from the bot/OIDC client ID.
-// The generated app{appid}-login.tg.dev callback must match the registered app.
-const telegramAppId = process.env.EXPO_PUBLIC_TELEGRAM_APP_ID || '731553455';
+const isProductionBuild =
+  process.env.EAS_BUILD_PROFILE === 'production' || process.env.NODE_ENV === 'production';
+const telegramAppId = process.env.EXPO_PUBLIC_TELEGRAM_APP_ID || (isProductionBuild ? '731553455' : '112396380');
+const telegramBotId = process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || '8319181574';
+const telegramClientId = telegramBotId;
 const telegramHost = `app${telegramAppId}-login.tg.dev`;
 const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '849559330972-bn0deoee271ra367kds05j72vlt6vms0.apps.googleusercontent.com';
 const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '849559330972-eo76kc966avdk44g9h3qnhjcv80eqkf4.apps.googleusercontent.com';
@@ -166,6 +167,7 @@ export default ({ config }) => {
         },
         telegramClientId: telegramClientId,
         telegramAppId: telegramAppId,
+        telegramBotId: telegramBotId,
         telegramAuthMode: process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native',
         googleWebClientId,
         googleAndroidClientId,
