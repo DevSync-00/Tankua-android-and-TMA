@@ -14,9 +14,123 @@ export type TravelGuide = {
   intro: string;
   sections: GuideSection[];
   relatedTourQuery: string;
+  sources?: { label: string; url: string }[];
 };
 
 export const travelGuides: TravelGuide[] = [
+  {
+    slug: "ethiopia-travel-requirements",
+    title: "Ethiopia Travel Requirements 2026: Visa, Health & Entry Checklist",
+    description: "Check Ethiopia visa, passport, yellow fever, health, insurance, money, and arrival requirements with links to official sources.",
+    category: "Travel requirements",
+    location: "Ethiopia",
+    image: "/images/pexels-carmen-soler-759248458-28535157.jpg",
+    imageAlt: "Traveler preparing for a journey to Ethiopia",
+    publishedAt: "2026-09-30",
+    updatedAt: "2026-09-30",
+    readingMinutes: 9,
+    intro: "The hardest part of preparing for Ethiopia is not finding another packing list. It is knowing which rules apply to your passport, your flight route, and the exact regions on your itinerary. This checklist starts with the decisions that can stop a trip at the airport, then covers the practical preparation that makes the first days easier.",
+    sections: [
+      {
+        heading: "The 10-minute check: do these first",
+        paragraphs: [
+          "Open your passport and check its expiry date against your planned arrival date. Ethiopia's official e-Visa information says travelers need at least six months of passport validity from the intended entry date. Make sure the passport details you enter in an application match the document exactly.",
+          "Next, check visa eligibility and apply only through Ethiopia's official e-Visa website or the Ethiopian embassy responsible for your country. Rules differ by nationality and purpose of travel. Do not assume advice written for another passport applies to yours, and do not use a tourist visa for work, study, journalism, or volunteering without confirming the correct category.",
+        ],
+        bullets: [
+          "Passport valid for at least six months from intended entry",
+          "Correct visa for your nationality and purpose",
+          "Name, passport number, and dates checked character by character",
+          "Downloaded and printed copies of approvals and bookings",
+        ],
+      },
+      {
+        heading: "Use the real Ethiopian e-Visa website",
+        paragraphs: [
+          "Visa lookalike websites can charge extra fees, collect sensitive information, or create confusion about whether an application is genuine. The official portal is evisa.gov.et. Type the address yourself or follow a link from an Ethiopian government or embassy page.",
+          "Before submitting, check the intended entry date, visa validity, permitted number of entries, and the port of entry listed in the current instructions. Save the application reference and payment confirmation. Carry the approved document offline because airport Wi-Fi or mobile data should never be your only way to retrieve it.",
+          "Visa rules can change faster than articles can be updated. Treat this page as a preparation framework, not as permission to board. The official portal and your airline make the final document check relevant to your journey.",
+        ],
+        bullets: [
+          "Official portal: evisa.gov.et",
+          "Avoid sponsored lookalike domains",
+          "Carry both digital and paper copies",
+        ],
+      },
+      {
+        heading: "Yellow fever: your route matters",
+        paragraphs: [
+          "A yellow-fever certificate may be required when you arrive from a country with yellow-fever transmission risk. The CDC also notes that a long airport transit in a risk country can affect the entry requirement. That means two travelers landing on the same flight may need different documents because their earlier routes were different.",
+          "Check every country on your itinerary, including long layovers and onward destinations. A country you visit after Ethiopia may also ask for proof of vaccination because you have been in Ethiopia. If vaccination is unsuitable for medical reasons, ask a qualified clinician and the relevant authorities what documentation is accepted before travel.",
+        ],
+        bullets: [
+          "Review origin, connections, and onward destinations",
+          "Carry the original certificate when required",
+          "Do not rely on a screenshot of an old country list",
+        ],
+      },
+      {
+        heading: "Book a travel-health appointment around your route",
+        paragraphs: [
+          "Health planning is itinerary-specific. The CDC recommends travelers review routine vaccines and discusses hepatitis A, typhoid, polio, rabies, meningococcal disease, yellow fever, and other risks for Ethiopia. It also recommends prescription malaria prevention for certain areas, with advice varying by elevation and destination.",
+          "Take your actual itinerary to a travel-health professional ideally at least a month before departure. Addis Ababa, a highland trek, the Omo Valley, and the Danakil Depression do not create the same exposure or physical demands. A clinician can consider your medical history, trip length, accommodation, season, and access to care.",
+          "Pack enough prescribed medicine for the full trip plus reasonable delay time. Keep medication in original packaging and carry a copy of the prescription where appropriate. Confirm with an Ethiopian embassy if a controlled medicine needs special permission.",
+        ],
+        bullets: [
+          "Share every overnight stop and activity with the clinician",
+          "Discuss altitude, malaria, food and water, and animal exposure",
+          "Ask when each vaccine or medicine must be started",
+        ],
+      },
+      {
+        heading: "Read travel advice region by region—not country by country",
+        paragraphs: [
+          "Security and access conditions can differ sharply between Ethiopian regions and can change. Read your government's current travel advice for every destination and every road or airport used to reach it. A general impression that one city is calm does not tell you whether a remote route is appropriate.",
+          "Re-check advice when booking, one week before departure, and again before a regional journey. Ask your local provider what has changed, but also consult official advice independently. Keep alternative days or routes in the itinerary instead of forcing a plan when conditions shift.",
+        ],
+        bullets: [
+          "Check each region and transit route separately",
+          "Avoid unnecessary night driving",
+          "Share the itinerary with someone at home",
+          "Save embassy, insurer, and provider contacts offline",
+        ],
+      },
+      {
+        heading: "Buy insurance for the trip you are actually taking",
+        paragraphs: [
+          "A basic policy may exclude trekking above a stated elevation, remote expeditions, missed domestic connections, or evacuation from areas under a travel warning. Read the exclusions rather than relying on the product name.",
+          "Confirm medical treatment, emergency evacuation, trip interruption, baggage, and the activities you plan to do. If you are trekking or visiting a remote area, ask the insurer in writing whether that specific activity and region are covered. Store the policy number and assistance phone number offline.",
+        ],
+      },
+      {
+        heading: "Money, connectivity, and documents on arrival",
+        paragraphs: [
+          "Bring more than one payment method and arrange a modest cash backup without carrying all your money together. Card acceptance and ATM reliability vary, particularly outside major urban areas. Ask your provider which trip costs, entrance fees, tips, or local purchases require cash.",
+          "Do not build the first day around having immediate mobile data. Save your accommodation address, airport transfer contact, visa, insurance, tickets, and itinerary offline. If you plan to obtain a local SIM or eSIM, verify current registration and compatibility requirements shortly before departure rather than relying on an old forum post.",
+        ],
+        bullets: [
+          "Two payment methods stored separately",
+          "Offline copies of all essential documents",
+          "Accommodation name, address, and phone number",
+          "A reachable pickup contact for the arrival window",
+        ],
+      },
+      {
+        heading: "Your final 48-hour check",
+        paragraphs: [
+          "Reconfirm the international flight, the first night's accommodation, and the airport pickup. Check the latest official entry information and travel advice, then verify any domestic flight or regional transfer directly with the operator. Download everything again after the final confirmation.",
+          "Put the passport, visa approval, any required vaccination certificate, insurance details, first-night address, and return or onward itinerary in one accessible travel wallet. Keep copies separate from the originals. This is the unglamorous preparation that prevents avoidable problems at check-in and on arrival.",
+        ],
+      },
+    ],
+    relatedTourQuery: "Ethiopia",
+    sources: [
+      { label: "Ethiopian Immigration and Citizenship Service — official e-Visa information", url: "https://www.evisa.gov.et/information" },
+      { label: "CDC — Ethiopia Traveler View", url: "https://wwwnc.cdc.gov/travel/destinations/traveler/none/ethiopia" },
+      { label: "UK Government — Ethiopia entry requirements", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/entry-requirements" },
+      { label: "US Department of State — Ethiopia country information", url: "https://travel.state.gov/content/travel/en/international-travel/International-Travel-Country-Information-Pages/Ethiopia.html" },
+    ],
+  },
   {
     slug: "7-day-ethiopia-itinerary-first-time-visitors",
     title: "A Practical 7-Day Ethiopia Itinerary for First-Time Visitors",

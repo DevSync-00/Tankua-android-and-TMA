@@ -31,7 +31,7 @@ export default function GuidePage({ params }: Props) {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Article", "@id": `${canonicalUrl}#article`, headline: guide.title, description: guide.description, datePublished: guide.publishedAt, dateModified: guide.updatedAt, image: `https://tankua.co${guide.image}`, mainEntityOfPage: canonicalUrl, author: { "@type": "Organization", name: "Tankua Travel Team", url: "https://tankua.co/about" }, publisher: { "@id": "https://tankua.co/#organization" }, articleSection: guide.category, about: { "@type": "Place", name: guide.location } },
+      { "@type": "Article", "@id": `${canonicalUrl}#article`, headline: guide.title, description: guide.description, datePublished: guide.publishedAt, dateModified: guide.updatedAt, image: `https://tankua.co${guide.image}`, mainEntityOfPage: canonicalUrl, author: { "@type": "Organization", name: "Tankua Travel Team", url: "https://tankua.co/about" }, publisher: { "@id": "https://tankua.co/#organization" }, articleSection: guide.category, about: { "@type": "Place", name: guide.location }, ...(guide.sources ? { citation: guide.sources.map((source) => source.url) } : {}) },
       { "@type": "BreadcrumbList", itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: "https://tankua.co" },
         { "@type": "ListItem", position: 2, name: "Travel guides", item: "https://tankua.co/guides" },
@@ -68,6 +68,19 @@ export default function GuidePage({ params }: Props) {
                 {section.bullets && <ul className="mt-6 space-y-3 border-l-4 border-[#ffb800] bg-white p-6 pl-8">{section.bullets.map((bullet) => <li key={bullet} className="list-disc pl-1">{bullet}</li>)}</ul>}
               </section>
             ))}
+            {guide.sources && (
+              <section className="mt-14 border-t border-black/15 pt-9" aria-labelledby="official-sources">
+                <h2 id="official-sources" className="text-2xl font-extrabold tracking-[-.025em] text-[#181714]">Official sources checked</h2>
+                <p className="mt-3 text-base leading-7 text-[#181714]/65">Entry, health, and security information can change. These sources were checked on {new Date(`${guide.updatedAt}T00:00:00Z`).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.</p>
+                <ul className="mt-5 space-y-3 text-base">
+                  {guide.sources.map((source) => (
+                    <li key={source.url}>
+                      <a href={source.url} target="_blank" rel="noopener noreferrer" className="font-bold text-[#805500] underline decoration-[#ffb800] decoration-2 underline-offset-4 hover:text-[#181714]">{source.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
           <aside className="h-fit border-t-4 border-[#ffb800] bg-[#1c2119] p-7 text-white lg:sticky lg:top-28">
             <p className="text-xs font-bold uppercase tracking-[.18em] text-[#ffc83d]">Continue planning</p>
