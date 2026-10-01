@@ -19,6 +19,115 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "best-things-to-do-addis-ababa",
+    title: "Best Things to Do in Addis Ababa: A Guide That Respects Your Time",
+    description: "Explore Addis Ababa without wasting the day in traffic: museums, Entoto, Unity Park, Merkato, coffee, food, and practical route plans.",
+    category: "City guides",
+    location: "Addis Ababa",
+    image: "/images/pexels-fanuel-33019023.jpg",
+    imageAlt: "A busy modern avenue in Addis Ababa after rain",
+    publishedAt: "2026-10-01",
+    updatedAt: "2026-10-01",
+    readingMinutes: 10,
+    intro: "Addis Ababa is often treated as a place to sleep between flights. That misses the city entirely. Ethiopia's capital rewards travelers who stop trying to collect attractions and instead spend time with its history, highland setting, food, coffee, faith, art, and everyday street life. The key is to group each day geographically and leave space for traffic and conversation.",
+    sections: [
+      {
+        heading: "Start with one rule: do not zigzag across the city",
+        paragraphs: [
+          "Addis is large, busy, and high in the mountains. A short distance on the map can take much longer than expected, particularly around commuting hours, road works, rain, or major events. Choose one area for the morning and a nearby area for the afternoon rather than crossing the city after every stop.",
+          "Opening days, ticket rules, security checks, and access to public institutions can change. Confirm the places that matter most on the morning of your visit. A local guide or driver is most valuable when they improve the route and explain the city—not simply when they stand beside you at every stop.",
+        ],
+        bullets: [
+          "Group Arat Kilo museums and Unity Park together",
+          "Pair Entoto with Shiro Meda or northern Addis",
+          "Keep Merkato as a focused guided visit",
+          "Allow extra time before flights and evening reservations",
+        ],
+      },
+      {
+        heading: "For deep history: National Museum and the Arat Kilo area",
+        paragraphs: [
+          "The National Museum of Ethiopia is the natural starting point for visitors interested in archaeology and the long human story associated with Ethiopia. The official Addis Ababa Tourism Commission highlights the museum as the home of the famous Lucy fossil, alongside historical objects and art.",
+          "Do not reduce the museum to one display. Give the collections time and, if possible, visit with someone who can connect prehistoric material to Ethiopia's later artistic and political history. Nearby institutions and monuments make Arat Kilo a sensible base for a history-focused half day.",
+          "Check current opening information before leaving your accommodation. Museum galleries can close, move, or undergo renovation, and an old travel blog is not a reliable ticket desk.",
+        ],
+      },
+      {
+        heading: "For a broad introduction: Unity Park",
+        paragraphs: [
+          "Unity Park sits within the National Grand Palace compound and combines restored historical buildings, exhibitions, gardens, and wildlife areas. It is useful for first-time visitors who want a single place that introduces several chapters of Ethiopian history and regional diversity.",
+          "This is not a quick roadside stop. Security, ticketing, and the size of the grounds require time. The official Visit Addis Ababa page notes that multiple ticket packages may cover different experiences, including palace or photography access, so check the current options before arriving.",
+          "Pair Unity Park with the Arat Kilo area rather than with Entoto or the airport side of the city. If you dislike moving rapidly through exhibits, choose either Unity Park or two museums for the day instead of attempting all of them.",
+        ],
+      },
+      {
+        heading: "For views and breathing room: Entoto",
+        paragraphs: [
+          "The Entoto hills reveal the scale and altitude of Addis in a way the center cannot. The official tourism authorities recommend Mount Entoto and Entoto Natural Park for views, green space, and recreation. Clear mornings generally offer the best chance of wider views, but conditions change quickly.",
+          "Entoto is higher and cooler than central Addis. Take a warm layer, rain protection in season, water, and shoes suitable for uneven paths. Walk at a comfortable pace if you have only just arrived at altitude.",
+          "The northern route can be combined with Shiro Meda, where travelers shop for woven clothing, textiles, and crafts. Ask before photographing vendors, compare quality rather than only price, and leave enough time to make purchases without turning the market into a rushed photo stop.",
+        ],
+        bullets: [
+          "Go earlier for clearer air and a calmer schedule",
+          "Carry a layer even when central Addis feels warm",
+          "Do not schedule Entoto immediately before an airport transfer",
+        ],
+      },
+      {
+        heading: "For the city's commercial energy: visit Merkato with a purpose",
+        paragraphs: [
+          "Merkato is frequently described as an essential Addis experience, but 'walk around the market' is not a useful plan. The district is vast, crowded, specialized by product, and constantly moving. Decide what you want to understand or buy—coffee, spices, household goods, textiles, or another trade—and structure the visit around that purpose.",
+          "For a first visit, go with a trusted local guide who knows the working market and can navigate without obstructing traders. Carry minimal valuables, keep your phone secure, and ask permission before photographing people or stalls. The value of Merkato is observing a living commercial system, not collecting intrusive close-ups.",
+          "If dense crowds or uneven walking are not suitable for you, choose a smaller market, craft center, or neighborhood shopping street. Skipping Merkato does not make your Addis visit incomplete.",
+        ],
+      },
+      {
+        heading: "For context beyond monuments: coffee, food, and conversation",
+        paragraphs: [
+          "Coffee in Addis should not be treated as a caffeine break between attractions. A traditional coffee experience can show the sequence of roasting, grinding, brewing, serving, and conversation. Ask what you are being shown rather than assuming every café service is a full household ceremony.",
+          "Make time for an Ethiopian meal without ordering every famous dish at once. Ask about the day's fasting and non-fasting options, spice levels, and regional specialties. Shared platters are common, and eating with injera is part of the experience; follow your host or server if you are unsure.",
+          "The Addis Ababa Tourism Commission identifies food and coffee culture as central parts of the city's visitor experience. Choose places for the quality of their cooking and explanation, not only for staged entertainment.",
+        ],
+      },
+      {
+        heading: "For modern Addis: parks, public spaces, art, and jazz",
+        paragraphs: [
+          "Friendship Park, the Science Museum, the Adwa Victory Memorial, galleries, and performance spaces show a capital that is still actively reshaping how it tells its story. These places complement the older museums; they do not merely fill leftover time.",
+          "Exhibitions and events change, so look for a current program rather than expecting the same experience described months ago. If live music matters to you, ask a trusted local source what is actually scheduled that evening and arrange reliable transport both ways.",
+          "One contemporary space plus an unhurried dinner often creates a better evening than racing through several parks. Addis makes more sense when the historic and modern city are seen together.",
+        ],
+      },
+      {
+        heading: "Three routes that work",
+        paragraphs: [
+          "With half a day, choose either the National Museum and nearby historical sites, or Entoto and Shiro Meda. Add coffee close to the route rather than crossing town for a particular brand name.",
+          "With one full day, begin around Arat Kilo with the National Museum, continue to Unity Park after confirming access, and finish with an Ethiopian dinner or a current cultural performance. This keeps the day relatively concentrated.",
+          "With two days, use the first for central history and food. Use the second for Entoto in the morning, Shiro Meda or another northern stop, then a contemporary museum, gallery, park, or music venue selected from the current schedule.",
+        ],
+        bullets: [
+          "Half day: one museum cluster or Entoto—not both",
+          "One day: central history, Unity Park, and dinner",
+          "Two days: add Entoto, a market, and contemporary culture",
+        ],
+      },
+      {
+        heading: "Practical notes for a better day",
+        paragraphs: [
+          "Addis sits at high elevation. Hydrate, use sun protection, and keep the first day lighter if you have arrived from near sea level. Afternoon rain can be heavy in the wetter season, while evenings can feel cool throughout the year.",
+          "Use transport recommended by your accommodation or a trusted provider, and agree on the pickup point before leaving a busy attraction. Avoid carrying your passport around unless it is specifically required; secure the original and keep an accessible copy according to your travel circumstances.",
+          "Finally, verify official travel advice and local conditions before moving around the city. Good city travel is not about fear or bravado. It is about current information, a sensible route, and enough flexibility to change the plan.",
+        ],
+      },
+    ],
+    relatedTourQuery: "Addis Ababa",
+    sources: [
+      { label: "Addis Ababa Tourism Commission — official city tourism authority", url: "https://aatc.gov.et/" },
+      { label: "Visit Addis Ababa — official things to do guide", url: "https://visitaddisababa.et/things-to-do" },
+      { label: "Visit Addis Ababa — Unity Park visitor information", url: "https://visitaddisababa.et/things-to-do/unity-park" },
+      { label: "Visit Ethiopia — official suggested Addis Ababa tours", url: "https://visitethiopia.et/themes/mytravel/ass/AU%202026%20English%20Brochure.pdf" },
+    ],
+  },
+  {
     slug: "ethiopia-travel-requirements",
     title: "Ethiopia Travel Requirements 2026: Visa, Health & Entry Checklist",
     description: "Check Ethiopia visa, passport, yellow fever, health, insurance, money, and arrival requirements with links to official sources.",
