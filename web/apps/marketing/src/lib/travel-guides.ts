@@ -19,6 +19,124 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "ethiopian-festivals-travel-guide",
+    title: "Ethiopian Festivals: When to Go, Where to Be, and How to Attend",
+    description: "Plan travel around Timkat, Meskel, Genna, Irreecha, Shuwalid, Fichee-Chambalaalla, and Gifaataa with dates, places, and respectful advice.",
+    category: "Culture",
+    location: "Ethiopia",
+    image: "/images/pexels-christian-alemu-127251395-31047251.jpg",
+    imageAlt: "Traditional round buildings surrounded by green landscape in Ethiopia",
+    publishedAt: "2026-10-02",
+    updatedAt: "2026-10-02",
+    readingMinutes: 11,
+    intro: "A festival can become the most memorable part of an Ethiopia journey—or the moment a poorly planned itinerary falls apart. Dates may follow religious, lunar, or community calendars; accommodation fills; streets close; and ceremonies belong first to the people who observe them. This guide helps you choose a celebration for its meaning, not merely its photographs.",
+    sections: [
+      {
+        heading: "First, understand that Ethiopia does not have one festival calendar",
+        paragraphs: [
+          "Ethiopia's communities follow several religious and cultural calendars. Some national observances recur on familiar Gregorian dates, while others are announced annually or move in relation to Ramadan, local calendars, or community decisions. Even celebrations with a standard date may fall one day later in particular leap-year cycles.",
+          "Confirm the exact year, location, and sequence before buying flights. The eve can be as important as the main day: processions may begin before sunset, vigils continue overnight, and the most significant ritual may occur early the following morning.",
+          "A festival is not simply an event listing. Timkat and Meskel are acts of Orthodox Christian faith; Irreecha is Oromo thanksgiving; Shuwalid belongs to Harari religious and cultural life; Fichee-Chambalaalla and Gifaataa carry distinct New Year traditions. Attend as a guest, not as the owner of the experience.",
+        ],
+        bullets: [
+          "Verify dates with official tourism and community sources",
+          "Book the night before and after the central ceremony",
+          "Ask what is worship, what is public, and what may be photographed",
+        ],
+      },
+      {
+        heading: "Timkat: Ethiopian Epiphany and the journey of the tabots",
+        paragraphs: [
+          "Timkat commemorates the baptism of Jesus Christ and is one of the most visible celebrations of the Ethiopian Orthodox Tewahedo Church. UNESCO inscribed Ethiopian Epiphany on the Representative List of the Intangible Cultural Heritage of Humanity in 2019.",
+          "The observance begins with Ketera on the eve, when tabots—sacred representations associated with the Ark of the Covenant—are carried from churches in processions to a place of water and remain there overnight. The next morning includes prayer and the blessing of water before the tabots return to their churches.",
+          "Timkat is widely associated with January 19, with a one-day calendar shift in certain years. Gondar is famous for large gatherings around Fasilides' Bath; Addis Ababa, Lalibela, Bahir Dar, and many other communities hold their own observances. Bigger is not necessarily better. A local celebration may offer more context and less pressure on residents and infrastructure.",
+        ],
+        bullets: [
+          "Arrive before Ketera rather than on the main morning",
+          "Never touch, obstruct, or photograph a covered tabot intrusively",
+          "Dress for worship and expect long periods of standing",
+        ],
+      },
+      {
+        heading: "Meskel: fire, procession, and the Finding of the True Cross",
+        paragraphs: [
+          "Meskel commemorates the Finding of the True Cross and was inscribed by UNESCO in 2013. The celebration centers on the Demera, a tall bonfire structure prepared and lit as part of the religious observance, accompanied by processions, prayer, song, and community gathering.",
+          "Official tourism information places the Demera observance in late September, with major public ceremonies in Addis Ababa's Meskel Square and celebrations across the country. The eve and feast-day naming can be confusing across sources, so confirm the local schedule rather than arriving on the basis of one date copied from a blog.",
+          "Addis offers scale and a formal public program. Aksum, Gondar, Lalibela, and smaller communities offer different relationships between church, neighborhood, and landscape. Choose based on the rest of your route and current access—not on a claim that one place is the only authentic location.",
+        ],
+      },
+      {
+        heading: "Genna in Lalibela: Christmas in a living pilgrimage town",
+        paragraphs: [
+          "Ethiopian Christmas, commonly called Genna or Gena, is observed in early January; official Ethiopian tourism pages commonly list January 7. In Lalibela, the feast draws pilgrims to the rock-hewn churches for worship that may extend through the night.",
+          "The setting is extraordinary, but the churches are not a stage. Expect crowded paths, restricted spaces, incense, chanting, long services, and worshippers who have traveled for religious reasons. Follow church and guide instructions immediately, even when that means giving up a photograph or viewpoint.",
+          "Reserve accommodation, airport transfer, and a qualified local guide well ahead. Keep the itinerary simple: festival travel already involves disrupted schedules and limited capacity. Add buffer nights instead of connecting directly to an international departure.",
+        ],
+        bullets: [
+          "Wear modest clothing and carry socks for shoe-free areas",
+          "Use no flash and ask before photographing people",
+          "Do not block church doors, processions, or prayer spaces",
+        ],
+      },
+      {
+        heading: "Irreecha: Oromo thanksgiving at the start of Birraa",
+        paragraphs: [
+          "Irreecha is the thanksgiving celebration of the Oromo people, marking the beginning of Birraa after the rainy season. Participants give thanks to Waaqa and carry fresh grass and flowers to water, where ritual gestures express renewal, gratitude, and hope for abundance.",
+          "Major gatherings take place at Hora Finfinne in Addis Ababa and Hora Harsadi in Bishoftu, with celebrations elsewhere in Oromia. Dates are announced for each year; the official Visit Ethiopia listing should be checked rather than assuming the first weekend of a particular month will always apply.",
+          "Irreecha is not best understood as a costume parade. Learn the meaning of the green grass, water, blessings, songs, and community gathering. Follow crowd-management directions and arrange transport early, since large movements of people can reshape road access across the day.",
+        ],
+      },
+      {
+        heading: "Shuwalid in Harar: a three-day Harari tradition",
+        paragraphs: [
+          "Shuwalid is an annual three-day festival of the Harari people, inscribed by UNESCO in 2023. It marks the end of six days of fasting observed to compensate for omissions during Ramadan. The celebration takes place at shrines near the main gates of Harar Jugol and includes supplication, spiritual song, scripture, music, dance, and blessings.",
+          "Because its timing is connected to the Islamic calendar, Shuwalid moves through the Gregorian year. Confirm the date locally before building an itinerary. Travel with someone who can explain the sequence and appropriate visitor behavior at the shrines.",
+          "Harar is a living city, not a festival set. Stay long enough to understand the walled city's neighborhoods, markets, food, craft traditions, and religious diversity beyond the three-day event.",
+        ],
+      },
+      {
+        heading: "Fichee-Chambalaalla and Gifaataa: distinct New Year traditions",
+        paragraphs: [
+          "Fichee-Chambalaalla is the New Year festival of the Sidama people and has been on UNESCO's Representative List since 2015. Its date is determined and announced according to Sidama tradition. UNESCO describes a celebration centered on family, neighborhood greetings, buurisame, song, dance, advice from clan leaders, and the transmission of knowledge between generations.",
+          "Gifaataa is the New Year festival of the Wolaita people, inscribed by UNESCO in 2025. It is celebrated between mid-September and early October and emphasizes returning home, cleaning surroundings, resolving disputes, receiving elders' blessings, sharing food and drink, singing, dancing, and community gathering.",
+          "These festivals should not be folded into a generic idea of an 'Ethiopian New Year.' Each belongs to a particular community, history, and system of knowledge. Arrange visits through people who have a legitimate relationship with the celebration, and ask how visitor spending benefits local hosts and cultural practitioners.",
+        ],
+      },
+      {
+        heading: "How to attend without becoming the problem",
+        paragraphs: [
+          "Dress more conservatively than you would for an ordinary sightseeing day. Keep camera equipment compact, silence devices, and ask before photographing people at close range. Permission from a guide does not replace permission from the person in front of the lens.",
+          "Do not push through a procession, climb sacred or fragile structures, direct worshippers for a better composition, or fly a drone without explicit legal and community permission. If officials close an area or clergy ask visitors to move, respond immediately and calmly.",
+          "Buy locally, pay agreed guide fees fairly, and avoid handing out gifts or money in ways that create pressure around children or worshippers. The goal is not to leave with the most dramatic image; it is to understand something while causing as little disruption as possible.",
+        ],
+        bullets: [
+          "Ask before photographing; accept no without negotiation",
+          "Keep exits, paths, water, and worship spaces clear",
+          "Choose local guides who can explain meaning and etiquette",
+          "Stay beyond the ceremony so the destination benefits from the visit",
+        ],
+      },
+      {
+        heading: "Build the trip around the place, not only the festival",
+        paragraphs: [
+          "For Timkat, combine the celebration with a deeper Gondar, Lalibela, Addis Ababa, or Bahir Dar itinerary. For Meskel, connect Addis with its museums and neighborhoods, or choose a northern historical route. Pair Irreecha at Bishoftu with time around the lakes and Oromo cultural context. Give Harar several days around Shuwalid rather than arriving only for the central ceremony.",
+          "Book flexible transport, confirm accommodations directly, and expect higher demand around well-known dates. Keep a backup plan for weather, crowd limits, road changes, or altered access. Recheck official travel advice for every region shortly before departure.",
+          "A festival should deepen a journey, not consume it. The most responsible itinerary gives the celebration breathing room and lets the destination remain more than the background to a single crowded day.",
+        ],
+      },
+    ],
+    relatedTourQuery: "Cultural",
+    sources: [
+      { label: "UNESCO — Ethiopian Epiphany (Timkat) heritage documentation", url: "https://ich.unesco.org/en/RL/ethiopian-epiphany-01491" },
+      { label: "UNESCO — Commemoration feast of the Finding of the True Cross", url: "https://ich.unesco.org/en/RL/commemoration-feast-of-the-finding-of-the-true-holy-cross-of-christ-00858" },
+      { label: "Visit Ethiopia — official Irreecha information", url: "https://visitethiopia.et/event/irreecha" },
+      { label: "UNESCO — Shuwalid festival", url: "https://ich.unesco.org/en/RL/shuwalid-festival-01845" },
+      { label: "UNESCO — Fichee-Chambalaalla", url: "https://ich.unesco.org/en/RL/fichee-chambalaalla-new-year-festival-of-the-sidama-people-01054" },
+      { label: "UNESCO — Gifaataa, Wolaita people New Year festival", url: "https://ich.unesco.org/en/RL/gifaataa-wolaita-people-new-year-festival-02315" },
+      { label: "Visit Ethiopia — Lalibela visitor and festival information", url: "https://visitethiopia.travel/destinations/lalibela-2/" },
+    ],
+  },
+  {
     slug: "best-things-to-do-addis-ababa",
     title: "Best Things to Do in Addis Ababa: A Guide That Respects Your Time",
     description: "Explore Addis Ababa without wasting the day in traffic: museums, Entoto, Unity Park, Merkato, coffee, food, and practical route plans.",
