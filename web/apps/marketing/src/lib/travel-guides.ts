@@ -19,6 +19,107 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "harar-travel-guide",
+    title: "Harar Travel Guide: A Thoughtful 2-Day Itinerary Inside the Walled City",
+    description: "Plan two days in Harar, Ethiopia, with a practical walking itinerary for Harar Jugol, Harari homes, markets, coffee, museums, and respectful cultural encounters.",
+    category: "Destinations",
+    location: "Harar",
+    image: "/harar.png",
+    imageAlt: "A local handler with a spotted hyena outside Harar at night",
+    publishedAt: "2026-10-03",
+    updatedAt: "2026-10-03",
+    readingMinutes: 10,
+    intro: "Harar rewards the traveller who slows down. Behind Jugol's walls, lanes bend past mosques, shrines, courtyard homes, markets, tailors, coffee sellers, and neighbours going about an ordinary day. Two nights give you enough time to see the landmarks without reducing a living city to a checklist—and enough context to understand why Harar feels unlike anywhere else in Ethiopia.",
+    sections: [
+      {
+        heading: "Why Harar deserves at least two nights",
+        paragraphs: [
+          "Harar Jugol, the fortified historic town, has been on UNESCO's World Heritage List since 2006. UNESCO describes a 48-hectare walled city shaped by African and Islamic traditions, with 82 mosques, 102 shrines, distinctive Harari houses, and a street plan whose narrow lanes still hold commercial, religious, and domestic life.",
+          "Those numbers explain Harar's importance, but not its pace. The best moments are often small: the geometry of a painted interior, baskets arranged on a wall, the smell of roasting coffee, or a lane briefly filled by schoolchildren. A rushed day trip leaves little room for conversation and pushes every visit toward the same few photographs.",
+          "Stay two nights if you can. Use the first afternoon to get oriented, devote the next morning to Jugol with a local guide, and keep a second morning for the places you want to revisit. This also protects the trip from delayed transport and changing opening times.",
+        ],
+      },
+      {
+        heading: "Getting to Harar and planning your arrival",
+        paragraphs: [
+          "Dire Dawa is the usual transport gateway for Harar. Travellers commonly continue by road, so build transfer time into the day and arrange a trusted driver or confirmed local transport before arrival. Schedules and access can change; verify the route, current travel advice, and onward connections close to departure rather than relying on an old itinerary.",
+          "Choose accommodation in or within an easy walk of Jugol if atmosphere and early walks matter most. A traditional guesthouse can add valuable context, but ask practical questions before booking: private or shared bathroom, vehicle access, luggage help, noise, stairs, and whether breakfast is included. The oldest lanes were made for people, not cars.",
+          "Arrive before dark when possible. You will understand the gates and your accommodation's location in daylight, then have an unhurried evening rather than beginning with a confusing walk through unfamiliar alleys.",
+        ],
+        bullets: [
+          "Confirm transfers and accommodation directly before travel",
+          "Carry some cash; do not assume every small shop accepts cards",
+          "Keep one buffer night before an important flight or connection",
+        ],
+      },
+      {
+        heading: "Day 1: learn how Jugol fits together",
+        paragraphs: [
+          "Begin after breakfast with a licensed or locally recommended guide. Harar's lanes are enjoyable to wander, but guidance turns a photogenic maze into a readable city. Ask about the historic gates, the central commercial streets, the relationship between homes and neighbourhood life, and which religious spaces are open to visitors that day.",
+          "Make a traditional Harari house a priority. UNESCO identifies the townhouses and their exceptional interiors as one of Harar's most significant forms of heritage. Inside, raised platforms, niches, colours, objects, and seating positions express family and social life; they are not simply decoration. Visit a home or museum where entry is welcomed and interpretation is offered.",
+          "Continue through the market areas at a walking pace. Look before photographing. Traders are working, residents are shopping, and not every person or transaction is a tourist attraction. Buying coffee, spices, basketry, or another locally made item is more meaningful than collecting portraits without conversation.",
+        ],
+        bullets: [
+          "Ask your guide to explain, not merely point out, the five historic gates",
+          "Include one interpreted Harari interior rather than several hurried stops",
+          "Leave room for tea or coffee instead of filling every hour",
+        ],
+      },
+      {
+        heading: "What to notice beyond the headline sights",
+        paragraphs: [
+          "Harar's importance comes from the whole urban ensemble. UNESCO notes that the central core combines commercial and religious buildings, while traditional Harari, Indian, and combined Indian-Harari houses reveal layers of trade and cultural exchange. The late-19th-century houses with wooden verandas are part of that story.",
+          "A museum stop can help connect those layers. Rimbaud's House is associated with the French poet's years in the region and now functions as a cultural site; other local collections focus more directly on Harari life. Confirm what is open, then choose the museum that best fills the gap in your walk rather than trying to enter everything.",
+          "Pay attention to conservation as well as beauty. UNESCO identifies pressure from unsuitable materials, altered doors, infrastructure, and urban change. Staying in locally run accommodation, hiring local expertise, buying genuine craft, and treating historic surfaces carefully are small ways visitors can support the place they came to see.",
+        ],
+      },
+      {
+        heading: "The hyena tradition: how to approach it responsibly",
+        paragraphs: [
+          "The evening encounter with spotted hyenas is Harar's most advertised experience, yet it should not become the only story told about the city. Ask a trusted local guide about the history and present-day practice before deciding whether to attend. Conditions, handlers, locations, and crowd sizes can change.",
+          "If you go, observe the animals as wild animals. Keep the distance requested by the handler, avoid sudden movement, never surround or chase a hyena, and do not improvise by offering food. Decline any interaction that feels unsafe or coercive. Flash, shouting, and repeated close posing can turn a local tradition into a stressful spectacle.",
+          "Families with young children and anyone uncomfortable around large carnivores can skip the close encounter without missing the essence of Harar. A quiet evening meal, a rooftop view, or conversation at a guesthouse can be just as memorable.",
+        ],
+      },
+      {
+        heading: "Day 2: return early, then follow one theme",
+        paragraphs: [
+          "Walk inside Jugol early, when deliveries begin and the lanes are cooler. Revisit a gate or market without trying to reproduce yesterday's route. The repetition is useful: after one guided walk, details that first appeared chaotic start to make sense.",
+          "Spend the rest of the morning on one theme. That might be coffee and trade, Harari domestic architecture, basketry and textiles, or the city's religious geography. A focused conversation with a knowledgeable guide or host will usually teach you more than another circuit of loosely explained stops.",
+          "Keep the afternoon flexible for a museum, shopping, rest, or a short outing recommended locally. Harar is a place where access depends on the day, the hour, and community life. Flexibility is not failed planning here; it is part of travelling respectfully.",
+        ],
+      },
+      {
+        heading: "Faith, festivals, and being a considerate guest",
+        paragraphs: [
+          "Harar is a sacred Muslim city as well as a World Heritage site. Dress with shoulders and knees covered, speak quietly near worship, and ask before entering a mosque, shrine, courtyard, or home. Remove shoes when requested. A guide's access does not automatically grant permission to photograph the people inside.",
+          "Shuwalid shows how closely Harar's public spaces and living heritage are connected. UNESCO inscribed the three-day Harari festival on the Representative List of the Intangible Cultural Heritage of Humanity in 2023. It brings prayer, scripture, music, dance, blessing, and intergenerational learning to shrines near the walled city's main entrance gates.",
+          "If your visit coincides with a religious or community event, confirm what is public and where visitors should stand. Give worshippers priority, avoid blocking gates and lanes, and never treat prayer as a performance staged for a camera.",
+        ],
+      },
+      {
+        heading: "A practical Harar checklist",
+        paragraphs: [
+          "Wear shoes with grip for uneven lanes and carry water, sun protection, and a light layer for the evening. Mobile coverage and payments may not work exactly when you need them, so keep offline booking details, your accommodation's phone number, and modest cash in small denominations.",
+          "Ask before photographing people, interiors, religious sites, and market stalls. Learn a greeting, buy with interest rather than bargaining for sport, and let residents pass in narrow lanes. Most importantly, resist the urge to turn every encounter into content.",
+          "Before leaving, verify your road transfer and onward departure again. A good Harar itinerary is deliberately simple: two nights, one well-guided walk, one deeper theme, and enough unclaimed time for the city to surprise you.",
+        ],
+        bullets: [
+          "Best minimum stay: two nights",
+          "Core experience: a contextual walk through Harar Jugol",
+          "Bring: modest clothing, walking shoes, water, cash, and curiosity",
+          "Confirm locally: opening times, religious access, transport, and evening activities",
+        ],
+      },
+    ],
+    relatedTourQuery: "Harar",
+    sources: [
+      { label: "UNESCO World Heritage Centre — Harar Jugol, the Fortified Historic Town", url: "https://whc.unesco.org/en/list/1189" },
+      { label: "UNESCO Intangible Cultural Heritage — Shuwalid festival", url: "https://ich.unesco.org/en/RL/shuwalid-festival-01845" },
+      { label: "UNESCO World Heritage Centre — Harar, the walled town", url: "https://whc.unesco.org/en/activities/158/" },
+    ],
+  },
+  {
     slug: "ethiopian-festivals-travel-guide",
     title: "Ethiopian Festivals: When to Go, Where to Be, and How to Attend",
     description: "Plan travel around Timkat, Meskel, Genna, Irreecha, Shuwalid, Fichee-Chambalaalla, and Gifaataa with dates, places, and respectful advice.",
