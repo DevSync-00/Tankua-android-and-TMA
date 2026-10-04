@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
-export const SITE_URL = "https://tankua.co";
+// Vercel serves the www hostname directly; the apex currently redirects here.
+// Keep canonicals, structured data, robots, and sitemap URLs on the 200-response host.
+export const SITE_URL = "https://www.tankua.co";
 
 export function createPageMetadata({ title, description, path }: { title: string; description: string; path: string }): Metadata {
   return {

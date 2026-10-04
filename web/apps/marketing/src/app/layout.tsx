@@ -4,6 +4,7 @@ import "@tankua/ui/styles.css";
 import "./globals.css";
 import { MarketingNavbar } from "@/components/MarketingNavbar";
 import { MarketingFooter } from "@/components/MarketingFooter";
+import { SITE_URL } from "@/lib/seo";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -16,7 +17,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tankua.co"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Ethiopia Tours & Local Travel Experiences | Tankua",
     template: "%s | Tankua",
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Ethiopia Tours & Local Travel Experiences | Tankua",
     description: "Discover and book Ethiopia tours with trusted local providers.",
-    url: "https://tankua.co",
+    url: SITE_URL,
     type: "website",
     locale: "en_US",
     siteName: "Tankua",
@@ -54,21 +55,21 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://tankua.co/#organization",
+        "@id": `${SITE_URL}/#organization`,
         name: "Tankua",
-        url: "https://tankua.co",
-        logo: "https://tankua.co/favicon.png",
+        url: SITE_URL,
+        logo: `${SITE_URL}/favicon.png`,
         description: "A marketplace for discovering and booking tours across Ethiopia with trusted local travel providers.",
       },
       {
         "@type": "WebSite",
-        "@id": "https://tankua.co/#website",
-        url: "https://tankua.co",
+        "@id": `${SITE_URL}/#website`,
+        url: SITE_URL,
         name: "Tankua",
-        publisher: { "@id": "https://tankua.co/#organization" },
+        publisher: { "@id": `${SITE_URL}/#organization` },
         potentialAction: {
           "@type": "SearchAction",
-          target: "https://tankua.co/tours?q={search_term_string}",
+          target: `${SITE_URL}/tours?q={search_term_string}`,
           "query-input": "required name=search_term_string",
         },
       },

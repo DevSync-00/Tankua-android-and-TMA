@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Clock, MapPin } from "lucide-react";
 import { getGuide, travelGuides } from "@/lib/travel-guides";
+import { SITE_URL } from "@/lib/seo";
 
 type Props = { params: { slug: string } };
 
@@ -27,14 +28,14 @@ export function generateMetadata({ params }: Props): Metadata {
 export default function GuidePage({ params }: Props) {
   const guide = getGuide(params.slug);
   if (!guide) notFound();
-  const canonicalUrl = `https://tankua.co/guides/${guide.slug}`;
+  const canonicalUrl = `${SITE_URL}/guides/${guide.slug}`;
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Article", "@id": `${canonicalUrl}#article`, headline: guide.title, description: guide.description, datePublished: guide.publishedAt, dateModified: guide.updatedAt, image: `https://tankua.co${guide.image}`, mainEntityOfPage: canonicalUrl, author: { "@type": "Organization", name: "Tankua Travel Team", url: "https://tankua.co/about" }, publisher: { "@id": "https://tankua.co/#organization" }, articleSection: guide.category, about: { "@type": "Place", name: guide.location }, ...(guide.sources ? { citation: guide.sources.map((source) => source.url) } : {}) },
+      { "@type": "Article", "@id": `${canonicalUrl}#article`, headline: guide.title, description: guide.description, datePublished: guide.publishedAt, dateModified: guide.updatedAt, image: `${SITE_URL}${guide.image}`, mainEntityOfPage: canonicalUrl, author: { "@type": "Organization", name: "Tankua Travel Team", url: `${SITE_URL}/about` }, publisher: { "@id": `${SITE_URL}/#organization` }, articleSection: guide.category, about: { "@type": "Place", name: guide.location }, ...(guide.sources ? { citation: guide.sources.map((source) => source.url) } : {}) },
       { "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: "https://tankua.co" },
-        { "@type": "ListItem", position: 2, name: "Travel guides", item: "https://tankua.co/guides" },
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Travel guides", item: `${SITE_URL}/guides` },
         { "@type": "ListItem", position: 3, name: guide.title, item: canonicalUrl },
       ] },
     ],

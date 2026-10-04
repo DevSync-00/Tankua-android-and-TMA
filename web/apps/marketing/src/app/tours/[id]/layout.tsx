@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTourById } from "@/lib/queries";
+import { SITE_URL } from "@/lib/seo";
 
 type Props = { children: React.ReactNode; params: { id: string } };
 
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Omit<Props, "children">): Pro
 
 export default async function TourLayout({ children, params }: Props) {
   const tour = await getTourById(params.id);
-  const path = `https://tankua.co/tours/${encodeURIComponent(params.id)}`;
+  const path = `${SITE_URL}/tours/${encodeURIComponent(params.id)}`;
   const structuredData = tour ? {
     "@context": "https://schema.org",
     "@type": "TouristTrip",
@@ -36,7 +37,7 @@ export default async function TourLayout({ children, params }: Props) {
     touristType: tour.category,
     itinerary: { "@type": "Place", name: tour.location, address: { "@type": "PostalAddress", addressCountry: "ET" } },
     offers: { "@type": "Offer", price: tour.price, priceCurrency: "ETB", url: path },
-    provider: tour.provider?.name ? { "@type": "Organization", name: tour.provider.name } : { "@id": "https://tankua.co/#organization" },
+    provider: tour.provider?.name ? { "@type": "Organization", name: tour.provider.name } : { "@id": `${SITE_URL}/#organization` },
   } : null;
 
   return (
