@@ -42,7 +42,7 @@ import {
 
 const BOT_ID = process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ?? '';
 const AUTH_MODE = process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native';
-const BOT_USERNAME = process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || 'tankua_auth_bot';
+const BOT_USERNAME = process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || 'tankuaverifybot';
 
 const TelegramIcon = ({ size = 28, color = '#FFFFFF' }) => (
   <Svg width={size} height={size} viewBox="0 0 640 640">

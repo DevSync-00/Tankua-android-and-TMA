@@ -1,6 +1,6 @@
 const { withAndroidManifest, withProjectBuildGradle } = require('@expo/config-plugins');
 
-const telegramClientId = process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || '8319181574';
+const telegramClientId = process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID || process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID || '8974307872';
 const telegramAppId = process.env.EXPO_PUBLIC_TELEGRAM_APP_ID || (process.env.NODE_ENV === 'production' ? '731553455' : '112396380');
 const telegramHost = `app${telegramAppId}-login.tg.dev`;
 const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '849559330972-bn0deoee271ra367kds05j72vlt6vms0.apps.googleusercontent.com';

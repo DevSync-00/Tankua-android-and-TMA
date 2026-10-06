@@ -12,3 +12,7 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+# Telegram Native Login SDK & Tankua Module
+-keep class org.telegram.login.** { *; }
+-keep interface org.telegram.login.** { *; }
+-keep class com.tankua.telegramlogin.** { *; }
