@@ -10,7 +10,7 @@ const CLIENT_ID =
   Constants.expoConfig?.extra?.telegramClientId ||
   process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
   process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
-  '8974307872';
+  '8319181574';
 
 const TELEGRAM_APP_ID =
   process.env.EXPO_PUBLIC_TELEGRAM_APP_ID ||
