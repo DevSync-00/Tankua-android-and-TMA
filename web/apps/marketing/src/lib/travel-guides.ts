@@ -19,6 +19,110 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "ethiopian-coffee-ceremony-guide",
+    title: "Ethiopian Coffee Ceremony: Steps, Meaning, and Guest Etiquette",
+    description: "Understand the Ethiopian coffee ceremony, from roasting green beans to the three servings, with practical etiquette and honest cultural context.",
+    category: "Culture",
+    location: "Ethiopia",
+    image: "/images/ethiopian-coffee-ceremony.jpg",
+    imageAlt: "Coffee being poured from a decorated clay pot into a small cup",
+    publishedAt: "2026-10-06",
+    updatedAt: "2026-10-06",
+    readingMinutes: 10,
+    intro: "An Ethiopian coffee ceremony is not a brewing demonstration with conversation added around it. The conversation is the point. Green beans are washed, roasted, ground, brewed, and served while neighbours exchange news, relatives welcome a guest, or friends make time for one another. To understand the ceremony, watch what happens between the cups as closely as what happens inside them.",
+    sections: [
+      {
+        heading: "First: the ceremony is living hospitality, not one fixed script",
+        paragraphs: [
+          "Across Ethiopia, coffee is prepared in homes, neighbourhood gathering places, restaurants, hotels, and roadside stalls. The details change by region, language, faith, household, and occasion. A family ceremony in Jimma will not necessarily look like a hotel presentation in Addis Ababa, and neither should be treated as the single authoritative version.",
+          "What remains consistent is the investment of time. The host begins with raw coffee and prepares it in front of the guests. People stay, talk, and drink together. UNESCO describes the tradition as a practice that supports hospitality, dialogue, social cohesion, and the transmission of knowledge between generations.",
+          "You may hear coffee called buna or bunna in English-language writing. Spellings reflect different Ethiopian languages and transliterations; they are not competing products. If you are a guest, follow the word your host uses rather than correcting it from a travel article.",
+        ],
+      },
+      {
+        heading: "Ethiopia is coffee's homeland—but the Kaldi story is a legend",
+        paragraphs: [
+          "The familiar story says that a goatherd named Kaldi noticed his animals becoming lively after eating red coffee cherries. It is a memorable origin tale, not a documented eyewitness account. Presenting it as settled history turns a complex story of plants, forests, trade, religion, and communities into a mascot.",
+          "The stronger evidence is botanical and cultural. UNESCO identifies the Kafa Biosphere Reserve in southwest Ethiopia as a centre of origin and genetic diversity for wild Coffea arabica. Its mountain forests hold an exceptional range of wild coffee plants. Coffee later became closely connected to religious practice, trade, household life, and national identity.",
+          "Coffee landscapes are also cultivated heritage. In the UNESCO-listed Gedeo Cultural Landscape, mature trees shelter enset, coffee, and other crops in a layered agroforestry system maintained through generations of local knowledge. A cup is connected to a landscape long before it reaches a ceremony tray.",
+        ],
+      },
+      {
+        heading: "Step 1: the space is prepared and the beans are roasted",
+        paragraphs: [
+          "A ceremonial setting may include fresh grass or flowers on the floor, incense, a low table, small cups, and a charcoal brazier. These elements vary. Their presence in a hotel does not automatically make an experience intimate, and their absence in a home does not make an invitation less genuine.",
+          "The host washes green coffee beans, then roasts them in a pan over heat. The colour moves from green through gold to deep brown while the beans crack and release their aroma. Guests may be invited to draw in the fragrant smoke as the pan is carried near them.",
+          "This is worth watching without a screen between you and the host. Ask before photographing, especially in a private home. A few considered images after permission are better than recording every movement of someone performing skilled work.",
+        ],
+      },
+      {
+        heading: "Step 2: grinding, brewing, and the long pour",
+        paragraphs: [
+          "The roasted beans are ground, traditionally with a mortar and pestle. The grounds are transferred to a jebena, the round-bodied clay coffee pot with a long neck and pouring spout. Water and coffee are heated together, and the brewer manages the foam, heat, and settling grounds by feel rather than by a universal timer.",
+          "When the coffee is ready, the cups are arranged close together and filled in a controlled stream. The elevated pour is visually striking, but it is also practical: an experienced host fills a row of small cups evenly while keeping the service moving. Elders and honoured guests are commonly served first.",
+          "Do not expect an espresso profile. Ceremony coffee may be dark, aromatic, and lightly textured with fine sediment. Sugar is common in many settings; salt, butter, spices, or a sprig of tena adam—rue—appear in particular regions and households. Ask what is customary where you are rather than treating one addition as the national rule.",
+        ],
+      },
+      {
+        heading: "The three servings: abol, tona, and bereka",
+        paragraphs: [
+          "A full ceremony traditionally continues through three servings, often written in English as abol, tona, and bereka or baraka. Transliteration varies. The first is brewed strongest; more water is added for later rounds, which become progressively lighter.",
+          "UNESCO's account explains the names as first, second, and blessing. The final round, bereka, carries the sense of blessing that closes the gathering. Online summaries often assign each cup an elaborate, fixed spiritual meaning. Treat those neat formulas cautiously unless your host explains that meaning in their own tradition.",
+          "Not every contemporary service includes all three rounds. A café may pour one cup; a formal tourism presentation may compress the sequence; a family gathering may extend for hours. Ask how much time to allow before accepting, and never agree to a home visit if your schedule requires you to hurry the host.",
+        ],
+        bullets: [
+          "Abol: the first and strongest serving",
+          "Tona: the second, lighter serving",
+          "Bereka or baraka: the final serving associated with blessing",
+        ],
+      },
+      {
+        heading: "What to eat with Ethiopian coffee",
+        paragraphs: [
+          "Popcorn is the accompaniment many visitors notice first, especially in urban ceremonies. Roasted grain, seeds, nuts, or bread may appear instead. The food is not an accessory arranged for photography; it helps turn the preparation into a shared visit.",
+          "Take what is offered in a modest amount and watch how others eat. If you have allergies, say so early and clearly. Coffee can be strong, and three rounds add up, so travellers sensitive to caffeine should be honest rather than repeatedly accepting cups they cannot comfortably drink.",
+          "It is polite to appreciate the work, but theatrical praise is unnecessary. A sincere thank-you, attention to the conversation, and patience with the pace communicate more respect than declaring the drink the best coffee of your life.",
+        ],
+      },
+      {
+        heading: "Coffee ceremony etiquette for travellers",
+        paragraphs: [
+          "An invitation into a home is different from purchasing a scheduled experience. Follow your guide or host on shoes, seating, greetings, and photographs. Greet older people first when introduced, make space for those being served, and receive the cup carefully—often with the right hand or with the left supporting the right.",
+          "Do not assume the woman preparing coffee is available as an unpaid model or interpreter. In many households women carry much of the ceremonial labour; respect includes noticing the work, learning the host's name, and ensuring any payment or gift is handled transparently when the visit was arranged commercially.",
+          "If you cannot drink coffee for health, religious, pregnancy, or personal reasons, say so warmly. You can still participate in the conversation. If you can drink only one round, explain that at the beginning instead of disappearing between servings.",
+        ],
+        bullets: [
+          "Ask before photographing people, roasting, prayer, or a private interior",
+          "Allow the time your host recommends",
+          "Accept or decline food and additional coffee clearly and graciously",
+          "Never pressure someone to stage the ceremony again for content",
+        ],
+      },
+      {
+        heading: "Where to experience a coffee ceremony in Ethiopia",
+        paragraphs: [
+          "In Addis Ababa, traditional restaurants, cultural venues, coffee houses, and some hotels offer accessible introductions. These can be useful on a short visit, but ask whether the beans are roasted from green and whether the service includes explanation or only a decorative pour.",
+          "A home ceremony arranged through a trusted local host or guide offers more conversation, but it also creates responsibility. Confirm that the household chose to participate, how hosts are compensated, how many visitors will attend, and whether photography is welcome. Intimacy should never be manufactured by ignoring consent.",
+          "Travellers interested in coffee beyond the cup can build a route through southwest Ethiopia or the Gedeo highlands, subject to current access and travel advice. A responsible farm or forest visit should explain cultivation, processing, seasonality, prices, and local livelihoods—not simply repeat the phrase 'birthplace of coffee' beside a staged picking photograph.",
+        ],
+      },
+      {
+        heading: "The detail worth remembering",
+        paragraphs: [
+          "The most important object in an Ethiopian coffee ceremony is not the jebena. It is the time people agree to spend together. Roasting from green beans slows the visit down; repeated servings keep everyone present; conversation fills the space that an instant drink would erase.",
+          "Come curious, but do not arrive with a checklist that forces every host to confirm what you read online. Notice the sequence, ask about local variations, and listen to what matters to the people sharing the coffee. That is how a famous tradition becomes a real encounter rather than another performance consumed on a trip.",
+        ],
+      },
+    ],
+    relatedTourQuery: "coffee",
+    sources: [
+      { label: "UNESCO — Ethiopia, the home of coffee", url: "https://courier.unesco.org/en/articles/ethiopia-home-coffee" },
+      { label: "UNESCO — Ethiopia advances its traditional coffee ceremony nomination", url: "https://www.unesco.org/en/articles/brewing-heritage-ethiopia-advances-file-preparation-traditional-coffee-ceremony-unesco-intangible" },
+      { label: "UNESCO Man and the Biosphere Programme — Kafa", url: "https://www.unesco.org/en/mab/kafa" },
+      { label: "UNESCO World Heritage Centre — The Gedeo Cultural Landscape", url: "https://whc.unesco.org/en/list/1641" },
+    ],
+  },
+  {
     slug: "harar-travel-guide",
     title: "Harar Travel Guide: A Thoughtful 2-Day Itinerary Inside the Walled City",
     description: "Plan two days in Harar, Ethiopia, with a practical walking itinerary for Harar Jugol, Harari homes, markets, coffee, museums, and respectful cultural encounters.",
