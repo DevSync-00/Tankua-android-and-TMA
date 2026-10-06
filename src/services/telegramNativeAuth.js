@@ -6,17 +6,16 @@ import {
   isTelegramNativeAvailable,
 } from '../../modules/telegram-login';
 
+const CLIENT_ID =
+  Constants.expoConfig?.extra?.telegramClientId ||
+  process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
+  process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
+  '8319181574';
+
 const TELEGRAM_APP_ID =
   process.env.EXPO_PUBLIC_TELEGRAM_APP_ID ||
   Constants.expoConfig?.extra?.telegramAppId ||
-  (process.env.NODE_ENV === 'production' || process.env.EAS_BUILD_PROFILE === 'production' ? '731553455' : '112396380');
-
-const CLIENT_ID =
-  process.env.EXPO_PUBLIC_TELEGRAM_BOT_ID ||
-  process.env.EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID ||
-  Constants.expoConfig?.extra?.telegramClientId ||
-  Constants.expoConfig?.extra?.telegramBotId ||
-  '8319181574';
+  (process.env.NODE_ENV === 'production' ? '731553455' : '112396380');
 
 const REDIRECT_URI = `https://app${TELEGRAM_APP_ID}-login.tg.dev/tglogin`;
 
@@ -51,13 +50,27 @@ export function performTelegramNativeLogin() {
     const nonce = generateAuthNonce();
 
     let subscription = null;
+    let timeoutTimer = null;
 
     const cleanup = () => {
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
       if (subscription) {
         subscription.remove();
         subscription = null;
       }
     };
+
+    timeoutTimer = setTimeout(() => {
+      cleanup();
+      reject({
+        code: 'LOGIN_TIMEOUT',
+        message: 'Telegram login timed out. Please try again.',
+        nonce,
+      });
+    }, 45000);
 
     subscription = addTelegramLoginListener((result) => {
       cleanup();

@@ -14,8 +14,16 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const clientId = Deno.env.get('TELEGRAM_OIDC_CLIENT_ID') || '8319181574';
+    const configuredClientId = Deno.env.get('TELEGRAM_OIDC_CLIENT_ID') || '8319181574';
+    const configuredAppId = Deno.env.get('TELEGRAM_APP_ID') || '731553455';
+    const allowedAudiences = [
+      configuredClientId,
+      configuredAppId,
+      '8319181574',
+      '8974307872',
+      '731553455',
+      '112396380',
+    ].filter(Boolean);
 
     if (!url || !anonKey || !serviceKey) {
       throw new Error('Telegram OIDC service is not configured on server');
@@ -27,7 +35,7 @@ Deno.serve(async (req) => {
     }
 
     // 1. Verify RS256 JWKS signature and OIDC token claims
-    const claims = await verifyTelegramOIDC(idToken, nonce || null, clientId);
+    const claims = await verifyTelegramOIDC(idToken, nonce || null, allowedAudiences);
     const telegramId = claims.id || Number(claims.sub);
     if (!telegramId) {
       throw new Error('Could not extract valid Telegram user ID from token');

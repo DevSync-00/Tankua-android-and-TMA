@@ -3,21 +3,33 @@
  * Fully open-source mapping stack with zero API keys or billing constraints.
  */
 
-// CartoDB Voyager No-Labels High-DPI Retina Tile Server
-// Purges background commercial POIs (cafes, shops, schools) so platform destinations stand out.
-export const OSM_TILE_URL = 'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}@2x.png';
+// CARTO recently began requiring an API key for its basemaps.cartocdn.com servers.
+// If an API key is present in EXPO_PUBLIC_CARTO_API_KEY, use CARTO Voyager tiles.
+// Otherwise, default to standard OpenStreetMap (identical to the Telegram Mini App),
+// which is 100% free and requires no API keys.
+const CARTO_API_KEY = process.env.EXPO_PUBLIC_CARTO_API_KEY || '';
+
+export const OSM_TILE_URL = CARTO_API_KEY
+  ? `https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}@2x.png?api_key=${CARTO_API_KEY}`
+  : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // Clean CartoDB Positron No-Labels Tile Server (Ultra-minimal alternative)
-export const OSM_POSITRON_NO_LABELS = 'https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png';
+export const OSM_POSITRON_NO_LABELS = CARTO_API_KEY
+  ? `https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png?api_key=${CARTO_API_KEY}`
+  : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // Standard Voyager Tile Server (Includes background labels)
-export const OSM_TILE_URL_WITH_LABELS = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
+export const OSM_TILE_URL_WITH_LABELS = CARTO_API_KEY
+  ? `https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?api_key=${CARTO_API_KEY}`
+  : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // Fallback OpenStreetMap Standard Tile Server
 export const OSM_FALLBACK_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // Tile Attribution Requirement
-export const OSM_ATTRIBUTION = '© OpenStreetMap contributors, © CARTO';
+export const OSM_ATTRIBUTION = CARTO_API_KEY
+  ? '© OpenStreetMap contributors, © CARTO'
+  : '© OpenStreetMap contributors';
 
 // OpenStreetMap Web Directions URL (fossgis OSRM engine)
 export const getOsmDirectionsUrl = (originLat, originLng, destLat, destLng) => {

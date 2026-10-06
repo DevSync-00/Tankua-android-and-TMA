@@ -58,7 +58,7 @@ function base64UrlDecode(str: string): Uint8Array {
 export async function verifyTelegramOIDC(
   idToken: string,
   expectedNonce: string | null,
-  expectedClientId: string,
+  expectedClientId: string | string[],
 ): Promise<TelegramOIDCClaims> {
   if (!idToken) {
     throw new Error('id_token is required');
@@ -136,7 +136,10 @@ export async function verifyTelegramOIDC(
     throw new Error(`Invalid issuer: ${claims.iss}`);
   }
 
-  const validAudiences = [expectedClientId, '8319181574', '8974307872', '731553455', '112396380'].filter(Boolean);
+  const validAudiences = (Array.isArray(expectedClientId) ? expectedClientId : [expectedClientId])
+    .filter(Boolean)
+    .map(String);
+
   if (claims.aud && !validAudiences.includes(claims.aud)) {
     throw new Error(`Invalid audience: ${claims.aud} (expected one of ${validAudiences.join(', ')})`);
   }

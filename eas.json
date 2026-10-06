@@ -9,7 +9,14 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_TELEGRAM_AUTH_MODE": "native",
+        "EXPO_PUBLIC_TELEGRAM_APP_ID": "731553455",
+        "EXPO_PUBLIC_TELEGRAM_BOT_ID": "8319181574",
+        "EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID": "8319181574",
+        "EXPO_PUBLIC_TELEGRAM_BOT_USERNAME": "tankuaverifybot"
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -17,7 +24,8 @@
         "EXPO_PUBLIC_TELEGRAM_AUTH_MODE": "native",
         "EXPO_PUBLIC_TELEGRAM_APP_ID": "731553455",
         "EXPO_PUBLIC_TELEGRAM_BOT_ID": "8319181574",
-        "EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID": "8319181574"
+        "EXPO_PUBLIC_TELEGRAM_OIDC_CLIENT_ID": "8319181574",
+        "EXPO_PUBLIC_TELEGRAM_BOT_USERNAME": "tankuaverifybot"
       }
     }
   },
