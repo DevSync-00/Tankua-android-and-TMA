@@ -50,13 +50,27 @@ export function performTelegramNativeLogin() {
     const nonce = generateAuthNonce();
 
     let subscription = null;
+    let timeoutTimer = null;
 
     const cleanup = () => {
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
       if (subscription) {
         subscription.remove();
         subscription = null;
       }
     };
+
+    timeoutTimer = setTimeout(() => {
+      cleanup();
+      reject({
+        code: 'LOGIN_TIMEOUT',
+        message: 'Telegram login timed out. Please try again.',
+        nonce,
+      });
+    }, 45000);
 
     subscription = addTelegramLoginListener((result) => {
       cleanup();

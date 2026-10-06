@@ -103,20 +103,6 @@ export default ({ config }) => {
         },
         package: 'com.tankua.co',
         permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'CAMERA'],
-        intentFilters: [
-          {
-            action: 'VIEW',
-            autoVerify: true,
-            data: [
-              {
-                scheme: 'https',
-                host: telegramHost,
-                pathPrefix: '/tglogin',
-              },
-            ],
-            category: ['BROWSABLE', 'DEFAULT'],
-          },
-        ],
       },
       web: {
         favicon: './assets/favicon.png',

@@ -20,7 +20,12 @@ class TelegramLoginCallbackActivity : Activity() {
     private fun handleDeepLinkIntent(intent: Intent?) {
         val uri: Uri? = intent?.data
         if (uri != null) {
-            TelegramLoginModule.handleCallbackUri(uri)
+            TelegramLoginModule.handleCallbackUri(uri, this)
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                startActivity(launchIntent)
+            }
         }
         finish()
     }

@@ -28,6 +28,7 @@ SET search_path = public
 AS $$
 DECLARE
   old_id UUID;
+  phone_conflict_id UUID;
   result public.users%ROWTYPE;
   final_phone TEXT;
 BEGIN
@@ -39,10 +40,22 @@ BEGIN
   SELECT id INTO old_id FROM public.users WHERE telegram_id = p_telegram_id LIMIT 1 FOR UPDATE;
 
   -- Determine target phone number format
-  IF p_phone_number IS NOT NULL AND p_phone_number <> '' THEN
+  IF p_phone_number_verified IS TRUE AND p_phone_number IS NOT NULL AND p_phone_number <> '' THEN
     final_phone := p_phone_number;
   ELSE
     final_phone := 'telegram:' || p_telegram_id;
+  END IF;
+
+  -- Check if another account already holds this phone number to prevent unique constraint crash
+  SELECT id INTO phone_conflict_id
+  FROM public.users
+  WHERE phone_number = final_phone AND id <> p_auth_user_id
+  LIMIT 1 FOR UPDATE;
+
+  IF phone_conflict_id IS NOT NULL AND phone_conflict_id <> COALESCE(old_id, p_auth_user_id) THEN
+    UPDATE public.users
+    SET phone_number = 'superseded-phone:' || phone_conflict_id || ':' || EXTRACT(EPOCH FROM NOW())::BIGINT
+    WHERE id = phone_conflict_id;
   END IF;
 
   IF old_id IS NOT NULL AND old_id <> p_auth_user_id THEN

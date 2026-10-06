@@ -10,12 +10,22 @@ import org.telegram.login.TelegramLogin
 class TelegramLoginModule : Module() {
 
     companion object {
+        private const val PREFS_NAME = "tankua_telegram_login_prefs"
+        private const val KEY_PENDING_URI = "pending_callback_uri"
+        private const val KEY_SAVED_NONCE = "saved_auth_nonce"
+
         private var activeModuleInstance: TelegramLoginModule? = null
         private var currentNonce: String? = null
 
-        fun handleCallbackUri(uri: Uri) {
-            val instance = activeModuleInstance ?: return
-            instance.processUriResponse(uri)
+        fun handleCallbackUri(uri: Uri, context: Context? = null) {
+            val instance = activeModuleInstance
+            if (instance != null) {
+                instance.processUriResponse(uri)
+            } else if (context != null) {
+                // Buffer callback URI in SharedPreferences for cold-start replay
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().putString(KEY_PENDING_URI, uri.toString()).apply()
+            }
         }
     }
 
@@ -26,6 +36,11 @@ class TelegramLoginModule : Module() {
 
         OnCreate {
             activeModuleInstance = this@TelegramLoginModule
+            checkPendingCallback()
+        }
+
+        OnStartObserving {
+            checkPendingCallback()
         }
 
         OnDestroy {
@@ -53,6 +68,11 @@ class TelegramLoginModule : Module() {
                 ?: throw IllegalStateException("Current activity is null")
 
             try {
+                // Persist nonce for cold-start safety
+                if (nonce != null) {
+                    val prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    prefs.edit().putString(KEY_SAVED_NONCE, nonce).apply()
+                }
                 TelegramLogin.startLogin(activity)
                 true
             } catch (e: Throwable) {
@@ -66,6 +86,24 @@ class TelegramLoginModule : Module() {
                     "nonce" to currentNonce
                 ))
                 false
+            }
+        }
+    }
+
+    private fun checkPendingCallback() {
+        val context = appContext.reactContext ?: appContext.currentActivity ?: return
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val pendingUriStr = prefs.getString(KEY_PENDING_URI, null)
+        if (!pendingUriStr.isNullOrBlank()) {
+            if (currentNonce == null) {
+                currentNonce = prefs.getString(KEY_SAVED_NONCE, null)
+            }
+            prefs.edit().remove(KEY_PENDING_URI).apply()
+            try {
+                val uri = Uri.parse(pendingUriStr)
+                processUriResponse(uri)
+            } catch (e: Throwable) {
+                // Ignore parse errors on malformed buffered URI
             }
         }
     }
