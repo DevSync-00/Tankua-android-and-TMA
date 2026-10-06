@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Linking,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,8 +39,6 @@ const AUTH_MODE = process.env.EXPO_PUBLIC_TELEGRAM_AUTH_MODE || 'native';
 const ORIGIN = 'https://www.tankua.co';
 const RETURN_TO = 'https://dotjlikaurcjwabarqcy.supabase.co/functions/v1/telegram-auth';
 
-const BOT_USERNAME = process.env.EXPO_PUBLIC_TELEGRAM_BOT_USERNAME || 'tankuaverifybot';
-
 const getWidgetHtml = () => `
 <!DOCTYPE html>
 <html>
@@ -71,7 +68,7 @@ const getWidgetHtml = () => `
 </head>
 <body>
   <script async src="https://telegram.org/js/telegram-widget.js?22"
-          data-telegram-login="${BOT_USERNAME}"
+          data-telegram-login="tankua_auth_bot"
           data-size="large"
           data-radius="10"
           data-onauth="onTelegramAuth(user)"
@@ -166,10 +163,9 @@ const TelegramLoginScreen = ({ navigation }) => {
 
   const processingRef = useRef(false);
   const pageLoadedRef = useRef(false);
-  const nativeLoginSupported = isNativeTelegramLoginSupported();
 
   const [useWebViewFallback, setUseWebViewFallback] = useState(
-    AUTH_MODE === 'webview' || !nativeLoginSupported,
+    AUTH_MODE === 'webview',
   );
 
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -190,22 +186,6 @@ const TelegramLoginScreen = ({ navigation }) => {
       console.warn('[TelegramLoginScreen] Native login attempt error:', err);
       processingRef.current = false;
       setIsProcessing(false);
-
-      const shouldUseFallback = [
-        'NATIVE_MODULE_UNAVAILABLE',
-        'TELEGRAM_NOT_INSTALLED',
-        'SDK_START_FAILED',
-      ].includes(err?.code);
-
-      if (shouldUseFallback) {
-        pageLoadedRef.current = false;
-        setFatalError(null);
-        setIsPageLoading(true);
-        setUseWebViewFallback(true);
-        setWebViewKey(`fallback-${Date.now()}`);
-        return;
-      }
-
       showToast({
         type: 'error',
         title: 'Login Failed',
@@ -215,7 +195,7 @@ const TelegramLoginScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
-    if (AUTH_MODE === 'native' && nativeLoginSupported) {
+    if (AUTH_MODE === 'native') {
       triggerNativeLogin();
     }
   }, []);
@@ -364,7 +344,7 @@ const TelegramLoginScreen = ({ navigation }) => {
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
-  if (useWebViewFallback && !BOT_ID) {
+  if (!BOT_ID) {
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -412,12 +392,7 @@ const TelegramLoginScreen = ({ navigation }) => {
 
         <View style={styles.webViewContainer}>
           {/* Fatal error replaces entire WebView area */}
-          {!useWebViewFallback ? (
-            <View style={styles.centeredContent}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.overlayText}>Opening Telegram…</Text>
-            </View>
-          ) : fatalError ? (
+          {fatalError ? (
             <View style={styles.centeredContent}>
               <Ionicons name="warning-outline" size={52} color={COLORS.error} />
               <Text style={styles.errorText}>{fatalError}</Text>
@@ -457,7 +432,7 @@ const TelegramLoginScreen = ({ navigation }) => {
           )}
 
           {/* Spinner overlay — only while initial page is loading */}
-          {useWebViewFallback && (isPageLoading || isProcessing) && !fatalError && (
+          {(isPageLoading || isProcessing) && !fatalError && (
             <View style={styles.overlay}>
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.overlayText}>

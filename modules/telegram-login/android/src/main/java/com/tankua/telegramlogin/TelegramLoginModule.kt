@@ -12,11 +12,9 @@ class TelegramLoginModule : Module() {
     companion object {
         private var activeModuleInstance: TelegramLoginModule? = null
         private var currentNonce: String? = null
-        private var redirectHost: String? = null
 
         fun handleCallbackUri(uri: Uri) {
             val instance = activeModuleInstance ?: return
-            if (uri.scheme != "https" || uri.host != redirectHost) return
             instance.processUriResponse(uri)
         }
     }
@@ -38,11 +36,6 @@ class TelegramLoginModule : Module() {
 
         Function("init") { clientId: String, redirectUri: String, scopes: List<String> ->
             try {
-                val parsedRedirect = Uri.parse(redirectUri)
-                if (parsedRedirect.scheme != "https" || parsedRedirect.host.isNullOrBlank()) {
-                    return@Function false
-                }
-                redirectHost = parsedRedirect.host
                 TelegramLogin.init(
                     clientId = clientId,
                     redirectUri = redirectUri,
