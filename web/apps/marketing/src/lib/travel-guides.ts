@@ -19,6 +19,122 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "ethiopian-food-guide",
+    title: "Ethiopian Food Guide: What to Eat and How to Order",
+    description: "Discover what to eat in Ethiopia, from injera and shiro to doro wot, tibs, kitfo, and fasting food, with practical ordering and dining advice.",
+    category: "Food & drink",
+    location: "Ethiopia",
+    image: "/images/ethiopian-food-guide.jpg",
+    imageAlt: "Injera served with red lentils, green lentils, and cooked greens",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    readingMinutes: 11,
+    intro: "A first Ethiopian menu can look like a wall of unfamiliar names. The easier way in is to understand the meal's structure: injera underneath, stews and vegetables on top, and several people reaching toward the same platter. Learn that system, plus a handful of useful words, and ordering becomes less about guessing and more about building the meal you actually want.",
+    sections: [
+      {
+        heading: "Start with the plate, not a list of famous dishes",
+        paragraphs: [
+          "Much of the food travellers meet in Addis Ababa and the northern highlands is served on injera, a fermented flatbread with a soft texture, tart flavour, and porous surface. Pieces of injera scoop up wot—stew—along with lentils, chickpeas, greens, vegetables, and meat. The bread is utensil, plate, and part of the meal.",
+          "A mixed platter is the best first order because contrast matters. One red, berbere-seasoned stew can feel heavy by itself; beside mild split peas, earthy greens, and cool salad, it makes sense. Ask for a combination or beyaynatu rather than ordering several full portions before you understand the restaurant's serving size.",
+          "Ethiopia does not have one cuisine. The familiar injera-and-wot table is important, but food changes across regions and communities. Enset foods in the south, Harari cooking in the east, and Somali-influenced rice, pasta, and meat dishes deserve more than being treated as side notes to an Addis menu.",
+        ],
+      },
+      {
+        heading: "Injera: what it is and what to check before ordering",
+        paragraphs: [
+          "Injera is made by fermenting a cereal batter and cooking it on one side, which creates the small holes often called eyes. Teff is strongly associated with injera and is preferred in many settings, but the bread may also contain sorghum, barley, wheat, maize, or a blend. FAO sources document this variation; 'injera' does not automatically mean '100 percent teff.'",
+          "That distinction matters for travellers avoiding gluten. Teff itself does not contain gluten, but mixed-flour injera can contain wheat, and kitchens may share surfaces or fermentation containers. Ask specifically whether the injera is made only from teff and explain if cross-contact is a medical concern. Do not rely on colour alone: white, brown, and darker injera can reflect grain variety and blending.",
+          "Fresh injera should be pliable enough to tear and fold around a bite. Use a small piece to pinch the food rather than dragging your fingers through a sauce. The injera beneath the stews becomes saturated and is often the best part at the end.",
+        ],
+      },
+      {
+        heading: "The essential vegetarian dishes",
+        paragraphs: [
+          "Shiro is one of the most useful words to know. It is a smooth, savoury stew made from seasoned pulse flour, commonly chickpea or a blend. Texture, spice, and enrichment vary widely: it may arrive loose and simple, thick and bubbling in clay, or enriched with butter on non-fasting menus. Ask rather than assuming every shiro is vegan.",
+          "Misir wot brings lentils into a red, berbere-seasoned stew. Kik alicha is usually the gentler counterpoint: split peas cooked without the same red-pepper intensity. Gomen refers to cooked leafy greens, while atkilt wot commonly combines cabbage, carrots, and potatoes in a mild preparation.",
+          "Together, these dishes create a strong first platter: shiro for depth, misir for heat, kik alicha for balance, gomen for bitterness, and atkilt for sweetness. They are not consolation food for people avoiding meat. They are central to the range and rhythm of an Ethiopian table.",
+        ],
+        bullets: [
+          "Shiro: smooth pulse-flour stew; confirm whether butter is used",
+          "Misir wot: red lentil stew seasoned with berbere",
+          "Kik alicha: mild split-pea stew",
+          "Gomen: cooked leafy greens",
+          "Atkilt wot: a mild cabbage, carrot, and potato dish",
+        ],
+      },
+      {
+        heading: "Fasting food is the easiest route to a vegan meal",
+        paragraphs: [
+          "Ethiopian Orthodox fasting practice excludes meat and animal products during designated periods. Restaurants often label the relevant menu as fasting food, yetsom, or tsom. The Ethiopian Embassy specifically recommends fasting dishes to vegetarian visitors because they are prepared without meat and animal products.",
+          "A fasting combination can be one of the most varied meals on the menu, with lentils, split peas, greens, cabbage, potatoes, beets, and shiro sharing one injera. It is also widely available beyond specialist vegetarian restaurants, particularly on fasting days.",
+          "Still communicate your needs. A restaurant may use separate recipes for fasting and non-fasting days, and serving utensils or cooking surfaces may be shared. Travellers with allergies or strict dietary requirements should name the ingredient they need to avoid, not rely only on the word vegetarian.",
+        ],
+      },
+      {
+        heading: "Doro wot, tibs, and other meat dishes worth understanding",
+        paragraphs: [
+          "Doro wot is the celebratory dish many visitors know by name: chicken and boiled egg in a concentrated red stew built around onions and berbere. It takes time to prepare and is associated with holidays and important gatherings. In a restaurant, one portion can be richer and larger than expected, so it works well as the centre of a shared meal rather than one item among many meats.",
+          "Tibs is a broad category of sautéed meat rather than one fixed recipe. The meat, cut, seasoning, vegetables, butter, and serving vessel differ by restaurant and region. Ask what kind of meat is used, whether it is spicy, and whether it comes sizzling or in sauce. Shekla tibs commonly signals meat served hot from a clay vessel.",
+          "Firfir or fitfit repurposes pieces of injera by mixing them with seasoned sauce, sometimes with meat. It is particularly satisfying at breakfast or when you already enjoy injera's tang. The name and preparation vary, so the menu description matters more than a universal definition.",
+        ],
+      },
+      {
+        heading: "Kitfo and raw-meat traditions: order with clear eyes",
+        paragraphs: [
+          "Kitfo is finely chopped or minced beef seasoned with spiced clarified butter and mitmita. It is traditionally served raw or lightly warmed, though restaurants commonly offer degrees of cooking. If you want it cooked, say so explicitly and confirm what the kitchen understands by leb leb or fully cooked rather than assuming the phrase means the same thing everywhere.",
+          "Tire siga—pieces of raw beef—is another distinct tradition and social food, not a dare created for tourists. You can respect its place in Ethiopian food culture without eating it. Pressure from a guide, host, or fellow traveller is not a reason to ignore your health needs.",
+          "The CDC advises international travellers to avoid raw or undercooked meat and unpasteurized dairy because both can carry pathogens. This is especially important for pregnant travellers, young children, older adults, and people with weakened immune systems. Choose thoroughly cooked meat served hot if you want the lower-risk option.",
+        ],
+      },
+      {
+        heading: "Spice without bravado: berbere, mitmita, and alicha",
+        paragraphs: [
+          "Berbere is a red spice blend, not simply powdered chilli. Recipes vary, but its heat and warm aromatic depth define many red stews. Mitmita is a different, often hotter blend used in smaller amounts and closely associated with kitfo. Neither has one nationally fixed formula.",
+          "Alicha generally signals a milder preparation without the same red berbere profile. Mild does not mean bland: turmeric, ginger, garlic, onions, and other seasonings can still carry the dish. If you are heat-sensitive, ask for an alicha dish and keep a mild lentil or vegetable side on the platter.",
+          "Saying 'I eat spicy food' is not a useful test of character. Start with a mixed meal, taste before adding condiments, and ask which item is hottest. This lets you understand the food instead of numbing every dish after the first bite.",
+        ],
+      },
+      {
+        heading: "Breakfast and regional foods beyond the standard platter",
+        paragraphs: [
+          "Chechebsa, also called kita firfir in some settings, combines torn flatbread with seasoned butter and spice. Genfo is a thick grain porridge shaped around a well of seasoned butter or sauce. Ful—slow-cooked fava beans with accompaniments—is another common breakfast, especially in cities and eastern Ethiopia.",
+          "In the south, enset—the false banana—supports several important foods. Kocho is a fermented enset preparation often served with rich meat dishes such as kitfo. Its cultivation belongs to living agricultural systems, including the layered Gedeo landscape where enset, coffee, and other crops grow together.",
+          "In Harar, Dire Dawa, and Somali communities, look beyond the injera template for rice, pasta, meat, and breads shaped by eastern trade and pastoral foodways. Ask what the restaurant is known for. The house speciality usually teaches you more than ordering the same combination in every city.",
+        ],
+      },
+      {
+        heading: "How to share the platter respectfully",
+        paragraphs: [
+          "Wash your hands before the meal and eat with the right hand. Tear a modest piece of injera, use it to lift one manageable bite, and work from the area in front of you rather than reaching across the entire platter. Avoid putting a bitten piece back into shared food.",
+          "A host may offer a gursha—a bite placed directly into another person's mouth as a gesture of affection or respect. If you are comfortable, accept it graciously; if not, decline warmly. Do not initiate one with a stranger simply because you saw it online.",
+          "Sharing a platter does not erase individual dietary boundaries. Tell the server about allergies, vegetarian requirements, or raw meat concerns before food is arranged together. If separation matters, request a distinct plate rather than trying to police different zones of one injera after service.",
+        ],
+      },
+      {
+        heading: "A first-order script that actually works",
+        paragraphs: [
+          "For two people, begin by asking the server for a mixed fasting platter and one house meat speciality on the side. Confirm the spice level, whether the injera is pure teff or blended, and whether butter is used. Add coffee after the meal only if you have time to enjoy it without rushing.",
+          "For a fully plant-based meal, ask for the day's fasting combination and repeat that you want no meat, egg, milk, or butter. For a gentler introduction, choose kik alicha, atkilt, gomen, and a small portion of shiro. For more heat, add misir wot or a berbere-seasoned house dish.",
+          "Most importantly, let the server guide you. Ask what is fresh today, what locals order there, and whether your combination is balanced. Good Ethiopian dining is not about checking off the maximum number of dish names. It is about how the flavours meet on the injera—and who is sharing it with you.",
+        ],
+        bullets: [
+          "Best first order: a mixed platter plus one house speciality",
+          "For vegan food: ask for the fasting or yetsom combination",
+          "For mild food: request alicha dishes and confirm the heat level",
+          "For food safety: choose meat cooked through and served hot",
+        ],
+      },
+    ],
+    relatedTourQuery: "food",
+    sources: [
+      { label: "Embassy of Ethiopia — Culture, food, and drinks", url: "https://ethiopianembassy.org/culture/" },
+      { label: "FAO — Teff post-harvest operations and injera", url: "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_TEF.pdf" },
+      { label: "FAO — Ethiopia school food and staple foods", url: "https://www.fao.org/platforms/school-food/around-the-world/africa/ethiopia/en" },
+      { label: "CDC Yellow Book — Food and water precautions for travellers", url: "https://www.cdc.gov/yellow-book/hcp/preparing-international-travelers/food-and-water-precautions-for-travelers.html" },
+      { label: "UNESCO World Heritage Centre — The Gedeo Cultural Landscape", url: "https://whc.unesco.org/en/list/1641" },
+    ],
+  },
+  {
     slug: "ethiopian-coffee-ceremony-guide",
     title: "Ethiopian Coffee Ceremony: Steps, Meaning, and Guest Etiquette",
     description: "Understand the Ethiopian coffee ceremony, from roasting green beans to the three servings, with practical etiquette and honest cultural context.",
