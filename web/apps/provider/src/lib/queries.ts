@@ -5,12 +5,12 @@ import { supabase } from './supabase';
 // ============================================
 
 export interface ProviderStats {
-  todayBookings: number;
-  monthlyEarnings: number;
-  activeTrips: number;
-  averageRating: number;
-  bookingsChange: number;
-  earningsChange: number;
+  todayBookings: number | null;
+  monthlyEarnings: number | null;
+  activeTrips: number | null;
+  averageRating: number | null;
+  bookingsChange: number | undefined;
+  earningsChange: number | undefined;
 }
 
 export interface UpcomingTrip {
@@ -37,7 +37,7 @@ export interface RecentBooking {
 
 export interface RecentReview {
   customer: string;
-  rating: number;
+  rating: number | null;
   comment: string;
   trip: string;
   date: string;
@@ -46,82 +46,71 @@ export interface RecentReview {
 export async function getProviderStats(providerId: string): Promise<ProviderStats> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  // Fetch today's bookings and monthly earnings
-  const [todayBookingsResult, monthlyEarningsResult, providerResult] = await Promise.all([
-    // Today's bookings
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+  const [
+    { count: todayBookings },
+    { count: yesterdayBookings },
+    { data: monthlyEarningsData },
+    { data: lastMonthEarningsData },
+    { count: activeTrips },
+    { data: provider },
+  ] = await Promise.all([
     supabase
       .from('bookings')
       .select('id', { count: 'exact', head: true })
+      .eq('provider_id', providerId)
       .gte('created_at', today.toISOString()),
-    
-    // Monthly earnings
     supabase
       .from('bookings')
-      .select('total_price')
+      .select('id', { count: 'exact', head: true })
+      .eq('provider_id', providerId)
+      .gte('created_at', yesterday.toISOString())
+      .lt('created_at', today.toISOString()),
+    supabase
+      .from('bookings')
+      .select('base_price, total_price')
+      .eq('provider_id', providerId)
       .eq('payment_status', 'paid')
       .gte('created_at', firstDayOfMonth.toISOString()),
-    
-    // Provider info for rating
+    supabase
+      .from('bookings')
+      .select('base_price, total_price')
+      .eq('provider_id', providerId)
+      .eq('payment_status', 'paid')
+      .gte('created_at', lastMonthStart.toISOString())
+      .lt('created_at', firstDayOfMonth.toISOString()),
+    supabase
+      .from('trips')
+      .select('id', { count: 'exact', head: true })
+      .eq('provider_id', providerId)
+      .eq('status', 'upcoming'),
     supabase
       .from('providers')
-      .select('rating, total_trips')
+      .select('rating')
       .eq('id', providerId)
       .single(),
   ]);
 
-  const monthlyEarnings = monthlyEarningsResult.data?.reduce(
-    (sum, b) => sum + (b.total_price || 0), 0
-  ) || 0;
-
-  // Get active trips count
-  const { count: activeTrips } = await supabase
-    .from('trips')
-    .select('id', { count: 'exact', head: true })
-    .eq('provider_id', providerId)
-    .eq('status', 'upcoming');
-
-  // Calculate bookings change (yesterday vs today)
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const { count: yesterdayBookings } = await supabase
-    .from('bookings')
-    .select('id', { count: 'exact', head: true })
-    .eq('provider_id', providerId)
-    .gte('created_at', yesterday.toISOString())
-    .lt('created_at', today.toISOString());
-
-  const todayBookings = todayBookingsResult.count || 0;
-  const yesterdayBookingsCount = yesterdayBookings || 0;
-  const bookingsChange = yesterdayBookingsCount > 0 
-    ? Math.round(((todayBookings - yesterdayBookingsCount) / yesterdayBookingsCount) * 100)
-    : (todayBookings > 0 ? 100 : 0);
-
-  // Calculate earnings change (last month vs this month)
-  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-  const { data: lastMonthEarningsData } = await supabase
-    .from('bookings')
-    .select('total_price')
-    .eq('provider_id', providerId)
-    .eq('payment_status', 'paid')
-    .gte('created_at', lastMonthStart.toISOString())
-    .lte('created_at', lastMonthEnd.toISOString());
-
-  const lastMonthEarnings = lastMonthEarningsData?.reduce(
-    (sum, b) => sum + (b.total_price || 0), 0
-  ) || 0;
-  const earningsChange = lastMonthEarnings > 0
+  const monthlyEarnings = monthlyEarningsData?.reduce((sum, booking) => sum + Number(booking.base_price ?? booking.total_price), 0) ?? null;
+  const lastMonthEarnings = lastMonthEarningsData?.reduce((sum, booking) => sum + Number(booking.base_price ?? booking.total_price), 0) ?? null;
+  const bookingsChange = todayBookings !== null && yesterdayBookings !== null && yesterdayBookings > 0
+    ? Math.round(((todayBookings - yesterdayBookings) / yesterdayBookings) * 100)
+    : undefined;
+  const earningsChange = monthlyEarnings !== null && lastMonthEarnings !== null && lastMonthEarnings > 0
     ? Math.round(((monthlyEarnings - lastMonthEarnings) / lastMonthEarnings) * 100)
-    : (monthlyEarnings > 0 ? 100 : 0);
+    : undefined;
+  const rating = Number(provider?.rating);
 
   return {
     todayBookings,
     monthlyEarnings,
-    activeTrips: activeTrips || 0,
-    averageRating: providerResult.data?.rating || 0,
+    activeTrips,
+    averageRating: rating >= 1 && rating <= 5 ? rating : null,
     bookingsChange,
     earningsChange,
   };
@@ -329,10 +318,11 @@ export async function getRecentReviews(providerId: string, limit = 3): Promise<R
 
       const customerName = review.users?.name || 'Anonymous';
       const initials = customerName.split(' ').map((n: string) => n[0]).join('') + '.';
+      const rating = Number(review.rating);
 
       return {
         customer: initials,
-        rating: review.rating || 5,
+        rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
         comment: review.comment || 'No comment',
         trip: review.bookings?.trips?.destinations?.name || 'Unknown',
         date: dateStr,
@@ -360,6 +350,7 @@ export interface BookingDetails {
   destination_id: string | null;
   destination_name: string | null;
   seats: number;
+  base_price: number | null;
   total_price: number;
   status: string;
   payment_status: string;
@@ -381,6 +372,7 @@ export async function getProviderBookings(
     .select(`
       id,
       seats,
+      base_price,
       total_price,
       status,
       payment_status,
@@ -432,6 +424,7 @@ export async function getProviderBookings(
       destination_id: b.destination_id,
       destination_name: b.destination_name,
       seats: b.seats,
+      base_price: b.base_price,
       total_price: b.total_price,
       status: b.status,
       payment_status: b.payment_status,
@@ -794,7 +787,6 @@ export interface Driver {
   license_number: string | null;
   avatar_url: string | null;
   emergency_contact?: string | null;
-  rating: number;
   status: 'available' | 'on_trip' | 'offline';
   created_at: string;
 }
@@ -802,7 +794,7 @@ export interface Driver {
 export async function getDrivers(providerId: string): Promise<Driver[]> {
   const { data, error } = await supabase
     .from('drivers')
-    .select('*')
+    .select('id,name,phone,license_number,avatar_url,emergency_contact,status,created_at')
     .eq('provider_id', providerId)
     .order('name');
 
@@ -825,7 +817,6 @@ export async function createDriver(driver: {
     .from('drivers')
     .insert({
       ...driver,
-      rating: 5.0,
       status: 'available',
     })
     .select('id')
@@ -940,66 +931,60 @@ export async function updateDriverStatus(
 
 export interface EarningsSummary {
   totalEarnings: number;
-  pendingPayout: number;
-  lastPayout: number;
-  lastPayoutDate: string | null;
+  providerFees: number;
+  pendingPayout: number | null;
+  lastPayout: { amount: number; currency: string; processedAt: string | null } | null;
   monthlyData: { month: string; earnings: number }[];
 }
 
 export async function getEarningsSummary(providerId: string): Promise<EarningsSummary> {
   const now = new Date();
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfChart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  // Get all paid bookings for this provider
-  const { data: allBookings } = await supabase
-    .from('bookings')
-    .select('total_price, created_at, payment_status')
-    .eq('provider_id', providerId)
-    .eq('payment_status', 'paid');
+  const [allBookingsResult, recentBookingsResult, pendingPayoutsResult, lastPayoutResult] = await Promise.all([
+    supabase
+      .from('bookings')
+      .select('base_price, total_price, provider_fee')
+      .eq('provider_id', providerId)
+      .eq('payment_status', 'paid'),
+    supabase
+      .from('bookings')
+      .select('base_price, total_price, created_at')
+      .eq('provider_id', providerId)
+      .eq('payment_status', 'paid')
+      .gte('created_at', startOfChart.toISOString()),
+    supabase
+      .from('payouts')
+      .select('amount')
+      .eq('provider_id', providerId)
+      .eq('currency', 'ETB')
+      .in('status', ['pending', 'processing']),
+    supabase
+      .from('payouts')
+      .select('amount, currency, processed_at')
+      .eq('provider_id', providerId)
+      .eq('status', 'completed')
+      .order('processed_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  // Get bookings from last 6 months for chart
-  const { data: recentBookings } = await supabase
-    .from('bookings')
-    .select('total_price, created_at')
-    .eq('provider_id', providerId)
-    .eq('payment_status', 'paid')
-    .gte('created_at', sixMonthsAgo.toISOString());
+  if (allBookingsResult.error) throw allBookingsResult.error;
+  if (recentBookingsResult.error) throw recentBookingsResult.error;
 
-  // Get this month's earnings
-  const { data: thisMonthBookings } = await supabase
-    .from('bookings')
-    .select('total_price')
-    .eq('provider_id', providerId)
-    .eq('payment_status', 'paid')
-    .gte('created_at', firstDayOfMonth.toISOString());
-
-  // Get pending bookings (paid but not yet completed)
-  const { data: pendingBookings } = await supabase
-    .from('bookings')
-    .select('total_price')
-    .eq('provider_id', providerId)
-    .eq('payment_status', 'paid')
-    .in('status', ['pending', 'confirmed']);
-
-  // Get last payout (most recent completed booking older than 7 days)
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const { data: lastPayoutBooking } = await supabase
-    .from('bookings')
-    .select('total_price, created_at')
-    .eq('provider_id', providerId)
-    .eq('payment_status', 'paid')
-    .eq('status', 'completed')
-    .lt('created_at', sevenDaysAgo.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  const totalEarnings = allBookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
-  const thisMonthEarnings = thisMonthBookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
-  const pendingPayout = pendingBookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
-  const lastPayout = lastPayoutBooking?.total_price || 0;
-  const lastPayoutDate = lastPayoutBooking?.created_at || null;
+  const totalEarnings = allBookingsResult.data.reduce((sum, booking) => sum + Number(booking.base_price ?? booking.total_price), 0);
+  const providerFees = allBookingsResult.data.reduce((sum, booking) => sum + Number(booking.provider_fee ?? 0), 0);
+  const pendingPayouts = pendingPayoutsResult.data;
+  const pendingPayout = pendingPayouts?.length
+    ? pendingPayouts.reduce((sum, payout) => sum + Number(payout.amount), 0)
+    : null;
+  const latestPayout = lastPayoutResult.data;
+  const lastPayout = latestPayout ? {
+    amount: Number(latestPayout.amount),
+    currency: latestPayout.currency || 'ETB',
+    processedAt: latestPayout.processed_at,
+  } : null;
 
   // Group by month
   const monthlyData: { [key: string]: number } = {};
@@ -1011,19 +996,19 @@ export async function getEarningsSummary(providerId: string): Promise<EarningsSu
     monthlyData[key] = 0;
   }
 
-  recentBookings?.forEach((b: any) => {
+  recentBookingsResult.data.forEach((b) => {
     const d = new Date(b.created_at);
     const key = months[d.getMonth()];
     if (monthlyData[key] !== undefined) {
-      monthlyData[key] += b.total_price || 0;
+      monthlyData[key] += Number(b.base_price ?? b.total_price);
     }
   });
 
   return {
     totalEarnings,
+    providerFees,
     pendingPayout,
     lastPayout,
-    lastPayoutDate,
     monthlyData: Object.entries(monthlyData).map(([month, earnings]) => ({
       month,
       earnings,

@@ -19,6 +19,113 @@ export type TravelGuide = {
 
 export const travelGuides: TravelGuide[] = [
   {
+    slug: "ethiopian-calendar-and-time-guide",
+    title: "Ethiopian Calendar and Time: A Practical Guide for Travelers",
+    description: "Learn how Ethiopia's 13-month calendar and local clock work, with simple conversions and a checklist for confirming bookings and appointments.",
+    category: "Travel planning",
+    location: "Ethiopia",
+    image: "/images/ethiopian-calendar-time-guide.jpg",
+    imageAlt: "Ge'ez letters marked on a walkway in Addis Ababa",
+    publishedAt: "2026-10-08",
+    updatedAt: "2026-10-08",
+    readingMinutes: 9,
+    intro: "In Ethiopia, a meeting offered at 2 o'clock may mean 8:00 in the morning, and a date written in 2019 may describe an event happening in 2026 or 2027. Neither is a mistake. Ethiopia uses its own civil calendar and, in everyday conversation, a clock counted from dawn. This guide gives you the few rules that prevent almost every traveller mix-up.",
+    sections: [
+      {
+        heading: "The two systems you will encounter",
+        paragraphs: [
+          "Hotels, airlines, international businesses, and many urban services commonly use the Gregorian calendar and the international 24-hour clock. Ethiopian government documents, local invitations, religious calendars, smaller businesses, and everyday conversations may use the Ethiopian calendar, Ethiopian time, or both. Context matters more than the language being spoken.",
+          "Do not try to identify the system from confidence or appearance. A printed receipt can carry an Ethiopian date; a local tour operator may send an international time on WhatsApp. The reliable habit is to ask which calendar and which clock apply whenever a missed connection would matter.",
+          "The US State Department and the Australian and British travel-advice services all warn travellers to double-check dates, bookings, and appointments in Ethiopia. That repeated advice points to the real issue: the systems are orderly, but an unstated system creates ambiguity.",
+        ],
+      },
+      {
+        heading: "How the Ethiopian calendar is built",
+        paragraphs: [
+          "The Ethiopian calendar has 12 months of 30 days, followed by a short 13th month called Pagume. Pagume has five days in an ordinary year and six in an Ethiopian leap year. Ethiopian New Year, Enkutatash, normally falls on September 11 in the Gregorian calendar and shifts to September 12 in the year before a Gregorian leap year.",
+          "The Ethiopian year is roughly seven years behind the Gregorian year from Ethiopian New Year to December 31, and eight years behind from January 1 until the next Ethiopian New Year. This is why subtracting seven is sometimes right and sometimes wrong. The month and day must be part of the conversion.",
+          "For example, October 8, 2026 is Meskerem 28, 2019 in the Ethiopian calendar. But treat examples as a way to understand the pattern, not as a conversion tool for visas, contracts, or flight changes. For consequential dates, have the other party write both versions in full.",
+        ],
+        bullets: [
+          "12 regular months, each with 30 days",
+          "Pagume adds five days, or six in a leap year",
+          "New Year usually begins on September 11 Gregorian",
+          "The year number is seven or eight years behind, depending on the date",
+        ],
+      },
+      {
+        heading: "The month names you are most likely to see",
+        paragraphs: [
+          "The year begins with Meskerem, followed by Tikimt, Hidar, Tahsas, Tir, Yekatit, Megabit, Miyazya, Ginbot, Sene, Hamle, Nehase, and Pagume. English spellings vary because names are transliterated from Ethiopian scripts. Yekatit may appear as Yakatit, for example, without referring to a different month.",
+          "Visitors most often meet these names on festival announcements, museum notices, receipts, official paperwork, and event posters. Meskerem is especially visible around New Year and Meskel; Tir appears around Timkat. Recognising the name is useful even when you still need help converting the date.",
+          "A simple mental anchor is more useful than memorising 13 conversion ranges: Meskerem begins around September 11, and every full Ethiopian month after it lasts exactly 30 days. Ask a person or trusted converter for the final date rather than doing high-stakes arithmetic at a check-in desk.",
+        ],
+      },
+      {
+        heading: "Why 1 o'clock can mean 7:00",
+        paragraphs: [
+          "Traditional Ethiopian time counts the daylight cycle from roughly 6:00 in the morning. One o'clock in the daytime is therefore 7:00 a.m. international time; six o'clock is noon. The night cycle begins around 6:00 p.m., so one o'clock at night is 7:00 p.m. The Embassy of Ethiopia describes the system as roughly 12 hours of daylight followed by 12 hours of darkness.",
+          "For the clock number, move six hours: Ethiopian 2 becomes 8 on the international clock, Ethiopian 6 becomes 12, and Ethiopian 10 becomes 4. You still need the part of day. 'Two in the morning' means 8:00 a.m.; 'two at night' means 8:00 p.m.",
+          "Ethiopia's official time zone is East Africa Time, UTC+3, and the country does not need a seasonal clock change for this local system to work. Ethiopian time is a way of naming the hour, not a second time zone.",
+        ],
+        bullets: [
+          "1 daytime = 7:00 a.m.",
+          "2 daytime = 8:00 a.m.",
+          "6 daytime = 12:00 noon",
+          "1 at night = 7:00 p.m.",
+          "6 at night = 12:00 midnight",
+        ],
+      },
+      {
+        heading: "Use the six-hour rule, then check the part of day",
+        paragraphs: [
+          "When someone gives a local hour from 1 through 6, add six to get the familiar clock number. For 7 through 12, subtract six. This converts the number only. Morning, afternoon, evening, or night tells you which half of the 24-hour day is intended.",
+          "The quickest confirmation is not 'Do you mean Ethiopian time?' Ask for the equivalent: 'Two Ethiopian time, so eight in the morning, correct?' Repeating the day, date, and place in the same message makes the agreement easy to check later.",
+          "Use 24-hour notation when precision matters. 'Pickup: Thursday 8 October at 08:00 international time, hotel lobby' is much harder to misunderstand than 'Thursday at two.' Keep the original message or screenshot until the service is complete.",
+        ],
+      },
+      {
+        heading: "Where travellers actually get caught out",
+        paragraphs: [
+          "Domestic flight tickets and major hotel confirmations generally use international dates and times, but never convert a ticket on your own. Read exactly what the airline or hotel issued. The greater risk is the connecting arrangement: a driver, guide, restaurant booking, church visit, or office appointment discussed separately by phone.",
+          "Festival dates need special care because announcements can use an Ethiopian date, a Gregorian date, or both. Religious observances may also begin before the main public celebration. Confirm the Gregorian date for your travel year and ask when the activity you want to see actually starts.",
+          "Official paperwork can look wrong to a visitor when it is simply dated in the Ethiopian calendar. Do not alter a date or assume that a document has expired based only on its year number. Ask the issuing office to identify the calendar and, when necessary, provide a Gregorian equivalent.",
+        ],
+      },
+      {
+        heading: "A confirmation template worth saving",
+        paragraphs: [
+          "Before paying a deposit or building a travel day around an appointment, put the agreement into one short written message. Include both the named day and the complete Gregorian date; together they catch many typing errors. Add the 24-hour international time and a precise meeting point.",
+          "A useful message is: 'Please confirm: Thursday, 8 October 2026 Gregorian, at 08:00 international time, meeting inside the hotel lobby. Is that correct?' If the provider prefers Ethiopian notation, ask them to reply with both systems rather than replacing yours.",
+          "For an early airport transfer, remote-area departure, or once-a-year festival, reconfirm the evening before. That is not distrustful. It is a normal safeguard in a place where two valid calendars and two valid ways of naming an hour share the same conversation.",
+        ],
+        bullets: [
+          "Write the weekday and full Gregorian date",
+          "Use 24-hour international time",
+          "Name the exact meeting point",
+          "Ask for a written yes or correction",
+          "Reconfirm critical departures the day before",
+        ],
+      },
+      {
+        heading: "What to remember after you close this page",
+        paragraphs: [
+          "Ethiopia's calendar has 13 months; its year number is seven or eight years behind the Gregorian count. Local time begins its daytime count around dawn, making 1 daytime equal to 7:00 a.m. on the international clock. Those two facts explain the system, but one habit protects your itinerary: always name the calendar and clock.",
+          "You do not need to perform every conversion yourself to travel well. Let airlines keep the notation printed on their tickets, let local specialists explain cultural dates, and insist on dual-format confirmation when timing matters. Curiosity helps you understand the system; explicit details make sure you arrive.",
+        ],
+      },
+    ],
+    relatedTourQuery: "Addis Ababa",
+    sources: [
+      { label: "Embassy of Ethiopia - Ethiopian time and calendar", url: "https://ethiopianembassy.org/ethiopian-time/" },
+      { label: "Embassy of Ethiopia - Overview and local time", url: "https://ethiopianembassy.org/overview-about-ethiopia/" },
+      { label: "US Department of State - Ethiopia country information", url: "https://travel.state.gov/content/travel/en/international-travel/International-Travel-Country-Information-Pages/Ethiopia.html" },
+      { label: "Australian Government - Ethiopia travel advice", url: "https://www.smartraveller.gov.au/destinations/africa/ethiopia" },
+      { label: "UK Government - Ethiopia safety and security", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/safety-and-security" },
+      { label: "Wikimedia Commons - Ge'ez writing photograph by Jironi B. (CC BY-SA 4.0)", url: "https://commons.wikimedia.org/wiki/File:Inscriptions_au_sol_-_alphasyllabaire_%C3%A9thiopien.jpg" },
+    ],
+  },
+  {
     slug: "ethiopian-food-guide",
     title: "Ethiopian Food Guide: What to Eat and How to Order",
     description: "Discover what to eat in Ethiopia, from injera and shiro to doro wot, tibs, kitfo, and fasting food, with practical ordering and dining advice.",

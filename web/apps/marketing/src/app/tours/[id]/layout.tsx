@@ -36,7 +36,9 @@ export default async function TourLayout({ children, params }: Props) {
     url: path,
     touristType: tour.category,
     itinerary: { "@type": "Place", name: tour.location, address: { "@type": "PostalAddress", addressCountry: "ET" } },
-    offers: { "@type": "Offer", price: tour.price, priceCurrency: "ETB", url: path },
+    ...(tour.price !== null && {
+      offers: { "@type": "Offer", price: tour.price, priceCurrency: "ETB", url: path },
+    }),
     provider: tour.provider?.name ? { "@type": "Organization", name: tour.provider.name } : { "@id": `${SITE_URL}/#organization` },
   } : null;
 

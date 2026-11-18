@@ -20,8 +20,8 @@ const steps = [
     number: "01",
     icon: <Search className="h-8 w-8" />,
     title: "Discover Tours",
-    description: "Browse through hundreds of amazing tours across Ethiopia. View photos, read descriptions, and see available trip options by category.",
-    features: ["250+ tour destinations", "Detailed descriptions", "Photo galleries", "Category filters"],
+    description: "Browse tours across Ethiopia. View photos, read descriptions, and see available trip options by category.",
+    features: ["Destinations across Ethiopia", "Detailed descriptions", "Photo galleries", "Category filters"],
   },
   {
     number: "02",

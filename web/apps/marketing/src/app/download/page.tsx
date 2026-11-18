@@ -7,7 +7,7 @@ import { Button, Card, Badge } from "@tankua/ui";
 import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
 const features = [
-  "Browse 250+ tours and destinations",
+  "Browse tours and destinations across Ethiopia",
   "Book in minutes with secure payment",
   "Get instant QR code tickets",
   "Track your bookings and history",

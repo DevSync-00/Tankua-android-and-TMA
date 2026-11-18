@@ -145,12 +145,11 @@ export default function LoginPage() {
             <span className="text-[#FFB800]">Tankua</span>
           </h1>
           <p className="text-xl text-stone-600">
-            Join Ethiopia's fastest-growing pilgrimage platform and reach thousands of travelers.
+            List your trips and reach travelers exploring Ethiopia.
           </p>
 
           <div className="space-y-4">
             {[
-              "Access to 10,000+ active users",
               "Easy booking management",
               "Fast and secure payouts",
               "Marketing support",

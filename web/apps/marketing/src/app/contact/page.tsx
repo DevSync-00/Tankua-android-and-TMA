@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { 
   Mail,
-  Phone,
   MapPin,
   Send,
   MessageSquare,
@@ -18,13 +17,7 @@ const contactInfo = [
     icon: <Mail className="h-6 w-6" />,
     title: "Email",
     value: "support@tankua.et",
-    description: "We'll respond within 24 hours",
-  },
-  {
-    icon: <Phone className="h-6 w-6" />,
-    title: "Phone",
-    value: "+251 911 123 456",
-    description: "Mon-Fri, 8AM-6PM EAT",
+    description: "Contact our support team",
   },
   {
     icon: <MapPin className="h-6 w-6" />,
@@ -111,7 +104,7 @@ export default function ContactPage() {
       {/* Contact Info Cards */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {contactInfo.map((info, index) => (
               <Card key={index} className="p-6 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800]">
@@ -137,7 +130,7 @@ export default function ContactPage() {
                 </div>
                 <h2 className="text-2xl font-bold text-[#181714] mb-2">Message Sent!</h2>
                 <p className="text-[#181714]/70 mb-6">
-                  Thank you for contacting us. We'll get back to you within 24 hours.
+                  Thank you for contacting us. We'll get back to you by email.
                 </p>
                 <Button onClick={() => setSubmitted(false)}>Send Another Message</Button>
               </div>

@@ -8,7 +8,6 @@ import {
   Plus,
   Search,
   Phone,
-  Star,
   MoreHorizontal,
   Trash2,
   MapPin,
@@ -121,9 +120,6 @@ export default function DriversPage() {
     total: drivers.length,
     available: drivers.filter(d => d.status === 'available').length,
     onTrip: drivers.filter(d => d.status === 'on_trip').length,
-    avgRating: drivers.length > 0 
-      ? (drivers.reduce((sum, d) => sum + d.rating, 0) / drivers.length).toFixed(1)
-      : '0.0',
   };
 
   const getStatusBadge = (status: string) => {
@@ -178,7 +174,7 @@ export default function DriversPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Total Drivers</p>
             <p className="text-2xl font-bold mt-1">{stats.total}</p>
@@ -193,12 +189,6 @@ export default function DriversPage() {
             <p className="text-sm text-muted-foreground">On Trip</p>
             <p className="text-2xl font-bold mt-1 text-amber-600">
               {stats.onTrip}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Avg Rating</p>
-            <p className="text-2xl font-bold mt-1 text-primary">
-              {stats.avgRating}
             </p>
           </Card>
         </div>
@@ -245,18 +235,12 @@ export default function DriversPage() {
                   {getStatusBadge(driver.status)}
                 </div>
 
-                <div className="space-y-3 mb-4">
-                  {driver.phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{driver.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-sm">
-                    <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                    <span>{driver.rating.toFixed(1)} rating</span>
+                {driver.phone && (
+                  <div className="mb-4 flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{driver.phone}</span>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center gap-2 pt-4 border-t border-border">
                   <label className="flex-1">

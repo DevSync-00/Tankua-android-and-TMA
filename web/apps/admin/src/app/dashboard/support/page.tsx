@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   HelpCircle,
-  MessageSquare,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -131,7 +130,7 @@ export default function SupportPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid sm:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-3 gap-6">
           <Card className="p-6 border-l-4 border-l-red-500">
             <div className="flex items-center justify-between">
               <div>
@@ -157,15 +156,6 @@ export default function SupportPage() {
                 <p className="text-2xl font-bold mt-1">{resolvedToday}</p>
               </div>
               <CheckCircle className="h-10 w-10 text-emerald-500/20" />
-            </div>
-          </Card>
-          <Card className="p-6 border-l-4 border-l-primary">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Response</p>
-                <p className="text-2xl font-bold mt-1">2.4h</p>
-              </div>
-              <MessageSquare className="h-10 w-10 text-primary/20" />
             </div>
           </Card>
         </div>

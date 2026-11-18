@@ -68,14 +68,11 @@ export default function EarningsPage() {
     
     setLoading(true);
     try {
-      const summary = await getEarningsSummary(providerId);
+      const [summary, { bookings }] = await Promise.all([
+        getEarningsSummary(providerId),
+        getProviderBookings(providerId, { limit: 100 }),
+      ]);
       setEarningsData(summary);
-
-      // Load recent bookings as transactions
-      const { bookings } = await getProviderBookings(providerId, {
-        limit: 100,
-        status: undefined,
-      });
 
       const rangeDays = timeRange === '7d' ? 7 : timeRange === '90d' ? 90 : 30;
       const cutoff = Date.now() - rangeDays * 86400000;
@@ -86,7 +83,7 @@ export default function EarningsPage() {
           id: b.id.substring(0, 8),
           type: "earning" as const,
           description: `Booking ${b.id.substring(0, 8)} - ${b.trip?.destination?.name || b.destination_name || 'Trip'}`,
-          amount: b.total_price,
+          amount: Number(b.base_price ?? b.total_price),
           date: new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           status: b.status === 'completed' ? 'completed' : 'pending',
         }))
@@ -102,7 +99,7 @@ export default function EarningsPage() {
           const destName = b.trip?.destination?.name || b.destination_name || 'Unknown';
           const existing = destinationMap.get(destName) || { earnings: 0, bookings: 0 };
           destinationMap.set(destName, {
-            earnings: existing.earnings + b.total_price,
+            earnings: existing.earnings + Number(b.base_price ?? b.total_price),
             bookings: existing.bookings + 1,
           });
         });
@@ -124,7 +121,7 @@ export default function EarningsPage() {
           const existing = tripMap.get(tripId) || { tripId, destination: destName, date: tripDate, earnings: 0, bookings: 0 };
           tripMap.set(tripId, {
             ...existing,
-            earnings: existing.earnings + b.total_price,
+            earnings: existing.earnings + Number(b.base_price ?? b.total_price),
             bookings: existing.bookings + 1,
           });
         });
@@ -146,6 +143,12 @@ export default function EarningsPage() {
     const csv=rows.map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`tankua-earnings-${timeRange}.csv`;anchor.click();URL.revokeObjectURL(url);
   };
+
+  const lastPayout = earningsData?.lastPayout;
+  const lastPayoutAmount = lastPayout ? formatCurrency(lastPayout.amount, lastPayout.currency) : "—";
+  const lastPayoutDate = lastPayout?.processedAt
+    ? new Date(lastPayout.processedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : undefined;
 
   return (
     <div className="min-h-screen">
@@ -196,17 +199,14 @@ export default function EarningsPage() {
                 icon={<TrendingUp className="h-6 w-6" />}
               />
               <StatCard
-                title="Pending"
-                value={formatCurrency(earningsData.pendingPayout)}
-                changeLabel="to be paid"
+                title="Pending Payouts (ETB)"
+                value={earningsData.pendingPayout !== null ? formatCurrency(earningsData.pendingPayout) : "—"}
                 icon={<Clock className="h-6 w-6" />}
               />
               <StatCard
                 title="Last Payout"
-                value={formatCurrency(earningsData.lastPayout)}
-                changeLabel={earningsData.lastPayoutDate 
-                  ? new Date(earningsData.lastPayoutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                  : 'No payouts yet'}
+                value={lastPayoutAmount}
+                changeLabel={lastPayoutDate}
                 icon={<CheckCircle2 className="h-6 w-6" />}
               />
             </div>
@@ -308,25 +308,8 @@ export default function EarningsPage() {
                   <CardTitle>Bank Account</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-950">
-                    <div className="flex items-center justify-between mb-6">
-                      <Building2 className="h-8 w-8" />
-                      <span className="text-sm opacity-70">Primary</span>
-                    </div>
-                    <p className="text-lg font-mono tracking-wider mb-2">•••• •••• •••• 4521</p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs opacity-70">Account Holder</p>
-                        <p className="font-medium">Provider Account</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs opacity-70">Bank</p>
-                        <p className="font-medium">CBE</p>
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="w-full mt-4" onClick={()=>{window.location.href="mailto:provider-support@tankua.et?subject=Update bank details";}}>
-                    Contact Finance to Update
+                  <Button variant="outline" className="w-full" onClick={()=>{window.location.href="mailto:provider-support@tankua.et?subject=Update bank details";}}>
+                    Contact Finance About Bank Details
                   </Button>
                 </CardContent>
               </Card>
@@ -334,24 +317,20 @@ export default function EarningsPage() {
               {/* Payout History */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Payout History</CardTitle>
+                  <CardTitle>Latest Completed Payout</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {earningsData.lastPayout > 0 ? (
+                  {lastPayout ? (
                     <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
                       <div>
-                        <p className="font-medium text-sm">{formatCurrency(earningsData.lastPayout)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {earningsData.lastPayoutDate 
-                            ? new Date(earningsData.lastPayoutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                            : 'N/A'}
-                        </p>
+                        <p className="font-medium text-sm">{lastPayoutAmount}</p>
+                        {lastPayoutDate && <p className="text-xs text-muted-foreground">{lastPayoutDate}</p>}
                       </div>
                       <Badge variant="success">Completed</Badge>
                     </div>
                   ) : (
                     <div className="text-center py-4 text-muted-foreground text-sm">
-                      <p>No payout history yet</p>
+                      <p>No completed payout records available</p>
                     </div>
                   )}
                 </CardContent>
@@ -375,13 +354,13 @@ export default function EarningsPage() {
                     <p className="text-sm text-muted-foreground mt-1">All time</p>
                   </div>
                   <div className="p-6 bg-muted/30 rounded-xl text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Platform Fee (5%)</p>
-                    <p className="text-3xl font-bold text-red-500">-{formatCurrency(Math.round(earningsData.totalEarnings * 0.05))}</p>
+                    <p className="text-sm text-muted-foreground mb-2">Provider Fees</p>
+                    <p className="text-3xl font-bold text-red-500">{formatCurrency(earningsData.providerFees)}</p>
                     <p className="text-sm text-muted-foreground mt-1">Service fee</p>
                   </div>
                   <div className="p-6 bg-primary/10 rounded-xl text-center">
                     <p className="text-sm text-muted-foreground mb-2">Net Earnings</p>
-                    <p className="text-3xl font-bold text-primary">{formatCurrency(Math.round(earningsData.totalEarnings * 0.95))}</p>
+                    <p className="text-3xl font-bold text-primary">{formatCurrency(earningsData.totalEarnings - earningsData.providerFees)}</p>
                     <p className="text-sm text-muted-foreground mt-1">Your earnings</p>
                   </div>
                 </div>
@@ -429,9 +408,11 @@ export default function EarningsPage() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-emerald-600">{formatCurrency(item.earnings)}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {((item.earnings / (earningsData?.totalEarnings || 1)) * 100).toFixed(1)}%
-                            </p>
+                            {earningsData.totalEarnings > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                {((item.earnings / earningsData.totalEarnings) * 100).toFixed(1)}%
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}

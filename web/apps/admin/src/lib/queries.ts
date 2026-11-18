@@ -10,10 +10,8 @@ export interface DashboardStats {
   activeTrips: number;
   totalProviders: number;
   totalRevenue: number;
-  usersChange: number;
-  bookingsChange: number;
-  tripsChange: number;
-  providersChange: number;
+  usersChange?: number;
+  bookingsChange?: number;
 }
 
 export interface RecentBooking {
@@ -26,13 +24,6 @@ export interface RecentBooking {
   date: string;
 }
 
-export interface TopProvider {
-  name: string;
-  bookings: number;
-  revenue: number;
-  rating: number;
-}
-
 export interface TopDestination {
   name: string;
   bookings: number;
@@ -42,7 +33,6 @@ export interface TopDestination {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
   // Fetch current period stats
   const [
@@ -51,7 +41,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     tripsResult,
     providersResult,
     revenueResult,
-    // Previous period for comparison
     prevUsersResult,
     prevBookingsResult,
   ] = await Promise.all([
@@ -60,51 +49,25 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from('trips').select('id', { count: 'exact', head: true }).eq('status', 'upcoming'),
     supabase.from('providers').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('bookings').select('total_price').eq('payment_status', 'paid'),
-    // Previous 30 days users
+    // Cumulative counts before the current 30-day period.
     supabase.from('users').select('id', { count: 'exact', head: true })
       .lt('created_at', thirtyDaysAgo.toISOString()),
-    // Previous 30 days bookings
     supabase.from('bookings').select('id', { count: 'exact', head: true })
       .lt('created_at', thirtyDaysAgo.toISOString()),
   ]);
+
+  const error = [usersResult, bookingsResult, tripsResult, providersResult, revenueResult,
+    prevUsersResult, prevBookingsResult].find((result) => result.error)?.error;
+  if (error) throw new Error(error.message);
 
   const totalUsers = usersResult.count || 0;
   const totalBookings = bookingsResult.count || 0;
   const activeTrips = tripsResult.count || 0;
   const totalProviders = providersResult.count || 0;
-  const totalRevenue = revenueResult.data?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
+  const totalRevenue = revenueResult.data?.reduce((sum, b) => sum + Number(b.total_price), 0) || 0;
 
   const prevUsers = prevUsersResult.count || 0;
   const prevBookings = prevBookingsResult.count || 0;
-
-  // Calculate percentage changes
-  const newUsers = totalUsers - prevUsers;
-  const usersChange = prevUsers > 0 ? Math.round((newUsers / prevUsers) * 100) : 0;
-  
-  const newBookings = totalBookings - prevBookings;
-  const bookingsChange = prevBookings > 0 ? Math.round((newBookings / prevBookings) * 100) : 0;
-
-  // Calculate trips change (previous 30 days vs current 30 days)
-  const prevTripsResult = await supabase
-    .from('trips')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'upcoming')
-    .gte('created_at', sixtyDaysAgo.toISOString())
-    .lt('created_at', thirtyDaysAgo.toISOString());
-  
-  const prevTrips = prevTripsResult.count || 0;
-  const tripsChange = prevTrips > 0 ? Math.round(((activeTrips - prevTrips) / prevTrips) * 100) : (activeTrips > 0 ? 100 : 0);
-
-  // Calculate providers change (previous 30 days vs current 30 days)
-  const prevProvidersResult = await supabase
-    .from('providers')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'active')
-    .gte('created_at', sixtyDaysAgo.toISOString())
-    .lt('created_at', thirtyDaysAgo.toISOString());
-  
-  const prevProviders = prevProvidersResult.count || 0;
-  const providersChange = prevProviders > 0 ? Math.round(((totalProviders - prevProviders) / prevProviders) * 100) : (totalProviders > 0 ? 100 : 0);
 
   return {
     totalUsers,
@@ -112,10 +75,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     activeTrips,
     totalProviders,
     totalRevenue,
-    usersChange,
-    bookingsChange,
-    tripsChange,
-    providersChange,
+    usersChange: prevUsers > 0 ? Math.round(((totalUsers - prevUsers) / prevUsers) * 100) : undefined,
+    bookingsChange: prevBookings > 0 ? Math.round(((totalBookings - prevBookings) / prevBookings) * 100) : undefined,
   };
 }
 
@@ -130,6 +91,139 @@ export interface RevenueAnalytics {
   monthlyRevenue: number;
   averageBookingValue: number;
   revenueByStatus: { status: string; revenue: number }[];
+}
+
+export interface ReportRanking {
+  id: string;
+  name: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface AdminReport {
+  totalRevenue: number;
+  totalBookings: number;
+  newUsers: number;
+  averageBookingValue: number | null;
+  trends: BookingTrend[];
+  topDestinations: ReportRanking[];
+  topProviders: ReportRanking[];
+}
+
+interface ReportBooking {
+  id: string;
+  created_at: string;
+  total_price: number;
+  payment_status: string;
+  destination_id: string | null;
+  destination_name: string | null;
+  provider_id: string | null;
+  provider_name: string | null;
+  trips: {
+    destinations: { id: string; name: string } | null;
+    providers: { id: string; name: string } | null;
+  } | null;
+}
+
+async function getReportBookings(start: string, end: string, signal: AbortSignal) {
+  const bookings: ReportBooking[] = [];
+  let lastId: string | undefined;
+
+  while (true) {
+    let query = supabase.from('bookings').select(`
+      id, created_at, total_price, payment_status, destination_id, destination_name,
+      provider_id, provider_name, trips (destinations (id, name), providers (id, name))
+    `).gte('created_at', start).lt('created_at', end).order('id').limit(1000);
+
+    if (lastId) query = query.gt('id', lastId);
+
+    const { data, error } = await query.abortSignal(signal).returns<ReportBooking[]>();
+    if (error) throw new Error(error.message);
+    if (!data?.length) return bookings;
+
+    bookings.push(...data);
+    lastId = data[data.length - 1].id;
+  }
+}
+
+export async function getAdminReport(days: number, signal: AbortSignal): Promise<AdminReport> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - days + 1);
+
+  const [bookings, usersResult] = await Promise.all([
+    getReportBookings(start.toISOString(), end.toISOString(), signal),
+    supabase.from('users').select('id', { count: 'exact', head: true })
+      .gte('created_at', start.toISOString()).lt('created_at', end.toISOString())
+      .abortSignal(signal),
+  ]);
+  if (usersResult.error) throw new Error(usersResult.error.message);
+
+  const monthly = days > 30;
+  const bucketKey = (date: Date) => date.toISOString().slice(0, monthly ? 7 : 10);
+  const trends = new Map<string, BookingTrend>();
+  const bucketStart = new Date(start);
+  if (monthly) bucketStart.setUTCDate(1);
+  while (bucketStart <= end) {
+    const key = bucketKey(bucketStart);
+    trends.set(key, { date: bucketStart.toISOString(), bookings: 0, revenue: 0 });
+    if (monthly) bucketStart.setUTCMonth(bucketStart.getUTCMonth() + 1);
+    else bucketStart.setUTCDate(bucketStart.getUTCDate() + 1);
+  }
+
+  const destinations = new Map<string, ReportRanking>();
+  const providers = new Map<string, ReportRanking>();
+  let totalRevenue = 0;
+  let paidBookingCount = 0;
+
+  const addBooking = (
+    groups: Map<string, ReportRanking>,
+    id: string | null,
+    name: string | null,
+    revenue: number,
+  ) => {
+    if (!name) return;
+    const key = id || `name:${name}`;
+    const group = groups.get(key) || { id: key, name, bookings: 0, revenue: 0 };
+    group.bookings += 1;
+    group.revenue += revenue;
+    groups.set(key, group);
+  };
+
+  for (const booking of bookings) {
+    const paid = booking.payment_status === 'paid';
+    const revenue = paid ? Number(booking.total_price) : 0;
+    totalRevenue += revenue;
+    if (paid) paidBookingCount += 1;
+
+    const trend = trends.get(bucketKey(new Date(booking.created_at)));
+    if (trend) {
+      trend.bookings += 1;
+      trend.revenue += revenue;
+    }
+
+    const destination = booking.trips?.destinations;
+    const provider = booking.trips?.providers;
+    addBooking(destinations, booking.destination_id || destination?.id || null,
+      destination?.name || booking.destination_name, revenue);
+    addBooking(providers, booking.provider_id || provider?.id || null,
+      provider?.name || booking.provider_name, revenue);
+  }
+
+  const rank = (groups: Map<string, ReportRanking>, limit: number) => Array.from(groups.values())
+    .sort((a, b) => b.bookings - a.bookings || b.revenue - a.revenue || a.name.localeCompare(b.name))
+    .slice(0, limit);
+
+  return {
+    totalRevenue,
+    totalBookings: bookings.length,
+    newUsers: usersResult.count ?? 0,
+    averageBookingValue: paidBookingCount ? totalRevenue / paidBookingCount : null,
+    trends: Array.from(trends.values()),
+    topDestinations: rank(destinations, 5),
+    topProviders: rank(providers, 4),
+  };
 }
 
 export async function getBookingTrends(days: number = 30): Promise<BookingTrend[]> {
@@ -254,40 +348,6 @@ export async function getRecentBookings(limit = 5): Promise<RecentBooking[]> {
     status: booking.status,
     date: booking.created_at,
   }));
-}
-
-export async function getTopProviders(limit = 4): Promise<TopProvider[]> {
-  const { data, error } = await supabase
-    .from('providers')
-    .select('id, name, rating, total_trips')
-    .eq('status', 'active')
-    .order('total_trips', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching top providers:', error);
-    return [];
-  }
-
-  // For each provider, get their booking stats
-  const providersWithStats = await Promise.all(
-    (data || []).map(async (provider: any) => {
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('total_price')
-        .eq('payment_status', 'paid')
-        .eq('trip_id', provider.id); // This needs proper join through trips
-
-      return {
-        name: provider.name,
-        bookings: provider.total_trips || 0,
-        revenue: bookings?.reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0,
-        rating: provider.rating || 0,
-      };
-    })
-  );
-
-  return providersWithStats;
 }
 
 export async function getTopDestinations(limit = 4): Promise<TopDestination[]> {
@@ -628,8 +688,6 @@ export interface Provider {
   phone: string | null;
   email: string | null;
   logo_url: string | null;
-  rating: number;
-  total_trips: number;
   status: 'active' | 'inactive' | 'suspended';
   created_at: string;
 }
@@ -642,8 +700,9 @@ export async function getProviders(options?: {
 }): Promise<{ providers: Provider[]; total: number }> {
   let query = supabase
     .from('providers')
-    .select('*', { count: 'exact' })
-    .order('rating', { ascending: false });
+    .select('id, name, description, phone, email, logo_url, status, created_at', { count: 'exact' })
+    .order('name')
+    .order('id');
 
   if (options?.status) {
     query = query.eq('status', options.status);

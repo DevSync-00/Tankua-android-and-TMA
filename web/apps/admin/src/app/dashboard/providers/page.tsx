@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
-  Star,
   Phone,
   Mail,
   RefreshCw,
@@ -238,15 +237,7 @@ export default function ProvidersPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={provider.name} size="lg" />
-                      <div>
-                        <h3 className="font-semibold">{provider.name}</h3>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          <span>{provider.rating.toFixed(1)}</span>
-                          <span>•</span>
-                          <span>{provider.total_trips} trips</span>
-                        </div>
-                      </div>
+                      <h3 className="font-semibold">{provider.name}</h3>
                     </div>
                     {getStatusBadge(provider.status)}
                   </div>

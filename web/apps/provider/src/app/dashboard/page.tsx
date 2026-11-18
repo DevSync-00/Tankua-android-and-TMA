@@ -92,31 +92,27 @@ export default function DashboardPage() {
   const statsCards = [
     {
       title: "Today's Bookings",
-      value: stats?.todayBookings?.toString() || "0",
-      change: stats?.bookingsChange || 0,
-      changeLabel: "vs yesterday",
+      value: stats?.todayBookings ?? "—",
+      change: stats?.bookingsChange,
+      changeLabel: stats?.bookingsChange !== undefined ? "vs yesterday" : undefined,
       icon: <CalendarCheck className="h-6 w-6" />,
       variant: "primary" as const,
     },
     {
       title: "This Month's Earnings",
-      value: formatCurrency(stats?.monthlyEarnings || 0),
-      change: stats?.earningsChange || 0,
-      changeLabel: "vs last month",
+      value: stats?.monthlyEarnings != null ? formatCurrency(stats.monthlyEarnings) : "—",
+      change: stats?.earningsChange,
+      changeLabel: stats?.earningsChange !== undefined ? "vs last month" : undefined,
       icon: <Wallet className="h-6 w-6" />,
     },
     {
       title: "Active Trips",
-      value: stats?.activeTrips?.toString() || "0",
-      change: 0,
-      changeLabel: "ongoing",
+      value: stats?.activeTrips ?? "—",
       icon: <Bus className="h-6 w-6" />,
     },
     {
       title: "Average Rating",
-      value: stats?.averageRating?.toFixed(1) || "0.0",
-      change: 0, // Rating change not calculated for now
-      changeLabel: "this month",
+      value: stats?.averageRating?.toFixed(1) ?? "—",
       icon: <Star className="h-6 w-6" />,
     },
   ];
@@ -320,11 +316,13 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground">{review.trip} • {review.date}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {[...Array(review.rating)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
-                      ))}
-                    </div>
+                    {review.rating !== null && (
+                      <div className="flex items-center gap-1" role="img" aria-label={`${review.rating} out of 5 stars`}>
+                        {Array.from({ length: review.rating }, (_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" aria-hidden="true" />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground italic">"{review.comment}"</p>
                 </div>

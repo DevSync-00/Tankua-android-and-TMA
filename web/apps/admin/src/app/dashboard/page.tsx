@@ -22,13 +22,11 @@ import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Avatar, StatCa
 import {
   getDashboardStats,
   getRecentBookings,
-  getTopProviders,
   getTopDestinations,
   getBookingTrends,
   getRevenueAnalytics,
   type DashboardStats,
   type RecentBooking,
-  type TopProvider,
   type TopDestination,
 } from "@/lib/queries";
 
@@ -37,7 +35,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
-  const [topProviders, setTopProviders] = useState<TopProvider[]>([]);
   const [topDestinations, setTopDestinations] = useState<TopDestination[]>([]);
   const [bookingTrends, setBookingTrends] = useState<Array<{ date: string; bookings: number; revenue: number }>>([]);
   const [revenueAnalytics, setRevenueAnalytics] = useState<{
@@ -54,10 +51,9 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, bookingsData, providersData, destinationsData, trendsData, revenueData] = await Promise.all([
+      const [statsData, bookingsData, destinationsData, trendsData, revenueData] = await Promise.all([
         getDashboardStats(),
         getRecentBookings(5),
-        getTopProviders(4),
         getTopDestinations(4),
         getBookingTrends(30),
         getRevenueAnalytics(),
@@ -65,7 +61,6 @@ export default function DashboardPage() {
 
       setStats(statsData);
       setRecentBookings(bookingsData);
-      setTopProviders(providersData);
       setTopDestinations(destinationsData);
       setBookingTrends(trendsData);
       setRevenueAnalytics(revenueData);
@@ -105,30 +100,27 @@ export default function DashboardPage() {
   const statsCards = [
     {
       title: "Total Users",
-      value: stats?.totalUsers?.toLocaleString() || "0",
-      change: stats?.usersChange || 0,
-      changeLabel: "vs last month",
+      value: stats?.totalUsers.toLocaleString() ?? "—",
+      change: stats?.usersChange,
+      changeLabel: stats?.usersChange === undefined ? undefined : "vs 30 days ago",
       icon: <Users className="h-6 w-6" />,
     },
     {
-      title: "Active Bookings",
-      value: stats?.totalBookings?.toLocaleString() || "0",
-      change: stats?.bookingsChange || 0,
-      changeLabel: "vs last month",
+      title: "Total Bookings",
+      value: stats?.totalBookings.toLocaleString() ?? "—",
+      change: stats?.bookingsChange,
+      changeLabel: stats?.bookingsChange === undefined ? undefined : "vs 30 days ago",
       icon: <CalendarCheck className="h-6 w-6" />,
     },
     {
       title: "Revenue (Total)",
-      value: formatCurrency(stats?.totalRevenue || 0),
-      change: 0, // Revenue change not calculated for total (all time)
+      value: stats ? formatCurrency(stats.totalRevenue) : "—",
       changeLabel: "all time",
       icon: <CreditCard className="h-6 w-6" />,
     },
     {
       title: "Active Providers",
-      value: stats?.totalProviders?.toString() || "0",
-      change: stats?.providersChange || 0,
-      changeLabel: "vs last month",
+      value: stats?.totalProviders.toLocaleString() ?? "—",
       icon: <Building2 className="h-6 w-6" />,
     },
   ];
@@ -214,10 +206,9 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Charts and Tables */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div>
           {/* Recent Bookings */}
-          <Card className="lg:col-span-2">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Bookings</CardTitle>
               <Button variant="ghost" size="sm">View All</Button>
@@ -279,39 +270,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Top Providers */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Providers</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {topProviders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No providers yet</p>
-                </div>
-              ) : (
-                topProviders.map((provider, index) => (
-                  <div key={index} className="flex items-center gap-4 p-3 rounded-xl bg-muted/50">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{provider.name}</p>
-                      <p className="text-xs text-muted-foreground">{provider.bookings} trips</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-sm text-primary">{formatCurrency(provider.revenue)}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <span>★</span>
-                        <span>{provider.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Analytics Section */}

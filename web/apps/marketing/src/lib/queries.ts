@@ -1,227 +1,192 @@
 import { supabase } from './supabase';
 
-// Get featured tours/destinations for homepage
-export async function getFeaturedTours(limit: number = 4) {
-  try {
-    const { data, error } = await supabase
-      .from('trips')
-      .select(`
-        *,
-        destination:destinations(id, name, city, category, images, description),
-        provider:providers(id, name, rating)
-      `)
-      .eq('status', 'upcoming')
-      .order('created_at', { ascending: false })
-      .limit(limit);
+const FALLBACK_TOUR_IMAGE = 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop';
 
-    if (error) throw error;
-
-    return await Promise.all((data || []).map(async (trip: any) => {
-      const dest = trip.destination;
-
-      const { count: reviewCount } = await supabase
-        .from('reviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('provider_id', trip.provider?.id)
-        .eq('is_visible', true);
-
-      const { data: reviewData } = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('provider_id', trip.provider?.id)
-        .eq('is_visible', true);
-
-      const avgRating = reviewData && reviewData.length > 0
-        ? reviewData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewData.length
-        : trip.provider?.rating || 4.5;
-
-      return {
-        id: trip.id,
-        name: dest?.name || 'Unknown Destination',
-        location: dest?.city || 'Unknown',
-        category: dest?.category || 'General',
-        image: dest?.images?.[0] || 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
-        rating: avgRating,
-        reviews: reviewCount || 0,
-        price: trip.price || 1000,
-        description: dest?.description || '',
-      };
-    }));
-  } catch (error) {
-    console.error('Error fetching featured tours:', error);
-    return [];
-  }
-}
-
-export async function getTours(options?: {
+type CatalogOptions = {
   search?: string;
   category?: string;
   region?: string;
   limit?: number;
   offset?: number;
-}) {
+};
+
+type ReviewSummary = {
+  rating: number;
+  count: number;
+};
+
+const listingColumns = `
+  id, price,
+  destination:destinations!inner(name, city, category, images, description, region),
+  provider:providers(id)
+`;
+
+function buildSearchFilter(search: string) {
+  const pattern = JSON.stringify(`%${search.replace(/[\\%_]/g, '\\$&')}%`);
+  return ['name', 'city', 'description'].map((column) => `${column}.ilike.${pattern}`).join(',');
+}
+
+async function getProviderReviewSummary(providerId?: string): Promise<ReviewSummary | null> {
+  if (!providerId) return null;
+
+  const pageSize = 500;
+  let count = 0;
+  let sum = 0;
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('provider_id', providerId)
+      .eq('is_visible', true)
+      .order('id')
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      console.error('Error fetching provider reviews:', error);
+      return null;
+    }
+
+    for (const { rating } of data) {
+      if (typeof rating === 'number' && rating >= 1 && rating <= 5) {
+        count += 1;
+        sum += rating;
+      }
+    }
+
+    if (data.length < pageSize) break;
+  }
+
+  return count > 0 ? { rating: sum / count, count } : null;
+}
+
+function mapListing(trip: {
+  id: string;
+  price: number | null;
+  destination: {
+    name: string;
+    city: string | null;
+    region: string | null;
+    category: string | null;
+    images: string[] | null;
+    description: string | null;
+  };
+}, providerReviews: ReviewSummary | null) {
+  const destination = trip.destination;
+  return {
+    id: trip.id,
+    name: destination.name,
+    location: destination.city || destination.region || 'Ethiopia',
+    region: destination.region,
+    category: destination.category || 'general',
+    image: destination.images?.[0] || FALLBACK_TOUR_IMAGE,
+    price: trip.price,
+    description: destination.description || '',
+    tags: destination.category ? [destination.category] : [],
+    providerReviews,
+  };
+}
+
+export function getFeaturedTours(limit = 4) {
+  return loadTours({ limit }, 'created_at', false);
+}
+
+export function getTours(options?: CatalogOptions) {
+  return loadTours(options, 'departure_date', true);
+}
+
+async function loadTours(options: CatalogOptions | undefined, orderBy: 'created_at' | 'departure_date', ascending: boolean) {
   try {
     let query = supabase
       .from('trips')
-      .select(`
-        *,
-        destination:destinations(id, name, city, category, images, description, region),
-        provider:providers(id, name, rating)
-      `, { count: 'exact' })
+      .select(listingColumns, { count: 'exact' })
       .eq('status', 'upcoming')
-      .order('departure_date', { ascending: true });
+      .order(orderBy, { ascending });
 
-    if (options?.search) {
-      query = query.or(`destination.name.ilike.%${options.search}%`);
+    const search = options?.search?.trim();
+    if (search) {
+      query = query.or(buildSearchFilter(search), { referencedTable: 'destination' });
     }
-
     if (options?.category) {
       query = query.eq('destination.category', options.category);
     }
-
-    if (options?.limit) {
-      query = query.limit(options.limit);
+    if (options?.region) {
+      query = query.eq('destination.region', options.region);
     }
-
-    if (options?.offset) {
-      query = query.range(options.offset, options.offset + (options.limit || 20) - 1);
+    if (options?.limit || options?.offset) {
+      const offset = options.offset ?? 0;
+      query = query.range(offset, offset + (options.limit || 20) - 1);
     }
 
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const toursWithReviews = await Promise.all((data || []).map(async (trip: any) => {
-      const dest = trip.destination;
-
-      const { count: reviewCount } = await supabase
-        .from('reviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('provider_id', trip.provider?.id)
-        .eq('is_visible', true);
-
-      return {
-        id: trip.id,
-        name: dest?.name || 'Unknown Destination',
-        location: dest?.city || 'Unknown',
-        region: dest?.region || 'Unknown',
-        category: dest?.category || 'general',
-        image: dest?.images?.[0] || 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
-        rating: trip.provider?.rating || 4.5,
-        reviews: reviewCount || 0,
-        price: trip.price || 1000,
-        description: dest?.description || '',
-        tags: dest?.category ? [dest.category] : [],
-      };
-    }));
+    const trips = data as unknown as (Parameters<typeof mapListing>[0] & {
+      provider: { id: string } | null;
+    })[];
+    const providerIds = new Set(trips.map((trip) => trip.provider?.id).filter((id): id is string => Boolean(id)));
+    const reviews = new Map(await Promise.all(Array.from(providerIds, async (id) => (
+      [id, await getProviderReviewSummary(id)] as const
+    ))));
 
     return {
-      tours: toursWithReviews,
-      total: count || 0,
+      tours: trips.map((trip) => mapListing(trip, reviews.get(trip.provider?.id ?? '') ?? null)),
+      total: count ?? 0,
+      error: false,
     };
   } catch (error) {
     console.error('Error fetching tours:', error);
-    return { tours: [], total: 0 };
+    return { tours: [], total: 0, error: true };
   }
 }
 
-export async function getDestinations(options?: {
-  search?: string;
-  category?: string;
-  region?: string;
-  limit?: number;
-  offset?: number;
-}) {
+export async function getDestinations(options?: CatalogOptions) {
   try {
     let query = supabase
       .from('destinations')
-      .select('*', { count: 'exact' })
+      .select('id, name, city, region, category, images, description, tags, trips(price)', { count: 'exact' })
+      .eq('trips.status', 'upcoming')
+      .gt('trips.departure_date', new Date().toISOString())
+      .not('trips.price', 'is', null)
+      .order('price', { referencedTable: 'trips' })
+      .limit(1, { referencedTable: 'trips' })
       .order('name');
 
-    if (options?.search) {
-      query = query.or(`name.ilike.%${options.search}%,city.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+    const search = options?.search?.trim();
+    if (search) {
+      query = query.or(buildSearchFilter(search));
     }
-
     if (options?.category) {
       query = query.eq('category', options.category);
     }
-
     if (options?.region) {
       query = query.eq('region', options.region);
     }
-
-    if (options?.limit) {
-      query = query.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      query = query.range(options.offset, options.offset + (options.limit || 20) - 1);
+    if (options?.limit || options?.offset) {
+      const offset = options.offset ?? 0;
+      query = query.range(offset, offset + (options.limit || 20) - 1);
     }
 
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const destinationsWithReviews = await Promise.all((data || []).map(async (dest: any) => {
-      const { data: tripsData } = await supabase
-        .from('trips')
-        .select('provider_id')
-        .eq('destination_id', dest.id)
-        .limit(1);
-
-      let reviewCount = 0;
-      let avgRating = 4.5;
-
-      if (tripsData && tripsData.length > 0 && tripsData[0].provider_id) {
-        const { count: rc } = await supabase
-          .from('reviews')
-          .select('id', { count: 'exact', head: true })
-          .eq('provider_id', tripsData[0].provider_id)
-          .eq('is_visible', true);
-
-        const { data: reviewData } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('provider_id', tripsData[0].provider_id)
-          .eq('is_visible', true);
-
-        reviewCount = rc || 0;
-        if (reviewData && reviewData.length > 0) {
-          avgRating = reviewData.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewData.length;
-        }
-      }
-
-      const { data: priceData } = await supabase
-        .from('trips')
-        .select('price')
-        .eq('destination_id', dest.id)
-        .not('price', 'is', null)
-        .limit(10);
-
-      const avgPrice = priceData && priceData.length > 0
-        ? priceData.reduce((sum, t) => sum + (t.price || 0), 0) / priceData.length
-        : 1500;
-
-      return {
-        id: dest.id,
-        name: dest.name,
-        location: dest.city,
-        region: dest.region || 'Unknown',
-        category: dest.category || 'general',
-        image: dest.images?.[0] || 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
-        rating: avgRating,
-        reviews: reviewCount,
-        price: Math.round(avgPrice),
-        description: dest.description || '',
-        tags: dest.tags || [dest.category].filter(Boolean),
-      };
-    }));
-
     return {
-      destinations: destinationsWithReviews,
-      total: count || 0,
+      destinations: data.map((destination) => ({
+        id: destination.id as string,
+        name: destination.name as string,
+        location: (destination.city || destination.region || 'Ethiopia') as string,
+        category: (destination.category || 'general') as string,
+        image: (destination.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
+        price: (destination.trips?.[0]?.price ?? null) as number | null,
+        description: (destination.description || '') as string,
+        tags: (destination.tags || [destination.category].filter(Boolean)) as string[],
+      })),
+      total: count ?? 0,
+      error: false,
     };
   } catch (error) {
     console.error('Error fetching destinations:', error);
-    return { destinations: [], total: 0 };
+    return { destinations: [], total: 0, error: true };
   }
 }
 
@@ -231,29 +196,32 @@ export async function getTourById(id: string) {
       .from('trips')
       .select(`
         *,
-        destination:destinations(*),
-        provider:providers(*)
+        destination:destinations(name, city, region, category, images, description),
+        provider:providers(id, name, description)
       `)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) return null;
 
-    const dest = data.destination;
+    const destination = data.destination;
+    const provider = data.provider as unknown as { id: string; name: string; description: string | null } | null;
+
     return {
-      id: data.id,
-      name: dest?.name || 'Unknown',
-      location: dest?.city || 'Unknown',
-      region: dest?.region || 'Unknown',
-      category: dest?.category || 'general',
-      images: dest?.images || [],
-      rating: data.provider?.rating || 4.5,
-      reviews: Math.floor(Math.random() * 2000) + 500,
-      price: data.price || 1000,
-      description: dest?.description || '',
-      provider: data.provider,
-      departureDate: data.departure_date,
-      tripType: data.trip_type,
+      id: data.id as string,
+      name: (destination?.name || 'Unknown Destination') as string,
+      location: (destination?.city || destination?.region || 'Ethiopia') as string,
+      category: (destination?.category || 'general') as string,
+      image: (destination?.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
+      price: (data.price ?? null) as number | null,
+      description: (data.summary || destination?.description || '') as string,
+      provider,
+      providerReviews: await getProviderReviewSummary(provider?.id),
+      departureDate: (data.departure_date ?? null) as string | null,
+      tripType: (data.trip_type ?? null) as string | null,
+      durationMinutes: (data.duration_minutes ?? null) as number | null,
+      inclusions: (data.inclusions ?? []) as string[],
     };
   } catch (error) {
     console.error('Error fetching tour:', error);

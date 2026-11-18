@@ -1,39 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { 
   Users, 
   MapPin, 
   Shield, 
   Heart,
-  ChevronRight,
-  Award,
-  Clock,
   Globe,
 } from "lucide-react";
 import { Button, Card, Badge } from "@tankua/ui";
-
-const team = [
-  {
-    name: "Abebe Tadesse",
-    role: "Founder & CEO",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
-    bio: "Ethiopian tech entrepreneur with a passion for cultural preservation and tourism innovation.",
-  },
-  {
-    name: "Sara Hailu",
-    role: "Head of Operations",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
-    bio: "Former tourism executive with 10+ years of experience in Ethiopian travel industry.",
-  },
-  {
-    name: "Yohannes Bekele",
-    role: "Head of Technology",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80",
-    bio: "Software engineer passionate about building technology solutions for Ethiopian businesses.",
-  },
-];
 
 const values = [
   {
@@ -56,13 +31,6 @@ const values = [
     title: "Cultural Preservation",
     description: "We're committed to promoting and preserving Ethiopia's rich cultural heritage and natural wonders.",
   },
-];
-
-const milestones = [
-  { year: "2023", title: "Founded in Addis Ababa", description: "Started with a vision to digitize tour and travel booking" },
-  { year: "2023", title: "First 10 Providers", description: "Partnered with trusted travel companies" },
-  { year: "2024", title: "Mobile App Launch", description: "Launched on iOS and Android" },
-  { year: "2024", title: "15,000+ Travelers", description: "Helped thousands explore amazing destinations" },
 ];
 
 export default function AboutPage() {
@@ -145,63 +113,6 @@ export default function AboutPage() {
                 </div>
                 <h3 className="text-lg font-bold text-[#181714] mb-2">{value.title}</h3>
                 <p className="text-sm text-[#181714]/70">{value.description}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <Badge className="mb-4">Our Journey</Badge>
-            <h2 className="text-3xl font-bold text-[#181714]">Key Milestones</h2>
-          </div>
-          <div className="max-w-3xl mx-auto">
-            {milestones.map((milestone, index) => (
-              <div key={index} className="flex gap-6 mb-8 last:mb-0">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-[#ffb800] flex items-center justify-center text-white font-bold">
-                    <Clock className="h-5 w-5" />
-                  </div>
-                  {index < milestones.length - 1 && (
-                    <div className="w-0.5 h-16 bg-[#ffb800]/20" />
-                  )}
-                </div>
-                <div className="flex-1 pb-8">
-                  <span className="text-sm font-semibold text-[#ffb800]">{milestone.year}</span>
-                  <h3 className="text-lg font-bold text-[#181714] mt-1">{milestone.title}</h3>
-                  <p className="text-[#181714]/70 mt-1">{milestone.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team */}
-      <section className="py-20 bg-[#f7f5f0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <Badge className="mb-4">Our Team</Badge>
-            <h2 className="text-3xl font-bold text-[#181714]">Meet the People Behind Tankua</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <Card key={index} className="p-6 text-center">
-                <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden bg-gray-200">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    width={96}
-                    height={96}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h3 className="text-lg font-bold text-[#181714]">{member.name}</h3>
-                <p className="text-sm text-[#ffb800] font-medium mb-3">{member.role}</p>
-                <p className="text-sm text-[#181714]/70">{member.bio}</p>
               </Card>
             ))}
           </div>

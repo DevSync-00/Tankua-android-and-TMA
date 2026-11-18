@@ -23,35 +23,26 @@ import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
 const PROVIDER_URL = "https://provider.tankua.co";
 
-const fallbackTours = [
-  { id: 1, name: "Lalibela Rock-Hewn Heritage Tour", location: "Lalibela, Amhara", category: "Heritage", image: "/images/pexels-ludo-van-den-nouweland-214324419-12344920.jpg", rating: 4.9, reviews: 284, price: 3200 },
-  { id: 2, name: "Simien Mountains Trekking Adventure", location: "Debark, Amhara", category: "Adventure", image: "/images/pexels-malaydi-7941708.jpg", rating: 4.8, reviews: 189, price: 4800 },
-  { id: 3, name: "Lake Tana & Blue Nile Falls", location: "Bahir Dar, Amhara", category: "Nature", image: "/images/pexels-lovetosmile-5034469.jpg", rating: 4.7, reviews: 216, price: 1800 },
-  { id: 4, name: "Danakil Depression Expedition", location: "Afar Region", category: "Expedition", image: "/images/pexels-atypeek-12131129.jpg", rating: 4.9, reviews: 124, price: 9500 },
-];
-
 const destinations = [
   { name: "Lalibela", line: "Living heritage carved in stone", image: "/images/pexels-ludo-van-den-nouweland-214324419-12344920.jpg", href: "/tours?q=Lalibela", className: "md:col-span-2 md:row-span-2" },
   { name: "Danakil", line: "Earth at its most elemental", image: "/images/pexels-atypeek-12131129.jpg", href: "/tours?q=Danakil", className: "" },
   { name: "Lake Tana", line: "Island monasteries and open water", image: "/images/pexels-lovetosmile-5034469.jpg", href: "/tours?q=Lake%20Tana", className: "" },
 ];
 
-type Tour = (typeof fallbackTours)[number];
-
-function formatPrice(price: number) {
-  return `ETB ${Number(price).toLocaleString()}`;
-}
+type FeaturedTours = Awaited<ReturnType<typeof getFeaturedTours>>;
 
 export default function HomePage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [tours, setTours] = useState<Tour[]>(fallbackTours);
+  const [featured, setFeatured] = useState<FeaturedTours | null>(null);
 
   useEffect(() => {
-    getFeaturedTours(4).then((data) => {
-      if (data.length) setTours(data as Tour[]);
+    let ignore = false;
+    getFeaturedTours().then((data) => {
+      if (!ignore) setFeatured(data);
     });
+    return () => { ignore = true; };
   }, []);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -169,24 +160,44 @@ export default function HomePage() {
       <section className="bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
           <div className="mb-12 flex items-end justify-between gap-5">
-            <div><p className="mb-4 text-xs font-bold uppercase tracking-[.22em] text-[#9a6900]">Bookable now</p><h2 className="text-4xl font-extrabold tracking-[-.04em] sm:text-5xl">Journeys travelers love</h2></div>
-            <Link href="/tours" className="hidden items-center gap-2 font-bold sm:inline-flex">View all <ArrowRight className="h-4 w-4" /></Link>
+            <h2 className="text-4xl font-extrabold tracking-[-.04em] sm:text-5xl">Upcoming tours</h2>
+            <Link href="/tours" className="inline-flex shrink-0 items-center gap-2 font-bold">View all <ArrowRight className="h-4 w-4" /></Link>
           </div>
-          <div className="grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {tours.map((tour) => (
-              <Link key={tour.id} href={`/tours/${tour.id}`} className="group block">
-                <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e4dc]">
-                  <Image src={tour.image} alt={tour.name} fill className="object-cover transition duration-500 group-hover:scale-[1.035]" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
-                  <span className="absolute left-4 top-4 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[.12em]">{tour.category}</span>
-                </div>
-                <div className="pt-5">
-                  <div className="flex items-center justify-between gap-4 text-sm text-[#6f6a61]"><span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#a97400]" />{tour.location}</span><span className="flex items-center gap-1 font-bold text-[#181714]"><Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />{Number(tour.rating).toFixed(1)}</span></div>
-                  <h3 className="mt-3 text-xl font-extrabold leading-7 tracking-[-.02em] group-hover:underline group-hover:decoration-[#ffb800] group-hover:decoration-2 group-hover:underline-offset-4">{tour.name}</h3>
-                  <p className="mt-3 text-sm text-[#6f6a61]">From <strong className="text-base text-[#181714]">{formatPrice(tour.price)}</strong> per person</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {featured?.tours.length ? (
+            <div className="grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {featured.tours.map((tour) => (
+                <Link key={tour.id} href={`/tours/${tour.id}`} className="group block">
+                  <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e4dc]">
+                    <Image src={tour.image} alt={tour.name} fill className="object-cover transition duration-500 group-hover:scale-[1.035]" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+                    <span className="absolute left-4 top-4 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[.12em]">{tour.category}</span>
+                  </div>
+                  <div className="pt-5">
+                    <div className="flex items-center justify-between gap-4 text-sm text-[#6f6a61]">
+                      <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#a97400]" />{tour.location}</span>
+                      {tour.providerReviews && (
+                        <span className="flex items-center gap-1 font-bold text-[#181714]" title="Provider rating">
+                          <Star aria-hidden="true" className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
+                          <span className="sr-only">Provider rating</span>{tour.providerReviews.rating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="mt-3 text-xl font-extrabold leading-7 tracking-[-.02em] group-hover:underline group-hover:decoration-[#ffb800] group-hover:decoration-2 group-hover:underline-offset-4">{tour.name}</h3>
+                    {tour.price !== null && (
+                      <p className="mt-3 text-sm text-[#6f6a61]"><strong className="text-base text-[#181714]">ETB {tour.price.toLocaleString()}</strong> per person</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[#6f6a61]" role="status">
+              {!featured
+                ? "Loading upcoming tours…"
+                : featured.error
+                  ? "Upcoming tour listings are unavailable right now."
+                  : "No upcoming tours are listed right now."}
+            </p>
+          )}
         </div>
       </section>
 

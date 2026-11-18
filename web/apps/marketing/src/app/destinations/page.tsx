@@ -7,9 +7,7 @@ import { getDestinations } from "@/lib/queries";
 import { 
   Search, 
   MapPin, 
-  Star, 
   Filter, 
-  ChevronDown,
   Grid,
   List,
   ArrowRight,
@@ -26,112 +24,7 @@ const tourCategories = [
   { id: "beach", name: "Beach & Lake", icon: "≡ƒÅû∩╕Å" },
 ];
 
-const destinations = [
-  {
-    id: 1,
-    name: "Rock-Hewn Heritage of Lalibela",
-    location: "Lalibela, Amhara",
-    region: "Amhara",
-    category: "historical",
-    image: "https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.9,
-    reviews: 2847,
-    price: 1500,
-    description: "Eleven medieval monolithic cave sites, carved from a single block of rock — a UNESCO World Heritage destination.",
-    tags: ["UNESCO", "Rock-hewn", "Historical"],
-  },
-  {
-    id: 2,
-    name: "Simien Mountains National Park",
-    location: "Gondar, Amhara",
-    region: "Amhara",
-    category: "nature",
-    image: "https://images.pexels.com/photos/32388046/pexels-photo-32388046.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.8,
-    reviews: 1893,
-    price: 2500,
-    description: "Home to unique wildlife including the Ethiopian wolf and gelada baboons, with stunning alpine landscapes.",
-    tags: ["Wildlife", "Trekking", "Nature"],
-  },
-  {
-    id: 3,
-    name: "Lake Tana & Blue Nile Falls",
-    location: "Bahir Dar",
-    region: "Amhara",
-    category: "nature",
-    image: "https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.7,
-    reviews: 1856,
-    price: 1200,
-    description: "Visit Ethiopia's largest lake with ancient monasteries and witness the spectacular Blue Nile Falls.",
-    tags: ["Nature", "Waterfalls", "Monasteries"],
-  },
-  {
-    id: 4,
-    name: "Danakil Depression",
-    location: "Afar Region",
-    region: "Afar",
-    category: "adventure",
-    image: "https://images.pexels.com/photos/12258556/pexels-photo-12258556.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.9,
-    reviews: 1245,
-    price: 3500,
-    description: "Journey to one of the hottest places on Earth, featuring active volcanoes, salt lakes, and unique geological formations.",
-    tags: ["Extreme", "Volcano", "Desert"],
-  },
-  {
-    id: 5,
-    name: "Gondar Castles & Royal Enclosure",
-    location: "Gondar",
-    region: "Amhara",
-    category: "historical",
-    image: "https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.8,
-    reviews: 2341,
-    price: 800,
-    description: "Explore the 17th-century royal castles known as the 'Camelot of Africa' with stunning architecture.",
-    tags: ["UNESCO", "Castles", "History"],
-  },
-  {
-    id: 6,
-    name: "Omo Valley Cultural Experience",
-    location: "Jinka, SNNPR",
-    region: "SNNPR",
-    category: "cultural",
-    image: "https://images.pexels.com/photos/33360960/pexels-photo-33360960.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.6,
-    reviews: 892,
-    price: 2800,
-    description: "Immerse yourself in the rich cultures of Ethiopia's diverse ethnic groups in the Omo Valley.",
-    tags: ["Cultural", "Tribes", "Photography"],
-  },
-  {
-    id: 7,
-    name: "Bale Mountains National Park",
-    location: "Bale Zone, Oromia",
-    region: "Oromia",
-    category: "nature",
-    image: "https://images.pexels.com/photos/32388046/pexels-photo-32388046.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.7,
-    reviews: 1567,
-    price: 2200,
-    description: "Home to the Ethiopian wolf and other endemic species, with stunning alpine landscapes and diverse ecosystems.",
-    tags: ["Wildlife", "Hiking", "Nature"],
-  },
-  {
-    id: 8,
-    name: "Addis Ababa City Tour",
-    location: "Addis Ababa",
-    region: "Addis Ababa",
-    category: "city",
-    image: "https://images.pexels.com/photos/33019023/pexels-photo-33019023.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop",
-    rating: 4.5,
-    reviews: 634,
-    price: 500,
-    description: "Discover the capital city's museums, markets, and cultural sites including the National Museum and Merkato.",
-    tags: ["City", "Museums", "Shopping"],
-  },
-];
+type Destination = Awaited<ReturnType<typeof getDestinations>>["destinations"][number];
 
 const regions = ["All Regions", "Amhara", "Tigray", "Oromia", "SNNPR", "Addis Ababa", "Afar"];
 
@@ -140,41 +33,28 @@ export default function DestinationsPage() {
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [destinationsData, setDestinationsData] = useState(destinations);
+  const [destinationsData, setDestinationsData] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    async function loadDestinations() {
-      setLoading(true);
-      try {
-        const result = await getDestinations({
-          search: searchQuery || undefined,
-          category: selectedCategory !== "all" ? selectedCategory : undefined,
-          region: selectedRegion !== "All Regions" ? selectedRegion : undefined,
-          limit: 50,
-        });
-        if (result.destinations.length > 0) {
-          setDestinationsData(result.destinations);
-        }
-      } catch (error) {
-        console.error("Error loading destinations:", error);
-        // Keep default destinations on error
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadDestinations();
-  }, [searchQuery, selectedCategory, selectedRegion]);
+    let ignore = false;
+    setLoading(true);
 
-  const filteredDestinations = destinationsData.filter((destination) => {
-    const matchesSearch = !searchQuery || 
-      destination.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         destination.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         destination.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRegion = selectedRegion === "All Regions" || destination.region === selectedRegion;
-    const matchesCategory = selectedCategory === "all" || destination.category === selectedCategory;
-    return matchesSearch && matchesRegion && matchesCategory;
-  });
+    getDestinations({
+      search: searchQuery || undefined,
+      category: selectedCategory !== "all" ? selectedCategory : undefined,
+      region: selectedRegion !== "All Regions" ? selectedRegion : undefined,
+      limit: 50,
+    }).then((result) => {
+      if (ignore) return;
+      setDestinationsData(result.destinations);
+      setLoadError(result.error);
+      setLoading(false);
+    });
+
+    return () => { ignore = true; };
+  }, [searchQuery, selectedCategory, selectedRegion]);
 
   return (
     <main className="min-h-screen">
@@ -210,7 +90,7 @@ export default function DestinationsPage() {
               <span className="text-[#ffb800]"> Destinations</span>
             </h1>
             <p className="text-lg text-[#181714]/70">
-              Explore hundreds of destinations across Ethiopia - from adventure treks to cultural 
+              Explore destinations across Ethiopia, from adventure treks to cultural
               experiences, historical sites to wildlife safaris, and everything in between.
             </p>
           </div>
@@ -294,9 +174,9 @@ export default function DestinationsPage() {
             <p className="text-[#181714]/60">
               {loading ? (
                 "Loading destinations..."
-              ) : (
+              ) : loadError ? null : (
                 <>
-              Showing <span className="font-semibold text-[#181714]">{filteredDestinations.length}</span> destinations
+              Showing <span className="font-semibold text-[#181714]">{destinationsData.length}</span> destinations
                 </>
               )}
             </p>
@@ -306,7 +186,9 @@ export default function DestinationsPage() {
             <div className="text-center py-12 text-[#181714]/60">
               Loading destinations...
             </div>
-          ) : filteredDestinations.length === 0 ? (
+          ) : loadError ? (
+            <p className="text-center py-12 text-[#181714]/60" role="status">Unable to load destinations right now.</p>
+          ) : destinationsData.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-[#181714]/60 mb-4">No destinations found matching your criteria.</p>
               <Button variant="outline" onClick={() => {
@@ -319,7 +201,7 @@ export default function DestinationsPage() {
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredDestinations.map((destination) => (
+              {destinationsData.map((destination) => (
                 <Card key={destination.id} hoverable className="p-0 overflow-hidden group">
                   <div className="relative h-48 overflow-hidden">
                     <Image
@@ -334,13 +216,6 @@ export default function DestinationsPage() {
                         {tourCategories.find(c => c.id === destination.category)?.name || destination.category}
                       </Badge>
                     </div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="flex items-center gap-1 text-white mb-1">
-                        <Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                        <span className="font-semibold">{destination.rating}</span>
-                        <span className="text-sm opacity-80">({destination.reviews})</span>
-                      </div>
-                    </div>
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-[#181714] mb-1 line-clamp-1">{destination.name}</h3>
@@ -354,13 +229,14 @@ export default function DestinationsPage() {
                         <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-lg font-bold text-[#ffb800]">{destination.price} ETB</span>
-                        <span className="text-sm text-[#181714]/60"> /person</span>
-                      </div>
-                      <Link href={`/destinations/${destination.id}`}>
-                      <Button size="sm">Book Now</Button>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      {destination.price !== null && (
+                        <p className="text-sm text-[#181714]/60">
+                          From <strong className="text-[#181714]">{destination.price.toLocaleString()} ETB</strong> per person
+                        </p>
+                      )}
+                      <Link href={`/tours?q=${encodeURIComponent(destination.name)}`}>
+                        <Button size="sm">Find tours</Button>
                       </Link>
                     </div>
                   </div>
@@ -369,7 +245,7 @@ export default function DestinationsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredDestinations.map((destination) => (
+              {destinationsData.map((destination) => (
                 <Card key={destination.id} hoverable className="p-0 overflow-hidden">
                   <div className="flex flex-col md:flex-row">
                     <div className="relative w-full md:w-64 h-48 md:h-auto overflow-hidden">
@@ -401,20 +277,16 @@ export default function DestinationsPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="flex items-center gap-1 justify-end mb-2">
-                            <Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                            <span className="font-semibold">{destination.rating}</span>
-                            <span className="text-sm text-[#181714]/60">({destination.reviews} reviews)</span>
-                          </div>
-                          <div className="mb-4">
-                            <span className="text-2xl font-bold text-[#ffb800]">{destination.price} ETB</span>
-                            <span className="text-[#181714]/60"> /person</span>
-                          </div>
-                          <Link href={`/destinations/${destination.id}`}>
-                          <Button>
-                            Book Now
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
+                          {destination.price !== null && (
+                            <p className="mb-4 text-sm text-[#181714]/60">
+                              From <strong className="text-[#181714]">{destination.price.toLocaleString()} ETB</strong> per person
+                            </p>
+                          )}
+                          <Link href={`/tours?q=${encodeURIComponent(destination.name)}`}>
+                            <Button>
+                              Find tours
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
                           </Link>
                         </div>
                       </div>

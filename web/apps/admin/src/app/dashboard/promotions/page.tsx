@@ -6,7 +6,6 @@ import {
   Plus,
   Percent,
   Calendar,
-  Users,
   Tag,
   MoreHorizontal,
   Edit,
@@ -20,6 +19,7 @@ import { getPromotions, deletePromotion, updatePromotion, type Promotion } from 
 
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [totalPromotions, setTotalPromotions] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [banner, setBanner] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
@@ -33,6 +33,7 @@ export default function PromotionsPage() {
     try {
       const result = await getPromotions({ limit: 100 });
       setPromotions(result.promotions);
+      setTotalPromotions(result.total);
     } catch (error) {
       console.error("Error loading promotions:", error);
     } finally {
@@ -100,6 +101,10 @@ export default function PromotionsPage() {
     return p.is_active && now >= validFrom && now <= validUntil;
   });
   const totalUsage = promotions.reduce((sum, p) => sum + p.used_count, 0);
+  const percentagePromos = promotions.filter((promotion) => promotion.discount_type === "percentage");
+  const averageDiscount = !loading && totalPromotions === promotions.length && percentagePromos.length > 0
+    ? percentagePromos.reduce((sum, promotion) => sum + Number(promotion.discount_value), 0) / percentagePromos.length
+    : null;
 
   return (
     <div className="min-h-screen">
@@ -128,7 +133,7 @@ export default function PromotionsPage() {
           />
         )}
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
           <Card className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -157,19 +162,8 @@ export default function PromotionsPage() {
                 <Percent className="h-6 w-6 text-amber-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">18%</p>
-                <p className="text-sm text-muted-foreground">Avg Discount</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">15%</p>
-                <p className="text-sm text-muted-foreground">Redemption Rate</p>
+                <p className="text-2xl font-bold">{averageDiscount === null ? "—" : `${averageDiscount.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`}</p>
+                <p className="text-sm text-muted-foreground">Avg. Percentage Discount</p>
               </div>
             </div>
           </Card>

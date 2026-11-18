@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -19,8 +19,7 @@ import { getTourById } from "@/lib/queries";
 
 export default function TourDetailPage() {
   const params = useParams();
-  const router = useRouter();
-  const [tour, setTour] = useState<any>(null);
+  const [tour, setTour] = useState<Awaited<ReturnType<typeof getTourById>>>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,7 +105,7 @@ export default function TourDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden mb-8">
             <Image
-              src={tour.image || tour.images?.[0] || "https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop"}
+              src={tour.image}
               alt={tour.name}
               fill
               className="object-cover"
@@ -115,11 +114,13 @@ export default function TourDetailPage() {
             <div className="absolute bottom-6 left-6 right-6">
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="secondary">{tour.category}</Badge>
-                <div className="flex items-center gap-1 text-white">
-                  <Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                  <span className="font-semibold">{tour.rating}</span>
-                  <span className="text-sm opacity-80">({tour.reviews} reviews)</span>
-                </div>
+                {tour.providerReviews && (
+                  <div className="flex items-center gap-1 text-white">
+                    <Star aria-hidden="true" className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
+                    <span className="font-semibold">{tour.providerReviews.rating.toFixed(1)}</span>
+                    <span className="text-sm opacity-80">({tour.providerReviews.count} provider {tour.providerReviews.count === 1 ? "review" : "reviews"})</span>
+                  </div>
+                )}
               </div>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{tour.name}</h1>
               <div className="flex items-center gap-4 text-white/90">
@@ -152,23 +153,19 @@ export default function TourDetailPage() {
                 </p>
               </Card>
 
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold text-[#181714] mb-4">What's Included</h2>
-                <ul className="space-y-3">
-                  {[
-                    "Transportation in comfortable vehicle",
-                    "Professional guide",
-                    "All entrance fees",
-                    "Bottled water",
-                    "Trip insurance",
-                  ].map((item, index) => (
-                    <li key={index} className="flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-[#ffb800] flex-shrink-0" />
-                      <span className="text-[#181714]/70">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
+              {tour.inclusions.length > 0 && (
+                <Card className="p-6">
+                  <h2 className="text-2xl font-bold text-[#181714] mb-4">What's Included</h2>
+                  <ul className="space-y-3">
+                    {tour.inclusions.map((item, index) => (
+                      <li key={index} className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-[#ffb800] flex-shrink-0" />
+                        <span className="text-[#181714]/70">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              )}
 
               {tour.provider && (
                 <Card className="p-6">
@@ -179,14 +176,9 @@ export default function TourDetailPage() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-[#181714] mb-1">{tour.provider.name}</h3>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Star className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                        <span className="font-medium">{tour.provider.rating?.toFixed(1) || "4.5"}</span>
-                        <span className="text-sm text-[#181714]/60">Verified Provider</span>
-                      </div>
-                      <p className="text-[#181714]/70 text-sm">
-                        Trusted travel provider with excellent reviews and verified credentials.
-                      </p>
+                      {tour.provider.description && (
+                        <p className="text-[#181714]/70 text-sm">{tour.provider.description}</p>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -196,12 +188,14 @@ export default function TourDetailPage() {
             {/* Booking Sidebar */}
             <div className="lg:col-span-1">
               <Card className="p-6 sticky top-24">
-                <div className="mb-6">
-                  <div className="text-3xl font-bold text-[#ffb800] mb-1">
-                    {tour.price} ETB
+                {tour.price !== null ? (
+                  <div className="mb-6">
+                    <div className="text-3xl font-bold text-[#ffb800] mb-1">{tour.price.toLocaleString()} ETB</div>
+                    <div className="text-sm text-[#181714]/60">per person</div>
                   </div>
-                  <div className="text-sm text-[#181714]/60">per person</div>
-                </div>
+                ) : (
+                  <p className="mb-6 text-sm text-[#181714]/60">Price unavailable</p>
+                )}
 
                 <div className="space-y-4 mb-6">
                   {tour.departureDate && (
@@ -220,21 +214,25 @@ export default function TourDetailPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3 text-[#181714]/70">
-                    <Clock className="h-5 w-5 text-[#ffb800]" />
-                    <div>
-                      <div className="text-sm font-medium">Duration</div>
-                      <div className="text-sm">Full Day Tour</div>
+                  {tour.durationMinutes !== null && (
+                    <div className="flex items-center gap-3 text-[#181714]/70">
+                      <Clock className="h-5 w-5 text-[#ffb800]" />
+                      <div>
+                        <div className="text-sm font-medium">Duration</div>
+                        <div className="text-sm">{tour.durationMinutes} minutes</div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="flex items-center gap-3 text-[#181714]/70">
-                    <Users className="h-5 w-5 text-[#ffb800]" />
-                    <div>
-                      <div className="text-sm font-medium">Group Size</div>
-                      <div className="text-sm">{tour.tripType || "Group Trip"}</div>
+                  {tour.tripType && (
+                    <div className="flex items-center gap-3 text-[#181714]/70">
+                      <Users className="h-5 w-5 text-[#ffb800]" />
+                      <div>
+                        <div className="text-sm font-medium">Trip type</div>
+                        <div className="text-sm capitalize">{tour.tripType}</div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">

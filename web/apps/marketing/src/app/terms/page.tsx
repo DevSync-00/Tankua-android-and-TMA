@@ -114,11 +114,7 @@ export default function TermsPage() {
             <section>
               <h2 className="text-2xl font-bold text-[#181714] mb-4">8. Contact</h2>
               <p>
-                For questions about these terms, contact:
-              </p>
-              <p className="font-semibold">
-                Email: legal@tankua.et<br />
-                Phone: +251 911 123 456
+                For questions about these terms, email us at <a className="font-semibold underline" href="mailto:legal@tankua.et">legal@tankua.et</a>.
               </p>
             </section>
           </div>
