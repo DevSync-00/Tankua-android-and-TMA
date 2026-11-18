@@ -67,10 +67,15 @@ function destinationCoordinates(destination) {
   return cityCoordinates[String(destination?.city || '').toLowerCase()] || [9.03, 38.74];
 }
 
+const hasFutureDeparture = trip => Date.parse(trip.departure_date) > Date.now();
+const isCollectingInterest = trip => trip.status === 'collecting_interest' && hasFutureDeparture(trip);
+const isBookableTrip = trip => (trip.status === 'active' || trip.status === 'upcoming') && hasFutureDeparture(trip);
+
 export default function App() {
   const [tab, setTab] = useState('home');
   const [screen, setScreen] = useState(null);
   const [selected, setSelected] = useState(fallbackDestinations[0]);
+  const [linkedTripId, setLinkedTripId] = useState(null);
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'telebirr' });
@@ -105,6 +110,7 @@ export default function App() {
   const [authStatus, setAuthStatus] = useState('loading');
   const [authError, setAuthError] = useState('');
   const [catalog, setCatalog] = useState({ destinations: [], trips: [], providers: [], stations: [], trip_pickup_stations: [] });
+  const catalogRequest = useRef(0);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
   const [favorites, setFavorites] = useState([]);
@@ -180,8 +186,9 @@ export default function App() {
   };
 
   const refreshCatalog = async () => {
+    const request = ++catalogRequest.current;
     const catalogData = await api(`/api/catalog?refresh=${Date.now()}`);
-    setCatalog(catalogData);
+    if (request === catalogRequest.current) setCatalog(catalogData);
     return catalogData;
   };
 
@@ -228,6 +235,20 @@ export default function App() {
           setTab('trips');
         }
         window.history.replaceState({}, '', window.location.pathname);
+      } else {
+        const launchParameter = new URLSearchParams(tg.initData).get('start_param');
+        const tripId = launchParameter?.match(/^trip_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1]?.toLowerCase();
+        if (tripId) {
+          const trip = productionData.catalogData.trips.find(item => item.id === tripId);
+          const destination = productionData.catalogData.destinations.find(item => item.id === trip?.destination_id);
+          if (destination) {
+            setSelected(normalizeDestination(destination));
+            setLinkedTripId(trip.id);
+            setScreen('detail');
+          } else {
+            notify('This trip is currently unavailable.');
+          }
+        }
       }
     } catch (error) {
       setAuthError(error.message);
@@ -238,7 +259,10 @@ export default function App() {
   const notify = (text) => {
     setToast(text); vibrate('light'); setTimeout(() => setToast(''), 2200);
   };
-  const openDetail = (d) => { setSelected(d); setScreen('detail'); vibrate(); window.scrollTo(0, 0); };
+  const openDetail = (d) => {
+    setSelected(d); setLinkedTripId(null); setScreen('detail'); vibrate(); window.scrollTo(0, 0);
+    if (user?.id && user.id !== 'dev') refreshCatalog().catch(() => {});
+  };
   const goTab = (id) => { setTab(id); setScreen(null); vibrate(); window.scrollTo(0, 0); };
   const goBack = () => {
     const flow = ['trip', 'pickup', 'seats', 'passengers', 'payment'];
@@ -249,10 +273,41 @@ export default function App() {
     vibrate();
   };
   const liveDestinations = catalog.destinations.map(normalizeDestination);
+  const checkTripInterest = async tripId => {
+    try {
+      const freshCatalog = await refreshCatalog();
+      const trip = freshCatalog.trips.find(item => item.id === tripId);
+      if (trip && isBookableTrip(trip)) notify('Booking is open for this trip!');
+      else if (trip && isCollectingInterest(trip)) notify('This trip is still collecting interest.');
+      else notify('This trip is currently unavailable.');
+    } catch (error) {
+      notify(error.message);
+    }
+  };
+
+  const expressInterest = async trip => {
+    try {
+      const { interest } = await api(`/api/trips/${trip.id}/interest`, { method: 'POST' });
+      const { trip_id, ...updates } = interest;
+      const result = { ...trip, ...updates };
+      setCatalog(previous => ({
+        ...previous,
+        trips: previous.trips.map(item => item.id === trip_id ? { ...item, ...updates } : item),
+      }));
+      if (isBookableTrip(result)) notify('The interest goal was reached. Booking is open!');
+      else if (isCollectingInterest(result) && result.interested) notify('Your interest has been registered.');
+      else notify('This trip is currently unavailable.');
+      refreshCatalog().catch(() => {});
+    } catch (error) {
+      notify(error.message);
+      refreshCatalog().catch(() => {});
+    }
+  };
+
   const startBooking = async () => {
     try {
       const freshCatalog = await refreshCatalog();
-      const available = freshCatalog.trips.some(trip => trip.destination_id === selected.id);
+      const available = freshCatalog.trips.some(trip => trip.destination_id === selected.id && isBookableTrip(trip));
       if (!available) return notify('No scheduled trips are currently available');
       setBooking({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'chapa' });
       setScreen('trip');
@@ -309,7 +364,7 @@ export default function App() {
   };
 
   const content = () => {
-    if (screen === 'detail') return <Detail destination={selected} catalog={catalog} back={goBack} book={startBooking} notify={notify} favorites={favorites} toggleFavorite={toggleFavorite} />;
+    if (screen === 'detail') return <Detail destination={selected} catalog={catalog} linkedTripId={linkedTripId} back={goBack} book={startBooking} expressInterest={expressInterest} checkTripInterest={checkTripInterest} notify={notify} favorites={favorites} toggleFavorite={toggleFavorite} />;
     if (['trip','pickup','seats','passengers','payment'].includes(screen))
       return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
     if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => { setTicketBackScreen('confirmation'); setScreen('ticket'); }} />;
@@ -324,7 +379,7 @@ export default function App() {
     if (screen === 'suggest') return <SuggestTripView back={goBack} notify={notify} api={api} />;
     if (screen === 'friends') return <CloseFriendsView back={goBack} friends={profileData.friends} api={api} notify={notify} onChange={loadProfileData} />;
     if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} code={profileData.referral_code} />;
-    if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
+    if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} trips={catalog.trips} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
     if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} open={openTrip} explore={() => goTab('home')} />;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
@@ -419,10 +474,11 @@ const ALL_CATEGORIES = [
   'Park', 'Museum', 'City', 'Other'
 ];
 
-function HomeView({ user, destinations, category, setCategory, open, goSearch, openNotifications }) {
+function HomeView({ user, destinations, trips, category, setCategory, open, goSearch, openNotifications }) {
   const featured = destinations.filter(destination => destination.is_featured);
-
   const popular = destinations.filter(destination => destination.is_popular).slice(0, 6);
+  const interestDestinations = new Set(trips.filter(isCollectingInterest).map(trip => trip.destination_id));
+  const collectingInterest = destinations.filter(destination => interestDestinations.has(destination.id));
 
   return <div className="page home-page">
     <header className="home-header">
@@ -448,6 +504,20 @@ function HomeView({ user, destinations, category, setCategory, open, goSearch, o
       <SectionHeader title="Popular destinations" action="See all" onAction={goSearch}/>
       <div className="destination-grid">{popular.map(d => <DestinationCard key={d.id} d={d} open={open}/>)}</div>
     </>}
+    {collectingInterest.length > 0 && (
+      <section>
+        <SectionHeader title="Trips accepting interest" />
+        <div className="interest-destinations">
+          {collectingInterest.map(destination => (
+            <button className="interest-destination" key={destination.id} type="button" onClick={() => open(destination)}>
+              <UsersRound aria-hidden="true" />
+              <span>{destination.name}</span>
+              <ChevronRight aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      </section>
+    )}
     <section className="how">
       <SectionHeader title="How it works"/>
       {[['01','Choose destination','Find a place that inspires you.'],['02','Select your trip','Pick a date, pickup and seats.'],['03','Book & pay','Pay securely and get your QR ticket.']].map(x=><div className="how-row" key={x[0]}><b>{x[0]}</b><div><strong>{x[1]}</strong><p>{x[2]}</p></div></div>)}
@@ -459,10 +529,22 @@ function SectionHeader({ title, action, onAction }) { return <div className="sec
 function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(5,15,28,.88) 100%),url("${d.image}")`}}><div className="hero-content"><h3>{d.name}</h3><p className="hero-location"><MapPin size={13}/>{d.city}</p><div className="hero-meta"><span className="hero-rating"><Star size={13} fill="#ffb800" color="#ffb800"/> {d.rating}</span>{d.price ? <b className="hero-price">From {money(d.price)}</b> : null}</div></div></button>; }
 function DestinationCard({d,open}) { return <button className="destination-card" onClick={()=>open(d)}><div className="card-image" style={{backgroundImage:`url("${d.image}")`}}><span>{d.category}</span><Heart size={18}/></div><div className="card-copy"><h3>{d.name}</h3><p><MapPin size={13}/>{d.city}</p><div><span><Star size={13} fill="currentColor"/> {d.rating}</span><b>{money(d.price)}</b></div></div></button>; }
 
-function Detail({ destination:d, catalog, back, book, notify, favorites = [], toggleFavorite }) {
-  const destinationTrip=(catalog.trips||[]).find(trip=>trip.destination_id===d.id);
+function Detail({ destination:d, catalog, linkedTripId, back, book, expressInterest, checkTripInterest, notify, favorites = [], toggleFavorite }) {
+  const destinationTrips = catalog.trips.filter(trip => trip.destination_id === d.id);
+  const bookableTrips = destinationTrips.filter(isBookableTrip);
+  const interestTrips = destinationTrips.filter(isCollectingInterest);
+  const destinationTrip = bookableTrips[0];
   const provider=(catalog.providers||[]).find(item=>item.id===destinationTrip?.provider_id);
+  const prices = bookableTrips.filter(trip => trip.price != null).map(trip => Number(trip.price)).filter(Number.isFinite);
+  const startingPrice = prices.length ? Math.min(...prices) : null;
   const isFavorite = favorites.includes(d.id);
+
+  useEffect(() => {
+    if (!linkedTripId) return;
+    const card = document.getElementById(`trip-interest-${linkedTripId}`);
+    card?.scrollIntoView({ block: 'center' });
+    card?.focus({ preventScroll: true });
+  }, [linkedTripId]);
 
   const handleShare = async () => {
     const shareText = `Check out ${d.name} in ${d.city}, Ethiopia on Tankua!`;
@@ -508,13 +590,74 @@ function Detail({ destination:d, catalog, back, book, notify, favorites = [], to
       <div className="detail-title"><span>{d.category}</span><h1>{d.name}</h1><p><MapPin size={15}/>{d.city}, {d.region}</p></div>
     </div>
     <div className="detail-content">
+      {interestTrips.length > 0 && (
+        <section className="interest-trips">
+          <h2>Trips accepting interest</h2>
+          <p className="body-copy">Booking opens when enough travelers express interest.</p>
+          {interestTrips.map(trip => (
+            <InterestTripCard
+              key={trip.id}
+              trip={trip}
+              provider={catalog.providers.find(item => item.id === trip.provider_id)}
+              expressInterest={expressInterest}
+              checkTripInterest={checkTripInterest}
+            />
+          ))}
+        </section>
+      )}
       <div className="quick-facts"><div><Star/><b>{d.rating}</b><span>{d.reviews} reviews</span></div><div><Clock3/><b>{d.duration}</b><span>Duration</span></div><div><ShieldCheck/><b>Verified</b><span>Tankua partner</span></div></div>
       <h2>About this place</h2><p className="body-copy">{d.description}</p>
-      <h2>What’s included</h2><div className="included"><span><Check/>Round-trip transport</span><span><Check/>Professional guide</span><span><Check/>Entrance fees</span><span><Check/>24/7 trip support</span></div>
+      {destinationTrip && <><h2>What’s included</h2><div className="included"><span><Check/>Round-trip transport</span><span><Check/>Professional guide</span><span><Check/>Entrance fees</span><span><Check/>24/7 trip support</span></div></>}
       {provider&&<div className="provider">{provider.logo_url?<img className="provider-logo-image" src={provider.logo_url} alt={`${provider.name} logo`}/>:<div className="provider-logo"><Building2/></div>}<div><small>OPERATED BY</small><b>{provider.name}</b><p>{Number(provider.rating||0).toFixed(1)} ★ · Verified provider</p></div><ChevronRight/></div>}
+      {!bookableTrips.length && !interestTrips.length && <p className="body-copy">No scheduled trips are currently available.</p>}
     </div>
-    <div className="sticky-cta"><div><span>Starting from</span><b>{money(d.price)}</b><small>per person</small></div><button onClick={book}>Book this trip <ChevronRight size={18}/></button></div>
+    {bookableTrips.length > 0 && (
+      <div className="sticky-cta">
+        <div>{startingPrice !== null && <><span>Starting from</span><b>{money(startingPrice)}</b><small>per person</small></>}</div>
+        <button onClick={book}>View bookable trips <ChevronRight size={18}/></button>
+      </div>
+    )}
   </div>;
+}
+
+function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }) {
+  const [pending, setPending] = useState(false);
+  const departure = new Date(trip.departure_date);
+  const departureLabel = departure.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const interestCount = trip.interest_count;
+  const minimumInterest = trip.minimum_interest;
+
+  const handleAction = async () => {
+    setPending(true);
+    try {
+      await (trip.interested ? checkTripInterest(trip.id) : expressInterest(trip));
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <article className="interest-trip" id={`trip-interest-${trip.id}`} tabIndex={-1}>
+      <div className="interest-trip-heading">
+        <div>
+          <h3>{departureLabel}</h3>
+          {provider && <p>{provider.name}</p>}
+        </div>
+        {trip.price != null && <b>{money(trip.price)} <small>per person</small></b>}
+      </div>
+      {trip.summary && <p className="interest-trip-summary">{trip.summary}</p>}
+      <div className="interest-trip-progress">
+        <p><strong>{interestCount} of {minimumInterest}</strong> interested</p>
+        <progress max={minimumInterest} value={interestCount} aria-label="Travelers interested" />
+      </div>
+      <div className="interest-trip-action">
+        <small>{trip.interested ? 'Interest registered' : 'Free to express interest'}</small>
+        <button type="button" disabled={pending} onClick={handleAction}>
+          {pending ? 'Updating…' : trip.interested ? 'Check status' : 'I’m interested'}
+        </button>
+      </div>
+    </article>
+  );
 }
 
 function FlowHeader({ step, back }) {
@@ -522,7 +665,7 @@ function FlowHeader({ step, back }) {
   return <><header className="flow-head"><button onClick={back}><ArrowLeft/></button><div><span>STEP {index+1} OF 5</span><b>{['Select trip','Pickup station','Choose seats','Passenger details','Payment'][index]}</b></div></header><div className="progress"><i style={{width:`${(index+1)*20}%`}}/></div></>;
 }
 function BookingFlow({ step, destination, catalog, booking, setBooking, back, next, finish, submitting }) {
-  const trips = catalog.trips.filter(trip => trip.destination_id === destination.id).map(trip => {
+  const trips = catalog.trips.filter(trip => trip.destination_id === destination.id && isBookableTrip(trip)).map(trip => {
     const departure = new Date(trip.departure_date);
     const arrival = trip.return_date ? new Date(trip.return_date) : null;
     return {

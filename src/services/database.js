@@ -293,7 +293,12 @@ export const getTrips = async (filters = {}) => {
       query = query.lte('departure_date', filters.dateTo);
     }
 
-    query = query.in('status', ['upcoming', 'active']);
+    if (filters.includeInterest) {
+      query = query.in('status', ['upcoming', 'active', 'collecting_interest'])
+        .or(`status.neq.collecting_interest,departure_date.gt.${new Date().toISOString()}`);
+    } else {
+      query = query.in('status', ['upcoming', 'active']);
+    }
     query = query.gte('available_seats', 1);
     query = query.order('departure_date', { ascending: true });
 
@@ -312,6 +317,24 @@ export const getTrips = async (filters = {}) => {
   } catch (error) {
     throw error;
   }
+};
+
+export const getMyInterestedTripIds = async (tripIds) => {
+  if (tripIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('trip_interests')
+    .select('trip_id')
+    .in('trip_id', tripIds);
+
+  if (error) throw error;
+  return data.map(({ trip_id }) => trip_id);
+};
+
+export const expressTripInterest = async (tripId) => {
+  const { data, error } = await supabase.rpc('express_trip_interest', { p_trip_id: tripId });
+  if (error) throw error;
+  return data;
 };
 
 // ============================================

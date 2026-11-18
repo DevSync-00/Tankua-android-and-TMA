@@ -6,6 +6,18 @@ const worker = (await import('../server/worker-template.js')).default;
 const botToken = '123456:test-bot-token';
 const sessionSecret = 'a-production-session-secret-with-more-than-32-bytes';
 const userId = '7864c70e-43e8-4ded-85b5-63395076899a';
+const tripId = '86d68800-4bf8-411f-a4f4-066c25201549';
+const nextTripId = '29472ff9-377c-42f2-88c5-72ade933d7fd';
+
+function travelerSession() {
+  const session = Buffer.from(JSON.stringify({
+    uid: userId,
+    tid: '99887766',
+    exp: Math.floor(Date.now() / 1000) + 60,
+  })).toString('base64url');
+  const signature = createHmac('sha256', sessionSecret).update(session).digest('base64url');
+  return `tankua_session=${session}.${signature}`;
+}
 
 function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
   const params = new URLSearchParams({
@@ -25,8 +37,31 @@ function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
 
 const originalFetch = globalThis.fetch;
 let lastEdgePayload = null;
+let lastInterestPayload = null;
+const collectingTrip = { id: tripId, destination_id: 'destination', provider_id: 'provider', price: 100, status: 'collecting_interest', minimum_interest: 3, interest_count: 2 };
+const bookableTrip = { id: nextTripId, destination_id: 'destination', provider_id: 'provider', price: 200, status: 'upcoming', minimum_interest: null, interest_count: 0 };
 globalThis.fetch = async (url, options = {}) => {
   const value = String(url);
+  const requestUrl = new URL(value);
+  switch (requestUrl.pathname) {
+    case '/rest/v1/rpc/express_trip_interest_for_user': {
+      lastInterestPayload = JSON.parse(options.body);
+      return Response.json({ trip_id: tripId, status: 'upcoming', minimum_interest: 3, interest_count: 3, interested: true });
+    }
+    case '/rest/v1/destinations':
+      return Response.json([{ id: 'destination', name: 'Test destination' }]);
+    case '/rest/v1/trips':
+      assert.equal(requestUrl.searchParams.get('status'), 'in.(active,upcoming,collecting_interest)');
+      return Response.json([collectingTrip, bookableTrip]);
+    case '/rest/v1/providers':
+      return Response.json([{ id: 'provider', name: 'Test provider' }]);
+    case '/rest/v1/pickup_stations':
+    case '/rest/v1/trip_pickup_stations':
+      return Response.json([]);
+    case '/rest/v1/trip_interests':
+      assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
+      return Response.json([{ trip_id: tripId }]);
+  }
   if (value.includes('/functions/v1/telegram-auth')) {
     lastEdgePayload = JSON.parse(options.body);
     return new Response(JSON.stringify({ session: { user: { id: userId } } }), { status: 200 });
@@ -97,4 +132,41 @@ test('accepts signed Telegram launch data and sets an HttpOnly session', async (
   assert.equal(typeof lastEdgePayload.verified_at, 'number');
   assert.deepEqual(Object.keys(lastEdgePayload), ['init_data', 'verified_telegram_user', 'verified_at']);
   assert.match(response.headers.get('set-cookie'), /tankua_session=.*HttpOnly.*Secure.*SameSite=Lax/);
+});
+
+test('interest registration requires a session and uses its traveler identity', async () => {
+  const interestUrl = `${env.APP_ORIGIN}/api/trips/${tripId}/interest`;
+  const unauthorized = await worker.fetch(new Request(interestUrl, { method: 'POST' }), env);
+  assert.equal(unauthorized.status, 401);
+  assert.equal(lastInterestPayload, null);
+
+  const denied = await worker.fetch(new Request(interestUrl, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: 'https://other.example' },
+  }), env);
+  assert.equal(denied.status, 403);
+  assert.equal(lastInterestPayload, null);
+
+  const response = await worker.fetch(new Request(interestUrl, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
+    body: JSON.stringify({ user_id: 'ignore-caller-identity' }),
+  }), env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(lastInterestPayload, { p_trip_id: tripId, p_user_id: userId });
+  assert.deepEqual(await response.json(), {
+    interest: { trip_id: tripId, status: 'upcoming', minimum_interest: 3, interest_count: 3, interested: true },
+  });
+});
+
+test('catalog displays interest progress without using gated fares as bookable prices', async () => {
+  const catalogUrl = `${env.APP_ORIGIN}/api/catalog`;
+  const authorized = await worker.fetch(new Request(catalogUrl, { headers: { cookie: travelerSession() } }), env);
+  const anonymous = await worker.fetch(new Request(catalogUrl), env);
+  assert.equal(authorized.status, 200);
+  assert.equal(anonymous.status, 200);
+  const catalog = await authorized.json();
+  assert.equal(catalog.destinations[0].price, 200);
+  assert.deepEqual(catalog.trips, [{ ...collectingTrip, interested: true }, { ...bookableTrip, interested: false }]);
+  assert.equal((await anonymous.json()).trips[0].interested, false);
 });

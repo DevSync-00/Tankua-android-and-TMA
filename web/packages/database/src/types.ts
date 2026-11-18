@@ -145,7 +145,9 @@ export interface Database {
           price: number
           max_seats: number
           available_seats: number
-          status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+          status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'collecting_interest'
+          minimum_interest: number | null
+          interest_count: number
           created_at: string
           updated_at: string
         }
@@ -160,7 +162,8 @@ export interface Database {
           price: number
           max_seats: number
           available_seats?: number
-          status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+          status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'collecting_interest'
+          minimum_interest?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -175,7 +178,7 @@ export interface Database {
           price?: number
           max_seats?: number
           available_seats?: number
-          status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+          status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'collecting_interest'
           created_at?: string
           updated_at?: string
         }

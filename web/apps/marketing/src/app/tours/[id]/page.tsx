@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button, Card, Badge } from "@tankua/ui";
 import { getTourById } from "@/lib/queries";
+import { getTelegramTripUrl } from "@/lib/telegram";
 
 export default function TourDetailPage() {
   const params = useParams();
@@ -114,6 +115,7 @@ export default function TourDetailPage() {
             <div className="absolute bottom-6 left-6 right-6">
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="secondary">{tour.category}</Badge>
+                {tour.interest && <Badge variant="secondary">Collecting interest</Badge>}
                 {tour.providerReviews && (
                   <div className="flex items-center gap-1 text-white">
                     <Star aria-hidden="true" className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
@@ -236,22 +238,43 @@ export default function TourDetailPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Link href="/download">
-                    <Button className="w-full bg-[#ffb800] hover:bg-[#d99c00]" size="lg">
-                      Book Now
-                    </Button>
-                  </Link>
+                  {tour.interest ? (
+                    <>
+                      <p className="font-semibold text-[#181714]">
+                        {tour.interest.count} of {tour.interest.minimum} travelers interested
+                      </p>
+                      <p className="text-sm text-[#181714]/70">
+                        Express interest for free. You can reserve a seat once booking opens.
+                      </p>
+                      <a
+                        href={getTelegramTripUrl(tour.id)}
+                        className="flex min-h-12 items-center justify-center rounded-xl bg-[#ffb800] px-4 text-sm font-semibold text-[#181714] hover:bg-[#ffc83d]"
+                      >
+                        Express interest in Telegram
+                      </a>
+                    </>
+                  ) : tour.bookingOpen ? (
+                    <Link href="/download">
+                      <Button className="w-full bg-[#ffb800] hover:bg-[#d99c00]" size="lg">
+                        Book Now
+                      </Button>
+                    </Link>
+                  ) : (
+                    <p className="text-sm font-medium text-[#181714]/70">This trip is unavailable for booking.</p>
+                  )}
                   <Button variant="outline" className="w-full" size="lg">
                     <Share2 className="h-4 w-4 mr-2" />
                     Share Tour
                   </Button>
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-xs text-[#181714]/60 text-center">
-                    Booking requires the Tankua mobile app. Download now to book this tour.
-                  </p>
-                </div>
+                {tour.bookingOpen && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <p className="text-xs text-[#181714]/60 text-center">
+                      Booking requires the Tankua mobile app. Download now to book this tour.
+                    </p>
+                  </div>
+                )}
               </Card>
             </div>
           </div>
@@ -259,21 +282,21 @@ export default function TourDetailPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#181714]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Book This Tour?
-          </h2>
-          <p className="text-lg text-white/70 mb-8">
-            Download the Tankua app to book this tour and get instant digital tickets.
-          </p>
-          <Link href="/download">
-            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
-              Download the App
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {tour.bookingOpen && (
+        <section className="py-20 bg-[#181714]">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Ready to Book This Tour?</h2>
+            <p className="text-lg text-white/70 mb-8">
+              Download the Tankua app to book this tour and get instant digital tickets.
+            </p>
+            <Link href="/download">
+              <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
+                Download the App
+              </Button>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-[#181714] border-t border-white/10 py-12">

@@ -16,7 +16,7 @@ type ReviewSummary = {
 };
 
 const listingColumns = `
-  id, price,
+  id, price, status, minimum_interest, interest_count,
   destination:destinations!inner(name, city, category, images, description, region),
   provider:providers(id)
 `;
@@ -63,6 +63,9 @@ async function getProviderReviewSummary(providerId?: string): Promise<ReviewSumm
 function mapListing(trip: {
   id: string;
   price: number | null;
+  status: string;
+  minimum_interest: number | null;
+  interest_count: number;
   destination: {
     name: string;
     city: string | null;
@@ -81,6 +84,9 @@ function mapListing(trip: {
     category: destination.category || 'general',
     image: destination.images?.[0] || FALLBACK_TOUR_IMAGE,
     price: trip.price,
+    interest: trip.status === 'collecting_interest' && trip.minimum_interest !== null
+      ? { count: trip.interest_count, minimum: trip.minimum_interest }
+      : null,
     description: destination.description || '',
     tags: destination.category ? [destination.category] : [],
     providerReviews,
@@ -92,16 +98,25 @@ export function getFeaturedTours(limit = 4) {
 }
 
 export function getTours(options?: CatalogOptions) {
-  return loadTours(options, 'departure_date', true);
+  return loadTours(options, 'departure_date', true, true);
 }
 
-async function loadTours(options: CatalogOptions | undefined, orderBy: 'created_at' | 'departure_date', ascending: boolean) {
+async function loadTours(
+  options: CatalogOptions | undefined,
+  orderBy: 'created_at' | 'departure_date',
+  ascending: boolean,
+  includeInterest = false,
+) {
   try {
     let query = supabase
       .from('trips')
       .select(listingColumns, { count: 'exact' })
-      .eq('status', 'upcoming')
       .order(orderBy, { ascending });
+
+    query = includeInterest
+      ? query.in('status', ['upcoming', 'collecting_interest'])
+        .or(`minimum_interest.is.null,departure_date.gt.${new Date().toISOString()}`)
+      : query.eq('status', 'upcoming');
 
     const search = options?.search?.trim();
     if (search) {
@@ -207,6 +222,14 @@ export async function getTourById(id: string) {
 
     const destination = data.destination;
     const provider = data.provider as unknown as { id: string; name: string; description: string | null } | null;
+    const departureDate = data.departure_date as string | null;
+    const minimumInterest = (data.minimum_interest ?? null) as number | null;
+    const isFutureDeparture = departureDate !== null && Date.parse(departureDate) > Date.now();
+    const interest = data.status === 'collecting_interest' && minimumInterest !== null && isFutureDeparture
+      ? { count: data.interest_count as number, minimum: minimumInterest }
+      : null;
+    const bookingOpen = (data.status === 'upcoming' || data.status === 'active')
+      && (minimumInterest === null || isFutureDeparture);
 
     return {
       id: data.id as string,
@@ -215,10 +238,12 @@ export async function getTourById(id: string) {
       category: (destination?.category || 'general') as string,
       image: (destination?.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
       price: (data.price ?? null) as number | null,
+      interest,
+      bookingOpen,
       description: (data.summary || destination?.description || '') as string,
       provider,
       providerReviews: await getProviderReviewSummary(provider?.id),
-      departureDate: (data.departure_date ?? null) as string | null,
+      departureDate,
       tripType: (data.trip_type ?? null) as string | null,
       durationMinutes: (data.duration_minutes ?? null) as number | null,
       inclusions: (data.inclusions ?? []) as string[],

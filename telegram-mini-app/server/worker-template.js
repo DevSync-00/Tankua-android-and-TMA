@@ -273,17 +273,25 @@ async function authenticate(request, env) {
   );
 }
 
-async function getCatalog(env) {
-  const [destinations, trips, providers, stations, links] = await Promise.all([
+async function getCatalog(env, session) {
+  const [destinations, trips, providers, stations, links, interests] = await Promise.all([
     supabaseAll(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,is_featured,is_popular&order=name.asc'),
-    supabase(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,summary,itinerary,duration_minutes,transportation_type,difficulty_level,inclusions,exclusions,meeting_instructions,what_to_bring,cancellation_policy,status&status=in.(active,upcoming)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc`),
+    supabaseAll(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,summary,itinerary,duration_minutes,transportation_type,difficulty_level,inclusions,exclusions,meeting_instructions,what_to_bring,cancellation_policy,status,minimum_interest,interest_count&status=in.(active,upcoming,collecting_interest)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc,id.asc`),
     supabase(env, 'providers?select=id,name,description,logo_url,rating,total_trips&status=eq.active&order=name.asc'),
     supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,is_active&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
+    session
+      ? supabaseAll(env, `trip_interests?select=trip_id&user_id=eq.${encodeURIComponent(session.uid)}&order=trip_id.asc`)
+      : [],
   ]);
+  const activeProviders = new Set(providers.map(provider => provider.id));
+  const interestedTrips = new Set(interests.map(interest => interest.trip_id));
+  const catalogTrips = trips
+    .filter(trip => trip.status !== 'collecting_interest' || activeProviders.has(trip.provider_id))
+    .map(trip => ({ ...trip, interested: interestedTrips.has(trip.id) }));
   const catalogDestinations = destinations.map(destination => {
-    const prices = trips
-      .filter(trip => trip.destination_id === destination.id)
+    const prices = catalogTrips
+      .filter(trip => trip.destination_id === destination.id && trip.status !== 'collecting_interest' && trip.price != null)
       .map(trip => Number(trip.price))
       .filter(Number.isFinite);
     return {
@@ -296,7 +304,7 @@ async function getCatalog(env) {
     ...provider,
     logo_url: provider.logo_url ? `/api/providers/${provider.id}/logo` : null,
   }));
-  return json({ destinations: catalogDestinations, trips, providers: catalogProviders, stations, trip_pickup_stations: links });
+  return json({ destinations: catalogDestinations, trips: catalogTrips, providers: catalogProviders, stations, trip_pickup_stations: links });
 }
 
 async function getProviderLogo(providerId, env) {
@@ -358,6 +366,17 @@ async function createBooking(request, session, env) {
     },
   });
   return json({ booking: Array.isArray(booking) ? booking[0] : booking }, 201);
+}
+
+async function expressTripInterest(tripId, session, env) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tripId)) {
+    return json({ error: 'Invalid trip' }, 400);
+  }
+  const interest = await supabase(env, 'rpc/express_trip_interest_for_user', {
+    method: 'POST',
+    body: { p_trip_id: tripId, p_user_id: session.uid },
+  });
+  return json({ interest });
 }
 
 async function initializePayment(request, session, env) {
@@ -635,7 +654,7 @@ async function handleApi(request, env, requestId) {
   const url = new URL(request.url);
   if (request.method === 'POST') assertSameOrigin(request, env);
   if (url.pathname === '/api/auth/telegram' && request.method === 'POST') return authenticate(request, env);
-  if (url.pathname === '/api/catalog' && request.method === 'GET') return getCatalog(env);
+  if (url.pathname === '/api/catalog' && request.method === 'GET') return getCatalog(env, await readSession(request, env));
   const providerLogoMatch = url.pathname.match(/^\/api\/providers\/([0-9a-f-]+)\/logo$/i);
   if (providerLogoMatch && request.method === 'GET') return getProviderLogo(providerLogoMatch[1], env);
   if (url.pathname === '/api/webhooks/chapa' && ['GET', 'POST'].includes(request.method)) {
@@ -653,6 +672,8 @@ async function handleApi(request, env, requestId) {
   }
   if (url.pathname === '/api/bookings' && request.method === 'GET') return getBookings(session, env);
   if (url.pathname === '/api/bookings' && request.method === 'POST') return createBooking(request, session, env);
+  const tripInterestMatch = url.pathname.match(/^\/api\/trips\/([^/]+)\/interest$/);
+  if (tripInterestMatch && request.method === 'POST') return expressTripInterest(tripInterestMatch[1], session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
   if (url.pathname === '/api/profile' && request.method === 'PUT') return updateProfile(request, session, env);

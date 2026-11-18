@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Omit<Props, "children">): Pro
 
   const description = tour.description
     ? tour.description.slice(0, 155)
-    : `Explore ${tour.name} in ${tour.location}, Ethiopia, and book with a trusted local provider on Tankua.`;
+    : `Explore ${tour.name} in ${tour.location}, Ethiopia, with a local provider on Tankua.`;
 
   return {
     title: `${tour.name} Tour`,
@@ -36,7 +36,7 @@ export default async function TourLayout({ children, params }: Props) {
     url: path,
     touristType: tour.category,
     itinerary: { "@type": "Place", name: tour.location, address: { "@type": "PostalAddress", addressCountry: "ET" } },
-    ...(tour.price !== null && {
+    ...(tour.bookingOpen && tour.price !== null && {
       offers: { "@type": "Offer", price: tour.price, priceCurrency: "ETB", url: path },
     }),
     provider: tour.provider?.name ? { "@type": "Organization", name: tour.provider.name } : { "@id": `${SITE_URL}/#organization` },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/the
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useFeedback } from '../../contexts/FeedbackContext';
-import { getTrips } from '../../services/database';
+import { expressTripInterest, getMyInterestedTripIds, getTrips } from '../../services/database';
 import ModernButton from '../../components/ModernButton';
 
 const SelectTripScreen = ({ navigation }) => {
@@ -24,15 +24,28 @@ const SelectTripScreen = ({ navigation }) => {
   const { showToast } = useFeedback();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(currentBooking.trip || null);
+  const [interestedTripIds, setInterestedTripIds] = useState(() => new Set());
+  const [pendingInterestId, setPendingInterestId] = useState(null);
+  const submittingInterest = useRef(false);
+
+  const interestTrips = trips.filter((trip) => trip.status === 'collecting_interest');
+  const bookableTrips = trips.filter((trip) => (
+    (trip.status === 'upcoming' || trip.status === 'active')
+    && (trip.minimum_interest == null || Date.parse(trip.departure_date) > Date.now())
+  ));
+  const tripToBook = bookableTrips.find((trip) => trip.id === selectedTrip?.id);
 
   useEffect(() => {
     loadTrips();
   }, [currentBooking.destination]);
 
-  const loadTrips = async () => {
+  const loadTrips = async ({ refresh = false } = {}) => {
+    if (refresh) setRefreshing(true);
+    else setLoading(true);
+
     try {
-      setLoading(true);
       const destination = currentBooking.destination;
 
       if (!destination?.id) {
@@ -55,26 +68,64 @@ const SelectTripScreen = ({ navigation }) => {
         return;
       }
 
-      const filters = { destinationId: destination.id };
-      const data = await getTrips(filters);
+      const data = await getTrips({ destinationId: destination.id, includeInterest: true });
+      const interestIds = data.filter((trip) => trip.status === 'collecting_interest').map((trip) => trip.id);
+      const myTripIds = await getMyInterestedTripIds(interestIds).catch((error) => {
+        console.error('Error loading trip interests:', error);
+        return null;
+      });
+      if (myTripIds) {
+        setInterestedTripIds((previous) => new Set([...previous, ...myTripIds]));
+      }
       setTrips(data);
     } catch (error) {
       console.error('Error loading trips:', error);
       showToast({ type: 'error', title: 'Error', message: 'Failed to load available trips. Please try again.' });
     } finally {
-      setLoading(false);
+      if (refresh) setRefreshing(false);
+      else setLoading(false);
     }
   };
 
   const handleContinue = () => {
-    if (selectedTrip) {
+    if (tripToBook) {
       updateBooking({ 
-        trip: selectedTrip,
-        provider: selectedTrip.providers,
-        tripType: selectedTrip.trip_type,
-        date: selectedTrip.departure_date || selectedTrip.date,
+        trip: tripToBook,
+        provider: tripToBook.providers,
+        tripType: tripToBook.trip_type,
+        date: tripToBook.departure_date || tripToBook.date,
       });
       navigation.navigate('SelectPickupStation');
+    }
+  };
+
+  const handleExpressInterest = async (trip) => {
+    if (submittingInterest.current || interestedTripIds.has(trip.id)) return;
+
+    submittingInterest.current = true;
+    setPendingInterestId(trip.id);
+    try {
+      const result = await expressTripInterest(trip.id);
+      if (result.interested) {
+        setInterestedTripIds((previous) => new Set(previous).add(trip.id));
+      }
+      setTrips((previous) => previous.map((item) => item.id === trip.id
+        ? { ...item, status: result.status, interest_count: result.interest_count }
+        : item));
+      if ((result.status === 'upcoming' || result.status === 'active')
+        && Date.parse(trip.departure_date) > Date.now()) {
+        showToast({ type: 'success', title: 'Booking is open', message: 'You can now book this trip.' });
+      } else if (result.status === 'collecting_interest' && result.interested) {
+        showToast({ type: 'success', title: 'Interest recorded', message: 'Check back to see when booking opens.' });
+      } else {
+        showToast({ type: 'warning', title: 'Trip unavailable', message: 'This trip is no longer accepting interest.' });
+      }
+    } catch (error) {
+      console.error('Error expressing trip interest:', error);
+      showToast({ type: 'error', title: 'Interest unavailable', message: 'Refresh the trips and try again.' });
+    } finally {
+      submittingInterest.current = false;
+      setPendingInterestId(null);
     }
   };
 
@@ -193,17 +244,23 @@ const SelectTripScreen = ({ navigation }) => {
 
       {renderStepHeader()}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {
+          if (!submittingInterest.current) loadTrips({ refresh: true });
+        }} />}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Select Trip</Text>
           <Text style={styles.subtitle}>
             {currentBooking.destination
-              ? `Available trips to ${currentBooking.destination?.name || 'this destination'}`
+              ? `Trips to ${currentBooking.destination?.name || 'this destination'}`
               : 'Choose a trip for your journey'}
           </Text>
         </View>
 
-        {trips.length === 0 ? (
+        {bookableTrips.length === 0 && interestTrips.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="calendar-outline" size={60} color={COLORS.grayLight} />
             <Text style={styles.emptyText}>No trips scheduled</Text>
@@ -213,9 +270,11 @@ const SelectTripScreen = ({ navigation }) => {
                 : 'Please check back later or contact support.'}
             </Text>
           </View>
-        ) : (
+        )}
+
+        {bookableTrips.length > 0 && (
           <View style={styles.tripsList}>
-            {trips.map((trip) => {
+            {bookableTrips.map((trip) => {
               const provider = trip.providers;
               const departureDate = trip.departure_date || trip.date;
               const returnDate = trip.return_date;
@@ -301,28 +360,61 @@ const SelectTripScreen = ({ navigation }) => {
           </View>
         )}
 
-        {/* Info Fee Card */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={20} color={COLORS.iconSecondary} />
-          <Text style={styles.infoText}>
-            Tankua platform charges a 5% service fee included in the final price summary.
-          </Text>
-        </View>
+        {interestTrips.length > 0 && (
+          <View style={styles.interestSection}>
+            <Text style={styles.interestSectionTitle}>Trips collecting interest</Text>
+            <Text style={styles.subtitle}>Booking opens when enough travelers express interest.</Text>
+            <View style={styles.tripsList}>
+              {interestTrips.map((trip) => (
+                <View key={trip.id} style={[styles.tripCard, styles.interestCard]}>
+                  <Text style={styles.providerName}>{trip.providers?.name || 'Travel Provider'}</Text>
+                  {trip.summary ? <Text style={styles.subtitle}>{trip.summary}</Text> : null}
+                  <Text style={styles.subtitle}>{formatDate(trip.departure_date || trip.date)}</Text>
+                  {trip.price != null && (
+                    <Text style={styles.subtitle}>ETB {Number(trip.price).toLocaleString()} per person</Text>
+                  )}
+                  <Text style={styles.interestCount}>
+                    {trip.interest_count} of {trip.minimum_interest} travelers interested
+                  </Text>
+                  <ModernButton
+                    title={interestedTripIds.has(trip.id) ? 'Interest registered' : 'Express interest'}
+                    onPress={() => handleExpressInterest(trip)}
+                    disabled={refreshing || pendingInterestId !== null || interestedTripIds.has(trip.id)}
+                    loading={pendingInterestId === trip.id}
+                    icon="hand-left-outline"
+                    variant="outline"
+                    size="medium"
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {bookableTrips.length > 0 && (
+          <View style={styles.infoCard}>
+            <Ionicons name="information-circle-outline" size={20} color={COLORS.iconSecondary} />
+            <Text style={styles.infoText}>
+              Tankua platform charges a 5% service fee included in the final price summary.
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Sticky Bottom Actions */}
-      <View style={styles.footer}>
-        <ModernButton
-          title={t('continue') || 'Continue'}
-          onPress={handleContinue}
-          disabled={!selectedTrip}
-          variant="primary"
-          size="large"
-          icon="arrow-forward"
-          iconPosition="right"
-          style={styles.button}
-        />
-      </View>
+      {bookableTrips.length > 0 && (
+        <View style={styles.footer}>
+          <ModernButton
+            title={t('continue') || 'Continue'}
+            onPress={handleContinue}
+            disabled={!tripToBook}
+            variant="primary"
+            size="large"
+            icon="arrow-forward"
+            iconPosition="right"
+            style={styles.button}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -437,6 +529,22 @@ const styles = StyleSheet.create({
   },
   tripsList: {
     gap: SPACING.md,
+  },
+  interestSection: {
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  interestSectionTitle: {
+    fontSize: FONTS.sizes.lg,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  interestCard: {
+    gap: SPACING.sm,
+  },
+  interestCount: {
+    color: COLORS.secondary,
+    fontWeight: '700',
   },
   tripCard: {
     backgroundColor: COLORS.white,

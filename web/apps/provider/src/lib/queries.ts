@@ -466,6 +466,8 @@ export interface TripDetails {
   max_seats: number;
   available_seats: number;
   status: string;
+  minimum_interest: number | null;
+  interest_count: number;
   bookings_count: number;
   tour_category?: string | null;
   itinerary?: string | null;
@@ -481,21 +483,7 @@ export async function getProviderTrips(
 ): Promise<{ trips: TripDetails[]; total: number }> {
   let query = supabase
     .from('trips')
-    .select(`
-      id,
-      destination_id,
-      departure_date,
-      date,
-      return_date,
-      trip_type,
-      price,
-      max_seats,
-      available_seats,
-      status,
-      tour_category,
-      itinerary,
-      destinations (id, name, city, region)
-    `, { count: 'exact' })
+    .select('*, destinations (id, name, city, region)', { count: 'exact' })
     .eq('provider_id', providerId);
   
   // Try ordering by departure_date, fallback to date
@@ -536,6 +524,8 @@ export async function getProviderTrips(
       max_seats: t.max_seats || 0,
       available_seats: t.available_seats || 0,
       status: t.status,
+      minimum_interest: t.minimum_interest ?? null,
+      interest_count: t.interest_count ?? 0,
       tour_category: t.tour_category,
       itinerary: t.itinerary,
       bookings_count: (t.max_seats || 0) - (t.available_seats || 0),
@@ -552,6 +542,7 @@ export async function createTrip(trip: {
   return_date?: string;
   price: number;
   max_seats: number;
+  minimum_interest?: number;
   tour_category?: string;
   itinerary?: string;
   summary?: string;
@@ -573,8 +564,12 @@ export async function createTrip(trip: {
     price: trip.price,
     max_seats: trip.max_seats,
     available_seats: trip.max_seats,
-    status: 'upcoming',
+    status: trip.minimum_interest === undefined ? 'upcoming' : 'collecting_interest',
   };
+
+  if (trip.minimum_interest !== undefined) {
+    tripData.minimum_interest = trip.minimum_interest;
+  }
 
   if (trip.tour_category) {
     tripData.tour_category = trip.tour_category;
@@ -691,7 +686,8 @@ export async function updateTrip(
     status?: string;
     tour_category?: string;
     itinerary?: string;
-  }
+  },
+  expectedStatus?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const updateData: any = { ...updates };
   
@@ -716,14 +712,24 @@ export async function updateTrip(
     }
   }
   
-  const { error } = await supabase
+  let query = supabase
     .from('trips')
     .update(updateData)
     .eq('id', tripId);
+
+  if (expectedStatus) {
+    query = query.eq('status', expectedStatus);
+  }
+
+  const { data, error } = await query.select('id');
   
   if (error) {
     console.error('Error updating trip:', error);
     return { success: false, error: error.message };
+  }
+
+  if (!data?.length) {
+    return { success: false, error: 'The trip could not be updated. Reopen it to check its current status.' };
   }
   
   return { success: true };

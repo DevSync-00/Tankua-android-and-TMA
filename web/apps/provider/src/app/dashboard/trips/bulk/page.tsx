@@ -122,7 +122,7 @@ export default function BulkTripPage() {
     if (!providerId) return;
     try {
       const result = await getProviderTrips(providerId, { limit: 100 });
-      setExistingTrips(result.trips);
+      setExistingTrips(result.trips.filter((trip) => trip.minimum_interest === null));
     } catch (error) {
       console.error('Error loading trips:', error);
     }
@@ -413,7 +413,11 @@ export default function BulkTripPage() {
           <CardHeader>
             <CardTitle>Creation Mode</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Bulk trips open for booking immediately. To set an interest goal,{" "}
+              <Link href="/dashboard/trips/new" className="font-medium text-primary underline">create a single trip</Link>.
+            </p>
             <div className="flex gap-4">
               <Button
                 variant={mode === "template" ? "default" : "outline"}

@@ -19,6 +19,32 @@ import { Header } from "@/components/header";
 import { Card, CardContent, Button, Badge, formatCurrency, ConfirmDialog, InlineBanner } from "@tankua/ui";
 import { getProviderTrips, updateTripStatus, deleteTrip, type TripDetails } from "@/lib/queries";
 
+const tripStatuses = {
+  collecting_interest: { label: "Collecting interest", variant: "warning" },
+  upcoming: { label: "Upcoming", variant: "success" },
+  ongoing: { label: "Ongoing", variant: "warning" },
+  completed: { label: "Completed", variant: "secondary" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+} as const;
+
+function TripStatus({ trip }: { trip: TripDetails }) {
+  const status = tripStatuses[trip.status as keyof typeof tripStatuses];
+  const interestClosed = trip.status === "collecting_interest" && Date.parse(trip.departure_date) <= Date.now();
+
+  return (
+    <div className="space-y-1">
+      <Badge variant={status?.variant ?? "secondary"} dot={Boolean(status)}>
+        {interestClosed ? "Interest goal missed" : status?.label ?? trip.status}
+      </Badge>
+      {trip.minimum_interest !== null && (
+        <p className="text-xs text-muted-foreground">
+          {trip.interest_count.toLocaleString()} / {trip.minimum_interest.toLocaleString()} interested
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function TripsPage() {
   const router = useRouter();
   const [providerId, setProviderId] = useState<string | null>(null);
@@ -85,8 +111,9 @@ export default function TripsPage() {
   }, [trips, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const totalSeats = trips.reduce((sum, t) => sum + (t.max_seats || 0), 0);
-    const bookedSeats = trips.reduce(
+    const bookableTrips = trips.filter((trip) => trip.minimum_interest === null || trip.interest_count >= trip.minimum_interest);
+    const totalSeats = bookableTrips.reduce((sum, t) => sum + (t.max_seats || 0), 0);
+    const bookedSeats = bookableTrips.reduce(
       (sum, t) => sum + Math.max(0, (t.max_seats || 0) - (t.available_seats || 0)),
       0
     );
@@ -95,24 +122,6 @@ export default function TripsPage() {
 
     return { totalSeats, bookedSeats, upcomingCount, occupancy };
   }, [trips]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "upcoming":
-      case "ongoing":
-        return (
-          <Badge variant={status === "ongoing" ? "warning" : "success"} dot>
-            {status === "ongoing" ? "Ongoing" : "Upcoming"}
-          </Badge>
-        );
-      case "completed":
-        return <Badge variant="secondary" dot>Completed</Badge>;
-      case "cancelled":
-        return <Badge variant="destructive" dot>Cancelled</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -176,7 +185,7 @@ export default function TripsPage() {
         subtitle={
           loading
             ? "Loading trips..."
-            : `${filteredTrips.length} trips${statusFilter !== "all" ? ` • ${statusFilter}` : ""}`
+            : `${filteredTrips.length} ${filteredTrips.length === 1 ? "trip" : "trips"}`
         }
         actions={
           <div className="flex items-center gap-2">
@@ -226,13 +235,13 @@ export default function TripsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filter trips by status"
             className="h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
-            <option value="all">All Status</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="all">All statuses</option>
+            {Object.entries(tripStatuses).map(([value, status]) => (
+              <option key={value} value={value}>{status.label}</option>
+            ))}
           </select>
         </div>
 
@@ -280,17 +289,35 @@ export default function TripsPage() {
         {!error && !loading && filteredTrips.length === 0 && (
           <Card>
             <CardContent className="p-6 text-center space-y-2">
-              <p className="font-medium">No trips yet</p>
-              <p className="text-sm text-muted-foreground">
-                Create your first trip from Tankua destinations to get started.
-              </p>
-              <div className="flex justify-center">
-                <Link href="/dashboard/trips/new">
-                  <Button size="sm" leftIcon={<Route className="h-4 w-4" />}>
-                    Create a Trip
+              {searchQuery || statusFilter !== "all" ? (
+                <>
+                  <p className="font-medium">No trips match these filters</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("all");
+                    }}
+                  >
+                    Clear filters
                   </Button>
-                </Link>
-              </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">No trips yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Create your first trip from Tankua destinations to get started.
+                  </p>
+                  <div className="flex justify-center">
+                    <Link href="/dashboard/trips/new">
+                      <Button size="sm" leftIcon={<Route className="h-4 w-4" />}>
+                        Create a Trip
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -320,7 +347,7 @@ export default function TripsPage() {
                           </p>
                         </div>
                       </div>
-                      {getStatusBadge(trip.status)}
+                      <TripStatus trip={trip} />
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -427,7 +454,7 @@ export default function TripsPage() {
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          {getStatusBadge(trip.status)}
+                          <TripStatus trip={trip} />
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-1">

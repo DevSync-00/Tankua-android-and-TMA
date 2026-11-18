@@ -38,6 +38,8 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   return { value, label: `${hours % 12 || 12}:${minutes} ${hours < 12 ? "AM" : "PM"}` };
 });
 
+const MAX_INTEREST_THRESHOLD = 2_147_483_647;
+
 export default function NewTripPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -58,6 +60,8 @@ export default function NewTripPage() {
     returnDate: "",
     price: "",
     maxSeats: "",
+    waitForInterest: false,
+    minimumInterest: "",
     tourCategory: "",
     summary: "",
     itinerary: "",
@@ -176,6 +180,7 @@ export default function NewTripPage() {
 
     const priceValue = Number(formData.price);
     const seatsValue = Number(formData.maxSeats);
+    const minimumInterest = formData.waitForInterest ? Number(formData.minimumInterest) : undefined;
 
     if (!Number.isFinite(priceValue) || priceValue <= 0) {
       setErrorMessage("Enter a valid price greater than 0.");
@@ -184,6 +189,12 @@ export default function NewTripPage() {
 
     if (!Number.isFinite(seatsValue) || seatsValue <= 0) {
       setErrorMessage("Enter the maximum seats available.");
+      return;
+    }
+
+    if (minimumInterest !== undefined &&
+        (!Number.isInteger(minimumInterest) || minimumInterest < 1 || minimumInterest > MAX_INTEREST_THRESHOLD)) {
+      setErrorMessage("Enter a valid whole number of interested travelers.");
       return;
     }
 
@@ -203,6 +214,11 @@ export default function NewTripPage() {
       return;
     }
 
+    if (minimumInterest !== undefined && departureDate.getTime() <= Date.now()) {
+      setErrorMessage("Choose a future departure for a trip collecting interest.");
+      return;
+    }
+
     const returnDate =
       formData.tripType === "round_trip" && formData.returnDate
         ? new Date(`${formData.returnDate}T${formData.departureTime}:00`)
@@ -219,6 +235,7 @@ export default function NewTripPage() {
         return_date: returnDate ? returnDate.toISOString() : undefined,
         price: priceValue,
         max_seats: seatsValue,
+        minimum_interest: minimumInterest,
         tour_category: formData.tourCategory || undefined,
         summary: formData.summary.trim() || undefined,
         itinerary: formData.itinerary?.trim() || undefined,
@@ -586,13 +603,49 @@ export default function NewTripPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>When Booking Opens</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <label className="flex items-start gap-3 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={formData.waitForInterest}
+                  onChange={(event) => setFormData({ ...formData, waitForInterest: event.target.checked })}
+                  className="mt-0.5 h-4 w-4 accent-primary"
+                  aria-describedby="trip-booking-explanation"
+                />
+                Wait for enough travelers to express interest
+              </label>
+              <p id="trip-booking-explanation" className="text-sm text-muted-foreground">
+                Booking opens immediately by default. With an interest goal, booking opens automatically when enough travelers express interest before departure. Travelers book their seats after the trip opens.
+              </p>
+              {formData.waitForInterest && (
+                <label className="block text-sm font-medium">
+                  Minimum interested travelers
+                  <input
+                    type="number"
+                    min="1"
+                    max={MAX_INTEREST_THRESHOLD}
+                    step="1"
+                    required
+                    value={formData.minimumInterest}
+                    onChange={(event) => setFormData({ ...formData, minimumInterest: event.target.value })}
+                    className="mt-2 block w-full max-w-xs rounded-xl border border-border px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Actions */}
           <div className="flex items-center justify-end gap-4 pt-4">
             <Link href="/dashboard/trips">
               <Button type="button" variant="outline">Cancel</Button>
             </Link>
             <Button type="submit" isLoading={saving} leftIcon={<CheckCircle className="h-4 w-4" />}>
-              Create Trip
+              {formData.waitForInterest ? "Create Trip and Collect Interest" : "Create Trip"}
             </Button>
           </div>
         </form>

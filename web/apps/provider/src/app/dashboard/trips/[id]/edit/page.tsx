@@ -11,6 +11,14 @@ import { getProviderTrip, replaceTripPickupStations, updateTrip } from "@/lib/qu
 
 type Station = { id: string; name: string; city: string | null; address: string | null; extra_price: number };
 type StationValue = { selected: boolean; pickupTime: string; extraPrice: string };
+type SavedTripState = {
+  status: string;
+  departureDate: string;
+  departureTime: string;
+  maxSeats: string;
+  minimumInterest: number | null;
+  interestCount: number;
+};
 
 export default function EditTripPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,9 +28,16 @@ export default function EditTripPage() {
   const [stations,setStations]=useState<Station[]>([]);
   const [stationConfig,setStationConfig]=useState<Record<string,StationValue>>({});
   const [form,setForm]=useState({destinationId:"",tripType:"round_trip",departureDate:"",departureTime:"",returnDate:"",price:"",maxSeats:"",tourCategory:"",itinerary:"",status:"upcoming"});
+  const [savedTrip, setSavedTrip] = useState<SavedTripState | null>(null);
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
+
+  const isCollectingInterest = savedTrip?.status === "collecting_interest";
+  const cancelledBeforeGoal = savedTrip?.status === "cancelled"
+    && savedTrip.minimumInterest !== null
+    && savedTrip.interestCount < savedTrip.minimumInterest;
+  const activationLocked = isCollectingInterest || cancelledBeforeGoal;
 
   useEffect(()=>{
     const stored=localStorage.getItem("provider_user");
@@ -43,12 +58,21 @@ export default function EditTripPage() {
       setStations((stationResult.data||[]) as Station[]);
       const trip:any=tripResult.trip;
       const departure=new Date(trip.departure_date||trip.date);
-      setForm({
+      const loadedForm = {
         destinationId:trip.destination_id||"", tripType:trip.trip_type||"round_trip",
         departureDate:departure.toISOString().slice(0,10), departureTime:departure.toTimeString().slice(0,5),
         returnDate:trip.return_date?new Date(trip.return_date).toISOString().slice(0,10):"",
         price:String(trip.price||""), maxSeats:String(trip.max_seats||""), tourCategory:trip.tour_category||"",
         itinerary:trip.itinerary||"", status:trip.status||"upcoming",
+      };
+      setForm(loadedForm);
+      setSavedTrip({
+        status: loadedForm.status,
+        departureDate: loadedForm.departureDate,
+        departureTime: loadedForm.departureTime,
+        maxSeats: loadedForm.maxSeats,
+        minimumInterest: trip.minimum_interest ?? null,
+        interestCount: trip.interest_count ?? 0,
       });
       const links:Record<string,StationValue>={};
       (tripResult.stations as any[]).forEach(link=>{links[link.station_id]={selected:true,pickupTime:link.pickup_time||"",extraPrice:String(link.extra_price||0)};});
@@ -58,18 +82,24 @@ export default function EditTripPage() {
 
   async function submit(event:FormEvent){
     event.preventDefault(); setError("");
+    if (!savedTrip) return;
     const selected=stations.filter(station=>stationConfig[station.id]?.selected);
     if(!selected.length){setError("Select at least one pickup station.");return;}
     if(selected.some(station=>!stationConfig[station.id]?.pickupTime)){setError("Add a pickup time for every selected station.");return;}
     const departure=new Date(`${form.departureDate}T${form.departureTime}:00`);
     if(Number.isNaN(departure.getTime())){setError("Enter a valid departure date and time.");return;}
+    const departureChanged = form.departureDate !== savedTrip.departureDate || form.departureTime !== savedTrip.departureTime;
+    if (isCollectingInterest && form.status === "collecting_interest" && departureChanged && departure.getTime() <= Date.now()) {
+      setError("Choose a future departure for a trip collecting interest.");
+      return;
+    }
     setSaving(true);
     const tripResult=await updateTrip(id,{
-      destination_id:form.destinationId,trip_type:form.tripType,departure_date:departure.toISOString(),
+      destination_id:form.destinationId,trip_type:form.tripType,departure_date:departureChanged ? departure.toISOString() : undefined,
       return_date:form.tripType==="round_trip"&&form.returnDate?new Date(`${form.returnDate}T${form.departureTime}:00`).toISOString():null,
-      price:Number(form.price),max_seats:Number(form.maxSeats),tour_category:form.tourCategory||undefined,
-      itinerary:form.itinerary.trim()||undefined,status:form.status,
-    });
+      price:Number(form.price),max_seats:form.maxSeats !== savedTrip.maxSeats ? Number(form.maxSeats) : undefined,tour_category:form.tourCategory||undefined,
+      itinerary:form.itinerary.trim()||undefined,status:form.status !== savedTrip.status ? form.status : undefined,
+    }, activationLocked ? savedTrip.status : undefined);
     if(!tripResult.success){setError(tripResult.error||"Could not update trip.");setSaving(false);return;}
     const stationResult=await replaceTripPickupStations(id,selected.map(station=>({
       station_id:station.id,pickup_time:stationConfig[station.id].pickupTime,
@@ -90,7 +120,37 @@ export default function EditTripPage() {
         <label>Departure date *<input required type="date" value={form.departureDate} onChange={e=>setForm({...form,departureDate:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label>Departure time *<input required type="time" value={form.departureTime} onChange={e=>setForm({...form,departureTime:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         {form.tripType==="round_trip"&&<label>Return date *<input required type="date" value={form.returnDate} onChange={e=>setForm({...form,returnDate:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>}
-        <label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border bg-background"><option value="upcoming">Upcoming</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+        <label>
+          Status
+          <select
+            value={form.status}
+            onChange={(event) => setForm({ ...form, status: event.target.value })}
+            className="mt-1 w-full px-3 py-3 rounded-xl border bg-background"
+          >
+            {isCollectingInterest && <option value="collecting_interest">Collecting interest</option>}
+            {!activationLocked && (
+              <>
+                {savedTrip?.status === "active" && <option value="active">Active</option>}
+                <option value="upcoming">Upcoming</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+              </>
+            )}
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+        {savedTrip?.minimumInterest != null && (
+          <div className="md:col-span-2 rounded-xl border bg-muted/30 p-4">
+            <p className="text-sm font-medium">
+              {savedTrip.interestCount.toLocaleString()} / {savedTrip.minimumInterest.toLocaleString()} interested
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isCollectingInterest
+                ? "Booking opens automatically when the interest goal is reached before departure."
+                : "The interest goal was set when the trip was created."}
+            </p>
+          </div>
+        )}
         <label>Price per seat (ETB) *<input required min="1" type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label>Maximum seats *<input required min="1" type="number" value={form.maxSeats} onChange={e=>setForm({...form,maxSeats:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label>Tour category<input value={form.tourCategory} onChange={e=>setForm({...form,tourCategory:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>

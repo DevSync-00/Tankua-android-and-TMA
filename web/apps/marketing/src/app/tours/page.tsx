@@ -238,6 +238,11 @@ export default function ToursPage() {
                         <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                       ))}
                     </div>
+                    {tour.interest && (
+                      <p className="mb-3 text-sm font-medium text-[#805800]">
+                        {tour.interest.count} of {tour.interest.minimum} travelers interested
+                      </p>
+                    )}
                     <div className="flex items-center justify-between gap-2">
                       {tour.price !== null && (
                         <div>
@@ -246,7 +251,7 @@ export default function ToursPage() {
                         </div>
                       )}
                       <Link href={`/tours/${tour.id}`}>
-                        <Button size="sm">Book Now</Button>
+                        <Button size="sm">{tour.interest ? "View trip" : "Book Now"}</Button>
                       </Link>
                     </div>
                   </div>
@@ -287,6 +292,11 @@ export default function ToursPage() {
                           </div>
                         </div>
                         <div className="text-right">
+                          {tour.interest && (
+                            <p className="mb-2 text-sm font-medium text-[#805800]">
+                              {tour.interest.count} of {tour.interest.minimum} travelers interested
+                            </p>
+                          )}
                           {tour.providerReviews && (
                             <div className="flex items-center gap-1 justify-end mb-2">
                               <Star aria-hidden="true" className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
@@ -302,7 +312,7 @@ export default function ToursPage() {
                           )}
                           <Link href={`/tours/${tour.id}`}>
                           <Button>
-                            Book Now
+                            {tour.interest ? "View trip" : "Book Now"}
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                           </Link>
