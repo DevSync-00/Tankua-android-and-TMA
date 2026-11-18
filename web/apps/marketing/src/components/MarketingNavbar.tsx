@@ -15,6 +15,7 @@ function navLinks(): NavItem[] {
   return [
     { label: "Tours", href: "/tours" },
     { label: "Destinations", href: "/destinations" },
+    { label: "Weekend Planner", href: "/weekend" },
     { label: "Travel Guides", href: "/guides" },
     { label: "For Providers", href: "https://provider.tankua.co" },
     { label: "About", href: "/about" },
@@ -120,7 +121,7 @@ export function MarketingNavbar() {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-7">
+          <div className="hidden lg:flex items-center gap-4 xl:gap-7">
             {navLinks().map((l) => {
               const active = navLinkActive(pathname, l.href);
               const cls = `text-[13px] font-medium transition-colors relative group ${
@@ -145,7 +146,7 @@ export function MarketingNavbar() {
             })}
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <button
               type="button"
               onClick={() => setLangLabel((p) => (p === "EN" ? "አማ" : "EN"))}
@@ -182,7 +183,7 @@ export function MarketingNavbar() {
 
           <button
             type="button"
-            className={`md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${solid ? "text-brand-ink" : "text-white"}`}
+            className={`lg:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${solid ? "text-brand-ink" : "text-white"}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -198,7 +199,7 @@ export function MarketingNavbar() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="md:hidden fixed inset-0 top-0 bg-[#151713] z-50 flex flex-col px-6 py-8"
+            className="lg:hidden fixed inset-0 overflow-y-auto bg-[#151713] z-50 flex flex-col px-6 py-8"
           >
             <div className="flex items-center justify-between mb-10">
               <div className="flex items-center gap-2">

@@ -26,6 +26,7 @@ import {
 import EnhancedDestinationCard from '../components/EnhancedDestinationCard';
 import CategoryRibbon from '../components/CategoryRibbon';
 import { SkeletonCard } from '../components/SkeletonLoader';
+import WeekendPlannerLink from '../components/WeekendPlannerLink';
 import { deduplicateDestinations, sortByDistance } from '../utils/destinationUtils';
 
 const HomeScreen = ({ navigation }) => {
@@ -216,6 +217,8 @@ const HomeScreen = ({ navigation }) => {
           />
         }
       >
+        <WeekendPlannerLink style={styles.weekendPlanner} />
+
         {/* Category Ribbon */}
         <CategoryRibbon
           onCategoryPress={handleCategoryPress}
@@ -373,6 +376,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: SPACING.xl + SPACING.xxl,
+  },
+  weekendPlanner: {
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.md,
   },
   header: {
     backgroundColor: COLORS.white,

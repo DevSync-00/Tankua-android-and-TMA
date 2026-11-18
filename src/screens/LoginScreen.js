@@ -8,6 +8,7 @@ import { AUTH_COPY } from '../constants/authCopy';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from '../contexts/FeedbackContext';
 import GoogleIcon from '../components/auth/GoogleIcon';
+import WeekendPlannerLink from '../components/WeekendPlannerLink';
 
 const TelegramIcon = ({ size = 28, color = '#FFFFFF' }) => (
   <Svg width={size} height={size} viewBox="0 0 640 640">
@@ -84,6 +85,7 @@ const LoginScreen = ({ navigation }) => {
       </View>
 
       <Text style={authStyles.terms}>{AUTH_COPY.termsApply}</Text>
+      <WeekendPlannerLink style={styles.weekendPlanner} />
     </AuthScreenLayout>
   );
 };
@@ -96,6 +98,10 @@ const styles = StyleSheet.create({
   buttonWrap: {
     marginTop: 36,
     width: '100%',
+  },
+  weekendPlanner: {
+    alignSelf: 'stretch',
+    marginTop: 22,
   },
   telegramButton: {
     flexDirection: 'row',

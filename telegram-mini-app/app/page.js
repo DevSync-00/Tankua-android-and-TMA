@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
+  ArrowLeft, ArrowUpRight, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
   Building2, Clock3, Compass, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
   MapPin, Minus, Navigation, Plus, Search, Share2, ShieldCheck, Star,
   Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings, Phone, ShieldAlert
@@ -41,6 +41,7 @@ const tabs = [
   ['home', Home, 'Home'], ['search', Search, 'Search'], ['trips', Bus, 'Trips'],
   ['map', MapIcon, 'Map'], ['profile', UserRound, 'Profile']
 ];
+const WEEKEND_PLANNER_URL = 'https://www.tankua.co/weekend';
 
 function money(n) { return `ETB ${Number(n).toLocaleString()}`; }
 function vibrate(type = 'light') { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type); }
@@ -461,8 +462,41 @@ function AuthGate({ status, error, retry }) {
         <span><b>{status === 'error' ? 'Your account is safe' : 'Protected by Telegram'}</b>{status === 'error' ? 'No account data was accepted.' : 'Password-free, verified access.'}</span>
       </div>
     </section>
+    <WeekendPlannerLink />
     <p className="auth-foot">Travel farther. Feel at home.</p>
   </main>;
+}
+
+function WeekendPlannerLink() {
+  const openInTelegramBrowser = (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const webApp = window.Telegram?.WebApp;
+    if (!webApp?.initData || typeof webApp.openLink !== 'function') return;
+
+    try {
+      webApp.openLink(WEEKEND_PLANNER_URL);
+      event.preventDefault();
+    } catch {
+      // The anchor opens a browser tab if the Telegram client rejects the request.
+    }
+  };
+
+  return (
+    <a
+      className="weekend-planner-link"
+      href={WEEKEND_PLANNER_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={openInTelegramBrowser}
+    >
+      <span className="weekend-planner-link-icon"><CalendarDays size={21} aria-hidden="true" /></span>
+      <span className="weekend-planner-link-copy">
+        <strong>Plan your weekend</strong>
+        <span>Addis outings, events and group plans</span>
+      </span>
+      <ArrowUpRight size={18} aria-hidden="true" />
+    </a>
+  );
 }
 
 const ALL_CATEGORIES = [
@@ -493,6 +527,7 @@ function HomeView({ user, destinations, trips, category, setCategory, open, goSe
       <span><b>Find a destination</b><small>Search places, cities and experiences</small></span>
       <i className="search-go"><ChevronRight/></i>
     </button>
+    <WeekendPlannerLink />
     <div className="chips">
       {ALL_CATEGORIES.slice(0, 16).map(c => <button key={c} className={category===c?'selected':''} onClick={()=>setCategory(c)}>{c}</button>)}
     </div>

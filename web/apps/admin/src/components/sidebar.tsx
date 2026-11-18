@@ -9,6 +9,7 @@ import {
   Users,
   Building2,
   CalendarCheck,
+  CalendarDays,
   MapPin,
   CreditCard,
   Ticket,
@@ -32,6 +33,7 @@ const mainNavItems = [
   { label: "Applications", href: "/dashboard/provider-applications", icon: FileText },
   { label: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
   { label: "Destinations", href: "/dashboard/destinations", icon: MapPin },
+  { label: "Weekend Events", href: "/dashboard/weekend-events", icon: CalendarDays },
 ];
 
 const financeItems = [

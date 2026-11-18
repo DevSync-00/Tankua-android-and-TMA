@@ -891,6 +891,64 @@ h1, h2, h3, h4, b, strong {
   place-items: center;
 }
 
+.weekend-planner-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--navy);
+  color: var(--paper);
+  text-align: left;
+  text-decoration: none;
+}
+
+.weekend-planner-link:focus-visible {
+  outline: 3px solid var(--gold-dark);
+  outline-offset: 3px;
+}
+
+.weekend-planner-link-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--gold);
+  color: var(--navy);
+}
+
+.weekend-planner-link-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.25;
+}
+
+.weekend-planner-link-copy strong {
+  font-size: 15px;
+}
+
+.weekend-planner-link-copy > span {
+  color: #e9e6df;
+  font-size: 12px;
+}
+
+.weekend-planner-link > svg {
+  flex: none;
+  color: var(--gold);
+}
+
+.auth-gate > .weekend-planner-link {
+  max-width: 400px;
+  margin-bottom: 0;
+}
+
 .chips {
   display: flex;
   gap: 8px;
