@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, CreditCard, Download, RefreshCw, RotateCcw } from "lucide-react";
 import { Header } from "@/components/header";
 import { getPayments, updatePaymentStatus, type AdminPayment } from "@/lib/queries";
+import { supabase } from "@/lib/supabase";
 import { Card, CardContent, Button, Badge, Avatar, formatCurrency, formatCurrencyTotals, sumByCurrency } from "@tankua/ui";
 
 type PaymentStatus = "pending" | "paid" | "refunded";
+type CloseoutRefund = { id: string; booking_id: string; amount: number; currency: string; reason: string };
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<AdminPayment[]>([]);
@@ -14,18 +16,49 @@ export default function PaymentsPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [error, setError] = useState("");
+  const [refunds, setRefunds] = useState<CloseoutRefund[]>([]);
+  const [selectedRefund, setSelectedRefund] = useState<CloseoutRefund | null>(null);
+  const [refundReference, setRefundReference] = useState("");
 
   const loadPayments = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setPayments(await getPayments());
+      const [paymentRows, refundRows] = await Promise.all([
+        getPayments(),
+        supabase.from("refunds").select("id,booking_id,amount,currency,reason")
+          .like("reason", "Trip closeout:%").in("status", ["pending", "approved", "processing"])
+          .order("created_at", { ascending: true }),
+      ]);
+      setPayments(paymentRows);
+      if (refundRows.error) throw new Error(refundRows.error.message);
+      setRefunds(refundRows.data ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load payments.");
     } finally {
       setLoading(false);
     }
   }, []);
+
+  async function recordRefund(event: React.FormEvent) {
+    event.preventDefault();
+    if (!selectedRefund || !refundReference.trim() || updating) return;
+    setUpdating(selectedRefund.booking_id);
+    setError("");
+    try {
+      const result = await supabase.rpc("record_closeout_refund", {
+        p_refund_id: selectedRefund.id, p_reference: refundReference.trim(),
+      });
+      if (result.error) throw new Error(result.error.message);
+      setSelectedRefund(null);
+      setRefundReference("");
+      await loadPayments();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Could not record the refund.");
+    } finally {
+      setUpdating(null);
+    }
+  }
 
   useEffect(() => {
     loadPayments();
@@ -102,6 +135,22 @@ export default function PaymentsPage() {
       />
 
       <div className="space-y-6 p-4 sm:p-6">
+        {refunds.length > 0 && <Card>
+          <h2 className="text-lg font-semibold">Trip closeout refund review</h2>
+          <ul className="mt-3 divide-y">
+            {refunds.map(refund => <li key={refund.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+              <span>Booking {refund.booking_id.slice(0, 8)} · {formatCurrency(refund.amount, refund.currency)}</span>
+              <Button size="sm" variant="outline" onClick={() => { setSelectedRefund(refund); setRefundReference(""); }}>Record refund sent</Button>
+            </li>)}
+          </ul>
+          {selectedRefund && <form className="mt-4 space-y-3" onSubmit={recordRefund}>
+            <label className="block text-sm">Refund reference for booking {selectedRefund.booking_id.slice(0, 8)}
+              <input required maxLength={200} value={refundReference} onChange={event => setRefundReference(event.target.value)} className="mt-1 block rounded-lg border p-2" />
+            </label>
+            <p className="text-sm text-muted-foreground">Enter the reference after sending the refund in the original currency.</p>
+            <Button type="submit" isLoading={updating === selectedRefund.booking_id}>Save refund record</Button>
+          </form>}
+        </Card>}
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         )}
@@ -185,7 +234,7 @@ export default function PaymentsPage() {
                                 <CheckCircle2 className="mr-1 h-4 w-4" /> Mark paid
                               </Button>
                             )}
-                            {payment.status === "paid" && (
+                            {payment.status === "paid" && !refunds.some(refund => refund.booking_id === payment.booking_id) && (
                               <Button variant="outline" size="sm" onClick={() => changeStatus(payment, "refunded")} isLoading={updating === payment.booking_id}>
                                 <RotateCcw className="mr-1 h-4 w-4" /> Refund
                               </Button>

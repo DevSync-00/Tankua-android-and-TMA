@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CircleCheck, MapPin } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button, Card, ConfirmDialog, getTripCurrency } from "@tankua/ui";
-import { createTrip } from "@/lib/queries";
+import { createTrip, getProviderTrip } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
 import { tripMoneyPattern } from "@/lib/trip-currency";
@@ -57,6 +57,7 @@ function normalizeLines(value: string) {
 export default function NewTripPage() {
   const router = useRouter();
   const [providerId, setProviderId] = useState("");
+  const [copyId, setCopyId] = useState("");
   const [form, setForm] = useState<TripForm>(initialForm);
   const [stationConfig, setStationConfig] = useState<Record<string, StationConfig>>({});
   const [destinations, setDestinations] = useState<Options<Destination> | null>(null);
@@ -71,7 +72,7 @@ export default function NewTripPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const publishing = useRef(false);
   const errorSummary = useRef<HTMLDivElement>(null);
-  const draftKey = providerId ? draftPrefix + providerId : "";
+  const draftKey = providerId ? draftPrefix + providerId + (copyId ? ":" + copyId : "") : "";
 
   const isRoundTrip = form.tripType === "round_trip";
   const currency = getTripCurrency(form.currency);
@@ -88,22 +89,49 @@ export default function NewTripPage() {
     || Object.values(stationConfig).some((config) => config.selected);
 
   useEffect(() => {
-    try {
+    let mounted = true;
+    async function initialize() { try {
       const session = JSON.parse(localStorage.getItem("provider_user") || "null");
       const id = session?.provider_id || session?.provider?.id;
       if (!id) {
         router.replace("/login");
         return;
       }
-      const draft = readDraft(draftPrefix + id);
+      const sourceId = new URLSearchParams(window.location.search).get("copy");
+      const copy = sourceId && /^[0-9a-f-]{36}$/i.test(sourceId) ? sourceId : "";
+      const draft = readDraft(draftPrefix + id + (copy ? ":" + copy : ""));
       if (draft) {
         setForm(draft.form);
         setStationConfig(draft.stations);
+      } else if (copy) {
+        const { trip, stations: links, error } = await getProviderTrip(id, copy);
+        if (!mounted) return;
+        if (!trip) setSaveError(error || "Could not copy that trip.");
+        else {
+          setForm({ ...initialForm, destinationId: trip.destination_id || "", summary: trip.summary || "",
+            tripType: trip.trip_type === "one_way" ? "one_way" : "round_trip",
+            departureTime: getTripDateParts(trip.departure_date).time || initialForm.departureTime,
+            returnTime: getTripDateParts(trip.return_date || "").time,
+            price: String(trip.price ?? ""), currency: getTripCurrency(trip.currency), maxSeats: String(trip.max_seats ?? ""),
+            bookingMode: trip.minimum_interest == null ? "immediate" : "interest", itinerary: trip.itinerary || "",
+            tourCategory: trip.tour_category || "", durationHours: trip.duration_minutes ? String(trip.duration_minutes / 60) : "",
+            transportationType: trip.transportation_type || "", difficultyLevel: trip.difficulty_level || "easy",
+            inclusions: (trip.inclusions ?? []).join("\n"), exclusions: (trip.exclusions ?? []).join("\n"),
+            meetingInstructions: trip.meeting_instructions || "", whatToBring: trip.what_to_bring || "",
+            cancellationPolicy: trip.cancellation_policy || "",
+          });
+          setStationConfig(Object.fromEntries(links.map(link => [link.station_id, {
+            selected: true, pickupTime: link.pickup_time, extraPrice: String(link.extra_price ?? 0),
+          }])));
+        }
       }
+      setCopyId(copy);
       setProviderId(id);
     } catch {
       router.replace("/login");
-    }
+    } }
+    void initialize();
+    return () => { mounted = false; };
   }, [router]);
 
   useEffect(() => {
@@ -244,7 +272,7 @@ export default function NewTripPage() {
     if (waitsForInterest && (!Number.isInteger(minimumInterest) || minimumInterest < 1 || minimumInterest > maxInterest)) {
       issues.minimumInterest = "Enter a positive whole number up to 2,147,483,647.";
     }
-    if (form.durationHours && (!Number.isFinite(duration) || duration < 0.5 || durationMinutes > maxInterest)) {
+    if ((!isRoundTrip || form.durationHours) && (!Number.isFinite(duration) || duration < 0.5 || durationMinutes > maxInterest)) {
       issues.durationHours = "Enter a duration of at least 0.5 hours.";
     }
 

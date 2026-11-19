@@ -932,17 +932,54 @@ function Confirmation({booking,home,ticket}) {
     <button className="text-button" onClick={home}>Back to home</button>
   </div>;
 }
+function TripReviewForm({bookingId}) {
+  const [rating, setRating] = useState('5');
+  const [comment, setComment] = useState('');
+  const [pending, setPending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+  async function submit(event) {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
+    setError('');
+    try {
+      await api('/api/bookings/' + bookingId + '/review', {
+        method: 'POST', body: JSON.stringify({ rating: Number(rating), comment }),
+      });
+      setSent(true);
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setPending(false);
+    }
+  }
+  return sent ? <p role="status">Review submitted.</p> : (
+    <form className="passenger-card" onSubmit={submit}>
+      <h3>Rate your trip</h3>
+      <label>Rating<select value={rating} onChange={event=>setRating(event.target.value)}>
+        {[5,4,3,2,1].map(score=><option key={score} value={score}>{score} / 5</option>)}
+      </select></label>
+      <label>Comment<input maxLength={1000} value={comment} onChange={event=>setComment(event.target.value)} /></label>
+      {error && <p role="alert">{error}</p>}
+      <button className="continue" disabled={pending} type="submit">Send review</button>
+    </form>
+  );
+}
+
 function TicketView({booking,back}) {
   const [qrImage,setQrImage]=useState('');
   const [shareStatus,setShareStatus]=useState('');
+  const receipt = bookingTab(booking) !== 'upcoming' || Date.parse(booking.scheduled_trip?.departure_date) <= Date.now();
   const ticketCode=`TANKUA|BOOKING|${booking.id}`;
   useEffect(()=>{
+    if (receipt) return;
     let active=true;
     QRCode.toDataURL(ticketCode,{errorCorrectionLevel:'H',margin:2,width:640,color:{dark:'#081a2cff',light:'#ffffffff'}})
       .then(image=>{if(active)setQrImage(image);})
       .catch(()=>{if(active)setShareStatus('Could not generate the ticket QR.');});
     return()=>{active=false;};
-  },[ticketCode]);
+  },[ticketCode,receipt]);
   const shareTicket=async()=>{
     const text=`Tankua ticket for ${booking.destination.name}\n${booking.trip.date} at ${booking.trip.time}\nBooking: ${booking.id}`;
     try {
@@ -966,7 +1003,7 @@ function TicketView({booking,back}) {
     }
   };
   return <div className="ticket-page">
-    <header className="simple-head"><button onClick={back} aria-label="Back"><ArrowLeft/></button><h1>Your ticket</h1><span/></header>
+    <header className="simple-head"><button onClick={back} aria-label="Back"><ArrowLeft/></button><h1>{receipt ? 'Your receipt' : 'Your ticket'}</h1><span/></header>
     <main className="ticket-page-body">
       <div className="ticket-card">
         <div className="ticket-top"><img src="/tankua-logo.png" alt="Tankua"/><span><b>TANKUA</b><small>EXPLORE ETHIOPIA</small></span></div>
@@ -975,11 +1012,12 @@ function TicketView({booking,back}) {
           <div className="ticket-info-row"><span><small>Departure</small><b>{booking.trip.time}</b></span><span><small>Seats</small><b>{booking.seats}</b></span></div>
           <div className="ticket-info-row"><span><small>Pickup</small><b>{booking.pickup.pickup_address || booking.pickup.name}</b></span><span><small>Booking</small><b className="ticket-booking-id">{booking.id}</b></span></div>
           {booking.total > 0 && <div className="ticket-info-row"><span><small>Total paid</small><b>{money(booking.total, booking.currency)}</b></span></div>}
-          <div className="qr">{qrImage?<img className="qr-code-image" src={qrImage} alt={`QR code for booking ${booking.id}`}/>:<div className="qr-loading" aria-label="Generating QR code"/>}<small>Scan to read booking {String(booking.id).slice(0,8).toUpperCase()}</small></div>
+          {!receipt && <div className="qr">{qrImage?<img className="qr-code-image" src={qrImage} alt={`QR code for booking ${booking.id}`}/>:<div className="qr-loading" aria-label="Generating QR code"/>}<small>Scan to read booking {String(booking.id).slice(0,8).toUpperCase()}</small></div>}
         </div>
       </div>
-      <div className="ticket-actions"><button className="continue" onClick={shareTicket} disabled={!qrImage}><Share2/> Share ticket</button>{shareStatus&&<p role="status">{shareStatus}</p>}</div>
-      <div className="info-note ticket-note"><Info/><p><b>Ready for your trip?</b><span>Arrive 15 minutes before departure with a valid ID.</span></p></div>
+      <div className="ticket-actions"><button className="continue" onClick={shareTicket} disabled={!receipt && !qrImage}><Share2/> {receipt ? 'Share receipt' : 'Share ticket'}</button>{shareStatus&&<p role="status">{shareStatus}</p>}</div>
+      {!receipt && <div className="info-note ticket-note"><Info/><p><b>Ready for your trip?</b><span>Arrive 15 minutes before departure with a valid ID.</span></p></div>}
+      {booking.status === 'completed' && booking.payment_status === 'paid' && <TripReviewForm bookingId={booking.id} />}
     </main>
   </div>;
 }
@@ -1014,23 +1052,31 @@ function SearchView({destinations,query,setQuery,open}) {
     {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image} alt={d.name}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin size={12}/>{d.city}</p><div><span><Star size={12} fill="#ffb800" color="#ffb800"/>{d.rating||'New'}</span>{d.price ? <b>From {money(d.price, d.currency)}</b> : null}</div></div><i><ChevronRight size={16}/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>{setQuery('');setSelectedCat('All');}}>Show all places</button></div>}
   </div>;
 }
+function bookingTab(booking) {
+  if (['cancelled', 'canceled'].includes(booking.status) || booking.scheduled_trip?.status === 'cancelled') return 'cancelled';
+  if (booking.status === 'completed') return 'completed';
+  const schedule = booking.scheduled_trip;
+  const departing = Date.parse(schedule?.departure_date);
+  const revised = Date.parse(schedule?.revised_end_at);
+  const returning = Date.parse(schedule?.return_date);
+  const ending = Number.isFinite(revised) ? revised : returning > departing ? returning :
+    Number.isFinite(departing) ? departing + (schedule?.duration_minutes || 0) * 60000 :
+    Date.parse(booking.date ? booking.date + 'T23:59:59+03:00' : '');
+  return ending <= Date.now() ? 'completed' : 'upcoming';
+}
+
 function TripsView({trips,destinations,open,explore,submitting}) {
   const [filter,setFilter]=useState('upcoming');
-  const filtered=trips.filter(trip=>{
-    const status=String(trip.status||'pending').toLowerCase();
-    if(filter==='completed') return status==='completed';
-    if(filter==='cancelled') return status==='cancelled'||status==='canceled';
-    return !['completed','cancelled','canceled'].includes(status);
-  });
-  const labels={upcoming:'upcoming',completed:'completed',cancelled:'cancelled'};
-  const upcomingCount=trips.filter(trip=>!['completed','cancelled','canceled'].includes(String(trip.status||'pending').toLowerCase())).length;
+  const filtered=trips.filter(trip=>bookingTab(trip)===filter);
+  const labels={upcoming:'Upcoming',completed:'Past',cancelled:'Cancelled'};
+  const upcomingCount=trips.filter(trip=>bookingTab(trip)==='upcoming').length;
   return <div className="page trips-page"><header className="trips-hero">
       <div className="trips-hero-icon"><Bus/></div>
       <div className="trips-hero-copy"><p className="eyebrow">YOUR JOURNEYS</p><h1>My trips</h1><span>Tickets, pickup details and travel plans</span></div>
       <div className="trips-count"><b>{upcomingCount}</b><span>Upcoming</span></div>
     </header>
     <div className="segmented">
-      {['upcoming','completed','cancelled'].map(item=><button key={item} className={filter===item?'active':''} onClick={()=>{setFilter(item);vibrate();}}>{item[0].toUpperCase()+item.slice(1)}</button>)}
+      {['upcoming','completed','cancelled'].map(item=><button key={item} className={filter===item?'active':''} onClick={()=>{setFilter(item);vibrate();}}>{labels[item]}</button>)}
     </div>
     {filtered.length ? filtered.map(raw => {
       const booking = normalizeBookingForUi(raw, destinations);
@@ -1038,18 +1084,22 @@ function TripsView({trips,destinations,open,explore,submitting}) {
       const awaitingActivation = isAwaitingActivation(raw);
       const canPay = canPayBooking(raw);
       let status = 'Payment unavailable';
-      if (filter === 'cancelled') status = 'Cancelled';
-      else if (filter === 'completed') status = 'Trip completed';
+      if (filter === 'cancelled') status = raw.payment_status === 'refunded' ? 'Refunded' :
+        paid && (raw.expired_at || raw.scheduled_trip?.closeout_reason === 'did_not_run') ? 'Refund review' :
+        raw.expired_at ? 'Reservation expired' : 'Cancelled';
+      else if (filter === 'completed') status = raw.status === 'completed' ? 'Trip completed' :
+        paid ? 'Awaiting provider confirmation' : 'Payment under review';
       else if (paid) status = 'Paid · confirmed';
       else if (awaitingActivation) status = 'Reserved · awaiting trip activation';
       else if (canPay) status = 'Payment pending';
 
-      const action = paid ? 'View ticket' : canPay ? 'Complete payment' : awaitingActivation ? 'Check status' : null;
+      const action = paid ? (filter === 'upcoming' ? 'View ticket' : 'View receipt') : canPay ? 'Complete payment' : awaitingActivation ? 'Check status' : null;
       const card = <>
         <img src={booking.destination.image} alt=""/>
         <div>
           <span>{status}</span>
           <h3>{booking.destination.name}</h3>
+          {raw.scheduled_trip?.revised_end_at && filter === 'upcoming' && <p><Clock3/>Revised end {new Date(raw.scheduled_trip.revised_end_at).toLocaleString('en-GB', {timeZone:'Africa/Addis_Ababa', dateStyle:'medium', timeStyle:'short'})} EAT</p>}
           <p><CalendarDays/>{booking.trip.date} · {booking.trip.time}</p>
           <p><MapPin/>{booking.pickup.pickup_address || booking.pickup.name}</p>
           {booking.total > 0 && <p>{money(booking.total, booking.currency)}</p>}
@@ -1059,7 +1109,7 @@ function TripsView({trips,destinations,open,explore,submitting}) {
       return action
         ? <button className="booked-card" onClick={() => open(raw)} disabled={submitting} key={booking.id}>{card}</button>
         : <article className="booked-card" key={booking.id}>{card}</article>;
-    }) : <div className="empty"><span><Bus/></span><h2>No {labels[filter]} trips</h2><p>{filter==='upcoming'?'Your next adventure is waiting. Book a trip and it will show up here.':`Your ${labels[filter]} journeys will appear here.`}</p>{filter==='upcoming'&&<button onClick={explore}>Explore destinations</button>}</div>}
+    }) : <div className="empty"><span><Bus/></span><h2>No {labels[filter].toLowerCase()} trips</h2><p>{filter==='upcoming'?'Your next adventure is waiting. Book a trip and it will show up here.':`Your ${labels[filter].toLowerCase()} journeys will appear here.`}</p>{filter==='upcoming'&&<button onClick={explore}>Explore destinations</button>}</div>}
   </div>;
 }
 

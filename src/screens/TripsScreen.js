@@ -23,9 +23,26 @@ import { formatTripPrice } from '../utils/tripCurrency';
 
 const TABS = [
   { key: 'upcoming',  label: 'Upcoming',  icon: 'time-outline' },
-  { key: 'completed', label: 'Completed', icon: 'checkmark-circle-outline' },
+  { key: 'completed', label: 'Past', icon: 'checkmark-circle-outline' },
   { key: 'cancelled', label: 'Cancelled', icon: 'close-circle-outline' },
 ];
+
+function bookingEndTime(booking) {
+  const trip = booking.trip;
+  const departure = Date.parse(trip?.departure_date);
+  const revised = Date.parse(trip?.revised_end_at);
+  const returning = Date.parse(trip?.return_date);
+  if (Number.isFinite(revised)) return revised;
+  if (returning > departure) return returning;
+  if (Number.isFinite(departure)) return departure + (trip?.duration_minutes || 0) * 60000;
+  return Date.parse(booking.date ? booking.date + 'T23:59:59+03:00' : '');
+}
+
+function bookingTab(booking) {
+  if (booking.status === 'cancelled' || booking.trip?.status === 'cancelled') return 'cancelled';
+  if (booking.status === 'completed' || bookingEndTime(booking) <= Date.now()) return 'completed';
+  return 'upcoming';
+}
 
 const STATUS_CONFIG = {
   confirmed:  { color: COLORS.success,  bg: `${COLORS.success}15`,  label: 'Confirmed',  icon: 'checkmark-circle' },
@@ -51,13 +68,21 @@ const BookingCard = ({ item, onViewTicket, onPay }) => {
   const date          = item.date || '';
   const unpaid = item.payment_status === 'pending';
   const pendingPayment = unpaid && status === 'confirmed';
-  const awaitingActivation = pendingPayment && item.trip?.status === 'upcoming';
+  const awaitingActivation = pendingPayment && item.trip?.status === 'upcoming' && Date.parse(item.trip.departure_date) > Date.now();
   const payable = isBookingValid(item);
-  const sc = pendingPayment ? {
+  const tab = bookingTab(item);
+  const sc = tab === 'cancelled' ? {
+    ...STATUS_CONFIG.cancelled,
+    label: item.payment_status === 'refunded' ? 'Refunded' :
+      item.payment_status === 'paid' && (item.expired_at || item.trip?.closeout_reason === 'did_not_run') ? 'Refund review' :
+      item.expired_at ? 'Reservation expired' : 'Cancelled',
+  } : tab === 'completed' && status !== 'completed' ? {
+    ...STATUS_CONFIG.pending, label: unpaid ? 'Payment under review' : 'Awaiting provider confirmation',
+  } : pendingPayment ? {
     ...STATUS_CONFIG.pending,
     label: awaitingActivation ? 'Reserved' : payable ? 'Payment due' : 'Pending',
   } : getStatusConfig(status);
-  const action = payable ? onPay : unpaid ? null : onViewTicket;
+  const action = payable ? onPay : item.payment_status === 'paid' ? onViewTicket : null;
 
   const formattedDate = date
     ? new Date(date).toLocaleDateString('en-US', {
@@ -142,12 +167,19 @@ const BookingCard = ({ item, onViewTicket, onPay }) => {
             activeOpacity={0.8}
           >
             <Ionicons name={payable ? 'card-outline' : 'qr-code-outline'} size={16} color={COLORS.white} />
-            <Text style={styles.ticketBtnText}>{payable ? 'Pay now' : 'View Ticket'}</Text>
+            <Text style={styles.ticketBtnText}>{payable ? 'Pay now' : (tab !== 'upcoming' ? 'View receipt' : 'View ticket')}</Text>
           </TouchableOpacity>
         ) : awaitingActivation ? (
           <Text style={styles.reservationNote}>Payment opens when the trip is active</Text>
         ) : null}
       </View>
+      {item.trip?.revised_end_at && tab === 'upcoming' ? (
+        <Text style={styles.reservationNote}>
+          Revised end: {new Date(item.trip.revised_end_at).toLocaleString('en-GB', {
+            timeZone: 'Africa/Addis_Ababa', dateStyle: 'medium', timeStyle: 'short',
+          })} EAT
+        </Text>
+      ) : null}
     </TouchableOpacity>
   );
 };
@@ -157,7 +189,7 @@ const BookingCard = ({ item, onViewTicket, onPay }) => {
 const EmptyState = ({ tab, onExplore }) => {
   const config = {
     upcoming:  { icon: 'calendar',             title: 'No Upcoming Trips',  sub: 'Your next adventure is waiting. Book a trip and it will show up here.' },
-    completed: { icon: 'checkmark-done-circle', title: 'No Completed Trips', sub: 'All your past memories and finished journeys will appear here.' },
+    completed: { icon: 'checkmark-done-circle', title: 'No Past Trips', sub: 'All your past memories and finished journeys will appear here.' },
     cancelled: { icon: 'close-circle',         title: 'No Cancelled Trips', sub: "You don't have any cancelled bookings. Safe travels!" },
   };
   const { icon, title, sub } = config[tab] ?? config.upcoming;
@@ -214,29 +246,11 @@ const TripsScreen = ({ navigation }) => {
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
-  // Filter by both status field AND date comparison so all three tabs work correctly
-  const filtered = bookings.filter((b) => {
-    const today  = new Date().toISOString().split('T')[0];
-    const status = b.status || 'confirmed';
-    if (activeTab === 'cancelled') return status === 'cancelled';
-    if (activeTab === 'completed') return status === 'completed' || (status !== 'cancelled' && b.date < today);
-    // upcoming: confirmed/pending and date >= today
-    return status !== 'cancelled' && status !== 'completed' && (!b.date || b.date >= today);
-  });
-
-  // Count badges per tab
-  const counts = {
-    upcoming:  bookings.filter((b) => {
-      const s = b.status || 'confirmed';
-      return s !== 'cancelled' && s !== 'completed' && (!b.date || b.date >= new Date().toISOString().split('T')[0]);
-    }).length,
-    completed: bookings.filter((b) => {
-      const s = b.status || 'confirmed';
-      const today = new Date().toISOString().split('T')[0];
-      return s === 'completed' || (s !== 'cancelled' && b.date < today);
-    }).length,
-    cancelled: bookings.filter((b) => (b.status || '') === 'cancelled').length,
-  };
+  const filtered = bookings.filter(booking => bookingTab(booking) === activeTab);
+  const counts = bookings.reduce((totals, booking) => {
+    totals[bookingTab(booking)]++;
+    return totals;
+  }, { upcoming: 0, completed: 0, cancelled: 0 });
 
   if (loading) return <Loader />;
 

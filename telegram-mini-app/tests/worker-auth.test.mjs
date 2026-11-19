@@ -45,6 +45,7 @@ let transactionRecord = null;
 let chapaVerification = null;
 let rejectPaymentClaim = false;
 let extraBookableTrips = [];
+let closeoutPaymentChecks = [];
 const paymentSteps = [];
 const collectingTrip = { id: tripId, destination_id: 'destination', provider_id: 'provider', price: 100, status: 'collecting_interest', minimum_interest: 3, interest_count: 2 };
 const bookableTrip = { id: nextTripId, destination_id: 'destination', provider_id: 'provider', price: 200, status: 'upcoming', minimum_interest: null, interest_count: 0 };
@@ -54,6 +55,8 @@ globalThis.fetch = async (url, options = {}) => {
   switch (requestUrl.pathname) {
     case '/rest/v1/rpc/delete_expired_unpaid_bookings':
       return Response.json(0);
+    case '/rest/v1/rpc/list_closeout_payment_checks':
+      return Response.json(closeoutPaymentChecks);
     case '/rest/v1/rpc/create_miniapp_booking':
       lastBookingPayload = JSON.parse(options.body);
       return Response.json({ id: bookingId, pickup_station: { pickup_address: lastBookingPayload.p_pickup_address } });
@@ -63,7 +66,7 @@ globalThis.fetch = async (url, options = {}) => {
         return new Response(null, { status: 204 });
       }
       assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
-      assert.match(requestUrl.searchParams.get('select'), /scheduled_trip:trips\(status,departure_date\)/);
+      assert.match(requestUrl.searchParams.get('select'), /scheduled_trip:trips\(status,departure_date,return_date,duration_minutes,revised_end_at,closeout_reason\)/);
       return Response.json(bookingRecord ? [bookingRecord] : []);
     case '/rest/v1/payment_transactions': {
       if (!options.method || options.method === 'GET') {
@@ -100,6 +103,12 @@ globalThis.fetch = async (url, options = {}) => {
     assert.equal(requestUrl.pathname.split('/').at(-1), transactionRecord.transaction_ref);
     return Response.json({ status: 'success', data: chapaVerification });
   }
+  if (requestUrl.pathname.startsWith('/v1/transaction/cancel/')) {
+    assert.equal(options.method, 'PUT');
+    assert.equal(requestUrl.pathname.split('/').at(-1), transactionRecord.transaction_ref);
+    paymentSteps.push({ method: 'CANCEL_LINK' });
+    return Response.json({ status: 'success' });
+  }
   if (value.includes('/functions/v1/telegram-auth')) {
     lastEdgePayload = JSON.parse(options.body);
     return new Response(JSON.stringify({ session: { user: { id: userId } } }), { status: 200 });
@@ -134,6 +143,25 @@ const env = {
   APP_ORIGIN: 'https://tankua.example',
   CHAPA_SECRET_KEY: 'test-payment-key',
 };
+test('checks an overdue payment and closes an unpaid checkout before loading trip history', async (t) => {
+  const reference = 'overdue-payment-test';
+  closeoutPaymentChecks = [{ transaction_ref: reference }];
+  transactionRecord = { transaction_ref: reference, user_id: userId, booking_id: bookingId, status: 'pending', currency: 'USD', amount: 25 };
+  chapaVerification = { tx_ref: reference, status: 'pending', currency: 'USD', amount: 25 };
+  paymentSteps.length = 0;
+  t.after(() => {
+    closeoutPaymentChecks = [];
+    transactionRecord = null;
+    chapaVerification = null;
+    paymentSteps.length = 0;
+  });
+
+  const response = await worker.fetch(new Request(env.APP_ORIGIN + '/api/bookings', {
+    headers: { cookie: travelerSession() },
+  }), env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(paymentSteps, [{ method: 'CANCEL_LINK' }, { method: 'PATCH', body: { status: 'cancelled' } }]);
+});
 
 test('passes the traveler pickup address to the booking RPC after validating it', async () => {
   const reserve = pickup_address => worker.fetch(new Request(`${env.APP_ORIGIN}/api/bookings`, {

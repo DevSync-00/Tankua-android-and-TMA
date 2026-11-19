@@ -10,6 +10,7 @@ import { shareTicketAsImage } from '../utils/shareTicketImage';
 
 const TicketScreen = ({ route, navigation }) => {
   const { booking } = route.params || {};
+  const receipt = ['completed', 'cancelled'].includes(booking?.status) || Date.parse(booking?.trip?.departure_date) <= Date.now();
   const { showToast } = useFeedback();
   const ticketRef = useRef(null);
   const [sharing, setSharing] = useState(false);
@@ -37,7 +38,7 @@ const TicketScreen = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
         </TouchableOpacity>
-        <Text style={styles.customHeaderTitle}>Trip Ticket</Text>
+        <Text style={styles.customHeaderTitle}>{receipt ? 'Trip Receipt' : 'Trip Ticket'}</Text>
         <View style={styles.customHeaderRight} />
       </View>
 
@@ -46,12 +47,15 @@ const TicketScreen = ({ route, navigation }) => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <TripTicketCard ref={ticketRef} booking={booking} showInstructions />
+        <TripTicketCard ref={ticketRef} booking={booking} showInstructions={!receipt} receipt={receipt} />
       </ScrollView>
 
       <View style={styles.footer}>
+        {booking?.status === 'completed' && booking.payment_status === 'paid' ? (
+          <ModernButton title="Rate your trip" variant="outline" onPress={() => navigation.navigate('Review', { booking })} />
+        ) : null}
         <ModernButton
-          title={sharing ? 'Preparing image...' : 'Share ticket'}
+          title={sharing ? 'Preparing image...' : receipt ? 'Share receipt' : 'Share ticket'}
           onPress={handleShare}
           variant="primary"
           size="large"
@@ -110,6 +114,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footer: {
+    gap: SPACING.sm,
     padding: SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,

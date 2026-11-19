@@ -3,7 +3,7 @@ const SESSION_COOKIE = 'tankua_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const TELEGRAM_MAX_AGE_SECONDS = 5 * 60;
 const BOOKING_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const BOOKING_TRIP_SELECT = 'scheduled_trip:trips(status,departure_date)';
+const BOOKING_TRIP_SELECT = 'scheduled_trip:trips(status,departure_date,return_date,duration_minutes,revised_end_at,closeout_reason)';
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -334,6 +334,12 @@ async function getProviderLogo(providerId, env) {
 }
 
 async function getBookings(session, env) {
+  if (env.CHAPA_SECRET_KEY) {
+    const attempts = await supabase(env, 'rpc/list_closeout_payment_checks', {
+      method: 'POST', body: { p_user_id: session.uid },
+    });
+    await Promise.allSettled(attempts.map(({ transaction_ref }) => verifyPayment(transaction_ref, env, session.uid, true)));
+  }
   await supabase(env, 'rpc/delete_expired_unpaid_bookings', { method: 'POST', body: {} });
   const bookings = await supabase(
     env,
@@ -471,7 +477,7 @@ async function initializePayment(request, session, env) {
   return json({ checkout_url: checkoutUrl, transaction_ref: txRef });
 }
 
-async function verifyPayment(txRef, env, expectedUserId = null) {
+async function verifyPayment(txRef, env, expectedUserId = null, closeout = false) {
   if (!env.CHAPA_SECRET_KEY) throw new Error('Payment service is not configured');
   const transactions = await supabase(env, `payment_transactions?select=*&transaction_ref=eq.${encodeURIComponent(txRef)}&limit=1`);
   const transaction = transactions?.[0];
@@ -479,6 +485,7 @@ async function verifyPayment(txRef, env, expectedUserId = null) {
   if (expectedUserId && transaction.user_id !== expectedUserId) return json({ error: 'Transaction not found' }, 404);
   const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${encodeURIComponent(txRef)}`, {
     headers: { authorization: `Bearer ${env.CHAPA_SECRET_KEY}` },
+    signal: AbortSignal.timeout(5000),
   });
   const result = await response.json();
   const paid = response.ok && result.status === 'success' && ['success', 'successful'].includes(result.data?.status);
@@ -492,14 +499,42 @@ async function verifyPayment(txRef, env, expectedUserId = null) {
         body: { status: 'success', verified_at: new Date().toISOString(), verified_by: 'api', provider_response: result.data, completed_at: new Date().toISOString() },
         headers: { Prefer: 'return=minimal' },
       }),
-      supabase(env, `bookings?id=eq.${transaction.booking_id}`, {
+      supabase(env, `bookings?id=eq.${transaction.booking_id}&payment_status=eq.pending`, {
         method: 'PATCH',
         body: { payment_status: 'paid' },
         headers: { Prefer: 'return=minimal' },
       }),
     ]);
+  } else if (closeout && !paid && ['pending', 'processing'].includes(transaction.status) &&
+      (response.ok || response.status === 404)) {
+    const cancelled = await fetch(`https://api.chapa.co/v1/transaction/cancel/${encodeURIComponent(txRef)}`, {
+      method: 'PUT', headers: { authorization: `Bearer ${env.CHAPA_SECRET_KEY}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (cancelled.ok && (await cancelled.json()).status === 'success') {
+      await supabase(env, `payment_transactions?transaction_ref=eq.${encodeURIComponent(txRef)}&status=in.(pending,processing)`, {
+        method: 'PATCH', body: { status: 'cancelled' }, headers: { Prefer: 'return=minimal' },
+      });
+    }
   }
   return json({ paid: paid && matches, status: paid && matches ? 'paid' : transaction.status, booking_id: transaction.booking_id });
+}
+
+async function reviewCompletedBooking(request, session, env, bookingId) {
+  const body = await request.json();
+  const rating = Number(body.rating);
+  const comment = String(body.comment ?? '').trim();
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length > 1000) {
+    return json({ error: 'Choose a rating from 1 to 5 and keep your review under 1,000 characters.' }, 400);
+  }
+  const [booking] = await supabase(env, `bookings?select=id,trip_id,provider_id&id=eq.${bookingId}&user_id=eq.${session.uid}&status=eq.completed&payment_status=eq.paid`);
+  if (!booking) return json({ error: 'This booking is not eligible for a review.' }, 409);
+  await supabase(env, 'reviews?on_conflict=booking_id', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    body: { booking_id: booking.id, user_id: session.uid, trip_id: booking.trip_id, provider_id: booking.provider_id, rating, comment: comment || null },
+  });
+  return json({ success: true });
 }
 
 async function updateProfile(request, session, env) {
@@ -717,6 +752,10 @@ async function handleApi(request, env, requestId) {
   if (tripInterestMatch && request.method === 'POST') return expressTripInterest(tripInterestMatch[1], session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
+  const reviewMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/review$/i);
+  if (reviewMatch && BOOKING_UUID_PATTERN.test(reviewMatch[1]) && request.method === 'POST') {
+    return reviewCompletedBooking(request, session, env, reviewMatch[1]);
+  }
   if (url.pathname === '/api/profile' && request.method === 'PUT') return updateProfile(request, session, env);
   if (url.pathname === '/api/profile' && request.method === 'DELETE') return deleteProfile(session, env);
   if (url.pathname === '/api/profile/photo' && request.method === 'POST') return updateProfilePhoto(request, session, env);

@@ -38,7 +38,7 @@ const ReviewScreen = ({ navigation, route }) => {
       return;
     }
 
-    if (!booking?.id) {
+    if (!booking?.id || booking.status !== 'completed' || booking.payment_status !== 'paid') {
       showToast({ type: 'error', title: 'Error', message: 'Invalid booking information' });
       return;
     }
@@ -49,8 +49,8 @@ const ReviewScreen = ({ navigation, route }) => {
       const reviewData = {
         booking_id: booking.id,
         user_id: user.id,
-        provider_id: booking.providerId,
-        trip_id: booking.tripId,
+        provider_id: booking.provider_id ?? booking.providerId,
+        trip_id: booking.trip_id ?? booking.tripId,
         rating,
         comment: comment.trim() || null,
         vehicle_rating: vehicleRating || null,

@@ -19,7 +19,6 @@ import { generateTransactionRef, processPayment, verifyPayment, sanitizeEmailFor
 import { createPaymentTransaction, updatePaymentTransaction } from '../../services/paymentService';
 import {
   canPayForTrip,
-  checkAndCancelExpiredBookings,
   getBookingForPayment,
   getTimeRemaining,
   isBookingValid,
@@ -94,7 +93,6 @@ const PaymentScreen = ({ navigation, route }) => {
     const initializeBooking = async () => {
       try {
         if (!user) return;
-        await checkAndCancelExpiredBookings(user.id);
         if (!isMounted) return;
 
         if (bookingIdToPay) {
@@ -271,9 +269,9 @@ const PaymentScreen = ({ navigation, route }) => {
           .from('bookings')
           .update({ 
             payment_status: 'paid',
-            status: 'confirmed',
           })
-          .eq('id', bookingId);
+          .eq('id', bookingId)
+          .eq('payment_status', 'pending');
 
         if (updateError) throw updateError;
 
@@ -296,9 +294,9 @@ const PaymentScreen = ({ navigation, route }) => {
         setPaymentProcessing(false);
         customAlert({
           title: 'Success',
-          message: 'Payment verified successfully!',
+          message: updatedBooking.status === 'cancelled' ? 'Payment verified and sent for refund review.' : 'Payment verified successfully!',
           variant: 'info',
-        }).then(() => navigation.navigate('Confirmation', { booking: updatedBooking }));
+        }).then(() => updatedBooking.status === 'cancelled' ? viewTrips() : navigation.navigate('Confirmation', { booking: updatedBooking }));
       } else {
         confirm({
           title: 'Payment Pending',

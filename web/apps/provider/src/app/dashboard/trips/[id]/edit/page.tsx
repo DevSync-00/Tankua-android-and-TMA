@@ -71,6 +71,10 @@ export default function EditTripPage() {
       setStations((stationResult.data||[]) as Station[]);
       const trip:any=tripResult.trip;
       const departureIso = trip.departure_date || trip.date || "";
+      if (Date.parse(departureIso) <= Date.now()) {
+        router.replace(`/dashboard/trips/${id}/closeout`);
+        return;
+      }
       const departure = getTripDateParts(departureIso);
       const returnSchedule = getTripDateParts(trip.return_date || "");
       const loadedForm = {

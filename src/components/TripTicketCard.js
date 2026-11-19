@@ -6,7 +6,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme'
 import { getBookingDisplay } from '../utils/bookingDisplay';
 import { formatTripPrice } from '../utils/tripCurrency';
 
-const TripTicketCard = forwardRef(({ booking, showInstructions = false, style }, ref) => {
+const TripTicketCard = forwardRef(({ booking, showInstructions = false, receipt = false, style }, ref) => {
   const { width } = useWindowDimensions();
   const display = getBookingDisplay(booking);
   const qrSize = Math.min(Math.round(width - 112), 188);
@@ -27,7 +27,7 @@ const TripTicketCard = forwardRef(({ booking, showInstructions = false, style },
           </View>
           <View>
             <Text style={styles.brandName}>Tankua</Text>
-            <Text style={styles.brandSub}>Trip ticket</Text>
+            <Text style={styles.brandSub}>{receipt ? 'Trip receipt' : 'Trip ticket'}</Text>
           </View>
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusColor }]}>
@@ -41,7 +41,7 @@ const TripTicketCard = forwardRef(({ booking, showInstructions = false, style },
         ))}
       </View>
 
-      <View style={styles.qrBlock}>
+      {!receipt && <View style={styles.qrBlock}>
         <View style={styles.qrFrame}>
           <QRCode
             value={display.qrCode}
@@ -52,7 +52,7 @@ const TripTicketCard = forwardRef(({ booking, showInstructions = false, style },
         </View>
         <Text style={styles.qrCode}>{display.qrCode}</Text>
         <Text style={styles.qrHint}>Show this code at pickup</Text>
-      </View>
+      </View>}
 
       <View style={styles.details}>
         <DetailRow icon="location" label="Destination" value={display.destinationName} />

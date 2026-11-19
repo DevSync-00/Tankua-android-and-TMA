@@ -159,7 +159,9 @@ export function TripFormFields({
               <Field id="returnDate" label="Return date" error={errors.returnDate}><input {...bind("returnDate")} type="date" required min={form.departureDate || earliestDate} /></Field>
               <Field id="returnTime" label="Return time" error={errors.returnTime}><input {...bind("returnTime")} type="time" required /></Field>
             </>
-          ) : null}
+          ) : <Field id="durationHours" label="Expected travel time (hours)" error={errors.durationHours}>
+            <input {...bind("durationHours")} type="number" inputMode="decimal" min="0.5" step="any" required placeholder="e.g. 4.5" />
+          </Field>}
         </div>
       </Section>
 
@@ -257,9 +259,9 @@ export function TripFormFields({
             <Field id="difficultyLevel" label="Activity level">
               <select {...bind("difficultyLevel")}><option value="easy">Easy</option><option value="moderate">Moderate</option><option value="challenging">Challenging</option></select>
             </Field>
-            <Field id="durationHours" label="Duration (hours)" error={errors.durationHours}>
+            {form.tripType === "round_trip" ? <Field id="durationHours" label="Duration (hours)" error={errors.durationHours}>
               <input {...bind("durationHours")} type="number" inputMode="decimal" min="0.5" step="any" placeholder="e.g. 8" />
-            </Field>
+            </Field> : null}
             <Field id="transportationType" label="Transportation"><input {...bind("transportationType")} placeholder="e.g. Air-conditioned minibus" /></Field>
           </div>
           {travelerDetails.map(({ field, label, rows, placeholder, ...rest }) => {

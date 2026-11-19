@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase';
 
-export const BOOKING_WITH_TRIP = '*, trip:trips(status, departure_date)';
+export const BOOKING_WITH_TRIP = '*, trip:trips(status, departure_date, return_date, duration_minutes, revised_end_at, closeout_reason)';
 
 export const canPayForTrip = (trip) => (
   trip?.status === 'active' && Date.parse(trip.departure_date) > Date.now()
@@ -64,60 +64,6 @@ export const getTimeRemaining = (paymentDeadline) => {
 };
 
 /**
- * Check and cancel expired bookings for a user
- */
-export const checkAndCancelExpiredBookings = async (userId) => {
-  try {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'confirmed')
-      .eq('payment_status', 'pending')
-      .not('payment_deadline', 'is', null);
-
-    if (error) throw error;
-
-    const now = new Date();
-    const expiredBookings = [];
-
-    for (const booking of data || []) {
-      if (booking.payment_deadline) {
-        const deadline = new Date(booking.payment_deadline);
-        if (now >= deadline) {
-          expiredBookings.push(booking.id);
-        }
-      }
-    }
-
-    if (expiredBookings.length > 0) {
-      // Cancel expired bookings
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({
-          status: 'cancelled',
-        })
-        .in('id', expiredBookings)
-        .eq('status', 'confirmed')
-        .eq('payment_status', 'pending')
-        .lte('payment_deadline', now.toISOString());
-
-      if (updateError) throw updateError;
-
-      return {
-        cancelled: expiredBookings.length,
-        bookingIds: expiredBookings,
-      };
-    }
-
-    return { cancelled: 0, bookingIds: [] };
-  } catch (error) {
-    console.error('Error checking expired bookings:', error);
-    throw error;
-  }
-};
-
-/**
  * Verify booking is still valid before processing payment
  */
 export const verifyBookingBeforePayment = async (bookingId) => {
@@ -155,20 +101,9 @@ export const verifyBookingBeforePayment = async (bookingId) => {
     }
 
     if (!isBookingValid(data)) {
-      // Booking expired, cancel it
-      await supabase
-        .from('bookings')
-        .update({
-          status: 'cancelled',
-        })
-        .eq('id', bookingId)
-        .eq('status', 'confirmed')
-        .eq('payment_status', 'pending')
-        .lte('payment_deadline', new Date().toISOString());
-
       return {
         valid: false,
-        reason: 'Payment deadline has passed. Booking has been cancelled.',
+        reason: 'The payment window has ended.',
       };
     }
 

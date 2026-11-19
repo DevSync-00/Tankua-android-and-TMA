@@ -115,15 +115,15 @@ async function loadTours(
     let query = supabase
       .from('trips')
       .select(listingColumns, { count: 'exact' })
+      .gt('departure_date', new Date().toISOString())
       .order(orderBy, { ascending });
 
     query = includeInterest && !options?.bookableOnly
       ? query.in('status', ['active', 'upcoming', 'collecting_interest'])
-        .or(`minimum_interest.is.null,departure_date.gt.${new Date().toISOString()}`)
       : query.in('status', ['active', 'upcoming']);
 
     if (options?.bookableOnly) {
-      query = query.gt('departure_date', new Date().toISOString()).gte('available_seats', 1);
+      query = query.gte('available_seats', 1);
     }
 
     const search = options?.search?.trim();

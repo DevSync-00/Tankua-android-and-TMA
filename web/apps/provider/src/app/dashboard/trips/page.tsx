@@ -18,6 +18,7 @@ import {
 import { Header } from "@/components/header";
 import { Card, CardContent, Button, Badge, formatCurrency, ConfirmDialog, InlineBanner } from "@tankua/ui";
 import { getProviderTrips, updateTripStatus, deleteTrip, type TripDetails } from "@/lib/queries";
+import { canCloseOutTrip, needsCloseout } from "@/lib/trip-closeout";
 
 const tripStatuses = {
   collecting_interest: { label: "Collecting interest", variant: "warning" },
@@ -30,12 +31,14 @@ const tripStatuses = {
 
 function TripStatus({ trip }: { trip: TripDetails }) {
   const status = tripStatuses[trip.status as keyof typeof tripStatuses];
-  const interestClosed = trip.status === "collecting_interest" && Date.parse(trip.departure_date) <= Date.now();
+  const interestClosed = trip.closeout_reason === "interest_goal_missed" ||
+    (trip.status === "collecting_interest" && Date.parse(trip.departure_date) <= Date.now());
+  const closeout = needsCloseout(trip);
 
   return (
     <div className="space-y-1">
-      <Badge variant={status?.variant ?? "secondary"} dot={Boolean(status)}>
-        {interestClosed ? "Interest goal missed" : status?.label ?? trip.status}
+      <Badge variant={closeout ? "warning" : status?.variant ?? "secondary"} dot={Boolean(status)}>
+        {interestClosed ? "Interest goal missed" : closeout ? "Needs closeout" : status?.label ?? trip.status}
       </Badge>
       {trip.minimum_interest !== null && (
         <p className="text-xs text-muted-foreground">
@@ -107,7 +110,10 @@ export default function TripsPage() {
       const destinationName =
         trip.destination?.name || "Destination";
       const matchesSearch = destinationName.toLowerCase().includes(query);
-      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+      const matchesStatus = statusFilter === "all"
+        || (statusFilter === "closeout" && needsCloseout(trip))
+        || (statusFilter === "past" && ["completed", "cancelled"].includes(trip.status))
+        || trip.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [trips, searchQuery, statusFilter]);
@@ -119,10 +125,11 @@ export default function TripsPage() {
       (sum, t) => sum + Math.max(0, (t.max_seats || 0) - (t.available_seats || 0)),
       0
     );
-    const scheduledCount = trips.filter((trip) => ["upcoming", "active", "ongoing"].includes(trip.status)).length;
+    const scheduledCount = trips.filter((trip) => ["upcoming", "active", "ongoing"].includes(trip.status) && !needsCloseout(trip)).length;
+    const closeoutCount = trips.filter((trip) => needsCloseout(trip)).length;
     const occupancy = totalSeats ? Math.round((bookedSeats / totalSeats) * 100) : 0;
 
-    return { totalSeats, bookedSeats, scheduledCount, occupancy };
+    return { totalSeats, bookedSeats, scheduledCount, closeoutCount, occupancy };
   }, [trips]);
 
   const formatDateTime = (dateString: string) => {
@@ -185,6 +192,14 @@ export default function TripsPage() {
   };
 
   const renderActivateButton = (trip: TripDetails) => {
+    if (canCloseOutTrip(trip)) {
+      return <Link href={`/dashboard/trips/${trip.id}/closeout`} className="rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-muted">
+        {needsCloseout(trip) ? "Close out" : "Trip progress"}
+      </Link>;
+    }
+    if (["completed", "cancelled"].includes(trip.status)) {
+      return <Link href={`/dashboard/trips/${trip.id}/closeout`} className="rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-muted">Past trip details</Link>;
+    }
     const canActivate = trip.status === "upcoming" && Date.parse(trip.departure_date) > Date.now();
     if (!canActivate) return null;
 
@@ -262,6 +277,8 @@ export default function TripsPage() {
             className="h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
             <option value="all">All statuses</option>
+            <option value="closeout">Needs closeout ({stats.closeoutCount})</option>
+            <option value="past">Past trips</option>
             {Object.entries(tripStatuses).map(([value, status]) => (
               <option key={value} value={value}>{status.label}</option>
             ))}
@@ -391,25 +408,27 @@ export default function TripsPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         {renderActivateButton(trip)}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleEdit(trip.id)}
-                          title="Edit Trip"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => handleDelete(trip.id)}
-                          disabled={deletingTripId === trip.id}
-                          title="Delete Trip"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {Date.parse(trip.departure_date) > Date.now() ? <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEdit(trip.id)}
+                            title="Edit Trip"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => handleDelete(trip.id)}
+                            disabled={deletingTripId === trip.id}
+                            title="Delete Trip"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </> : null}
                       </div>
                     </div>
                   </div>
@@ -483,25 +502,27 @@ export default function TripsPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-1">
                             {renderActivateButton(trip)}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={() => handleEdit(trip.id)}
-                              title="Edit Trip"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => handleDelete(trip.id)}
-                              disabled={deletingTripId === trip.id}
-                              title="Delete Trip"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {Date.parse(trip.departure_date) > Date.now() ? <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEdit(trip.id)}
+                                title="Edit Trip"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => handleDelete(trip.id)}
+                                disabled={deletingTripId === trip.id}
+                                title="Delete Trip"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </> : null}
                           </div>
                         </td>
                       </tr>

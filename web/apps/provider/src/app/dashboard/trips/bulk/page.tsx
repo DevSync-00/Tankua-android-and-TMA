@@ -30,6 +30,7 @@ interface TripTemplate {
   maxSeats: string;
   tourCategory: string;
   itinerary: string;
+  durationHours: string;
 }
 
 interface BulkTrip {
@@ -45,6 +46,7 @@ interface BulkTrip {
   maxSeats: string;
   tourCategory: string;
   itinerary: string;
+  durationHours: string;
   errors?: string[];
 }
 
@@ -66,9 +68,11 @@ export default function BulkTripPage() {
     maxSeats: "",
     tourCategory: "",
     itinerary: "",
+    durationHours: "",
   });
   const [mode, setMode] = useState<"template" | "duplicate" | "manual">("template");
   const [selectedTripToDuplicate, setSelectedTripToDuplicate] = useState<string>("");
+  const [duplicateDuration, setDuplicateDuration] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -167,6 +171,7 @@ export default function BulkTripPage() {
             maxSeats: template.maxSeats,
             tourCategory: template.tourCategory,
             itinerary: template.itinerary,
+            durationHours: template.durationHours,
           });
         }
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);
@@ -192,6 +197,7 @@ export default function BulkTripPage() {
           maxSeats: template.maxSeats,
           tourCategory: template.tourCategory,
           itinerary: template.itinerary,
+            durationHours: template.durationHours,
         });
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
@@ -242,6 +248,7 @@ export default function BulkTripPage() {
         maxSeats: trip.max_seats?.toString() || "",
         tourCategory: trip.tour_category || "",
         itinerary: trip.itinerary || "",
+        durationHours: duplicateDuration || (trip.duration_minutes ? String(trip.duration_minutes / 60) : ""),
       });
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
@@ -266,6 +273,7 @@ export default function BulkTripPage() {
         maxSeats: "",
         tourCategory: "",
         itinerary: "",
+        durationHours: "",
       },
     ]);
   };
@@ -307,6 +315,9 @@ export default function BulkTripPage() {
       if (trip.tripType === "round_trip" && !trip.returnDate) errors.push("Return date required for round trips");
       if (trip.returnDate && (!returnSchedule || (departure && returnSchedule < departure))) errors.push("Return date must be on or after departure");
       if (!Number.isFinite(price) || price <= 0 || !tripMoneyPattern.test(trip.price)) errors.push("Enter a positive price with up to two decimal places");
+      if (trip.tripType === "one_way" && (!Number.isFinite(Number(trip.durationHours)) || Number(trip.durationHours) < 0.5 || Number(trip.durationHours) * 60 > 2147483647)) {
+        errors.push("One-way trips need an expected travel time of at least 0.5 hours.");
+      }
       if (!Number.isInteger(seats) || seats <= 0) errors.push("Whole seat count required");
 
       if (errors.length > 0) isValid = false;
@@ -362,6 +373,7 @@ export default function BulkTripPage() {
           max_seats: Number(trip.maxSeats),
           tour_category: trip.tourCategory || undefined,
           itinerary: trip.itinerary || undefined,
+          duration_minutes: trip.durationHours ? Math.round(Number(trip.durationHours) * 60) : undefined,
         });
 
         if (result.success) {
@@ -510,6 +522,11 @@ export default function BulkTripPage() {
                   />
                 </div>
 
+                {template.tripType === "one_way" ? (
+                  <label className="text-sm font-medium">Expected travel time (hours)
+                    <input type="number" min="0.5" step="any" value={template.durationHours} onChange={e => setTemplate({ ...template, durationHours: e.target.value })} className="mt-2 block h-11 w-full rounded-xl border px-4" />
+                  </label>
+                ) : null}
                 <label className="block text-sm font-medium">
                   Fare currency
                   <select
@@ -632,7 +649,7 @@ export default function BulkTripPage() {
                 <label className="block text-sm font-medium mb-2">Select Trip to Duplicate *</label>
                 <select
                   value={selectedTripToDuplicate}
-                  onChange={(e) => setSelectedTripToDuplicate(e.target.value)}
+                  onChange={(e) => { setSelectedTripToDuplicate(e.target.value); setDuplicateDuration(""); }}
                   className="w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm"
                 >
                   <option value="">Select a trip</option>
@@ -643,6 +660,12 @@ export default function BulkTripPage() {
                   ))}
                 </select>
               </div>
+
+              {existingTrips.find(trip => trip.id === selectedTripToDuplicate)?.trip_type === "one_way" ? (
+                <label className="block text-sm font-medium">Expected travel time override (hours)
+                  <input type="number" min="0.5" step="any" value={duplicateDuration} onChange={e => setDuplicateDuration(e.target.value)} placeholder="Uses the source trip?s estimate if left blank" className="mt-2 block h-11 w-full rounded-xl border px-4" />
+                </label>
+              ) : null}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -770,6 +793,11 @@ export default function BulkTripPage() {
                             </div>
                           )}
 
+                          {trip.tripType === "one_way" ? (
+                            <label className="text-sm font-medium">Expected travel time (hours)
+                              <input type="number" min="0.5" step="any" value={trip.durationHours} onChange={e => updateTrip(trip.id, "durationHours", e.target.value)} className="mt-2 block h-11 w-full rounded-xl border px-4" />
+                            </label>
+                          ) : null}
                           <label className="block text-sm font-medium">
                             Fare currency
                             <select

@@ -308,6 +308,7 @@ export async function getProviderBookings(
     offset?: number;
     status?: string;
     currency?: TripCurrency;
+    tripId?: string;
   }
 ): Promise<{ bookings: BookingDetails[]; total: number }> {
   // Query bookings by provider_id directly (bookings have provider_id column)
@@ -347,6 +348,8 @@ export async function getProviderBookings(
     query = query.eq('currency', options.currency);
   }
 
+  if (options?.tripId) query = query.eq('trip_id', options.tripId);
+
   if (options?.limit) {
     query = query.limit(options.limit);
   }
@@ -359,6 +362,7 @@ export async function getProviderBookings(
 
   if (error) {
     console.error('Error fetching provider bookings:', error);
+    if (options?.tripId) throw error;
     return { bookings: [], total: 0 };
   }
 
@@ -414,6 +418,10 @@ export interface TripDetails {
   destination: { id: string; name: string; city?: string; region?: string } | null;
   departure_date: string;
   return_date: string | null;
+  duration_minutes?: number | null;
+  revised_end_at?: string | null;
+  closeout_reason?: string | null;
+  closed_at?: string | null;
   trip_type: string;
   price: number;
   currency: TripCurrency;
@@ -473,6 +481,9 @@ export async function getProviderTrips(
       destination: t.destinations || null,
       departure_date: t.departure_date || t.date,
       return_date: t.return_date,
+      duration_minutes: t.duration_minutes,
+      revised_end_at: t.revised_end_at,
+      closeout_reason: t.closeout_reason,
       trip_type: t.trip_type,
       price: t.price,
       currency: getTripCurrency(t.currency),
