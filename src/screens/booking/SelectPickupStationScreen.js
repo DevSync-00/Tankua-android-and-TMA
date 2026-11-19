@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -35,6 +36,8 @@ const SelectPickupStationScreen = ({ navigation }) => {
   const currency = getTripCurrency(currentBooking.trip?.currency);
   const { showToast } = useFeedback();
   const [selectedStation, setSelectedStation] = useState(null);
+  const [pickupAddress, setPickupAddress] = useState('');
+  const addressValid = pickupAddress.trim().length >= 5;
   const [viewMode, setViewMode] = useState('list');
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +81,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
         : await getProviderPickupStations(currentBooking.provider?.id);
       
       if (rows.length === 0 && currentBooking.provider?.id && currency === 'ETB') {
-        rows = await getProviderPickupStations(currentBooking.provider.id);
+        rows = (await getProviderPickupStations(currentBooking.provider.id)).filter(station => !station.is_address_pickup);
       }
       
       const normalized = rows.map((row) => {
@@ -90,14 +93,17 @@ const SelectPickupStationScreen = ({ navigation }) => {
           pickupTime: row.pickup_time || station.pickup_time || 'TBD',
           extraPrice: Number(row.extra_price ?? (currency === 'ETB' ? station.extra_price : 0) ?? 0),
         };
-      }).filter((station) => Number.isFinite(station.lat) && Number.isFinite(station.lng));
+      }).filter((station) => station.is_active !== false && (station.is_address_pickup
+        ? Boolean(currentBooking.trip?.id)
+        : Number.isFinite(station.lat) && Number.isFinite(station.lng)));
       
       setStations(normalized);
-      if (normalized.length) {
+      const firstFixedStation = normalized.find(station => !station.is_address_pickup);
+      if (firstFixedStation) {
         setRegion((previous) => ({
           ...previous,
-          latitude: normalized[0].lat,
-          longitude: normalized[0].lng,
+          latitude: firstFixedStation.lat,
+          longitude: firstFixedStation.lng,
         }));
       }
     } catch (error) {
@@ -109,13 +115,16 @@ const SelectPickupStationScreen = ({ navigation }) => {
   };
 
   const handleContinue = () => {
-    if (selectedStation) {
-      updateBooking({ pickupStation: selectedStation });
+    if (selectedStation && (!selectedStation.is_address_pickup || addressValid)) {
+      updateBooking({ pickupStation: selectedStation.is_address_pickup
+        ? { ...selectedStation, pickup_address: pickupAddress.trim() }
+        : selectedStation });
       navigation.navigate('SelectSeats');
     }
   };
 
   const handleStationSelect = (station) => {
+    if (selectedStation?.id !== station.id) setPickupAddress('');
     setSelectedStation(station);
     if (viewMode === 'map') {
       setRegion({
@@ -237,6 +246,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
       ) : viewMode === 'list' ? (
         <FlatList
           data={stations}
+          keyboardShouldPersistTaps="handled"
           renderItem={({ item, index }) => (
             <View style={styles.cardPadding}>
               <ModernPickupStationCard
@@ -246,6 +256,19 @@ const SelectPickupStationScreen = ({ navigation }) => {
                 selected={selectedStation?.id === item.id}
                 index={index}
               />
+              {item.is_address_pickup && item.id === selectedStation?.id ? (
+                <View style={styles.addressField}>
+                  <Text style={styles.selectedText}>Pickup address in {item.city}</Text>
+                  <TextInput
+                    accessibilityLabel="Pickup address"
+                    placeholder="Hotel, street address, or nearby landmark"
+                    value={pickupAddress}
+                    onChangeText={setPickupAddress}
+                    maxLength={240}
+                    style={styles.addressInput}
+                  />
+                </View>
+              ) : null}
             </View>
           )}
           keyExtractor={(item) => item.id}
@@ -257,12 +280,12 @@ const SelectPickupStationScreen = ({ navigation }) => {
           <OsmMapView
             style={styles.map}
             region={region}
-            stations={stations}
+            stations={stations.filter(station => !station.is_address_pickup)}
             selectedStation={selectedStation}
             onMarkerPress={handleStationSelect}
           />
 
-          {selectedStation && (
+          {selectedStation && !selectedStation.is_address_pickup && (
             <Animated.View style={[styles.mapStationCard, mapCardAnimatedStyle]}>
               <ModernPickupStationCard
                 station={selectedStation}
@@ -294,7 +317,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
         <ModernButton
           title={t('continue') || 'Continue'}
           onPress={handleContinue}
-          disabled={!selectedStation}
+          disabled={!selectedStation || (selectedStation.is_address_pickup && !addressValid)}
           variant="primary"
           size="large"
           style={styles.button}
@@ -365,6 +388,16 @@ const stepStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  addressField: { padding: SPACING.md, gap: SPACING.sm },
+  addressInput: {
+    minHeight: 44,
+    padding: SPACING.sm,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    color: COLORS.secondary,
+    backgroundColor: COLORS.white,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

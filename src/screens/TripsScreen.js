@@ -44,7 +44,7 @@ const BookingCard = ({ item, onViewTicket, onPay }) => {
     item.destination_name || item.church_name || item.churchName || 'Unknown Destination';
   const status        = item.status || 'confirmed';
   const pickupStation = item.pickup_station || item.pickupStation || {};
-  const stationName   = pickupStation.name || pickupStation.stationName || 'Pickup Station';
+  const stationName   = pickupStation.pickup_address || pickupStation.name || pickupStation.stationName || 'Pickup Station';
   const pickupTime    = pickupStation.pickupTime || pickupStation.pickup_time || 'TBD';
   const seats         = item.seats || 1;
   const totalPrice    = item.total_price || item.totalPrice || 0;

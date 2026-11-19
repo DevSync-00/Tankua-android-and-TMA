@@ -467,7 +467,7 @@ const PaymentScreen = ({ navigation, route }) => {
               </Text>
               {pickup?.name ? (
                 <Text style={styles.pickupPillText} numberOfLines={1}>
-                  Pickup: {pickup.name}
+                  Pickup: {pickup.pickup_address || pickup.name}
                 </Text>
               ) : null}
             </View>

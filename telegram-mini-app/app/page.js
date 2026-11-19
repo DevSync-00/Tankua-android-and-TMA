@@ -365,6 +365,7 @@ export default function App() {
       const details = {
         trip_id: booking.trip.id,
         station_id: booking.pickup.id,
+        pickup_address: booking.pickup.is_address_pickup ? booking.pickup.pickup_address.trim() : undefined,
         seats: booking.seats,
         passengers: booking.passengers,
       };
@@ -779,7 +780,7 @@ function BookingFlow({ step, destination, catalog, booking, setBooking, back, ne
   const linkByStation = new Map(catalog.trip_pickup_stations.filter(link => link.trip_id === booking.trip?.id).map(link => [link.station_id, link]));
   const pickups = catalog.stations.filter(station => linkByStation.has(station.id)).map(station => {
     const link = linkByStation.get(station.id);
-    return { ...station, sub: station.address || station.city || '', time: link.pickup_time, extraPrice: Number(link.extra_price || 0) };
+    return { ...station, sub: station.is_address_pickup ? [station.city, station.address].filter(Boolean).join(' / ') : station.address || station.city || '', time: link.pickup_time, extraPrice: Number(link.extra_price || 0) };
   });
   if(step==='trip') return <TripStep destination={destination} trips={trips} providers={catalog.providers||[]} booking={booking} setBooking={setBooking} back={back} next={()=>next('pickup')}/>;
   if(step==='pickup') return <PickupStep pickups={pickups} booking={booking} setBooking={setBooking} back={back} next={()=>next('seats')}/>;
@@ -827,11 +828,27 @@ function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
 
 function PickupStep({pickups,booking,setBooking,back,next}) {
   const [view,setView]=useState('list');
-  return <FlowPage step="pickup" back={back} title="Select Pickup Station" sub="Choose your preferred pickup location">
+  const selected = booking.pickup;
+  const canContinue = selected && (!selected.is_address_pickup || selected.pickup_address?.trim().length >= 5);
+  const choosePickup = pickup => {
+    if (selected?.id !== pickup.id) setBooking({ ...booking, pickup });
+  };
+  return <FlowPage step="pickup" back={back} title="Select pickup location" sub="Choose your preferred pickup location">
     <div className="view-toggle"><button className={view==='list'?'active':''} onClick={()=>setView('list')}><Navigation/>List</button><button className={view==='map'?'active':''} onClick={()=>setView('map')}><MapIcon/>Map</button></div>
-    {view==='list'?<div className="pickup-list">{pickups.map(p=><button key={p.id} className={`pickup-card ${booking.pickup?.id===p.id?'selected':''}`} onClick={()=>setBooking({...booking,pickup:p})}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice, booking.trip?.currency)}`:' · Included'}</small></div>{booking.pickup?.id===p.id&&<Check/>}</button>)}</div>:<div className="pickup-map"><div className="map-grid"/>{pickups.map((p,index)=><button key={p.id} className={`pickup-pin ${booking.pickup?.id===p.id?'selected':''}`} style={{left:`${18+(index*23)%65}%`,top:`${19+(index*29)%62}%`}} onClick={()=>setBooking({...booking,pickup:p})}><MapPin fill="currentColor"/><span>{p.name}</span></button>)}</div>}
+    {view==='list'?<div className="pickup-list">{pickups.map(p=><button key={p.id} className={`pickup-card ${booking.pickup?.id===p.id?'selected':''}`} onClick={()=>choosePickup(p)}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice, booking.trip?.currency)}`:' · Included'}</small></div>{booking.pickup?.id===p.id&&<Check/>}</button>)}</div>:<div className="pickup-map"><div className="map-grid"/>{pickups.filter(p=>!p.is_address_pickup).map((p,index)=><button key={p.id} className={`pickup-pin ${booking.pickup?.id===p.id?'selected':''}`} style={{left:`${18+(index*23)%65}%`,top:`${19+(index*29)%62}%`}} onClick={()=>choosePickup(p)}><MapPin fill="currentColor"/><span>{p.name}</span></button>)}</div>}
+    {selected?.is_address_pickup && <div className="passenger-card">
+      <label>Pickup address in {selected.city}
+        <input
+          value={selected.pickup_address || ''}
+          onChange={event=>setBooking({...booking,pickup:{...selected,pickup_address:event.target.value}})}
+          autoComplete="street-address"
+          maxLength={240}
+          placeholder="Hotel, street address, or nearby landmark"
+        />
+      </label>
+    </div>}
     {!pickups.length&&<div className="flow-empty"><MapPin/><h3>No pickup stations</h3><p>This provider has not added pickup stations for this trip yet.</p></div>}
-    <div className="flow-sticky">{booking.pickup&&<div className="selected-pickup"><Check/><span><b>{booking.pickup.name}</b><small>{booking.pickup.time}{booking.pickup.extraPrice>0?` · +${money(booking.pickup.extraPrice, booking.trip?.currency)}`:''}</small></span></div>}<Continue disabled={!booking.pickup} onClick={next}/></div>
+    <div className="flow-sticky">{booking.pickup&&<div className="selected-pickup"><Check/><span><b>{booking.pickup.name}</b><small>{booking.pickup.time}{booking.pickup.extraPrice>0?` · +${money(booking.pickup.extraPrice, booking.trip?.currency)}`:''}</small></span></div>}<Continue disabled={!canContinue} onClick={next}/></div>
   </FlowPage>;
 }
 
@@ -908,7 +925,7 @@ function Confirmation({booking,home,ticket}) {
     <p className="confirmation-message">Your trip is reserved. We’ve added your ticket to the Trips tab.</p>
     <div className="confirmation-card">
       <img src={booking.destination.image} alt=""/>
-      <div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div>
+      <div><b>{booking.destination.name}</b><span><CalendarDays/>{booking.trip.date} · {booking.trip.time}</span><span><MapPin/>{booking.pickup.pickup_address || booking.pickup.name}</span><span><UsersRound/>{booking.seats} traveler{booking.seats>1?'s':''}</span></div>
       <strong>{booking.id}</strong>
     </div>
     <button className="continue" onClick={ticket}>View QR ticket <Ticket/></button>
@@ -956,7 +973,7 @@ function TicketView({booking,back}) {
         <div className="ticket-destination" style={{backgroundImage:`linear-gradient(180deg,transparent 20%,rgba(5,15,28,.9)),url("${booking.destination.image}")`}}><div><h2>{booking.destination.name}</h2><p>{booking.trip.date}</p></div></div>
         <div className="ticket-info">
           <div className="ticket-info-row"><span><small>Departure</small><b>{booking.trip.time}</b></span><span><small>Seats</small><b>{booking.seats}</b></span></div>
-          <div className="ticket-info-row"><span><small>Pickup</small><b>{booking.pickup.name}</b></span><span><small>Booking</small><b className="ticket-booking-id">{booking.id}</b></span></div>
+          <div className="ticket-info-row"><span><small>Pickup</small><b>{booking.pickup.pickup_address || booking.pickup.name}</b></span><span><small>Booking</small><b className="ticket-booking-id">{booking.id}</b></span></div>
           {booking.total > 0 && <div className="ticket-info-row"><span><small>Total paid</small><b>{money(booking.total, booking.currency)}</b></span></div>}
           <div className="qr">{qrImage?<img className="qr-code-image" src={qrImage} alt={`QR code for booking ${booking.id}`}/>:<div className="qr-loading" aria-label="Generating QR code"/>}<small>Scan to read booking {String(booking.id).slice(0,8).toUpperCase()}</small></div>
         </div>
@@ -1034,7 +1051,7 @@ function TripsView({trips,destinations,open,explore,submitting}) {
           <span>{status}</span>
           <h3>{booking.destination.name}</h3>
           <p><CalendarDays/>{booking.trip.date} · {booking.trip.time}</p>
-          <p><MapPin/>{booking.pickup.name}</p>
+          <p><MapPin/>{booking.pickup.pickup_address || booking.pickup.name}</p>
           {booking.total > 0 && <p>{money(booking.total, booking.currency)}</p>}
           {action && <b>{action} <ChevronRight/></b>}
         </div>

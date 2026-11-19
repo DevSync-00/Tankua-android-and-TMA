@@ -280,7 +280,7 @@ async function getCatalog(env, session) {
     supabaseAll(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,is_featured,is_popular&order=name.asc'),
     supabaseAll(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,currency,available_seats,max_seats,summary,itinerary,duration_minutes,transportation_type,difficulty_level,inclusions,exclusions,meeting_instructions,what_to_bring,cancellation_policy,status,minimum_interest,interest_count&status=in.(active,upcoming,collecting_interest)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc,id.asc`),
     supabase(env, 'providers?select=id,name,description,logo_url,rating,total_trips&status=eq.active&order=name.asc'),
-    supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,is_active&is_active=eq.true&order=name.asc'),
+    supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,is_active,is_address_pickup&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
     session
       ? supabaseAll(env, `trip_interests?select=trip_id&user_id=eq.${encodeURIComponent(session.uid)}&order=trip_id.asc`)
@@ -358,6 +358,10 @@ async function createBooking(request, session, env) {
   if (!Number.isInteger(seats) || seats < 1 || seats > 8) throw new Error('Seats must be between 1 and 8');
   if (![body.trip_id, body.station_id, body.idempotency_key].every(value => BOOKING_UUID_PATTERN.test(value || ''))) throw new Error('Invalid booking identifiers');
   const passengers = validatePassengers(body.passengers, seats);
+  const pickupAddress = typeof body.pickup_address === 'string' ? body.pickup_address.trim() : null;
+  if (body.pickup_address != null && (!pickupAddress || pickupAddress.length < 5 || pickupAddress.length > 240)) {
+    return json({ error: 'Enter a pickup address between 5 and 240 characters' }, 400);
+  }
   const booking = await supabase(env, 'rpc/create_miniapp_booking', {
     method: 'POST',
     body: {
@@ -367,6 +371,7 @@ async function createBooking(request, session, env) {
       p_seats: seats,
       p_passengers: passengers,
       p_idempotency_key: body.idempotency_key,
+      p_pickup_address: pickupAddress,
     },
   });
   return json({ booking: Array.isArray(booking) ? booking[0] : booking }, 201);

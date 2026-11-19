@@ -39,6 +39,7 @@ function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
 const originalFetch = globalThis.fetch;
 let lastEdgePayload = null;
 let lastInterestPayload = null;
+let lastBookingPayload = null;
 let bookingRecord = null;
 let transactionRecord = null;
 let chapaVerification = null;
@@ -53,6 +54,9 @@ globalThis.fetch = async (url, options = {}) => {
   switch (requestUrl.pathname) {
     case '/rest/v1/rpc/delete_expired_unpaid_bookings':
       return Response.json(0);
+    case '/rest/v1/rpc/create_miniapp_booking':
+      lastBookingPayload = JSON.parse(options.body);
+      return Response.json({ id: bookingId, pickup_station: { pickup_address: lastBookingPayload.p_pickup_address } });
     case '/rest/v1/bookings':
       if (options.method === 'PATCH') {
         paymentSteps.push({ method: 'BOOKING', body: JSON.parse(options.body) });
@@ -130,6 +134,28 @@ const env = {
   APP_ORIGIN: 'https://tankua.example',
   CHAPA_SECRET_KEY: 'test-payment-key',
 };
+
+test('passes the traveler pickup address to the booking RPC after validating it', async () => {
+  const reserve = pickup_address => worker.fetch(new Request(`${env.APP_ORIGIN}/api/bookings`, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: env.APP_ORIGIN, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      trip_id: tripId, station_id: nextTripId, idempotency_key: bookingId, seats: 1,
+      passengers: [{ name: 'Test Traveler', age: 30 }], pickup_address,
+    }),
+  }), env);
+
+  assert.equal((await reserve('   ')).status, 400);
+  assert.equal(lastBookingPayload, null);
+
+  const reservation = await reserve('  Sample Hotel, Main Lobby  ');
+  assert.equal(reservation.status, 201);
+  assert.equal(lastBookingPayload.p_pickup_address, 'Sample Hotel, Main Lobby');
+  assert.equal((await reservation.json()).booking.pickup_station.pickup_address, 'Sample Hotel, Main Lobby');
+
+  assert.equal((await reserve(undefined)).status, 201);
+  assert.equal(lastBookingPayload.p_pickup_address, null);
+});
 
 test('rejects forged Telegram launch data', async () => {
   const forged = new URLSearchParams({

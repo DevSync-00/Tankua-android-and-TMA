@@ -289,7 +289,7 @@ export interface BookingDetails {
     status: string;
     destination: { id: string; name: string } | null;
   } | null;
-  pickup_station: { name: string } | null;
+  pickup_station: { name: string; pickup_address?: string } | null;
   destination_id: string | null;
   destination_name: string | null;
   seats: number;

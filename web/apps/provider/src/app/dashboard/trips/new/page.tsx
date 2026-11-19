@@ -115,7 +115,7 @@ export default function NewTripPage() {
       if (!controller.signal.aborted) setDestinations({ data: data ?? [], error: error ? "Destinations could not be loaded." : null });
     };
     const loadStations = async () => {
-      const { data, error } = await supabase.from("pickup_stations").select("id,name,city,address,extra_price")
+      const { data, error } = await supabase.from("pickup_stations").select("id,name,city,address,extra_price,is_address_pickup")
         .eq("provider_id", providerId).eq("is_active", true).order("name").abortSignal(controller.signal);
       if (!controller.signal.aborted) setStations({ data: data ?? [], error: error ? "Pickup stations could not be loaded." : null });
     };

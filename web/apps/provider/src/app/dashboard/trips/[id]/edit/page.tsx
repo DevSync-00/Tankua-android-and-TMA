@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { getProviderTrip, replaceTripPickupStations, updateTrip, updateTripStatus } from "@/lib/queries";
 import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
 
-type Station = { id: string; name: string; city: string | null; address: string | null; extra_price: number };
+type Station = { id: string; name: string; city: string | null; address: string | null; extra_price: number; is_address_pickup: boolean };
 type StationValue = { selected: boolean; pickupTime: string; extraPrice: string };
 type SavedTripState = {
   status: string;
@@ -61,7 +61,7 @@ export default function EditTripPage() {
     setProviderId(pid);
     Promise.all([
       supabase.from("destinations").select("id,name").order("name"),
-      supabase.from("pickup_stations").select("id,name,city,address,extra_price").eq("provider_id",pid).eq("is_active",true).order("name"),
+      supabase.from("pickup_stations").select("id,name,city,address,extra_price,is_address_pickup").eq("provider_id",pid).eq("is_active",true).order("name"),
       getProviderTrip(pid,id),
     ]).then(([destinationResult,stationResult,tripResult])=>{
       if(destinationResult.error||stationResult.error||tripResult.error||!tripResult.trip){
@@ -228,7 +228,7 @@ export default function EditTripPage() {
             <div key={station.id} className={`border rounded-xl p-4 ${value.selected ? "border-primary bg-primary/5" : ""}`}>
               <label className="flex gap-3">
                 <input type="checkbox" checked={value.selected} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,selected:e.target.checked}})}/>
-                <span><b>{station.name}</b><small className="block text-muted-foreground">{[station.address,station.city].filter(Boolean).join(", ")}</small></span>
+                <span><b>{station.name}</b><small className="block text-muted-foreground">{station.is_address_pickup ? "Address pickup in " + station.city : [station.address,station.city].filter(Boolean).join(", ")}</small></span>
               </label>
               {value.selected ? (
                 <div className="grid gap-3 mt-3 sm:grid-cols-2 sm:pl-6">

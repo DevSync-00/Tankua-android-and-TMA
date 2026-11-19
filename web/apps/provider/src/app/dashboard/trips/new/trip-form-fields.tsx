@@ -14,7 +14,7 @@ export const initialForm = {
 };
 export type TripForm = typeof initialForm;
 export type Destination = { id: string; name: string; city: string | null; region: string | null; category: string | null };
-export type Station = { id: string; name: string; city: string | null; address: string | null; extra_price: number };
+export type Station = { id: string; name: string; city: string | null; address: string | null; extra_price: number; is_address_pickup: boolean };
 export type StationConfig = { selected: boolean; pickupTime: string; extraPrice: string };
 export type Options<T> = { data: T[]; error: string | null };
 
@@ -179,7 +179,7 @@ export function TripFormFields({
         {errors.pickup ? <p role="alert" className="text-sm font-medium text-red-700">{errors.pickup}</p> : null}
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <p className="text-muted-foreground" aria-live="polite">{selectedCount} selected</p>
-          <Link href="/dashboard/pickup-stations" className="font-semibold text-stone-800 underline decoration-stone-400 underline-offset-4 hover:decoration-stone-950">Manage pickup stations</Link>
+          <Link href="/dashboard/pickup-stations" className="font-semibold text-stone-800 underline decoration-stone-400 underline-offset-4 hover:decoration-stone-950">Manage pickup options</Link>
         </div>
         {!stations ? <p role="status" className="text-sm text-muted-foreground">Loading pickup stations…</p> : null}
         {stations?.error ? <p role="alert" className="text-sm text-red-700">{stations.error} {retry}</p> : null}
@@ -197,7 +197,9 @@ export function TripFormFields({
           const selected = Boolean(config?.selected);
           const timeId = "pickup-time-" + station.id;
           const priceId = "pickup-fee-" + station.id;
-          const location = [station.address, station.city].filter(Boolean).join(", ");
+          const location = station.is_address_pickup
+            ? `Address pickup · ${station.city}`
+            : [station.address, station.city].filter(Boolean).join(", ");
           return (
             <div key={station.id} className={"rounded-lg border px-3 py-3 sm:px-4 " + (selected ? "border-amber-300 bg-amber-50/45" : "border-stone-200")}>
               <label className="flex cursor-pointer items-start gap-3">

@@ -244,6 +244,7 @@ export interface Database {
           city: string | null
           extra_price: number
           is_active: boolean
+          is_address_pickup: boolean
           created_at: string
         }
         Insert: {
@@ -256,6 +257,7 @@ export interface Database {
           city?: string | null
           extra_price?: number
           is_active?: boolean
+          is_address_pickup?: boolean
           created_at?: string
         }
         Update: {
@@ -268,6 +270,7 @@ export interface Database {
           city?: string | null
           extra_price?: number
           is_active?: boolean
+          is_address_pickup?: boolean
           created_at?: string
         }
       }
