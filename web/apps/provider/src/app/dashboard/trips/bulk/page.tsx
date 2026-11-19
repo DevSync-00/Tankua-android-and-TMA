@@ -17,6 +17,7 @@ import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@tankua/ui";
 import { supabase } from "@/lib/supabase";
 import { createTrip, getProviderTrips, type TripDetails } from "@/lib/queries";
+import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
 
 interface TripTemplate {
   destinationId: string;
@@ -143,7 +144,7 @@ export default function BulkTripPage() {
       // Generate trips for specific days of week
       const currentDate = new Date(startDate);
       while (currentDate <= endDate) {
-        const dayName = daysOfWeek[currentDate.getDay()];
+        const dayName = daysOfWeek[currentDate.getUTCDay()];
         if (recurringDays.includes(dayName)) {
           const returnDate = template.tripType === "round_trip" 
             ? new Date(currentDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -163,7 +164,7 @@ export default function BulkTripPage() {
             itinerary: template.itinerary,
           });
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
     } else {
       // Generate trips for all days in range
@@ -186,7 +187,7 @@ export default function BulkTripPage() {
           tourCategory: template.tourCategory,
           itinerary: template.itinerary,
         });
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
     }
 
@@ -215,6 +216,7 @@ export default function BulkTripPage() {
     const endDate = new Date(dateRange.end);
     const trips: BulkTrip[] = [];
     const currentDate = new Date(startDate);
+    const departureTime = getTripDateParts(trip.departure_date ?? "").time || "06:00";
 
     while (currentDate <= endDate) {
       const returnDate = trip.trip_type === "round_trip"
@@ -227,14 +229,14 @@ export default function BulkTripPage() {
         destinationName: trip.destination?.name || "",
         tripType: trip.trip_type,
         departureDate: currentDate.toISOString().split('T')[0],
-        departureTime: trip.departure_date ? new Date(trip.departure_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "06:00",
+        departureTime,
         returnDate,
         price: trip.price?.toString() || "",
         maxSeats: trip.max_seats?.toString() || "",
         tourCategory: trip.tour_category || "",
         itinerary: trip.itinerary || "",
       });
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
     setBulkTrips(trips);
@@ -283,15 +285,20 @@ export default function BulkTripPage() {
 
   const validateTrips = (): boolean => {
     let isValid = true;
+    const now = Date.now();
     const updatedTrips = bulkTrips.map(trip => {
       const errors: string[] = [];
+      const departure = parseTripTime(trip.departureDate, trip.departureTime);
+      const returnSchedule = trip.returnDate ? parseTripTime(trip.returnDate, trip.departureTime) : null;
+      const price = Number(trip.price);
+      const seats = Number(trip.maxSeats);
       
       if (!trip.destinationId) errors.push("Destination required");
-      if (!trip.departureDate) errors.push("Departure date required");
-      if (!trip.departureTime) errors.push("Departure time required");
+      if (!departure || departure.getTime() <= now) errors.push("Future departure date and time required");
       if (trip.tripType === "round_trip" && !trip.returnDate) errors.push("Return date required for round trips");
-      if (!trip.price || Number(trip.price) <= 0) errors.push("Valid price required");
-      if (!trip.maxSeats || Number(trip.maxSeats) <= 0) errors.push("Valid seat count required");
+      if (trip.returnDate && (!returnSchedule || (departure && returnSchedule < departure))) errors.push("Return date must be on or after departure");
+      if (!Number.isFinite(price) || price <= 0) errors.push("Valid price required");
+      if (!Number.isInteger(seats) || seats <= 0) errors.push("Whole seat count required");
 
       if (errors.length > 0) isValid = false;
 
@@ -328,8 +335,12 @@ export default function BulkTripPage() {
       let failCount = 0;
 
       for (const trip of bulkTrips) {
-        const departureDate = new Date(`${trip.departureDate}T${trip.departureTime}:00`);
-        const returnDate = trip.returnDate ? new Date(`${trip.returnDate}T${trip.departureTime}:00`) : undefined;
+        const departureDate = parseTripTime(trip.departureDate, trip.departureTime);
+        const returnDate = trip.returnDate ? parseTripTime(trip.returnDate, trip.departureTime) : null;
+        if (!departureDate || (trip.returnDate && !returnDate)) {
+          failCount++;
+          continue;
+        }
 
         const result = await createTrip({
           provider_id: providerId,
@@ -418,6 +429,7 @@ export default function BulkTripPage() {
               Bulk trips open for reservations immediately. Travelers can pay once you mark each trip Active. To set an interest goal,{" "}
               <Link href="/dashboard/trips/new" className="font-medium text-primary underline">create a single trip</Link>.
             </p>
+            <p className="text-sm text-muted-foreground">Times use East Africa Time (EAT). Round-trip returns use the departure time.</p>
             <div className="flex gap-4">
               <Button
                 variant={mode === "template" ? "default" : "outline"}
@@ -602,7 +614,7 @@ export default function BulkTripPage() {
                   <option value="">Select a trip</option>
                   {existingTrips.map(trip => (
                     <option key={trip.id} value={trip.id}>
-                      {trip.destination?.name || "Unnamed destination"} - {trip.departure_date ? new Date(trip.departure_date).toLocaleDateString() : 'TBD'}
+                      {trip.destination?.name || "Unnamed destination"} - {trip.departure_date ? new Date(trip.departure_date).toLocaleDateString(undefined, { timeZone: "Africa/Addis_Ababa" }) : 'TBD'}
                     </option>
                   ))}
                 </select>

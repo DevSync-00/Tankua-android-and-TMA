@@ -127,9 +127,10 @@ export default function TripsPage() {
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
+    const timeZone = "Africa/Addis_Ababa";
     return {
-      date: date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
-      time: date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+      date: date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone }),
+      time: `${date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", timeZone })} EAT`,
     };
   };
 

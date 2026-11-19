@@ -1,386 +1,406 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { 
-  CalendarCheck, 
-  Wallet, 
-  Users,
-  TrendingUp,
-  Star,
-  Clock,
-  MapPin,
+import { useCallback, useEffect, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
   ArrowRight,
-  MoreHorizontal,
-  Plus,
-  ChevronRight,
   Bus,
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  Layers3,
+  MapPin,
+  Plus,
   RefreshCw,
+  Star,
+  Ticket,
+  Users,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Avatar, Badge, Button, buttonVariants, cn, formatCurrency } from "@tankua/ui";
 import { Header } from "@/components/header";
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Avatar, StatCard, formatCurrency } from "@tankua/ui";
 import {
   getProviderStats,
-  getUpcomingTrips,
   getRecentBookings,
   getRecentReviews,
+  getUpcomingTrips,
   type ProviderStats,
-  type UpcomingTrip,
   type RecentBooking,
   type RecentReview,
+  type UpcomingTrip,
 } from "@/lib/queries";
+
+const departureDate = new Intl.DateTimeFormat("en-ET", {
+  weekday: "short", month: "short", day: "numeric", year: "numeric",
+  timeZone: "Africa/Addis_Ababa",
+});
+const departureTime = new Intl.DateTimeFormat("en-ET", {
+  hour: "numeric", minute: "2-digit", timeZone: "Africa/Addis_Ababa",
+});
+
+const quickActions = [
+  { label: "Manage pickup stations", href: "/dashboard/pickup-stations", icon: MapPin },
+  { label: "Create trips in bulk", href: "/dashboard/trips/bulk", icon: Layers3 },
+  { label: "Add a driver", href: "/dashboard/drivers/new", icon: Users },
+  { label: "Add a vehicle", href: "/dashboard/vehicles/new", icon: Bus },
+];
+
+type DashboardData = {
+  stats: ProviderStats | null;
+  trips: UpcomingTrip[] | null;
+  bookings: RecentBooking[] | null;
+  reviews: RecentReview[] | null;
+};
+
+function SectionLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex shrink-0 items-center gap-1 rounded-sm text-sm font-semibold text-stone-700 hover:text-stone-950 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {children}
+      <ChevronRight aria-hidden="true" className="size-4" />
+    </Link>
+  );
+}
+
+function Metric({
+  href, label, value, comparison, icon: Icon,
+}: {
+  href: string; label: string; value: string | number; comparison?: string; icon: LucideIcon;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-w-0 items-start justify-between gap-2 rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-4"
+    >
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-muted-foreground sm:text-sm">{label}</p>
+        <p className="mt-1 break-words text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{value}</p>
+        {comparison ? <p className="mt-1 text-xs tabular-nums text-muted-foreground">{comparison}</p> : null}
+      </div>
+      <span className="hidden shrink-0 rounded-lg bg-muted p-2.5 text-stone-600 group-hover:bg-accent group-hover:text-accent-foreground sm:block">
+        <Icon aria-hidden="true" className="size-4" />
+      </span>
+    </Link>
+  );
+}
+
+function formatComparison(change: number | undefined, period: string) {
+  return change === undefined ? undefined : `${change > 0 ? "+" : ""}${change}% vs ${period}`;
+}
+
+function DepartureTime({ dateTime, className }: { dateTime: string; className?: string }) {
+  const date = new Date(dateTime);
+  return (
+    <time dateTime={dateTime} className={className}>
+      {departureDate.format(date)} · {departureTime.format(date)} EAT
+    </time>
+  );
+}
+
+function getTripLabel(status: string) {
+  if (status === "active") return "Payment open";
+  if (status === "collecting_interest") return "Collecting interest";
+  return "Reservations open";
+}
+
+function getBookingLabel(booking: RecentBooking) {
+  if (booking.status === "cancelled") return "Cancelled";
+  if (booking.paymentStatus === "paid") return "Paid";
+  if (booking.paymentStatus === "refunded") return "Refunded";
+  if (booking.paymentStatus === "pending") {
+    const upcoming = booking.tripStatus === "upcoming"
+      && booking.departureDate !== null
+      && Date.parse(booking.departureDate) > Date.now();
+    return upcoming ? "Awaiting activation" : "Payment pending";
+  }
+  return "Payment status unavailable";
+}
+
+function TripSchedule({ trips }: { trips: UpcomingTrip[] | null }) {
+  const [nextTrip, ...laterTrips] = trips ?? [];
+  return (
+    <section aria-labelledby="departure-heading" className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
+        <h2 id="departure-heading" className="text-base font-semibold sm:text-lg">Upcoming departures</h2>
+        <SectionLink href="/dashboard/trips">All trips</SectionLink>
+      </div>
+      {nextTrip ? (
+        <>
+          <div className="mx-4 rounded-lg bg-stone-950 px-4 py-5 text-white sm:mx-5 sm:px-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="break-words text-2xl font-semibold tracking-tight">{nextTrip.destination}</h3>
+                <p className="mt-2 flex items-start gap-2 text-sm text-stone-300">
+                  <CalendarDays aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-300" />
+                  <DepartureTime dateTime={nextTrip.departureDate} />
+                </p>
+              </div>
+              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-amber-100">
+                {getTripLabel(nextTrip.status)}
+              </span>
+            </div>
+            <p className="mt-4 text-sm text-stone-200">
+              {nextTrip.status === "collecting_interest"
+                ? `${nextTrip.interestCount} of ${nextTrip.minimumInterest} travelers interested`
+                : `${nextTrip.passengers} of ${nextTrip.capacity} seats booked`}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link
+                href={`/dashboard/trips/${nextTrip.id}/edit`}
+                className={cn(buttonVariants({ size: "sm" }), "gap-2 shadow-none hover:shadow-none")}
+              >
+                {nextTrip.status === "upcoming" ? "Review activation" : "Manage trip"}
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+              {nextTrip.status === "upcoming" ? (
+                <p className="text-xs text-stone-300">Activation opens payments for reservations.</p>
+              ) : null}
+            </div>
+          </div>
+          {laterTrips.length ? (
+            <ul className="mt-3 divide-y divide-border px-4 pb-2 sm:px-5">
+              {laterTrips.map((trip) => (
+                <li key={trip.id}>
+                  <Link
+                    href={`/dashboard/trips/${trip.id}/edit`}
+                    className="group flex items-center gap-3 rounded-md py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-stone-600 group-hover:bg-accent group-hover:text-accent-foreground">
+                      <CalendarDays aria-hidden="true" className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span className="block break-words text-sm font-semibold group-hover:underline">{trip.destination}</span>
+                      <DepartureTime dateTime={trip.departureDate} className="text-xs text-muted-foreground" />
+                    </div>
+                    <span className="max-w-[6rem] text-right text-xs font-medium text-muted-foreground sm:max-w-none">
+                      {getTripLabel(trip.status)}
+                    </span>
+                    <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : <div className="h-4 sm:h-5" aria-hidden="true" />}
+        </>
+      ) : (
+        <p className="border-t border-border px-4 py-8 text-sm text-muted-foreground sm:px-5">
+          {trips === null ? "Upcoming departures are unavailable." : "Your future departures will appear here."}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function RecentBookings({ bookings }: { bookings: RecentBooking[] | null }) {
+  return (
+    <section aria-labelledby="bookings-heading" className="min-w-0 rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
+        <h2 id="bookings-heading" className="text-base font-semibold sm:text-lg">Recent bookings</h2>
+        <SectionLink href="/dashboard/bookings">All bookings</SectionLink>
+      </div>
+      {bookings?.length ? (
+        <ul className="divide-y divide-border border-t border-border px-4 sm:px-5">
+          {bookings.map((booking) => (
+            <li key={booking.id} className="flex items-start gap-3 py-3.5">
+              <Avatar name={booking.customer} size="sm" className="shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="break-words text-sm font-semibold">{booking.customer}</p>
+                <p className="mt-1 break-words text-xs text-muted-foreground">{booking.destination} · {booking.seats} {booking.seats === 1 ? "seat" : "seats"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{booking.time}</p>
+              </div>
+              <div className="max-w-[48%] shrink-0 text-right">
+                <p className="text-sm font-semibold tabular-nums">{formatCurrency(booking.amount)}</p>
+                <Badge
+                  variant={booking.paymentStatus === "paid" && booking.status !== "cancelled" ? "success" : "secondary"}
+                  className={cn(
+                    "mt-1 max-w-full justify-end px-2 leading-snug",
+                    (booking.paymentStatus !== "paid" || booking.status === "cancelled") && "bg-muted text-stone-700",
+                  )}
+                >
+                  {getBookingLabel(booking)}
+                </Badge>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="border-t border-border px-4 py-8 text-sm text-muted-foreground sm:px-5">
+          {bookings === null ? "Recent bookings are unavailable." : "Traveler reservations will appear here."}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Reviews({ reviews }: { reviews: RecentReview[] | null }) {
+  return (
+    <section aria-labelledby="reviews-heading" className="min-w-0 rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
+        <h2 id="reviews-heading" className="text-base font-semibold sm:text-lg">Recent reviews</h2>
+        <SectionLink href="/dashboard/reviews">All reviews</SectionLink>
+      </div>
+      {reviews?.length ? (
+        <ul className="divide-y divide-border border-t border-border px-4 sm:px-5">
+          {reviews.map((review) => (
+            <li key={review.id} className="py-3.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{review.customer}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{review.trip} · {review.date}</p>
+                </div>
+                {review.rating !== null ? (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-accent px-2 py-1 text-xs font-semibold text-stone-800">
+                    <Star aria-hidden="true" className="size-3.5 fill-amber-400 text-amber-600" />
+                    {review.rating}/5
+                  </span>
+                ) : null}
+              </div>
+              {review.comment ? <p className="mt-2.5 break-words text-sm text-stone-700">{review.comment}</p> : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="border-t border-border px-4 py-8 text-sm text-muted-foreground sm:px-5">
+          {reviews === null ? "Recent reviews are unavailable." : "Traveler reviews will appear here."}
+        </p>
+      )}
+    </section>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [providerId, setProviderId] = useState<string | null>(null);
-  const [stats, setStats] = useState<ProviderStats | null>(null);
-  const [upcomingTrips, setUpcomingTrips] = useState<UpcomingTrip[]>([]);
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
-  const [recentReviews, setRecentReviews] = useState<RecentReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasLoadError, setHasLoadError] = useState(false);
+  const [data, setData] = useState<DashboardData>({ stats: null, trips: null, bookings: null, reviews: null });
+
+  const loadDashboard = useCallback(async (id: string) => {
+    setLoading(true);
+    const [stats, trips, bookings, reviews] = await Promise.allSettled([
+      getProviderStats(id),
+      getUpcomingTrips(id, 4),
+      getRecentBookings(id, 4),
+      getRecentReviews(id, 2),
+    ]);
+    setData((previous) => ({
+      stats: stats.status === "fulfilled" ? stats.value : previous.stats,
+      trips: trips.status === "fulfilled" ? trips.value : previous.trips,
+      bookings: bookings.status === "fulfilled" ? bookings.value : previous.bookings,
+      reviews: reviews.status === "fulfilled" ? reviews.value : previous.reviews,
+    }));
+    setHasLoadError([stats, trips, bookings, reviews].some((result) => result.status === "rejected"));
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    loadProviderSession();
-  }, [router]);
-
-  const loadProviderSession = () => {
     try {
-      const stored = localStorage.getItem("provider_user");
-      if (!stored) {
-        router.replace("/login");
+      const session = JSON.parse(localStorage.getItem("provider_user") || "null");
+      const id = session?.provider_id || session?.provider?.id;
+      if (typeof id === "string" && id) {
+        setProviderId(id);
+        void loadDashboard(id);
         return;
       }
-
-      const parsed = JSON.parse(stored);
-      const id = parsed?.provider_id || parsed?.provider?.id;
-      
-      if (!id) {
-        router.replace("/login");
-        return;
-      }
-
-      setProviderId(id);
-      loadDashboardData(id);
-    } catch (err) {
-      console.error("Failed to load provider session", err);
-      router.replace("/login");
-    }
-  };
-
-  const loadDashboardData = async (id: string) => {
-    setLoading(true);
-    try {
-      const [statsData, tripsData, bookingsData, reviewsData] = await Promise.all([
-        getProviderStats(id),
-        getUpcomingTrips(id, 3),
-        getRecentBookings(id, 4),
-        getRecentReviews(id, 3),
-      ]);
-
-      setStats(statsData);
-      setUpcomingTrips(tripsData);
-      setRecentBookings(bookingsData);
-      setRecentReviews(reviewsData);
     } catch (error) {
-      console.error("Error loading dashboard:", error);
-    } finally {
-      setLoading(false);
+      console.error("Failed to read provider session", error);
     }
-  };
+    router.replace("/login");
+  }, [loadDashboard, router]);
 
-  const statsCards = [
-    {
-      title: "Today's Bookings",
-      value: stats?.todayBookings ?? "—",
-      change: stats?.bookingsChange,
-      changeLabel: stats?.bookingsChange !== undefined ? "vs yesterday" : undefined,
-      icon: <CalendarCheck className="h-6 w-6" />,
-      variant: "primary" as const,
-    },
-    {
-      title: "This Month's Earnings",
-      value: stats?.monthlyEarnings != null ? formatCurrency(stats.monthlyEarnings) : "—",
-      change: stats?.earningsChange,
-      changeLabel: stats?.earningsChange !== undefined ? "vs last month" : undefined,
-      icon: <Wallet className="h-6 w-6" />,
-    },
-    {
-      title: "Active Trips",
-      value: stats?.activeTrips ?? "—",
-      icon: <Bus className="h-6 w-6" />,
-    },
-    {
-      title: "Average Rating",
-      value: stats?.averageRating?.toFixed(1) ?? "—",
-      icon: <Star className="h-6 w-6" />,
-    },
-  ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen">
-        <Header 
-          title="Dashboard" 
-          subtitle="Loading your dashboard..."
-        />
-        <div className="p-6 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <RefreshCw className="h-5 w-5 animate-spin" />
-            <span>Loading dashboard data...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const { stats, trips, bookings, reviews } = data;
+  const initialLoading = loading && !stats && !trips && !bookings && !reviews;
 
   return (
-    <div className="min-h-screen">
-      <Header 
-        title="Dashboard" 
-        subtitle="Welcome back! Here's your business overview."
+    <>
+      <Header
+        title="Overview"
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => providerId && loadDashboardData(providerId)}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 border border-border"
+              disabled={loading || !providerId}
+              aria-label="Refresh overview"
+              onClick={() => { if (providerId) void loadDashboard(providerId); }}
+            >
+              <RefreshCw aria-hidden="true" className={cn("size-4", loading && "motion-safe:animate-spin")} />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Link href="/dashboard/trips/new">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Trip
-              </Button>
+            <Link href="/dashboard/trips/new" className={cn(buttonVariants({ size: "sm" }), "gap-2 shadow-none hover:shadow-none")}>
+              <Plus aria-hidden="true" className="size-4" />
+              Create trip
             </Link>
           </div>
         }
       />
-
-      <div className="portal-content">
-        {/* Stats Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statsCards.map((stat, index) => (
-            <StatCard
-              key={index}
-              title={stat.title}
-              value={stat.value}
-              change={stat.change}
-              changeLabel={stat.changeLabel}
-              icon={stat.icon}
-              variant={stat.variant || "default"}
-            />
-          ))}
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Upcoming Trips */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Upcoming Trips</CardTitle>
-              <Link href="/dashboard/trips">
-                <Button variant="ghost" size="sm">
-                  View All
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {upcomingTrips.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bus className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No upcoming trips</p>
-                  <Link href="/dashboard/trips/new">
-                    <Button className="mt-4" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Trip
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                upcomingTrips.map((trip) => (
-                  <div key={trip.id} className="p-4 bg-muted/50 rounded-xl border border-border hover:border-primary/50 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold text-foreground">{trip.destination}</h4>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <CalendarCheck className="h-4 w-4" />
-                            {trip.date}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {trip.time}
-                          </span>
-                        </div>
-                      </div>
-                      <Badge variant={trip.status === "confirmed" || trip.status === "active" ? "success" : "secondary"} className="capitalize">
-                        {trip.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Avatar name={trip.driver} size="sm" />
-                          <span className="text-sm">{trip.driver}</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">{trip.vehicle}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                          {trip.passengers}/{trip.capacity}
+      <div className="portal-content" aria-busy={loading}>
+        {initialLoading ? (
+          <p role="status" className="flex items-center gap-2 rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            <Clock3 aria-hidden="true" className="size-4" />
+            Loading overview…
+          </p>
+        ) : (
+          <>
+            {hasLoadError ? (
+              <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                Some overview information is unavailable. Refresh to try again.
+              </p>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <Metric href="/dashboard/trips" label="Active trips" value={stats?.activeTrips ?? "—"} icon={Bus} />
+              <Metric
+                href="/dashboard/bookings"
+                label="Today’s bookings"
+                value={stats?.todayBookings ?? "—"}
+                comparison={formatComparison(stats?.bookingsChange, "yesterday")}
+                icon={Ticket}
+              />
+              <Metric
+                href="/dashboard/earnings"
+                label="Trip sales this month"
+                value={stats?.monthlyEarnings == null ? "—" : formatCurrency(stats.monthlyEarnings)}
+                comparison={formatComparison(stats?.earningsChange, "last month")}
+                icon={Wallet}
+              />
+              <Metric href="/dashboard/reviews" label="Average rating" value={stats?.averageRating?.toFixed(1) ?? "—"} icon={Star} />
+            </div>
+            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+              <TripSchedule trips={trips} />
+              <RecentBookings bookings={bookings} />
+            </div>
+            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+              <section aria-labelledby="actions-heading" className="rounded-xl border border-border bg-card">
+                <h2 id="actions-heading" className="px-4 py-4 text-base font-semibold sm:px-5 sm:text-lg">Quick actions</h2>
+                <ul className="grid divide-y divide-border border-t border-border sm:grid-cols-2 sm:divide-y-0">
+                  {quickActions.map(({ href, label, icon: Icon }) => (
+                    <li key={href} className="min-w-0 sm:border-b sm:border-border sm:even:border-l sm:[&:nth-last-child(-n+2)]:border-b-0">
+                      <Link
+                        href={href}
+                        className="group flex h-full items-center gap-3 px-4 py-3.5 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5"
+                      >
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-stone-600 group-hover:bg-accent">
+                          <Icon aria-hidden="true" className="size-4" />
                         </span>
-                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${(trip.passengers / trip.capacity) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Bookings */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Bookings</CardTitle>
-              <Link href="/dashboard/bookings">
-                <Button variant="ghost" size="sm">View All</Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {recentBookings.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CalendarCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No bookings yet</p>
-                </div>
-              ) : (
-                recentBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                    <Avatar name={booking.customer} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-sm truncate">{booking.customer}</p>
-                        <Badge 
-                          variant={booking.status === "confirmed" ? "success" : "warning"} 
-                          className="text-xs"
-                        >
-                          {booking.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-muted-foreground">
-                          {booking.destination} • {booking.seats} seats
-                        </p>
-                        <p className="text-xs font-semibold text-primary">
-                          {formatCurrency(booking.amount)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Recent Reviews */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Reviews</CardTitle>
-              <Link href="/dashboard/reviews">
-                <Button variant="ghost" size="sm">View All</Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentReviews.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No reviews yet</p>
-                </div>
-              ) : (
-                recentReviews.map((review, index) => (
-                <div key={index} className="p-4 bg-muted/30 rounded-xl">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={review.customer} size="sm" />
-                      <div>
-                        <p className="font-medium text-sm">{review.customer}</p>
-                        <p className="text-xs text-muted-foreground">{review.trip} • {review.date}</p>
-                      </div>
-                    </div>
-                    {review.rating !== null && (
-                      <div className="flex items-center gap-1" role="img" aria-label={`${review.rating} out of 5 stars`}>
-                        {Array.from({ length: review.rating }, (_, i) => (
-                          <Star key={i} className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" aria-hidden="true" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground italic">"{review.comment}"</p>
-                </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <Link href="/dashboard/trips/new">
-                <button className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-left group">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Plus className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="font-semibold">Create Trip</p>
-                  <p className="text-sm text-muted-foreground mt-1">Schedule new trip</p>
-                </button>
-              </Link>
-              
-              <Link href="/dashboard/drivers/new">
-                <button className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-left group">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
-                    <Users className="h-6 w-6 text-emerald-500" />
-                  </div>
-                  <p className="font-semibold">Add Driver</p>
-                  <p className="text-sm text-muted-foreground mt-1">Expand your team</p>
-                </button>
-              </Link>
-              
-              <Link href="/dashboard/vehicles/new">
-                <button className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-left group">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
-                    <Bus className="h-6 w-6 text-blue-500" />
-                  </div>
-                  <p className="font-semibold">Add Vehicle</p>
-                  <p className="text-sm text-muted-foreground mt-1">Register vehicle</p>
-                </button>
-              </Link>
-              
-              <Link href="/dashboard/earnings">
-                <button className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-left group">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4 group-hover:bg-amber-500/20 transition-colors">
-                    <Wallet className="h-6 w-6 text-amber-500" />
-                  </div>
-                  <p className="font-semibold">View Earnings</p>
-                  <p className="text-sm text-muted-foreground mt-1">Track revenue</p>
-                </button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+                        <span className="min-w-0 flex-1 text-sm font-semibold">{label}</span>
+                        <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <Reviews reviews={reviews} />
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 

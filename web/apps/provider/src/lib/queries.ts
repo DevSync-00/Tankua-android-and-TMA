@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getTripDateParts } from './trip-schedule';
 
 // ============================================
 // PROVIDER DASHBOARD
@@ -16,13 +17,12 @@ export interface ProviderStats {
 export interface UpcomingTrip {
   id: string;
   destination: string;
-  date: string;
-  time: string;
+  departureDate: string;
   passengers: number;
   capacity: number;
-  driver: string;
-  vehicle: string;
   status: string;
+  minimumInterest: number | null;
+  interestCount: number;
 }
 
 export interface RecentBooking {
@@ -33,9 +33,13 @@ export interface RecentBooking {
   amount: number;
   time: string;
   status: string;
+  paymentStatus: string | null;
+  tripStatus: string | null;
+  departureDate: string | null;
 }
 
 export interface RecentReview {
+  id: string;
   customer: string;
   rating: number | null;
   comment: string;
@@ -44,13 +48,13 @@ export interface RecentReview {
 }
 
 export async function getProviderStats(providerId: string): Promise<ProviderStats> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const now = new Date();
+  const { date } = getTripDateParts(now.toISOString());
+  const today = new Date(`${date}T00:00:00+03:00`);
+  const yesterday = new Date(today.getTime() - 86_400_000);
+  const [year, month] = date.split('-').map(Number);
+  const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1, -3));
+  const lastMonthStart = new Date(Date.UTC(year, month - 2, 1, -3));
 
   const [
     { count: todayBookings },
@@ -88,7 +92,8 @@ export async function getProviderStats(providerId: string): Promise<ProviderStat
       .from('trips')
       .select('id', { count: 'exact', head: true })
       .eq('provider_id', providerId)
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      .gt('departure_date', now.toISOString()),
     supabase
       .from('providers')
       .select('rating')
@@ -117,107 +122,40 @@ export async function getProviderStats(providerId: string): Promise<ProviderStat
 }
 
 export async function getUpcomingTrips(providerId: string, limit = 3): Promise<UpcomingTrip[]> {
-  // Try with departure_date first, fallback to date
-  let query = supabase
+  const { data, error } = await supabase
     .from('trips')
     .select(`
       id,
       departure_date,
-      date,
       max_seats,
       available_seats,
       status,
+      minimum_interest,
+      interest_count,
       destinations (name)
     `)
     .eq('provider_id', providerId)
-    .in('status', ['upcoming', 'active'])
+    .in('status', ['upcoming', 'active', 'collecting_interest'])
+    .gt('departure_date', new Date().toISOString())
+    .order('departure_date', { ascending: true })
+    .order('id', { ascending: true })
     .limit(limit);
 
-  // Try ordering by departure_date, fallback to date
-  try {
-    query = query.order('departure_date', { ascending: true });
-  } catch {
-    query = query.order('date', { ascending: true });
-  }
+  if (error) throw error;
 
-  const { data, error } = await query;
-
-  if (error) {
-    // If error is about missing column, try with date column
-    if (error.message?.includes('departure_date') || error.code === '42703') {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('trips')
-        .select(`
-          id,
-          date,
-          max_seats,
-          available_seats,
-          status,
-          destinations (name)
-        `)
-        .eq('provider_id', providerId)
-        .in('status', ['upcoming', 'active'])
-        .order('date', { ascending: true })
-        .limit(limit);
-      
-      if (fallbackError) {
-        console.error('Error fetching upcoming trips:', fallbackError);
-        return [];
-      }
-      
-      return (fallbackData || []).map((trip: any) => {
-        const maxSeats = trip.max_seats || 0;
-        const tripDate = trip.date ? new Date(trip.date) : null;
-        
-        return {
-          id: trip.id,
-          destination: trip.destinations?.name || 'Unknown',
-          date: tripDate ? tripDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          }) : 'TBD',
-          time: tripDate ? tripDate.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          }) : 'TBD',
-          passengers: maxSeats - (trip.available_seats || 0),
-          capacity: maxSeats,
-          driver: 'Unassigned',
-          vehicle: 'Vehicle',
-          status: trip.status,
-        };
-      });
-    }
-    
-    console.error('Error fetching upcoming trips:', error);
-    return [];
-  }
-
-  return (data || []).map((trip: any) => {
-    const tripDate = trip.departure_date || trip.date;
-    const maxSeats = trip.max_seats || 0;
-    const dateObj = tripDate ? new Date(tripDate) : null;
-    
+  return (data || []).map((trip) => {
+    const capacity = trip.max_seats ?? 0;
+    const passengers = Math.min(capacity, Math.max(0, capacity - (trip.available_seats ?? capacity)));
+    const destination = Array.isArray(trip.destinations) ? trip.destinations[0] : trip.destinations;
     return {
       id: trip.id,
-      destination: trip.destinations?.name || 'Unknown',
-      date: dateObj ? dateObj.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }) : 'TBD',
-      time: dateObj ? dateObj.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      }) : 'TBD',
-      passengers: maxSeats - (trip.available_seats || 0),
-      capacity: maxSeats,
-      driver: trip.drivers?.name || 'Unassigned',
-      vehicle: 'Vehicle', // TODO: Add vehicles table
+      destination: destination?.name || 'Unknown destination',
+      departureDate: trip.departure_date,
+      passengers,
+      capacity,
       status: trip.status,
+      minimumInterest: trip.minimum_interest,
+      interestCount: trip.interest_count ?? 0,
     };
   });
 }
@@ -230,21 +168,22 @@ export async function getRecentBookings(providerId: string, limit = 4): Promise<
       seats,
       total_price,
       status,
+      payment_status,
       created_at,
+      destination_name,
       users (name),
-      trips!inner (
-        provider_id,
+      trips (
+        status,
+        departure_date,
         destinations (name)
       )
     `)
-    .eq('trips.provider_id', providerId)
+    .eq('provider_id', providerId)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
     .limit(limit);
 
-  if (error) {
-    console.error('Error fetching recent bookings:', error);
-    return [];
-  }
+  if (error) throw error;
 
   return (data || []).map((booking: any) => {
     const now = new Date();
@@ -263,75 +202,71 @@ export async function getRecentBookings(providerId: string, limit = 4): Promise<
     }
 
     return {
-      id: booking.id.substring(0, 8),
+      id: booking.id,
       customer: booking.users?.name || 'Unknown',
-      destination: booking.trips?.destinations?.name || 'Unknown',
+      destination: booking.trips?.destinations?.name || booking.destination_name || 'Unknown destination',
       seats: booking.seats,
       amount: booking.total_price,
       time: timeAgo,
       status: booking.status,
+      paymentStatus: booking.payment_status,
+      tripStatus: booking.trips?.status ?? null,
+      departureDate: booking.trips?.departure_date ?? null,
     };
   });
 }
 
 export async function getRecentReviews(providerId: string, limit = 3): Promise<RecentReview[]> {
-  try {
-    // Fetch reviews directly from reviews table
-    const { data, error } = await supabase
-      .from('reviews')
-      .select(`
-        id,
-        rating,
-        comment,
-        created_at,
-        users (name),
-        bookings (
-          trips (
-            destinations (name)
-          )
+  // Fetch reviews directly from reviews table
+  const { data, error } = await supabase
+    .from('reviews')
+    .select(`
+      id,
+      rating,
+      comment,
+      created_at,
+      users (name),
+      bookings (
+        trips (
+          destinations (name)
         )
-      `)
-      .eq('provider_id', providerId)
-      .eq('is_visible', true)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      )
+    `)
+    .eq('provider_id', providerId)
+    .eq('is_visible', true)
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
-    if (error) {
-      console.error('Error fetching recent reviews:', error);
-      return [];
+  if (error) throw error;
+
+  return (data || []).map((review: any) => {
+    const now = new Date();
+    const reviewDate = new Date(review.created_at);
+    const diffMs = now.getTime() - reviewDate.getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    let dateStr: string;
+    if (diffDays === 0) {
+      dateStr = 'today';
+    } else if (diffDays === 1) {
+      dateStr = '1 day ago';
+    } else {
+      dateStr = `${diffDays} days ago`;
     }
 
-    return (data || []).map((review: any) => {
-      const now = new Date();
-      const reviewDate = new Date(review.created_at);
-      const diffMs = now.getTime() - reviewDate.getTime();
-      const diffDays = Math.floor(diffMs / 86400000);
+    const customerName = review.users?.name || 'Anonymous';
+    const initials = customerName.split(' ').map((n: string) => n[0]).join('') + '.';
+    const rating = Number(review.rating);
 
-      let dateStr: string;
-      if (diffDays === 0) {
-        dateStr = 'today';
-      } else if (diffDays === 1) {
-        dateStr = '1 day ago';
-      } else {
-        dateStr = `${diffDays} days ago`;
-      }
-
-      const customerName = review.users?.name || 'Anonymous';
-      const initials = customerName.split(' ').map((n: string) => n[0]).join('') + '.';
-      const rating = Number(review.rating);
-
-      return {
-        customer: initials,
-        rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
-        comment: review.comment || 'No comment',
-        trip: review.bookings?.trips?.destinations?.name || 'Unknown',
-        date: dateStr,
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching recent reviews:', error);
-    return [];
-  }
+    return {
+      id: review.id,
+      customer: initials,
+      rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
+      comment: review.comment || 'No comment',
+      trip: review.bookings?.trips?.destinations?.name || 'Unknown',
+      date: dateStr,
+    };
+  });
 }
 
 // ============================================
@@ -537,9 +472,12 @@ export async function getProviderTrips(
   };
 }
 
+const MAX_TRIP_INTEGER = 2_147_483_647;
+const PICKUP_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export async function createTrip(trip: {
   provider_id: string;
-  destination_id?: string;
+  destination_id: string;
   trip_type: string;
   departure_date: string;
   return_date?: string;
@@ -559,41 +497,97 @@ export async function createTrip(trip: {
   cancellation_policy?: string;
   pickup_stations?: Array<{ station_id: string; pickup_time: string; extra_price: number }>;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
-  // Prepare trip data - handle both departure_date and date columns
-  const tripData: any = {
+  if (!trip.provider_id || !trip.destination_id || !trip.trip_type) {
+    return { success: false, error: 'Choose a provider, destination, and trip type.' };
+  }
+
+  const departure = Date.parse(trip.departure_date);
+  if (!Number.isFinite(departure) || departure <= Date.now()) {
+    return { success: false, error: 'Choose a future departure date and time.' };
+  }
+
+  const stations = trip.pickup_stations;
+  const returnDate = trip.trip_type === 'one_way' ? undefined : trip.return_date;
+  if (trip.trip_type === 'round_trip' || returnDate) {
+    const arrival = Date.parse(returnDate ?? '');
+    // Bulk schedules share the departure time and can use the same calendar day.
+    if (!Number.isFinite(arrival) || arrival < departure || (stations !== undefined && arrival === departure)) {
+      return { success: false, error: 'Choose a return date and time after departure.' };
+    }
+  }
+
+  if (!Number.isFinite(trip.price) || trip.price <= 0) {
+    return { success: false, error: 'Enter a price greater than zero.' };
+  }
+
+  const seatLimit = stations === undefined ? MAX_TRIP_INTEGER : 100;
+  if (!Number.isInteger(trip.max_seats) || trip.max_seats < 1 || trip.max_seats > seatLimit) {
+    return { success: false, error: `Enter a whole seat count between 1 and ${seatLimit.toLocaleString()}.` };
+  }
+
+  const minimumInterest = trip.minimum_interest;
+  if (minimumInterest !== undefined && (
+    !Number.isInteger(minimumInterest) || minimumInterest < 1 || minimumInterest > MAX_TRIP_INTEGER
+  )) {
+    return { success: false, error: 'Enter a valid whole number for the interest goal.' };
+  }
+
+  const duration = trip.duration_minutes;
+  if (duration !== undefined && (!Number.isInteger(duration) || duration < 1 || duration > MAX_TRIP_INTEGER)) {
+    return { success: false, error: 'Enter a valid trip duration.' };
+  }
+
+  const summary = trip.summary?.trim();
+  if (stations !== undefined) {
+    if (!summary || summary.length > 280) {
+      return { success: false, error: 'Write a trip summary of 1 to 280 characters.' };
+    }
+    if (!stations.length) {
+      return { success: false, error: 'Select at least one pickup station.' };
+    }
+    if (stations.some((station) => !station.station_id || !PICKUP_TIME_PATTERN.test(station.pickup_time)
+      || !Number.isFinite(station.extra_price) || station.extra_price < 0)) {
+      return { success: false, error: 'Check the pickup time and extra price for each selected station.' };
+    }
+    if (new Set(stations.map((station) => station.station_id)).size !== stations.length) {
+      return { success: false, error: 'Select each pickup station once.' };
+    }
+  }
+
+  const tripData = {
     provider_id: trip.provider_id,
     destination_id: trip.destination_id,
     trip_type: trip.trip_type,
+    departure_date: trip.departure_date,
+    return_date: returnDate,
+    date: getTripDateParts(trip.departure_date).date,
     price: trip.price,
     max_seats: trip.max_seats,
     available_seats: trip.max_seats,
-    status: trip.minimum_interest === undefined ? 'upcoming' : 'collecting_interest',
+    status: minimumInterest === undefined ? 'upcoming' : 'collecting_interest',
+    minimum_interest: minimumInterest,
+    tour_category: trip.tour_category,
+    summary,
+    itinerary: trip.itinerary,
+    duration_minutes: duration,
+    transportation_type: trip.transportation_type,
+    difficulty_level: trip.difficulty_level,
+    inclusions: trip.inclusions,
+    exclusions: trip.exclusions,
+    meeting_instructions: trip.meeting_instructions,
+    what_to_bring: trip.what_to_bring,
+    cancellation_policy: trip.cancellation_policy,
   };
 
-  if (trip.minimum_interest !== undefined) {
-    tripData.minimum_interest = trip.minimum_interest;
+  if (stations !== undefined) {
+    const { data: id, error } = await supabase.rpc('create_provider_trip', {
+      p_trip: tripData,
+      p_pickup_stations: stations,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true, id };
   }
 
-  if (trip.tour_category) {
-    tripData.tour_category = trip.tour_category;
-  }
-
-  if (trip.itinerary) {
-    tripData.itinerary = trip.itinerary;
-  }
-  for (const field of ['summary', 'duration_minutes', 'transportation_type', 'difficulty_level', 'inclusions', 'exclusions', 'meeting_instructions', 'what_to_bring', 'cancellation_policy'] as const) {
-    if (trip[field] !== undefined) tripData[field] = trip[field];
-  }
-  
-  // Set departure_date and also set date for backward compatibility
-  tripData.departure_date = trip.departure_date;
-  // Extract date part from departure_date for the date column (backward compatibility)
-  tripData.date = trip.departure_date.split('T')[0];
-  
-  if (trip.return_date) {
-    tripData.return_date = trip.return_date;
-  }
-  
   const { data, error } = await supabase
     .from('trips')
     .insert(tripData)
@@ -603,22 +597,6 @@ export async function createTrip(trip: {
   if (error) {
     console.error('Error creating trip:', error);
     return { success: false, error: error.message };
-  }
-
-  if (trip.pickup_stations?.length) {
-    const { error: stationsError } = await supabase
-      .from('trip_pickup_stations')
-      .insert(trip.pickup_stations.map((station) => ({
-        trip_id: data.id,
-        station_id: station.station_id,
-        pickup_time: station.pickup_time,
-        extra_price: station.extra_price,
-      })));
-
-    if (stationsError) {
-      await supabase.from('trips').delete().eq('id', data.id);
-      return { success: false, error: `Trip was not created: ${stationsError.message}` };
-    }
   }
 
   return { success: true, id: data.id };
@@ -697,7 +675,7 @@ export async function updateTrip(
   // Handle departure_date and date column
   if (updates.departure_date) {
     updateData.departure_date = updates.departure_date;
-    updateData.date = updates.departure_date.split('T')[0];
+    updateData.date = getTripDateParts(updates.departure_date).date;
   }
   
   // If max_seats is updated, adjust available_seats if needed

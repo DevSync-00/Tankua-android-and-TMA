@@ -1,656 +1,388 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  MapPin,
-  Calendar,
-  Users,
-  CreditCard,
-  CheckCircle,
-} from "lucide-react";
+import { ArrowRight, CircleCheck, MapPin } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@tankua/ui";
+import { Button, Card, ConfirmDialog } from "@tankua/ui";
+import { createTrip } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
+import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
+import {
+  initialForm, maxInterest, maxSeats, maxSummary, minPrice, sections, TripFormFields,
+  type Destination, type Options, type Station, type StationConfig, type TripForm,
+} from "./trip-form-fields";
 
-const DESTINATION_CATEGORIES = [
-  ["adventure", "Adventure"], ["agritourism", "Agritourism"], ["ancestry", "Ancestry"],
-  ["accessible", "Accessible"], ["budget", "Budget"], ["business", "Business"],
-  ["cafe", "Cafés"], ["city", "City"], ["cruise", "Cruise"], ["culinary", "Culinary"],
-  ["cultural", "Cultural"], ["cultural_center", "Cultural Centers"], ["dark", "Dark Tourism"],
-  ["ecotourism", "Ecotourism"], ["educational", "Educational"], ["entertainment", "Entertainment"],
-  ["historical", "Historical"], ["hotel", "Hotels"], ["landmark", "Landmarks"],
-  ["luxury", "Luxury"], ["medical", "Medical"], ["monument", "Monuments"],
-  ["museum", "Museums"], ["nature", "Nature"], ["park", "Parks"],
-  ["photography", "Photography"], ["religious", "Religious"], ["restaurant", "Restaurants"],
-  ["rural", "Rural"], ["sacred", "Sacred Sites"], ["shopping", "Shopping"],
-  ["space", "Space"], ["sports", "Sports"], ["tourist_attraction", "Tourist Attractions"],
-  ["transport", "Transport"], ["urban", "Urban"], ["voluntourism", "Voluntourism"],
-  ["wellness", "Wellness"], ["wildlife", "Wildlife"], ["other", "Other"],
-] as const;
-
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
-  const hours = Math.floor(index / 2);
-  const minutes = index % 2 ? "30" : "00";
-  const value = `${String(hours).padStart(2, "0")}:${minutes}`;
-  return { value, label: `${hours % 12 || 12}:${minutes} ${hours < 12 ? "AM" : "PM"}` };
+type Draft = { form: TripForm; stations: Record<string, StationConfig> };
+const draftPrefix = "tankua-provider-trip-draft:v1:";
+const clockPattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+const moneyPattern = /^\d+(\.\d{1,2})?$/;
+const fareFormat = new Intl.NumberFormat("en-ET", { maximumFractionDigits: 2 });
+const dateFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Addis_Ababa", weekday: "short", day: "numeric", month: "short", year: "numeric",
 });
 
-const MAX_INTEREST_THRESHOLD = 2_147_483_647;
+function readDraft(key: string): Draft | null {
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (!stored) return null;
+    const draft = JSON.parse(stored) as Partial<Draft>;
+    const form = { ...initialForm };
+    for (const field of Object.keys(initialForm) as Array<keyof TripForm>) {
+      const value = draft.form?.[field];
+      if (typeof value === "string") form[field] = value;
+    }
+    const stations = Object.fromEntries(
+      Object.entries(draft.stations ?? {}).filter(([, config]) => config &&
+        typeof config.selected === "boolean" && typeof config.pickupTime === "string" && typeof config.extraPrice === "string"),
+    );
+    return { form, stations };
+  } catch {
+    return null;
+  }
+}
+
+function sectionLinks() {
+  return sections.map(({ id, label }) => (
+    <li key={id}><a href={"#" + id} className="block rounded-sm font-medium text-stone-700 hover:underline focus-visible:outline-primary">{label}</a></li>
+  ));
+}
+
+function normalizeLines(value: string) {
+  return value.split("\n").map((line) => line.trim()).filter(Boolean);
+}
 
 export default function NewTripPage() {
   const router = useRouter();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [providerId, setProviderId] = useState<string | null>(null);
-  const [providerName, setProviderName] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState("");
+  const [form, setForm] = useState<TripForm>(initialForm);
+  const [stationConfig, setStationConfig] = useState<Record<string, StationConfig>>({});
+  const [destinations, setDestinations] = useState<Options<Destination> | null>(null);
+  const [stations, setStations] = useState<Options<Station> | null>(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [reload, setReload] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [destinations, setDestinations] = useState<Array<{ id: string; name: string; city?: string; region?: string; category?: string }>>([]);
-  const [loadingDestinations, setLoadingDestinations] = useState(true);
-  const [pickupStations, setPickupStations] = useState<Array<{ id: string; name: string; city: string | null; address: string | null; extra_price: number }>>([]);
-  const [stationConfig, setStationConfig] = useState<Record<string, { selected: boolean; pickupTime: string; extraPrice: string }>>({});
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [formData, setFormData] = useState({
-    destinationId: "",
-    tripType: "round_trip",
-    departureDate: "",
-    departureTime: "06:00",
-    returnDate: "",
-    price: "",
-    maxSeats: "",
-    waitForInterest: false,
-    minimumInterest: "",
-    tourCategory: "",
-    summary: "",
-    itinerary: "",
-    durationHours: "",
-    transportationType: "",
-    difficultyLevel: "easy",
-    inclusions: "",
-    exclusions: "",
-    meetingInstructions: "",
-    whatToBring: "",
-    cancellationPolicy: "",
-  });
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const publishing = useRef(false);
+  const errorSummary = useRef<HTMLDivElement>(null);
+  const draftKey = providerId ? draftPrefix + providerId : "";
+
+  const isRoundTrip = form.tripType === "round_trip";
+  const waitsForInterest = form.bookingMode === "interest";
+  const departure = parseTripTime(form.departureDate, form.departureTime);
+  const returnAt = isRoundTrip ? parseTripTime(form.returnDate, form.returnTime) : null;
+  const earliestDate = getTripDateParts(new Date().toISOString()).date;
+  const selectedDestination = destinations?.data.find(({ id }) => id === form.destinationId);
+  const selectedStations = (stations?.data ?? []).filter(({ id }) => stationConfig[id]?.selected);
+  const missingStationIds = stations && !stations.error ? Object.keys(stationConfig).filter((id) =>
+    stationConfig[id].selected && !stations.data.some((station) => station.id === id),
+  ) : [];
+  const hasDraft = (Object.keys(initialForm) as Array<keyof TripForm>).some((field) => form[field] !== initialForm[field])
+    || Object.values(stationConfig).some((config) => config.selected);
 
   useEffect(() => {
-    const loadProviderSession = () => {
-      try {
-        const stored = localStorage.getItem("provider_user");
-        if (!stored) {
-          router.replace("/login");
-          return;
-        }
-
-        const parsed = JSON.parse(stored);
-        const id = parsed?.provider_id || parsed?.provider?.id;
-
-        if (!id) {
-          router.replace("/login");
-          return;
-        }
-
-        setProviderId(id);
-        setProviderName(parsed?.provider?.name || parsed?.name || "");
-      } catch (err) {
-        console.error("Failed to load provider session", err);
-        setErrorMessage("Please sign in again to create a trip.");
-      } finally {
-        setAuthChecked(true);
+    try {
+      const session = JSON.parse(localStorage.getItem("provider_user") || "null");
+      const id = session?.provider_id || session?.provider?.id;
+      if (!id) {
+        router.replace("/login");
+        return;
       }
-    };
-
-    loadProviderSession();
+      const draft = readDraft(draftPrefix + id);
+      if (draft) {
+        setForm(draft.form);
+        setStationConfig(draft.stations);
+      }
+      setProviderId(id);
+    } catch {
+      router.replace("/login");
+    }
   }, [router]);
 
   useEffect(() => {
-    if (formData.tripType === "one_way" && formData.returnDate) {
-      setFormData((prev) => ({ ...prev, returnDate: "" }));
-    }
-  }, [formData.tripType, formData.returnDate]);
-
-  useEffect(() => {
-    loadDestinations();
-  }, [selectedCategory]);
-
-  useEffect(() => {
     if (!providerId) return;
-    supabase.from("pickup_stations").select("id,name,city,address,extra_price")
-      .eq("provider_id", providerId).eq("is_active", true).order("name")
-      .then(({ data, error }) => {
-        if (error) setErrorMessage(error.message);
-        else setPickupStations(data || []);
-      });
-  }, [providerId]);
+    const controller = new AbortController();
+    const loadDestinations = async () => {
+      const { data, error } = await supabase.from("destinations").select("id,name,city,region,category").order("name")
+        .abortSignal(controller.signal);
+      if (!controller.signal.aborted) setDestinations({ data: data ?? [], error: error ? "Destinations could not be loaded." : null });
+    };
+    const loadStations = async () => {
+      const { data, error } = await supabase.from("pickup_stations").select("id,name,city,address,extra_price")
+        .eq("provider_id", providerId).eq("is_active", true).order("name").abortSignal(controller.signal);
+      if (!controller.signal.aborted) setStations({ data: data ?? [], error: error ? "Pickup stations could not be loaded." : null });
+    };
 
-  const loadDestinations = async () => {
+    void loadDestinations();
+    void loadStations();
+    return () => controller.abort();
+  }, [providerId, reload]);
+
+  useEffect(() => {
+    if (!draftKey) return;
     try {
-      setLoadingDestinations(true);
-      let query = supabase
-        .from('destinations')
-        .select('id, name, city, region, category')
-        .order('name', { ascending: true });
-
-      if (selectedCategory !== "all") {
-        query = query.eq('category', selectedCategory);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setDestinations(data || []);
-    } catch (error) {
-      console.error('Error loading destinations:', error);
-    } finally {
-      setLoadingDestinations(false);
+      if (hasDraft) sessionStorage.setItem(draftKey, JSON.stringify({ form, stations: stationConfig }));
+      else sessionStorage.removeItem(draftKey);
+      setDraftSaved(hasDraft);
+    } catch {
+      setDraftSaved(false);
     }
-  };
+  }, [draftKey, form, hasDraft, stationConfig]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
+  useEffect(() => {
+    if (saveError) errorSummary.current?.focus();
+  }, [saveError]);
 
-    if (!providerId) {
-      setErrorMessage("Please sign in to create a trip.");
-      router.replace("/login");
-      return;
-    }
-
-    if (!formData.destinationId) {
-      setErrorMessage("Select a destination to continue.");
-      return;
-    }
-
-    if (!formData.departureDate || !formData.departureTime) {
-      setErrorMessage("Add a departure date and time.");
-      return;
-    }
-
-    if (formData.tripType === "round_trip" && !formData.returnDate) {
-      setErrorMessage("Add a return date for round trips.");
-      return;
-    }
-
-    if (formData.returnDate && formData.returnDate < formData.departureDate) {
-      setErrorMessage("Return date cannot be before the departure date.");
-      return;
-    }
-
-    const priceValue = Number(formData.price);
-    const seatsValue = Number(formData.maxSeats);
-    const minimumInterest = formData.waitForInterest ? Number(formData.minimumInterest) : undefined;
-
-    if (!Number.isFinite(priceValue) || priceValue <= 0) {
-      setErrorMessage("Enter a valid price greater than 0.");
-      return;
-    }
-
-    if (!Number.isFinite(seatsValue) || seatsValue <= 0) {
-      setErrorMessage("Enter the maximum seats available.");
-      return;
-    }
-
-    if (minimumInterest !== undefined &&
-        (!Number.isInteger(minimumInterest) || minimumInterest < 1 || minimumInterest > MAX_INTEREST_THRESHOLD)) {
-      setErrorMessage("Enter a valid whole number of interested travelers.");
-      return;
-    }
-
-    const selectedStations = pickupStations.filter((station) => stationConfig[station.id]?.selected);
-    if (!selectedStations.length) {
-      setErrorMessage("Select at least one pickup station for this trip.");
-      return;
-    }
-    if (selectedStations.some((station) => !stationConfig[station.id]?.pickupTime)) {
-      setErrorMessage("Add a pickup time for every selected station.");
-      return;
-    }
-
-    const departureDate = new Date(`${formData.departureDate}T${formData.departureTime}:00`);
-    if (Number.isNaN(departureDate.getTime())) {
-      setErrorMessage("Departure date/time is invalid.");
-      return;
-    }
-
-    if (minimumInterest !== undefined && departureDate.getTime() <= Date.now()) {
-      setErrorMessage("Choose a future departure for a trip collecting interest.");
-      return;
-    }
-
-    const returnDate =
-      formData.tripType === "round_trip" && formData.returnDate
-        ? new Date(`${formData.returnDate}T${formData.departureTime}:00`)
-        : null;
-
-    setSaving(true);
-    
-    try {
-      const tripData = {
-        provider_id: providerId,
-        destination_id: formData.destinationId,
-        trip_type: formData.tripType,
-        departure_date: departureDate.toISOString(),
-        return_date: returnDate ? returnDate.toISOString() : undefined,
-        price: priceValue,
-        max_seats: seatsValue,
-        minimum_interest: minimumInterest,
-        tour_category: formData.tourCategory || undefined,
-        summary: formData.summary.trim() || undefined,
-        itinerary: formData.itinerary?.trim() || undefined,
-        duration_minutes: formData.durationHours ? Math.round(Number(formData.durationHours) * 60) : undefined,
-        transportation_type: formData.transportationType.trim() || undefined,
-        difficulty_level: formData.difficultyLevel || undefined,
-        inclusions: formData.inclusions.split("\n").map((item) => item.trim()).filter(Boolean),
-        exclusions: formData.exclusions.split("\n").map((item) => item.trim()).filter(Boolean),
-        meeting_instructions: formData.meetingInstructions.trim() || undefined,
-        what_to_bring: formData.whatToBring.trim() || undefined,
-        cancellation_policy: formData.cancellationPolicy.trim() || undefined,
-        pickup_stations: selectedStations.map((station) => ({
-          station_id: station.id,
-          pickup_time: stationConfig[station.id].pickupTime,
-          extra_price: Number(stationConfig[station.id].extraPrice || station.extra_price || 0),
-        })),
-      };
-
-      const { createTrip } = await import("@/lib/queries");
-      const result = await createTrip(tripData);
-      
-      if (result.success) {
-        router.push("/dashboard/trips");
-      } else {
-        setErrorMessage(result.error || "Failed to create trip");
-      }
-    } catch (error) {
-      console.error("Error creating trip:", error);
-      setErrorMessage("Failed to create trip. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen">
-        <Header
-          title="Create New Trip"
-          subtitle="Loading your provider session..."
-          actions={
-            <Link href="/dashboard/trips">
-              <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-                Back to Trips
-              </Button>
-            </Link>
-          }
-        />
-        <div className="portal-content">
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="p-6 text-muted-foreground">Preparing the trip form…</CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+  function clearErrors(...fields: string[]) {
+    setErrors((current) => {
+      if (!fields.some((field) => current[field])) return current;
+      const next = { ...current };
+      for (const field of fields) delete next[field];
+      return next;
+    });
+    setSaveError("");
   }
 
+  function updateField(field: keyof TripForm, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
+    if (field === "departureTime") clearErrors(field, "departureDate", "returnTime");
+    else if (field === "departureDate" || field === "returnDate") clearErrors(field, "returnTime");
+    else clearErrors(field);
+  }
+
+  function updateStation(station: Station, updates: Partial<StationConfig>) {
+    setStationConfig((current) => ({
+      ...current,
+      [station.id]: {
+        ...(current[station.id] ?? {
+          selected: false,
+          pickupTime: form.departureTime,
+          extraPrice: String(station.extra_price ?? 0),
+        }),
+        ...updates,
+      },
+    }));
+    clearErrors("pickup", "pickup-time-" + station.id, "pickup-fee-" + station.id);
+  }
+
+  function retryOptions() {
+    setStations(null);
+    setDestinations(null);
+    setReload((current) => current + 1);
+  }
+
+  function removeUnavailableStations() {
+    setStationConfig((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !missingStationIds.includes(id))));
+    clearErrors("pickup");
+  }
+
+  function clearDraft() {
+    setForm(initialForm);
+    setStationConfig({});
+    setSearch("");
+    setCategory("");
+    setErrors({});
+    setSaveError("");
+    document.getElementById("basics")?.focus();
+  }
+
+  async function publishTrip(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!providerId || publishing.current) return;
+    setSaveError("");
+
+    const issues: Record<string, string> = {};
+    const summary = form.summary.trim();
+    const price = Number(form.price);
+    const seats = Number(form.maxSeats);
+    const minimumInterest = Number(form.minimumInterest);
+    const duration = Number(form.durationHours);
+    const durationMinutes = Math.round(duration * 60);
+
+    if (!selectedDestination) issues.destinationId = "Choose a destination.";
+    if (!summary || summary.length > maxSummary) issues.summary = "Enter a summary of up to 280 characters.";
+    if (!form.departureDate) issues.departureDate = "Choose a departure date.";
+    else if (!departure) issues.departureTime = "Enter a valid departure date and time.";
+    else if (departure.getTime() <= Date.now()) issues.departureDate = "Choose a future departure.";
+    if (isRoundTrip) {
+      if (!form.returnDate) issues.returnDate = "Choose a return date.";
+      else if (!returnAt) issues.returnTime = "Enter a valid return date and time.";
+      else if (departure && returnAt <= departure) issues.returnTime = "Choose a return time after departure.";
+    }
+
+    if (!Number.isInteger(seats) || seats < 1 || seats > maxSeats) issues.maxSeats = "Enter a whole number from 1 to 100.";
+    if (!Number.isFinite(price) || price < minPrice || !moneyPattern.test(form.price)) {
+      issues.price = "Enter at least ETB 100, with up to two decimal places.";
+    }
+    if (!selectedStations.length) issues.pickup = "Select at least one active pickup station.";
+    else if (missingStationIds.length) issues.pickup = "Remove the unavailable stations from this draft.";
+
+    for (const { id } of selectedStations) {
+      const { pickupTime, extraPrice } = stationConfig[id];
+      if (!clockPattern.test(pickupTime)) issues["pickup-time-" + id] = "Enter a pickup time.";
+      if (extraPrice && (!moneyPattern.test(extraPrice) || !Number.isFinite(Number(extraPrice)))) {
+        issues["pickup-fee-" + id] = "Enter a nonnegative amount with up to two decimal places.";
+      }
+    }
+
+    if (waitsForInterest && (!Number.isInteger(minimumInterest) || minimumInterest < 1 || minimumInterest > maxInterest)) {
+      issues.minimumInterest = "Enter a positive whole number up to 2,147,483,647.";
+    }
+    if (form.durationHours && (!Number.isFinite(duration) || duration < 0.5 || durationMinutes > maxInterest)) {
+      issues.durationHours = "Enter a duration of at least 0.5 hours.";
+    }
+
+    setErrors(issues);
+    const firstIssue = Object.keys(issues)[0];
+    if (firstIssue || !departure) {
+      requestAnimationFrame(() => {
+        const field = document.getElementById(firstIssue);
+        const details = field?.closest("details");
+        if (details) details.open = true;
+        if (field?.matches(":disabled")) {
+          document.getElementById("basics")?.focus();
+        } else {
+          field?.focus();
+        }
+      });
+      return;
+    }
+
+    publishing.current = true;
+    setSaving(true);
+    let published = false;
+    try {
+      const result = await createTrip({
+        provider_id: providerId,
+        destination_id: form.destinationId,
+        trip_type: form.tripType,
+        departure_date: departure.toISOString(),
+        return_date: returnAt?.toISOString(),
+        price,
+        max_seats: seats,
+        minimum_interest: waitsForInterest ? minimumInterest : undefined,
+        summary,
+        tour_category: form.tourCategory || undefined,
+        itinerary: form.itinerary.trim() || undefined,
+        duration_minutes: form.durationHours ? durationMinutes : undefined,
+        transportation_type: form.transportationType.trim() || undefined,
+        difficulty_level: form.difficultyLevel || undefined,
+        inclusions: normalizeLines(form.inclusions),
+        exclusions: normalizeLines(form.exclusions),
+        meeting_instructions: form.meetingInstructions.trim() || undefined,
+        what_to_bring: form.whatToBring.trim() || undefined,
+        cancellation_policy: form.cancellationPolicy.trim() || undefined,
+        pickup_stations: selectedStations.map(({ id }) => ({
+          station_id: id,
+          pickup_time: stationConfig[id].pickupTime,
+          extra_price: Number(stationConfig[id].extraPrice || 0),
+        })),
+      });
+
+      if (!result.success) {
+        setSaveError(result.error || "The trip could not be published. Try again.");
+        return;
+      }
+      published = true;
+      try {
+        sessionStorage.removeItem(draftKey);
+      } catch {
+        // Publishing succeeds independently of browser storage.
+      }
+      router.replace("/dashboard/trips");
+    } catch {
+      setSaveError("The trip could not be published. Try again.");
+    } finally {
+      if (!published) {
+        publishing.current = false;
+        setSaving(false);
+      }
+    }
+  }
+
+  const bookingLabel = waitsForInterest
+    ? (Number(form.minimumInterest) > 0 ? "Interest goal: " + form.minimumInterest : "Collecting interest")
+    : "Opens on publish";
+  const preview = [
+    ["Departure", departure ? dateFormat.format(departure) + " · " + form.departureTime + " EAT" : "Choose date and time"],
+    ...(returnAt ? [["Return", dateFormat.format(returnAt) + " · " + form.returnTime + " EAT"]] : []),
+    ["Seats", form.maxSeats || "—"],
+    ["Per seat", form.price && Number.isFinite(Number(form.price)) ? "ETB " + fareFormat.format(Number(form.price)) : "—"],
+  ];
+
   return (
-    <div className="min-h-screen">
-      <Header
-        title="Create New Trip"
-        subtitle={
-          providerName
-            ? `Add a new trip for ${providerName}`
-            : "Add a new trip to your schedule"
-        }
-        actions={
-          <Link href="/dashboard/trips">
-            <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Back to Trips
-            </Button>
-          </Link>
-        }
+    <>
+      <Header title="Create a trip" subtitle="Set the schedule, pickup stations, and booking rules." actions={
+        <Link href="/dashboard/trips/bulk" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          Bulk schedule <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+        </Link>
+      } />
+      {!providerId ? (
+        <div className="portal-content" role="status">Loading the trip form…</div>
+      ) : (
+        <div className="portal-content">
+          {saveError ? (
+            <div ref={errorSummary} role="alert" tabIndex={-1} className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{saveError}</div>
+          ) : null}
+
+          <form noValidate onSubmit={publishTrip} aria-busy={saving} className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_19rem] xl:gap-6">
+            <nav aria-label="Trip form sections" className="rounded-xl border bg-white px-4 py-3 xl:hidden">
+              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+                {sectionLinks()}
+                <li><a href="#review" className="block rounded-sm font-semibold text-stone-900 hover:underline focus-visible:outline-primary">Trip preview</a></li>
+              </ul>
+            </nav>
+            <TripFormFields {...{ form, updateField, destinations, stations, stationConfig, updateStation, missingStationIds,
+              removeUnavailableStations, retryOptions, earliestDate, errors, saving, search, setSearch, category, setCategory }} />
+            <aside id="review" tabIndex={-1} aria-label="Trip review" className="min-w-0 scroll-mt-40 space-y-4 focus:outline-none xl:sticky xl:top-32">
+              <Card className="overflow-hidden rounded-xl border border-stone-200 bg-white p-0 shadow-none">
+                <div className="bg-stone-900 px-5 py-4 text-white">
+                  <h2 className="text-sm font-medium text-stone-300">Trip preview</h2>
+                  <p className="mt-1 break-words text-xl font-semibold tracking-tight">{selectedDestination?.name || "Choose a destination"}</p>
+                  <p className="mt-1.5 text-xs text-stone-300">{isRoundTrip ? "Round trip" : "One way"} · {bookingLabel}</p>
+                </div>
+                <div className="space-y-4 p-5">
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+                    {preview.map(([label, value]) => (
+                      <div key={label} className={label === "Departure" || label === "Return" ? "col-span-2" : "min-w-0"}>
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="break-words font-medium">{value}</dd>
+                      </div>
+                    ))}
+                    <div className="col-span-2 flex gap-2.5 border-t border-stone-100 pt-3">
+                      <MapPin aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
+                      <div><dt className="text-xs text-muted-foreground">Pickup</dt><dd className="break-words font-medium">{selectedStations.length ? selectedStations.map((station) => station.name).join(", ") : "Choose a station"}</dd></div>
+                    </div>
+                  </dl>
+                  <Button type="submit" isLoading={saving} className="w-full">{saving ? "Publishing…" : "Publish trip"}</Button>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+                    <Link href="/dashboard/trips" className="font-semibold text-stone-700 hover:underline">Back to trips</Link>
+                    {hasDraft ? <button type="button" onClick={() => setConfirmClear(true)} disabled={saving} className="font-semibold text-stone-600 hover:underline">Clear draft</button> : null}
+                  </div>
+                  {draftSaved ? <p className="flex items-center gap-1.5 text-xs text-stone-600"><CircleCheck aria-hidden="true" className="h-4 w-4 text-emerald-700" /> Draft saved in this tab</p> : null}
+                </div>
+              </Card>
+              <nav aria-label="Trip form sections" className="hidden rounded-xl border bg-white px-5 py-4 xl:block">
+                <ul className="space-y-2.5 text-sm">{sectionLinks()}</ul>
+              </nav>
+            </aside>
+          </form>
+        </div>
+      )}
+      <ConfirmDialog
+        isOpen={confirmClear}
+        onOpenChange={setConfirmClear}
+        onConfirm={clearDraft}
+        title="Clear this trip draft?"
+        description="The fields and pickup selections in this tab will be cleared."
+        confirmText="Clear draft"
+        variant="danger"
       />
-
-      <div className="portal-content">
-        <form onSubmit={handleSubmit} className="portal-form">
-          {errorMessage && (
-            <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Destination */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Destination
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Choose from Tankua-curated trips and set your own schedule and price.
-              </p>
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Filter by Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
-                >
-                  <option value="all">All Categories</option>
-                  {DESTINATION_CATEGORIES.map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Destination *</label>
-                {loadingDestinations ? (
-                  <div className="w-full px-4 py-3 rounded-xl border border-border bg-muted/50 text-muted-foreground">
-                    Loading destinations...
-                  </div>
-                ) : (
-                  <select
-                    required
-                    value={formData.destinationId}
-                    onChange={(e) => setFormData({ ...formData, destinationId: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
-                  >
-                    <option value="">Select a destination</option>
-                    {destinations.map((dest) => (
-                      <option key={dest.id} value={dest.id}>
-                        {dest.name} {dest.city ? `(${dest.city})` : dest.region ? `(${dest.region})` : ''} {dest.category ? `- ${dest.category}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Schedule */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Short summary *</label>
-                <textarea required maxLength={280} rows={2} value={formData.summary}
-                  onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                  placeholder="Give travelers the most important reason to choose this departure."
-                  className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background resize-none" />
-                <p className="mt-1 text-xs text-muted-foreground">{formData.summary.length}/280 characters</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Trip Type *</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, tripType: "round_trip" })}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      formData.tripType === "round_trip"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <p className="font-semibold">Round Trip</p>
-                    <p className="text-sm text-muted-foreground">Departure and return</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, tripType: "one_way" })}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      formData.tripType === "one_way"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <p className="font-semibold">One Way</p>
-                    <p className="text-sm text-muted-foreground">Departure only</p>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Departure Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.departureDate}
-                    onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Departure Time *</label>
-                  <select
-                    required
-                    value={formData.departureTime}
-                    onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
-                  >
-                    {TIME_OPTIONS.map((time) => (
-                      <option key={time.value} value={time.value}>{time.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {formData.tripType === "round_trip" && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Return Date *</label>
-                  <input
-                    type="date"
-                    required={formData.tripType === "round_trip"}
-                    min={formData.departureDate || undefined}
-                    value={formData.returnDate}
-                    onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Pickup Stations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Select every station available for this trip, then set its pickup time and optional surcharge.
-              </p>
-              {!pickupStations.length ? (
-                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                  No active stations yet. <Link className="text-primary font-medium" href="/dashboard/pickup-stations">Create pickup stations first.</Link>
-                </div>
-              ) : pickupStations.map((station) => {
-                const config = stationConfig[station.id] || { selected: false, pickupTime: "", extraPrice: String(station.extra_price || 0) };
-                return <div key={station.id} className={`rounded-xl border p-4 ${config.selected ? "border-primary bg-primary/5" : "border-border"}`}>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" checked={config.selected} className="mt-1"
-                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: {
-                        ...config,
-                        selected: e.target.checked,
-                        pickupTime: e.target.checked && !config.pickupTime ? formData.departureTime : config.pickupTime,
-                      } }))}/>
-                    <span className="flex-1"><b className="block">{station.name}</b><small className="text-muted-foreground">{[station.address,station.city].filter(Boolean).join(", ")}</small></span>
-                  </label>
-                  {config.selected && <div className="grid grid-cols-2 gap-3 mt-3 pl-6">
-                    <label className="text-sm">Pickup time *<select required value={config.pickupTime}
-                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, pickupTime: e.target.value } }))}
-                      className="mt-1 w-full px-3 py-2 rounded-lg border bg-background">
-                        <option value="">Choose a time</option>
-                        {TIME_OPTIONS.map((time) => (
-                          <option key={time.value} value={time.value}>{time.label}</option>
-                        ))}
-                      </select></label>
-                    <label className="text-sm">Extra price (ETB)<input type="number" min="0" value={config.extraPrice}
-                      onChange={(e) => setStationConfig((current) => ({ ...current, [station.id]: { ...config, extraPrice: e.target.value } }))}
-                      className="mt-1 w-full px-3 py-2 rounded-lg border bg-background"/></label>
-                  </div>}
-                </div>;
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Trip Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                Trip Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Tour Category</label>
-                <select
-                  value={formData.tourCategory}
-                  onChange={(e) => setFormData({ ...formData, tourCategory: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background"
-                >
-                  <option value="">Select a category (optional)</option>
-                  <option value="day_trip">Day Trip</option>
-                  <option value="weekend">Weekend</option>
-                  <option value="multi_day">Multi-day</option>
-                  <option value="holiday">Holiday</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Itinerary / Important details</label>
-                <textarea
-                  rows={4}
-                  value={formData.itinerary}
-                  onChange={(e) => setFormData({ ...formData, itinerary: e.target.value })}
-                  placeholder="Add pickup notes, highlights, inclusions, or other details travelers should know."
-                  className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background resize-none"
-                />
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <label className="text-sm font-medium">Duration (hours)<input type="number" min="0.5" step="0.5" value={formData.durationHours} onChange={(e) => setFormData({ ...formData, durationHours: e.target.value })} placeholder="e.g., 8" className="mt-2 w-full px-4 py-3 rounded-xl border bg-background" /></label>
-                <label className="text-sm font-medium">Transportation<input value={formData.transportationType} onChange={(e) => setFormData({ ...formData, transportationType: e.target.value })} placeholder="e.g., Air-conditioned minibus" className="mt-2 w-full px-4 py-3 rounded-xl border bg-background" /></label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Activity level</label>
-                <select value={formData.difficultyLevel} onChange={(e) => setFormData({ ...formData, difficultyLevel: e.target.value })} className="w-full px-4 py-3 rounded-xl border bg-background"><option value="easy">Easy</option><option value="moderate">Moderate</option><option value="challenging">Challenging</option></select>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <label className="text-sm font-medium">What's included<textarea rows={4} value={formData.inclusions} onChange={(e) => setFormData({ ...formData, inclusions: e.target.value })} placeholder={'Transport\nGuide\nEntrance fees'} className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /><small className="text-muted-foreground">One item per line</small></label>
-                <label className="text-sm font-medium">Not included<textarea rows={4} value={formData.exclusions} onChange={(e) => setFormData({ ...formData, exclusions: e.target.value })} placeholder={'Meals\nPersonal expenses'} className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /><small className="text-muted-foreground">One item per line</small></label>
-              </div>
-              <label className="block text-sm font-medium">Meeting instructions<textarea rows={3} value={formData.meetingInstructions} onChange={(e) => setFormData({ ...formData, meetingInstructions: e.target.value })} placeholder="Where to meet, when to arrive, and who to contact." className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /></label>
-              <label className="block text-sm font-medium">What to bring<textarea rows={2} value={formData.whatToBring} onChange={(e) => setFormData({ ...formData, whatToBring: e.target.value })} placeholder="Comfortable shoes, ID, water..." className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /></label>
-              <label className="block text-sm font-medium">Cancellation policy<textarea rows={2} value={formData.cancellationPolicy} onChange={(e) => setFormData({ ...formData, cancellationPolicy: e.target.value })} placeholder="Explain refund deadlines and cancellation charges." className="mt-2 w-full px-4 py-3 rounded-xl border bg-background resize-none" /></label>
-            </CardContent>
-          </Card>
-
-          {/* Capacity & Pricing */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                Capacity & Pricing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Maximum Seats *</label>
-                  <div className="relative">
-                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      max="100"
-                      placeholder="e.g., 45"
-                      value={formData.maxSeats}
-                      onChange={(e) => setFormData({ ...formData, maxSeats: e.target.value })}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Price per Seat (ETB) *</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">ETB</span>
-                    <input
-                      type="number"
-                      required
-                      min="100"
-                      placeholder="e.g., 2500"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="w-full pl-14 pr-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>When Booking Opens</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <label className="flex items-start gap-3 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  checked={formData.waitForInterest}
-                  onChange={(event) => setFormData({ ...formData, waitForInterest: event.target.checked })}
-                  className="mt-0.5 h-4 w-4 accent-primary"
-                  aria-describedby="trip-booking-explanation"
-                />
-                Wait for enough travelers to express interest
-              </label>
-              <p id="trip-booking-explanation" className="text-sm text-muted-foreground">
-                Reservations open immediately by default. With an interest goal, they open automatically when enough
-                travelers express interest before departure. Travelers can pay once you mark the trip Active.
-              </p>
-              {formData.waitForInterest && (
-                <label className="block text-sm font-medium">
-                  Minimum interested travelers
-                  <input
-                    type="number"
-                    min="1"
-                    max={MAX_INTEREST_THRESHOLD}
-                    step="1"
-                    required
-                    value={formData.minimumInterest}
-                    onChange={(event) => setFormData({ ...formData, minimumInterest: event.target.value })}
-                    className="mt-2 block w-full max-w-xs rounded-xl border border-border px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </label>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-4 pt-4">
-            <Link href="/dashboard/trips">
-              <Button type="button" variant="outline">Cancel</Button>
-            </Link>
-            <Button type="submit" isLoading={saving} leftIcon={<CheckCircle className="h-4 w-4" />}>
-              {formData.waitForInterest ? "Create Trip and Collect Interest" : "Create Trip"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+    </>
   );
 }
