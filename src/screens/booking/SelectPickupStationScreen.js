@@ -136,7 +136,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
       { key: 'trips', label: 'Trips' },
       { key: 'pickup', label: 'Pickup' },
       { key: 'seats', label: 'Seats' },
-      { key: 'payment', label: 'Payment' }
+      { key: 'review', label: 'Review' }
     ];
     return (
       <View style={stepStyles.progressContainer}>

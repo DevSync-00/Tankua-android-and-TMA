@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
+  ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,19 +15,30 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeedback } from '../../contexts/FeedbackContext';
-import { processPayment, verifyPayment, sanitizeEmailForChapa } from '../../services/payment';
-import { verifyBookingBeforePayment, getTimeRemaining, checkAndCancelExpiredBookings } from '../../services/bookingService';
-import { validateProfile, getProfileIncompleteMessage } from '../../utils/profileValidation';
+import { generateTransactionRef, processPayment, verifyPayment, sanitizeEmailForChapa } from '../../services/payment';
+import { createPaymentTransaction, updatePaymentTransaction } from '../../services/paymentService';
+import {
+  canPayForTrip,
+  checkAndCancelExpiredBookings,
+  getBookingForPayment,
+  getTimeRemaining,
+  isBookingValid,
+  verifyBookingBeforePayment,
+} from '../../services/bookingService';
 import { supabase } from '../../config/supabase';
 import ModernButton from '../../components/ModernButton';
 import PaymentWebView from '../../components/PaymentWebView';
 
 const PaymentScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
-  const { currentBooking, updateBooking, calculateTotalPrice, createBooking } = useBooking();
+  const { currentBooking, calculateTotalPrice, createBooking } = useBooking();
   const { user } = useAuth();
   const { showToast, confirm, alert: customAlert } = useFeedback();
   const paymentMethod = 'chapa';
+  const bookingIdToPay = route.params?.bookingId;
+  const tripId = currentBooking.trip?.id;
+  const [initializing, setInitializing] = useState(true);
+  const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
@@ -36,190 +47,176 @@ const PaymentScreen = ({ navigation, route }) => {
   const [pendingBookingId, setPendingBookingId] = useState(null);
   const [booking, setBooking] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
-  const [bookingExpired, setBookingExpired] = useState(false);
-  const intervalRef = useRef(null);
+  const submitting = useRef(false);
+  const bookingRequest = useRef(null);
   const chapaReady = isChapaKeyConfigured();
 
-  const price = calculateTotalPrice();
+  const canPay = !initializing && isBookingValid(booking);
+  const canReserve = !initializing && !booking && trip?.status === 'upcoming';
+  const deadline = booking?.payment_deadline;
+  const bookingExpired = booking?.payment_status === 'pending' && Date.parse(deadline) <= Date.now();
+  const awaitingActivation = booking?.payment_status === 'pending'
+    && booking.status === 'confirmed' && booking.trip?.status === 'upcoming';
+  const seats = booking?.seats ?? currentBooking.seats;
+  const pickup = booking?.pickup_station ?? currentBooking.pickupStation;
+  const pickupFee = Number(pickup?.extraPrice ?? pickup?.extra_price ?? 0);
+  const price = booking ? {
+    basePrice: booking.base_price ?? Number(booking.total_price) - Number(booking.service_fee),
+    serviceFee: booking.service_fee ?? 0,
+    total: booking.total_price,
+  } : calculateTotalPrice();
   const totalPrice = price.total;
+
+  const viewTrips = () => navigation.getParent()?.navigate('MainTabs', { screen: 'Trips' });
+
+  const showBookingError = (error) => {
+    if (error.code === 'PROFILE_INCOMPLETE') {
+      confirm({
+        title: 'Profile Incomplete',
+        message: error.message,
+        confirmText: 'Update Profile',
+        cancelText: 'Cancel',
+      }).then((ok) => {
+        if (ok) navigation.navigate('MainTabs', { screen: 'Profile' });
+      });
+    } else {
+      showToast({ type: 'error', title: 'Booking unavailable', message: error.message || 'Please try again.' });
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
+    setInitializing(true);
+    setBooking(null);
+    setTrip(null);
 
     const initializeBooking = async () => {
-      if (!user) return;
-
       try {
+        if (!user) return;
         await checkAndCancelExpiredBookings(user.id);
+        if (!isMounted) return;
 
-        if (!booking && isMounted) {
-          const validation = validateProfile(user);
-          if (!validation.isValid) {
-            const error = new Error(getProfileIncompleteMessage(validation.missingFields));
-            error.code = 'PROFILE_INCOMPLETE';
-            throw error;
+        if (bookingIdToPay) {
+          const existingBooking = await getBookingForPayment(bookingIdToPay);
+          if (isMounted) setBooking(existingBooking);
+          return;
+        }
+
+        if (!tripId) throw new Error('Select a trip to continue.');
+        const { data: latestTrip, error } = await supabase
+          .from('trips')
+          .select('status, departure_date')
+          .eq('id', tripId)
+          .single();
+        if (error) throw error;
+        if (!isMounted) return;
+
+        if (canPayForTrip(latestTrip)) {
+          const requestKey = user.id + ':' + tripId;
+          if (bookingRequest.current?.key !== requestKey) {
+            bookingRequest.current = { key: requestKey, result: createBooking(user.id, user) };
           }
-          
-          const newBooking = await createBooking(user.id, user);
-          if (isMounted) {
-            setBooking(newBooking);
-            if (newBooking.payment_deadline) {
-              updateTimer(newBooking.payment_deadline);
-            }
-          }
-        } else if (booking?.payment_deadline && isMounted) {
-          updateTimer(booking.payment_deadline);
+          const newBooking = await bookingRequest.current.result;
+          if (isMounted) setBooking(newBooking);
+        } else if (latestTrip.status === 'upcoming' && Date.parse(latestTrip.departure_date) > Date.now()) {
+          setTrip(latestTrip);
+        } else {
+          throw new Error('This trip is currently closed for booking.');
         }
       } catch (error) {
-        console.error('Error initializing booking:', error);
-        if (isMounted) {
-          if (error.code === 'PROFILE_INCOMPLETE') {
-            confirm({
-              title: 'Profile Incomplete',
-              message: error.message,
-              confirmText: 'Update Profile',
-              cancelText: 'Cancel',
-            }).then((ok) => {
-              if (ok) {
-                navigation.navigate('MainTabs', { screen: 'Profile' });
-              } else {
-                navigation.goBack();
-              }
-            });
-          } else {
-            showToast({ type: 'error', title: 'Error', message: error.message || 'Failed to create booking. Please try again.' });
-            navigation.goBack();
-          }
-        }
+        if (isMounted) showBookingError(error);
+      } finally {
+        if (isMounted) setInitializing(false);
       }
     };
 
     initializeBooking();
+    return () => { isMounted = false; };
+  }, [bookingIdToPay, tripId, user?.id]);
 
-    return () => {
-      isMounted = false;
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [user]);
-
-  const updateTimer = (deadline) => {
-    const update = () => {
-      const remaining = getTimeRemaining(deadline);
-      setTimeRemaining(remaining);
-      
-      if (remaining.isExpired) {
-        setBookingExpired(true);
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-        handleBookingExpired();
-      }
-    };
-
+  useEffect(() => {
+    if (!deadline || !canPay) return;
+    const update = () => setTimeRemaining(getTimeRemaining(deadline));
     update();
-    intervalRef.current = setInterval(update, 1000);
-  };
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [deadline, canPay]);
 
-  const handleBookingExpired = async () => {
-    if (!booking) return;
-
+  const handleReservation = async () => {
+    if (submitting.current || !canReserve) return;
+    submitting.current = true;
+    setLoading(true);
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'cancelled',
-          payment_status: 'refunded',
-        })
-        .eq('id', booking.id);
-
-      if (error) throw error;
-
-      customAlert({
-        title: 'Booking Expired',
-        message: 'Your booking has been cancelled because payment was not completed within 2 hours. The seat has been released.',
-        variant: 'warning',
-      }).then(() => navigation.navigate('MainTabs', { screen: 'Home' }));
+      const reservation = await createBooking(user.id, user);
+      setBooking(reservation);
+      showToast({
+        type: 'success',
+        title: 'Seats reserved',
+        message: isBookingValid(reservation)
+          ? 'You can complete payment in My Trips.'
+          : 'You can pay from My Trips once the trip is active.',
+      });
+      viewTrips();
     } catch (error) {
-      console.error('Error cancelling expired booking:', error);
+      showBookingError(error);
+    } finally {
+      submitting.current = false;
+      setLoading(false);
     }
   };
 
   const handlePayment = async () => {
-    if (!chapaReady) {
-      showToast({
-        type: 'error',
-        title: 'Payment Unavailable',
-        message: 'Chapa Pay is not configured. Add EXPO_PUBLIC_CHAPA_SECRET_KEY to .env and restart the app.',
-      });
-      return;
-    }
+    if (submitting.current || !canPay || !chapaReady) return;
 
-    if (!user) {
-      showToast({ type: 'warning', title: 'Sign In Required', message: 'Please login to continue' });
-      navigation.navigate('Login');
-      return;
-    }
-
+    submitting.current = true;
     setLoading(true);
-    setPaymentProcessing(true);
-    updateBooking({ paymentMethod });
 
     try {
-      if (!booking || !booking.id) {
-        setLoading(false);
-        setPaymentProcessing(false);
-        customAlert({
-          title: 'Booking Error',
-          message: 'Booking not found. Please try creating a new booking.',
-          variant: 'error',
-        }).then(() => navigation.navigate('MainTabs', { screen: 'Home' }));
-        return;
-      }
-
       const verification = await verifyBookingBeforePayment(booking.id);
-      
       if (!verification.valid) {
-        setLoading(false);
-        setPaymentProcessing(false);
         customAlert({
-          title: 'Booking Invalid',
-          message: verification.reason || 'This booking is no longer valid.',
+          title: 'Payment unavailable',
+          message: verification.reason,
           variant: 'warning',
-        }).then(() => navigation.navigate('MainTabs', { screen: 'Home' }));
+        }).then(viewTrips);
         return;
       }
 
-      const bookingId = booking.id;
-      const priceObj = calculateTotalPrice();
+      const { id: bookingId, total_price: amount } = verification.booking;
       const phoneNumber = user?.phone_number || user?.phoneNumber || '';
       const customerName = user?.name || 'Customer';
       const customerEmail = sanitizeEmailForChapa(user?.email, phoneNumber);
+      const transactionRef = generateTransactionRef(bookingId);
 
-      const paymentData = {
-        amount: priceObj.total,
+      await createPaymentTransaction({
+        bookingId,
+        userId: user.id,
+        amount,
+        paymentMethod,
+        transactionRef,
+      });
+
+      const paymentResult = await processPayment(paymentMethod, {
+        amount,
         currency: 'ETB',
-        phoneNumber: phoneNumber,
-        bookingId: bookingId,
-        customerName: customerName,
-        customerEmail: customerEmail,
-      };
-
-      const paymentResult = await processPayment(paymentMethod, paymentData);
+        phoneNumber,
+        bookingId,
+        customerName,
+        customerEmail,
+        transactionRef,
+      });
 
       if (paymentResult.success && paymentResult.checkoutUrl) {
-        updateBooking({
-          transactionRef: paymentResult.transactionRef,
-          paymentId: paymentResult.paymentId,
-        });
+        await updatePaymentTransaction(transactionRef, {
+          checkout_url: paymentResult.checkoutUrl,
+          external_ref: paymentResult.paymentId ?? null,
+          status: 'processing',
+        }).catch(() => {});
 
         setPendingTxRef(paymentResult.transactionRef);
         setPendingBookingId(bookingId);
         setCheckoutUrl(paymentResult.checkoutUrl);
         setCheckoutVisible(true);
-        setLoading(false);
-        setPaymentProcessing(false);
         return;
       }
 
@@ -227,16 +224,17 @@ const PaymentScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('Payment error:', error);
       let errorMessage = error.message || 'Failed to process payment. Please try again.';
-      
+
       if (errorMessage.includes('API key') || errorMessage.includes('not configured')) {
         errorMessage = 'Payment gateway is not configured. Please contact support or use a different payment method.';
       } else if (errorMessage.includes('401') || errorMessage.includes('Invalid')) {
         errorMessage = 'Payment gateway authentication failed. Please check your payment configuration.';
       }
-      
+
       showToast({ type: 'error', title: 'Payment Error', message: errorMessage });
+    } finally {
+      submitting.current = false;
       setLoading(false);
-      setPaymentProcessing(false);
     }
   };
 
@@ -270,6 +268,12 @@ const PaymentScreen = ({ navigation, route }) => {
 
         if (updateError) throw updateError;
 
+        await updatePaymentTransaction(txRef, {
+          status: 'success',
+          verified_at: new Date().toISOString(),
+          verified_by: 'api',
+        }).catch(() => {});
+
         const { data: updatedBooking, error: fetchError } = await supabase
           .from('bookings')
           .select('*')
@@ -278,6 +282,7 @@ const PaymentScreen = ({ navigation, route }) => {
 
         if (fetchError) throw fetchError;
 
+        setBooking(updatedBooking);
         setLoading(false);
         setPaymentProcessing(false);
         customAlert({
@@ -320,7 +325,7 @@ const PaymentScreen = ({ navigation, route }) => {
       { key: 'trips', label: 'Trips' },
       { key: 'pickup', label: 'Pickup' },
       { key: 'seats', label: 'Seats' },
-      { key: 'payment', label: 'Payment' }
+      { key: 'payment', label: canPay ? 'Payment' : 'Review' }
     ];
     return (
       <View style={stepStyles.progressContainer}>
@@ -373,15 +378,33 @@ const PaymentScreen = ({ navigation, route }) => {
         >
           <Ionicons name="arrow-back" size={20} color={COLORS.secondary} />
         </TouchableOpacity>
-        <Text style={styles.customHeaderTitle}>{t('payment') || 'Payment'}</Text>
+        <Text style={styles.customHeaderTitle}>
+          {canPay ? t('payment') || 'Payment' : 'Review booking'}
+        </Text>
         <View style={styles.customHeaderRight} />
       </View>
 
-      {renderStepHeader()}
+      {!bookingIdToPay && renderStepHeader()}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {initializing ? <ActivityIndicator color={COLORS.primary} /> : null}
+        {canReserve || awaitingActivation ? (
+          <View style={styles.deadlineCard}>
+            <Text style={styles.deadlineTitle}>{canReserve ? 'Booking is open' : 'Seats reserved'}</Text>
+            <Text style={styles.methodDescription}>
+              Payment opens in My Trips once the provider activates this trip.
+            </Text>
+          </View>
+        ) : null}
+        {!initializing && !canPay && !canReserve && !awaitingActivation && !bookingExpired ? (
+          <View style={styles.deadlineCard}>
+            <Text style={styles.deadlineTitle}>
+              {booking?.payment_status === 'paid' ? 'Payment complete' : 'Booking unavailable'}
+            </Text>
+          </View>
+        ) : null}
         {/* Payment Timer Alert */}
-        {booking?.payment_deadline && !bookingExpired ? (
+        {canPay ? (
           <View style={[
             styles.deadlineCard,
             timeRemaining != null && timeRemaining.totalSeconds < 600 ? styles.deadlineCardUrgent : null
@@ -420,22 +443,22 @@ const PaymentScreen = ({ navigation, route }) => {
         ) : null}
 
         {/* Digital Ticket Receipt Card */}
-        <View style={styles.summaryCard}>
+        {canPay || canReserve ? <View style={styles.summaryCard}>
           <View style={styles.receiptTopHeader}>
             <View style={styles.receiptBadgeIcon}>
               <Ionicons name="receipt-outline" size={16} color={COLORS.secondary} />
             </View>
-            <Text style={styles.summaryTitle}>Trip Booking Receipt</Text>
+            <Text style={styles.summaryTitle}>Booking summary</Text>
           </View>
           
-          {currentBooking.trip ? (
+          {(booking?.destination_name || currentBooking.destination?.name) ? (
             <View style={styles.routePillContainer}>
               <Text style={styles.routeText} numberOfLines={1}>
-                {currentBooking.trip.origin || 'Origin'} → {currentBooking.trip.destination || 'Destination'}
+                {booking?.destination_name || currentBooking.destination.name}
               </Text>
-              {currentBooking.pickupStation?.name ? (
+              {pickup?.name ? (
                 <Text style={styles.pickupPillText} numberOfLines={1}>
-                  Pickup: {currentBooking.pickupStation.name}
+                  Pickup: {pickup.name}
                 </Text>
               ) : null}
             </View>
@@ -443,14 +466,14 @@ const PaymentScreen = ({ navigation, route }) => {
 
           <View style={styles.receiptRowsContainer}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Base Ticket Price ({currentBooking.seats || 1} Seat)</Text>
-              <Text style={styles.summaryValue}>ETB {price.basePrice * (currentBooking.seats || 1)}</Text>
+              <Text style={styles.summaryLabel}>Base Ticket Price ({seats} {seats === 1 ? 'seat' : 'seats'})</Text>
+              <Text style={styles.summaryValue}>ETB {Number(price.basePrice) - pickupFee}</Text>
             </View>
 
-            {Number(currentBooking.pickupStation?.extraPrice) > 0 ? (
+            {pickupFee > 0 ? (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Pickup Station Add-on</Text>
-                <Text style={styles.summaryValue}>+ ETB {currentBooking.pickupStation.extraPrice}</Text>
+                <Text style={styles.summaryValue}>+ ETB {pickupFee}</Text>
               </View>
             ) : null}
 
@@ -463,13 +486,13 @@ const PaymentScreen = ({ navigation, route }) => {
           <View style={styles.dashedDivider} />
 
           <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total Due</Text>
+            <Text style={styles.totalLabel}>{canPay ? 'Total Due' : 'Trip Total'}</Text>
             <Text style={styles.totalValue}>ETB {totalPrice}</Text>
           </View>
-        </View>
+        </View> : null}
 
         {/* Chapa Payment Option Card */}
-        <View style={styles.methodsContainer}>
+        {canPay ? <View style={styles.methodsContainer}>
           <Text style={styles.methodsHeaderTitle}>Payment Method</Text>
           <View style={styles.methodCard}>
             <View style={styles.chapaLogoBadge}>
@@ -505,35 +528,29 @@ const PaymentScreen = ({ navigation, route }) => {
               </Text>
             </View>
           ) : null}
-        </View>
+        </View> : null}
       </ScrollView>
 
       {/* Sticky Bottom Actions */}
-      <View style={styles.footer}>
-        <View style={styles.footerSummary}>
-          <Text style={styles.footerTotalLabel}>Total Due</Text>
+      {!initializing ? <View style={styles.footer}>
+        {canPay || canReserve ? <View style={styles.footerSummary}>
+          <Text style={styles.footerTotalLabel}>{canPay ? 'Total Due' : 'Trip Total'}</Text>
           <Text style={styles.footerTotalValue}>ETB {totalPrice}</Text>
-        </View>
+        </View> : null}
         <ModernButton
-          title={
-            bookingExpired
-              ? 'Expired'
-              : loading
-                ? paymentProcessing
-                  ? 'Verifying...'
-                  : 'Opening Chapa...'
-                : 'Pay with Chapa'
-          }
-          onPress={handlePayment}
-          disabled={!chapaReady || loading || bookingExpired}
+          title={canPay
+            ? (paymentProcessing ? 'Verifying payment…' : 'Pay with Chapa')
+            : (canReserve ? 'Reserve seats' : 'View My Trips')}
+          onPress={canPay ? handlePayment : canReserve ? handleReservation : viewTrips}
+          disabled={loading || checkoutVisible || (canPay && !chapaReady)}
           loading={loading}
           variant="primary"
           size="medium"
-          icon="lock-closed-outline"
+          icon={canPay ? 'lock-closed-outline' : 'calendar-outline'}
           iconPosition="left"
           style={styles.button}
         />
-      </View>
+      </View> : null}
 
       <PaymentWebView
         visible={checkoutVisible}

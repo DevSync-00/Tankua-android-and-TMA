@@ -88,7 +88,7 @@ export async function getProviderStats(providerId: string): Promise<ProviderStat
       .from('trips')
       .select('id', { count: 'exact', head: true })
       .eq('provider_id', providerId)
-      .eq('status', 'upcoming'),
+      .eq('status', 'active'),
     supabase
       .from('providers')
       .select('rating')
@@ -344,6 +344,7 @@ export interface BookingDetails {
   trip: {
     id: string;
     departure_date: string;
+    status: string;
     destination: { id: string; name: string } | null;
   } | null;
   pickup_station: { name: string } | null;
@@ -385,6 +386,7 @@ export async function getProviderBookings(
       trips (
         id,
         departure_date,
+        status,
         provider_id,
         destinations (id, name)
       )
@@ -418,6 +420,7 @@ export async function getProviderBookings(
       trip: b.trips ? {
         id: b.trips.id,
         departure_date: b.trips.departure_date,
+        status: b.trips.status,
         destination: b.trips.destinations,
       } : null,
       pickup_station: b.pickup_station, // JSONB column, not a foreign key
@@ -767,19 +770,10 @@ export async function deleteTrip(tripId: string): Promise<{ success: boolean; er
 
 export async function updateTripStatus(
   tripId: string,
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+  status: 'active' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled',
+  expectedStatus?: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase
-    .from('trips')
-    .update({ status })
-    .eq('id', tripId);
-  
-  if (error) {
-    console.error('Error updating trip status:', error);
-    return { success: false, error: error.message };
-  }
-  
-  return { success: true };
+  return updateTrip(tripId, { status }, expectedStatus);
 }
 
 // ============================================

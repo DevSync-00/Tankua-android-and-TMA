@@ -21,7 +21,8 @@ import { getProviderTrips, updateTripStatus, deleteTrip, type TripDetails } from
 
 const tripStatuses = {
   collecting_interest: { label: "Collecting interest", variant: "warning" },
-  upcoming: { label: "Upcoming", variant: "success" },
+  upcoming: { label: "Upcoming", variant: "secondary" },
+  active: { label: "Active", variant: "success" },
   ongoing: { label: "Ongoing", variant: "warning" },
   completed: { label: "Completed", variant: "secondary" },
   cancelled: { label: "Cancelled", variant: "destructive" },
@@ -55,6 +56,7 @@ export default function TripsPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
+  const [activatingTripId, setActivatingTripId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
@@ -117,10 +119,10 @@ export default function TripsPage() {
       (sum, t) => sum + Math.max(0, (t.max_seats || 0) - (t.available_seats || 0)),
       0
     );
-    const upcomingCount = trips.filter((t) => t.status === "upcoming" || t.status === "ongoing").length;
+    const scheduledCount = trips.filter((trip) => ["upcoming", "active", "ongoing"].includes(trip.status)).length;
     const occupancy = totalSeats ? Math.round((bookedSeats / totalSeats) * 100) : 0;
 
-    return { totalSeats, bookedSeats, upcomingCount, occupancy };
+    return { totalSeats, bookedSeats, scheduledCount, occupancy };
   }, [trips]);
 
   const formatDateTime = (dateString: string) => {
@@ -161,21 +163,41 @@ export default function TripsPage() {
     }
   };
 
-  const handleStatusChange = async (tripId: string, newStatus: 'upcoming' | 'ongoing' | 'completed' | 'cancelled') => {
+  const activateTrip = async (tripId: string) => {
+    setActivatingTripId(tripId);
     try {
-      const result = await updateTripStatus(tripId, newStatus);
+      const result = await updateTripStatus(tripId, "active", "upcoming");
       if (result.success) {
         if (providerId) {
           await fetchTrips(providerId);
         }
-        setBanner({ message: `Trip status updated to ${newStatus}`, variant: "success" });
+        setBanner({ message: "Trip activated. Travelers can now pay for their reservations.", variant: "success" });
       } else {
-        setBanner({ message: result.error || "Failed to update trip status", variant: "error" });
+        setBanner({ message: result.error || "Could not activate this trip.", variant: "error" });
       }
     } catch (err) {
-      console.error("Error updating trip status:", err);
-      setBanner({ message: "Failed to update trip status. Please try again.", variant: "error" });
+      console.error("Error activating trip:", err);
+      setBanner({ message: "Could not activate this trip. Please try again.", variant: "error" });
+    } finally {
+      setActivatingTripId(null);
     }
+  };
+
+  const renderActivateButton = (trip: TripDetails) => {
+    const canActivate = trip.status === "upcoming" && Date.parse(trip.departure_date) > Date.now();
+    if (!canActivate) return null;
+
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => activateTrip(trip.id)}
+        disabled={activatingTripId !== null}
+        isLoading={activatingTripId === trip.id}
+      >
+        Activate Trip
+      </Button>
+    );
   };
 
   return (
@@ -248,8 +270,8 @@ export default function TripsPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Upcoming / Ongoing</p>
-            <p className="text-2xl font-bold mt-1">{stats.upcomingCount}</p>
+            <p className="text-sm text-muted-foreground">Scheduled or Ongoing</p>
+            <p className="text-2xl font-bold mt-1">{stats.scheduledCount}</p>
           </Card>
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Total Seats</p>
@@ -367,6 +389,7 @@ export default function TripsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
+                        {renderActivateButton(trip)}
                         <Button 
                           variant="ghost" 
                           size="icon" 
@@ -458,6 +481,7 @@ export default function TripsPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-1">
+                            {renderActivateButton(trip)}
                             <Button 
                               variant="ghost" 
                               size="icon" 

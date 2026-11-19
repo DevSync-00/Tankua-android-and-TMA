@@ -2,6 +2,8 @@ const files = new Map(globalThis.__TANKUA_ASSET_MANIFEST__ || []);
 const SESSION_COOKIE = 'tankua_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const TELEGRAM_MAX_AGE_SECONDS = 5 * 60;
+const BOOKING_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const BOOKING_TRIP_SELECT = 'scheduled_trip:trips(status,departure_date)';
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -332,7 +334,7 @@ async function getBookings(session, env) {
   await supabase(env, 'rpc/delete_expired_unpaid_bookings', { method: 'POST', body: {} });
   const bookings = await supabase(
     env,
-    `bookings?select=*&user_id=eq.${session.uid}&order=created_at.desc`,
+    `bookings?select=*,${BOOKING_TRIP_SELECT}&user_id=eq.${session.uid}&order=created_at.desc`,
   );
   return json({ bookings });
 }
@@ -351,8 +353,7 @@ async function createBooking(request, session, env) {
   const body = await request.json();
   const seats = Number(body.seats);
   if (!Number.isInteger(seats) || seats < 1 || seats > 8) throw new Error('Seats must be between 1 and 8');
-  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (![body.trip_id, body.station_id, body.idempotency_key].every(value => uuid.test(value || ''))) throw new Error('Invalid booking identifiers');
+  if (![body.trip_id, body.station_id, body.idempotency_key].every(value => BOOKING_UUID_PATTERN.test(value || ''))) throw new Error('Invalid booking identifiers');
   const passengers = validatePassengers(body.passengers, seats);
   const booking = await supabase(env, 'rpc/create_miniapp_booking', {
     method: 'POST',
@@ -380,41 +381,26 @@ async function expressTripInterest(tripId, session, env) {
 }
 
 async function initializePayment(request, session, env) {
-  if (!env.CHAPA_SECRET_KEY || !env.APP_ORIGIN) throw new Error('Payment service is not configured');
   const { booking_id } = await request.json();
-  const bookings = await supabase(env, `bookings?select=id,total_price,payment_status,payment_deadline,user_id&user_id=eq.${session.uid}&id=eq.${booking_id}&limit=1`);
+  if (typeof booking_id !== 'string' || !BOOKING_UUID_PATTERN.test(booking_id)) return json({ error: 'Invalid booking' }, 400);
+  const bookings = await supabase(env, `bookings?select=id,total_price,status,payment_status,payment_deadline,${BOOKING_TRIP_SELECT}&user_id=eq.${session.uid}&id=eq.${booking_id}&limit=1`);
   const booking = bookings?.[0];
   if (!booking) return json({ error: 'Booking not found' }, 404);
   if (booking.payment_status === 'paid') return json({ error: 'Booking is already paid' }, 409);
-  if (new Date(booking.payment_deadline) <= new Date()) return json({ error: 'Payment deadline has expired' }, 409);
-  const txRef = `tankua-${booking.id}-${Date.now()}`.slice(0, 50);
-  const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${env.CHAPA_SECRET_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      amount: Number(booking.total_price).toFixed(2),
-      currency: 'ETB',
-      email: 'payments@tankua.co',
-      first_name: 'Tankua',
-      last_name: 'Traveler',
-      tx_ref: txRef,
-      callback_url: `${env.APP_ORIGIN}/api/webhooks/chapa`,
-      return_url: `${env.APP_ORIGIN}/?payment_return=1&tx_ref=${encodeURIComponent(txRef)}`,
-      customization: { title: 'Tankua Booking', description: 'Trip booking payment' },
-    }),
-  });
-  const result = await response.json();
-  if (!response.ok || result.status !== 'success' || !result.data?.checkout_url) {
-    const details = readableError(result.message || result.errors || result.data);
-    console.error(JSON.stringify({
-      event: 'chapa_initialize_failed',
-      status: response.status,
-      details: details || 'No error details returned',
-    }));
-    const error = new Error(details || 'Unable to initialize payment');
-    error.status = response.status >= 500 ? 502 : 400;
-    throw error;
+  if (booking.status !== 'confirmed' || booking.payment_status !== 'pending') {
+    return json({ error: 'This booking is unavailable for payment' }, 409);
   }
+  const trip = booking.scheduled_trip;
+  const now = Date.now();
+  if (!trip || !(Date.parse(trip.departure_date) > now)) return json({ error: 'This trip is unavailable for payment' }, 409);
+  if (trip.status === 'upcoming') return json({ error: 'Payment opens when this trip becomes active' }, 409);
+  if (trip.status !== 'active') return json({ error: 'This trip is unavailable for payment' }, 409);
+  if (!(Date.parse(booking.payment_deadline) > now)) return json({ error: 'There is no open payment window for this booking' }, 409);
+  if (!env.CHAPA_SECRET_KEY || !env.APP_ORIGIN) throw new Error('Payment service is not configured');
+
+  const txRef = `tankua-${crypto.randomUUID()}`;
+  const transactionPath = `payment_transactions?transaction_ref=eq.${encodeURIComponent(txRef)}`;
+  const headers = { Prefer: 'return=minimal' };
   await supabase(env, 'payment_transactions', {
     method: 'POST',
     body: {
@@ -424,12 +410,56 @@ async function initializePayment(request, session, env) {
       currency: 'ETB',
       payment_method: 'chapa',
       transaction_ref: txRef,
-      checkout_url: result.data.checkout_url,
       status: 'pending',
     },
-    headers: { Prefer: 'return=minimal' },
+    headers,
   });
-  return json({ checkout_url: result.data.checkout_url, transaction_ref: txRef });
+
+  let checkoutUrl;
+  try {
+    const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${env.CHAPA_SECRET_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        amount: Number(booking.total_price).toFixed(2),
+        currency: 'ETB',
+        email: 'payments@tankua.co',
+        first_name: 'Tankua',
+        last_name: 'Traveler',
+        tx_ref: txRef,
+        callback_url: `${env.APP_ORIGIN}/api/webhooks/chapa`,
+        return_url: `${env.APP_ORIGIN}/?payment_return=1&tx_ref=${encodeURIComponent(txRef)}`,
+        customization: { title: 'Tankua Booking', description: 'Trip booking payment' },
+      }),
+    });
+    const result = await response.json();
+    checkoutUrl = result.data?.checkout_url;
+    if (!response.ok || result.status !== 'success' || !checkoutUrl) {
+      const details = readableError(result.message || result.errors || result.data);
+      console.error(JSON.stringify({
+        event: 'chapa_initialize_failed',
+        status: response.status,
+        details: details || 'No error details returned',
+      }));
+      const error = new Error(details || 'Unable to initialize payment');
+      error.status = response.status >= 500 ? 502 : 400;
+      throw error;
+    }
+  } catch (error) {
+    await supabase(env, `${transactionPath}&status=eq.pending`, {
+      method: 'PATCH',
+      body: { status: 'failed', error_message: error.message },
+      headers,
+    }).catch(updateError => console.error('Failed to update payment attempt:', updateError.message));
+    throw error;
+  }
+
+  await supabase(env, transactionPath, {
+    method: 'PATCH',
+    body: { checkout_url: checkoutUrl },
+    headers,
+  });
+  return json({ checkout_url: checkoutUrl, transaction_ref: txRef });
 }
 
 async function verifyPayment(txRef, env, expectedUserId = null) {

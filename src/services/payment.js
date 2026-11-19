@@ -9,7 +9,7 @@ const CHAPA_TX_REF_MAX = 50;
 /**
  * Short unique tx_ref (Chapa max 50 chars; UUID booking ids are too long).
  */
-const generateTransactionRef = (bookingId) => {
+export const generateTransactionRef = (bookingId) => {
   const idPart = String(bookingId || '')
     .replace(/[^a-zA-Z0-9]/g, '')
     .slice(0, 10)
@@ -86,7 +86,7 @@ export const initiateChapaPayment = async (paymentData) => {
   try {
     const { amount, currency = 'ETB', phoneNumber, bookingId, customerName, customerEmail } = paymentData;
 
-    const transactionRef = generateTransactionRef(bookingId);
+    const transactionRef = paymentData.transactionRef ?? generateTransactionRef(bookingId);
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) {
       throw new Error('Invalid payment amount');

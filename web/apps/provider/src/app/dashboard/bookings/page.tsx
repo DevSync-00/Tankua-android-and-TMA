@@ -178,16 +178,20 @@ export default function BookingsPage() {
     }
   };
 
-  const getPaymentBadge = (paymentStatus: string) => {
-    switch (paymentStatus) {
+  const getPaymentBadge = (booking: BookingDetails) => {
+    switch (booking.payment_status) {
       case "paid":
         return <Badge variant="success">Paid</Badge>;
       case "pending":
+        if (booking.status !== "cancelled" && booking.trip?.status === "upcoming"
+          && Date.parse(booking.trip.departure_date) > Date.now()) {
+          return <Badge variant="secondary">Awaiting trip activation</Badge>;
+        }
         return <Badge variant="warning">Pending</Badge>;
       case "refunded":
         return <Badge variant="default">Refunded</Badge>;
       default:
-        return <Badge>{paymentStatus}</Badge>;
+        return <Badge>{booking.payment_status}</Badge>;
     }
   };
 
@@ -457,7 +461,7 @@ export default function BookingsPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-muted-foreground">Payment</p>
-                          <div className="mt-1">{getPaymentBadge(booking.payment_status)}</div>
+                          <div className="mt-1">{getPaymentBadge(booking)}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
@@ -568,7 +572,7 @@ export default function BookingsPage() {
                             {getStatusBadge(booking.status)}
                           </td>
                           <td className="py-4 px-4">
-                            {getPaymentBadge(booking.payment_status)}
+                            {getPaymentBadge(booking)}
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
@@ -614,7 +618,7 @@ export default function BookingsPage() {
           </CardContent>
         </Card>
       </div>
-      {selectedBooking && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" onClick={() => setSelectedBooking(null)}><Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Booking #{selectedBooking.id.slice(0, 8)}</p><h2 className="mt-1 text-xl font-bold">{selectedBooking.trip?.destination?.name || selectedBooking.destination_name || "Booking details"}</h2></div><Button variant="ghost" size="sm" onClick={() => setSelectedBooking(null)}>Close</Button></div><div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-4 text-sm"><span><small className="block text-muted-foreground">Customer</small><b>{selectedBooking.user?.name || "Unknown"}</b></span><span><small className="block text-muted-foreground">Phone</small><b>{selectedBooking.user?.phone_number || "Not provided"}</b></span><span><small className="block text-muted-foreground">Seats</small><b>{selectedBooking.seats}</b></span><span><small className="block text-muted-foreground">Amount</small><b>{formatCurrency(selectedBooking.total_price)}</b></span><span><small className="block text-muted-foreground">Status</small>{getStatusBadge(selectedBooking.status)}</span><span><small className="block text-muted-foreground">Payment</small>{getPaymentBadge(selectedBooking.payment_status)}</span></div></Card></div>}
+      {selectedBooking && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" onClick={() => setSelectedBooking(null)}><Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Booking #{selectedBooking.id.slice(0, 8)}</p><h2 className="mt-1 text-xl font-bold">{selectedBooking.trip?.destination?.name || selectedBooking.destination_name || "Booking details"}</h2></div><Button variant="ghost" size="sm" onClick={() => setSelectedBooking(null)}>Close</Button></div><div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-4 text-sm"><span><small className="block text-muted-foreground">Customer</small><b>{selectedBooking.user?.name || "Unknown"}</b></span><span><small className="block text-muted-foreground">Phone</small><b>{selectedBooking.user?.phone_number || "Not provided"}</b></span><span><small className="block text-muted-foreground">Seats</small><b>{selectedBooking.seats}</b></span><span><small className="block text-muted-foreground">Amount</small><b>{formatCurrency(selectedBooking.total_price)}</b></span><span><small className="block text-muted-foreground">Status</small>{getStatusBadge(selectedBooking.status)}</span><span><small className="block text-muted-foreground">Payment</small>{getPaymentBadge(selectedBooking)}</span></div></Card></div>}
     </div>
   );
 }

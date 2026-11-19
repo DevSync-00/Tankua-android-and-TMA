@@ -1,6 +1,7 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
+import { BOOKING_WITH_TRIP } from '../services/bookingService';
 
 const BookingContext = createContext();
 
@@ -64,10 +65,6 @@ export const BookingProvider = ({ children }) => {
 
       const price = calculateTotalPrice();
       
-      // Calculate payment deadline (2 hours from now)
-      const paymentDeadline = new Date();
-      paymentDeadline.setHours(paymentDeadline.getHours() + 2);
-
       const destination = currentBooking.destination;
       
       // Validate destination_id - only use if it's a valid UUID
@@ -110,7 +107,6 @@ export const BookingProvider = ({ children }) => {
         total_price: price.total,
         status: 'confirmed',
         payment_status: 'pending',
-        payment_deadline: paymentDeadline.toISOString(),
         qr_code: generateQRCode(),
         created_at: new Date().toISOString(),
       };
@@ -118,7 +114,7 @@ export const BookingProvider = ({ children }) => {
       const { data, error } = await supabase
         .from('bookings')
         .insert([booking])
-        .select()
+        .select(BOOKING_WITH_TRIP)
         .single();
 
       if (error) throw error;
@@ -164,11 +160,11 @@ export const BookingProvider = ({ children }) => {
     return `TANKUA-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`.toUpperCase();
   };
 
-  const getUserBookings = async (userId) => {
+  const getUserBookings = useCallback(async (userId) => {
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .select('*')
+        .select(BOOKING_WITH_TRIP)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -178,7 +174,7 @@ export const BookingProvider = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
+  }, []);
 
   return (
     <BookingContext.Provider

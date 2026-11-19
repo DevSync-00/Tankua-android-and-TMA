@@ -213,7 +213,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <Badge variant={trip.status === "confirmed" || trip.status === "upcoming" ? "success" : "warning"}>
+                      <Badge variant={trip.status === "confirmed" || trip.status === "active" ? "success" : "secondary"} className="capitalize">
                         {trip.status}
                       </Badge>
                     </div>

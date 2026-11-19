@@ -115,9 +115,9 @@ async function loadTours(
       .order(orderBy, { ascending });
 
     query = includeInterest && !options?.bookableOnly
-      ? query.in('status', ['upcoming', 'collecting_interest'])
+      ? query.in('status', ['active', 'upcoming', 'collecting_interest'])
         .or(`minimum_interest.is.null,departure_date.gt.${new Date().toISOString()}`)
-      : query.eq('status', 'upcoming');
+      : query.in('status', ['active', 'upcoming']);
 
     if (options?.bookableOnly) {
       query = query.gt('departure_date', new Date().toISOString()).gte('available_seats', 1);
@@ -165,7 +165,7 @@ export async function getDestinations(options?: CatalogOptions) {
     let query = supabase
       .from('destinations')
       .select('id, name, city, region, category, images, description, tags, trips(price)', { count: 'exact' })
-      .eq('trips.status', 'upcoming')
+      .in('trips.status', ['active', 'upcoming'])
       .gt('trips.departure_date', new Date().toISOString())
       .not('trips.price', 'is', null)
       .order('price', { referencedTable: 'trips' })
@@ -245,6 +245,7 @@ export async function getTourById(id: string) {
       price: (data.price ?? null) as number | null,
       interest,
       bookingOpen,
+      paymentOpen: bookingOpen && data.status === 'active',
       description: (data.summary || destination?.description || '') as string,
       provider,
       providerReviews: await getProviderReviewSummary(provider?.id),

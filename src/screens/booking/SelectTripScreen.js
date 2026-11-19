@@ -33,7 +33,7 @@ const SelectTripScreen = ({ navigation }) => {
   const interestTrips = trips.filter((trip) => trip.status === 'collecting_interest');
   const bookableTrips = trips.filter((trip) => (
     (trip.status === 'upcoming' || trip.status === 'active')
-    && (trip.minimum_interest == null || Date.parse(trip.departure_date) > Date.now())
+    && Date.parse(trip.departure_date) > Date.now()
   ));
   const tripToBook = bookableTrips.find((trip) => trip.id === selectedTrip?.id);
 
@@ -181,7 +181,7 @@ const SelectTripScreen = ({ navigation }) => {
       { key: 'trips', label: 'Trips' },
       { key: 'pickup', label: 'Pickup' },
       { key: 'seats', label: 'Seats' },
-      { key: 'payment', label: 'Payment' }
+      { key: 'review', label: 'Review' }
     ];
     return (
       <View style={stepStyles.progressContainer}>

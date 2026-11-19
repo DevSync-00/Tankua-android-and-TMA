@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
+import { isBookingValid } from '../services/bookingService';
 import Loader from '../components/Loader';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -36,7 +38,7 @@ const getStatusConfig = (status) =>
 
 // ─── Booking Card ─────────────────────────────────────────────────────────────
 
-const BookingCard = ({ item, onViewTicket }) => {
+const BookingCard = ({ item, onViewTicket, onPay }) => {
   const destinationName =
     item.destination_name || item.church_name || item.churchName || 'Unknown Destination';
   const status        = item.status || 'confirmed';
@@ -46,7 +48,15 @@ const BookingCard = ({ item, onViewTicket }) => {
   const seats         = item.seats || 1;
   const totalPrice    = item.total_price || item.totalPrice || 0;
   const date          = item.date || '';
-  const sc            = getStatusConfig(status);
+  const unpaid = item.payment_status === 'pending';
+  const pendingPayment = unpaid && status === 'confirmed';
+  const awaitingActivation = pendingPayment && item.trip?.status === 'upcoming';
+  const payable = isBookingValid(item);
+  const sc = pendingPayment ? {
+    ...STATUS_CONFIG.pending,
+    label: awaitingActivation ? 'Reserved' : payable ? 'Payment due' : 'Pending',
+  } : getStatusConfig(status);
+  const action = payable ? onPay : unpaid ? null : onViewTicket;
 
   const formattedDate = date
     ? new Date(date).toLocaleDateString('en-US', {
@@ -57,7 +67,8 @@ const BookingCard = ({ item, onViewTicket }) => {
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => onViewTicket(item)}
+      onPress={action ? () => action(item) : undefined}
+      disabled={!action}
       activeOpacity={0.75}
     >
       {/* ── Card top: destination + status badge ── */}
@@ -123,14 +134,18 @@ const BookingCard = ({ item, onViewTicket }) => {
           <Text style={styles.priceValue}>{totalPrice.toLocaleString()} ETB</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.ticketBtn}
-          onPress={() => onViewTicket(item)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="qr-code-outline" size={16} color={COLORS.white} />
-          <Text style={styles.ticketBtnText}>View Ticket</Text>
-        </TouchableOpacity>
+        {action ? (
+          <TouchableOpacity
+            style={styles.ticketBtn}
+            onPress={() => action(item)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={payable ? 'card-outline' : 'qr-code-outline'} size={16} color={COLORS.white} />
+            <Text style={styles.ticketBtnText}>{payable ? 'Pay now' : 'View Ticket'}</Text>
+          </TouchableOpacity>
+        ) : awaitingActivation ? (
+          <Text style={styles.reservationNote}>Payment opens when the trip is active</Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -173,18 +188,17 @@ const EmptyState = ({ tab, onExplore }) => {
 const TripsScreen = ({ navigation }) => {
   const { getUserBookings } = useBooking();
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [activeTab, setActiveTab]   = useState('upcoming');
   const [bookings, setBookings]     = useState([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { load(); }, [user]);
-
   const load = useCallback(async () => {
-    if (!user?.id) { setLoading(false); return; }
+    if (!userId) { setLoading(false); return; }
     try {
-      const data = await getUserBookings(user.id);
+      const data = await getUserBookings(userId);
       setBookings(data || []);
     } catch (e) {
       console.error('Error loading bookings:', e);
@@ -193,7 +207,9 @@ const TripsScreen = ({ navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user, getUserBookings]);
+  }, [userId, getUserBookings]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
@@ -270,7 +286,11 @@ const TripsScreen = ({ navigation }) => {
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
-            <BookingCard item={item} onViewTicket={(b) => navigation.navigate('Ticket', { booking: b })} />
+            <BookingCard
+              item={item}
+              onViewTicket={(b) => navigation.navigate('Ticket', { booking: b })}
+              onPay={(b) => navigation.navigate('BookingFlow', { screen: 'Payment', params: { bookingId: b.id } })}
+            />
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -494,6 +514,13 @@ const styles = StyleSheet.create({
     fontWeight: FONTS.weights.black,
     color: COLORS.secondary,
     letterSpacing: -0.5,
+  },
+  reservationNote: {
+    flexShrink: 1,
+    marginLeft: SPACING.md,
+    fontSize: FONTS.sizes.xs,
+    color: COLORS.gray,
+    textAlign: 'right',
   },
   ticketBtn: {
     flexDirection: 'row',

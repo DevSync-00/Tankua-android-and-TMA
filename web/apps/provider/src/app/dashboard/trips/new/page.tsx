@@ -619,7 +619,8 @@ export default function NewTripPage() {
                 Wait for enough travelers to express interest
               </label>
               <p id="trip-booking-explanation" className="text-sm text-muted-foreground">
-                Booking opens immediately by default. With an interest goal, booking opens automatically when enough travelers express interest before departure. Travelers book their seats after the trip opens.
+                Reservations open immediately by default. With an interest goal, they open automatically when enough
+                travelers express interest before departure. Travelers can pay once you mark the trip Active.
               </p>
               {formData.waitForInterest && (
                 <label className="block text-sm font-medium">

@@ -7,12 +7,13 @@ import { ArrowLeft, CheckCircle, MapPin } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button, Card } from "@tankua/ui";
 import { supabase } from "@/lib/supabase";
-import { getProviderTrip, replaceTripPickupStations, updateTrip } from "@/lib/queries";
+import { getProviderTrip, replaceTripPickupStations, updateTrip, updateTripStatus } from "@/lib/queries";
 
 type Station = { id: string; name: string; city: string | null; address: string | null; extra_price: number };
 type StationValue = { selected: boolean; pickupTime: string; extraPrice: string };
 type SavedTripState = {
   status: string;
+  departureAt: number;
   departureDate: string;
   departureTime: string;
   maxSeats: string;
@@ -38,6 +39,11 @@ export default function EditTripPage() {
     && savedTrip.minimumInterest !== null
     && savedTrip.interestCount < savedTrip.minimumInterest;
   const activationLocked = isCollectingInterest || cancelledBeforeGoal;
+  const statusDescription = form.status === "upcoming"
+    ? "Travelers can reserve seats. Mark the trip Active to open payments."
+    : form.status === "active" && savedTrip?.status === "upcoming"
+      ? "Travelers can pay once you save this trip as Active."
+      : null;
 
   useEffect(()=>{
     const stored=localStorage.getItem("provider_user");
@@ -68,6 +74,7 @@ export default function EditTripPage() {
       setForm(loadedForm);
       setSavedTrip({
         status: loadedForm.status,
+        departureAt: departure.getTime(),
         departureDate: loadedForm.departureDate,
         departureTime: loadedForm.departureTime,
         maxSeats: loadedForm.maxSeats,
@@ -89,6 +96,12 @@ export default function EditTripPage() {
     const departure=new Date(`${form.departureDate}T${form.departureTime}:00`);
     if(Number.isNaN(departure.getTime())){setError("Enter a valid departure date and time.");return;}
     const departureChanged = form.departureDate !== savedTrip.departureDate || form.departureTime !== savedTrip.departureTime;
+    const activating = form.status === "active" && savedTrip.status === "upcoming";
+    const departureAt = departureChanged ? departure.getTime() : savedTrip.departureAt;
+    if (activating && departureAt <= Date.now()) {
+      setError("Choose a future departure to activate this trip.");
+      return;
+    }
     if (isCollectingInterest && form.status === "collecting_interest" && departureChanged && departure.getTime() <= Date.now()) {
       setError("Choose a future departure for a trip collecting interest.");
       return;
@@ -98,14 +111,22 @@ export default function EditTripPage() {
       destination_id:form.destinationId,trip_type:form.tripType,departure_date:departureChanged ? departure.toISOString() : undefined,
       return_date:form.tripType==="round_trip"&&form.returnDate?new Date(`${form.returnDate}T${form.departureTime}:00`).toISOString():null,
       price:Number(form.price),max_seats:form.maxSeats !== savedTrip.maxSeats ? Number(form.maxSeats) : undefined,tour_category:form.tourCategory||undefined,
-      itinerary:form.itinerary.trim()||undefined,status:form.status !== savedTrip.status ? form.status : undefined,
-    }, activationLocked ? savedTrip.status : undefined);
+      itinerary:form.itinerary.trim()||undefined,status:!activating && form.status !== savedTrip.status ? form.status : undefined,
+    }, activationLocked || activating ? savedTrip.status : undefined);
     if(!tripResult.success){setError(tripResult.error||"Could not update trip.");setSaving(false);return;}
     const stationResult=await replaceTripPickupStations(id,selected.map(station=>({
       station_id:station.id,pickup_time:stationConfig[station.id].pickupTime,
       extra_price:Number(stationConfig[station.id].extraPrice||station.extra_price||0),
     })));
     if(!stationResult.success){setError(stationResult.error||"Trip updated, but pickup stations could not be saved.");setSaving(false);return;}
+    if (activating) {
+      const activation = await updateTripStatus(id, "active", "upcoming");
+      if (!activation.success) {
+        setError(`Trip details saved. ${activation.error || "Payments could not be opened."}`);
+        setSaving(false);
+        return;
+      }
+    }
     router.push("/dashboard/trips"); router.refresh();
   }
 
@@ -120,17 +141,19 @@ export default function EditTripPage() {
         <label>Departure date *<input required type="date" value={form.departureDate} onChange={e=>setForm({...form,departureDate:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label>Departure time *<input required type="time" value={form.departureTime} onChange={e=>setForm({...form,departureTime:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         {form.tripType==="round_trip"&&<label>Return date *<input required type="date" value={form.returnDate} onChange={e=>setForm({...form,returnDate:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>}
-        <label>
-          Status
+        <div>
+          <label htmlFor="trip-status">Status</label>
           <select
+            id="trip-status"
             value={form.status}
             onChange={(event) => setForm({ ...form, status: event.target.value })}
             className="mt-1 w-full px-3 py-3 rounded-xl border bg-background"
+            aria-describedby={statusDescription ? "trip-status-description" : undefined}
           >
             {isCollectingInterest && <option value="collecting_interest">Collecting interest</option>}
             {!activationLocked && (
               <>
-                {savedTrip?.status === "active" && <option value="active">Active</option>}
+                {(savedTrip?.status === "active" || savedTrip?.status === "upcoming") && <option value="active">Active</option>}
                 <option value="upcoming">Upcoming</option>
                 <option value="ongoing">Ongoing</option>
                 <option value="completed">Completed</option>
@@ -138,7 +161,12 @@ export default function EditTripPage() {
             )}
             <option value="cancelled">Cancelled</option>
           </select>
-        </label>
+          {statusDescription && (
+            <p id="trip-status-description" className="mt-1 text-sm text-muted-foreground">
+              {statusDescription}
+            </p>
+          )}
+        </div>
         {savedTrip?.minimumInterest != null && (
           <div className="md:col-span-2 rounded-xl border bg-muted/30 p-4">
             <p className="text-sm font-medium">
@@ -146,7 +174,7 @@ export default function EditTripPage() {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {isCollectingInterest
-                ? "Booking opens automatically when the interest goal is reached before departure."
+                ? "Reservations open automatically when the interest goal is reached before departure. Mark the trip Active when you are ready to accept payment."
                 : "The interest goal was set when the trip was created."}
             </p>
           </div>

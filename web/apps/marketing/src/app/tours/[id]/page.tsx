@@ -256,7 +256,7 @@ export default function TourDetailPage() {
                   ) : tour.bookingOpen ? (
                     <Link href="/download">
                       <Button className="w-full bg-[#ffb800] hover:bg-[#d99c00]" size="lg">
-                        Book Now
+                        {tour.paymentOpen ? "Book Now" : "Reserve a Seat"}
                       </Button>
                     </Link>
                   ) : (
@@ -271,7 +271,9 @@ export default function TourDetailPage() {
                 {tour.bookingOpen && (
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <p className="text-xs text-[#181714]/60 text-center">
-                      Booking requires the Tankua mobile app. Download now to book this tour.
+                      {tour.paymentOpen
+                        ? "Download the Tankua app to book this tour."
+                        : "Reserve a seat in the Tankua app and pay once the trip is active."}
                     </p>
                   </div>
                 )}
@@ -287,7 +289,9 @@ export default function TourDetailPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold text-white mb-4">Ready to Book This Tour?</h2>
             <p className="text-lg text-white/70 mb-8">
-              Download the Tankua app to book this tour and get instant digital tickets.
+              {tour.paymentOpen
+                ? "Download the Tankua app to book this tour and get your digital ticket."
+                : "Download the Tankua app to reserve your seat."}
             </p>
             <Link href="/download">
               <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">

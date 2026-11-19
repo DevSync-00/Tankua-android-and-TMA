@@ -415,7 +415,7 @@ export default function BulkTripPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Bulk trips open for booking immediately. To set an interest goal,{" "}
+              Bulk trips open for reservations immediately. Travelers can pay once you mark each trip Active. To set an interest goal,{" "}
               <Link href="/dashboard/trips/new" className="font-medium text-primary underline">create a single trip</Link>.
             </p>
             <div className="flex gap-4">
