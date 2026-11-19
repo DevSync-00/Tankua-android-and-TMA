@@ -155,7 +155,7 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-[#FFF8EC] text-[#181714]">
-      <header className="border-b border-[#181714]/10 bg-[#FFF8EC]/95 backdrop-blur">
+      <header className="legacy-page-nav border-b border-[#181714]/10 bg-[#FFF8EC]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-3" aria-label="Tankua home">
             <Image src="/favicon.png" width={36} height={36} alt="Tankua" className="rounded-lg object-contain" priority />

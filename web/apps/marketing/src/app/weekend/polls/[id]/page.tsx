@@ -14,12 +14,12 @@ export default function WeekendPollPage({ params }: { params: { id: string } }) 
   if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(params.id)) notFound();
 
   return (
-    <main className="min-h-screen bg-[#fbfaf5] px-5 pb-16 pt-28 text-[#20251d] sm:px-8">
+    <main className="field-page px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
       <div className="mx-auto max-w-4xl">
-        <Link href="/weekend" className="inline-flex items-center gap-2 text-sm font-semibold text-[#4a5a48] hover:underline">
+        <Link href="/weekend" className="field-link">
           <ArrowLeft size={17} aria-hidden="true" /> Weekend planner
         </Link>
-        <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">Vote on a weekend outing</h1>
+        <h1 className="field-display field-display--detail mt-5">Vote on a weekend outing</h1>
         <p className="mt-3 leading-7 text-[#444b42]">Pick one outing and one date.</p>
         <WeekendPollView key={params.id} id={params.id} />
       </div>

@@ -618,7 +618,13 @@ export async function createTrip(trip: {
       p_trip: tripData,
       p_pickup_stations: stations,
     });
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      if (['42P01', '42883', 'PGRST202'].includes(error.code)) {
+        console.error('Trip publishing database error:', error);
+        return { success: false, error: 'Trip publishing is temporarily unavailable. Try again shortly or contact Tankua support.' };
+      }
+      return { success: false, error: error.message };
+    }
     return { success: true, id };
   }
 

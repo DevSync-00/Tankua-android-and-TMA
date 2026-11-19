@@ -358,7 +358,7 @@ export default function NewTripPage() {
   return (
     <>
       <Header title="Create a trip" subtitle="Set the schedule, pickup stations, and booking rules." actions={
-        <Link href="/dashboard/trips/bulk" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link href="/dashboard/trips/bulk" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Bulk schedule <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
         </Link>
       } />
@@ -380,11 +380,11 @@ export default function NewTripPage() {
             <TripFormFields {...{ form, updateField, destinations, stations, stationConfig, updateStation, missingStationIds,
               removeUnavailableStations, retryOptions, earliestDate, errors, saving, search, setSearch, category, setCategory }} />
             <aside id="review" tabIndex={-1} aria-label="Trip review" className="min-w-0 scroll-mt-40 space-y-4 focus:outline-none xl:sticky xl:top-32">
-              <Card className="overflow-hidden rounded-xl border border-stone-200 bg-white p-0 shadow-none">
-                <div className="bg-stone-900 px-5 py-4 text-white">
-                  <h2 className="text-sm font-medium text-stone-300">Trip preview</h2>
+              <Card className="overflow-hidden rounded-xl border border-border bg-card p-0 shadow-none">
+                <div className="portal-next-trip px-5 py-4 text-white">
+                  <h2 className="text-sm font-medium text-[#d7e5d9]">Trip preview</h2>
                   <p className="mt-1 break-words text-xl font-semibold tracking-tight">{selectedDestination?.name || "Choose a destination"}</p>
-                  <p className="mt-1.5 text-xs text-stone-300">{isRoundTrip ? "Round trip" : "One way"} · {bookingLabel}</p>
+                  <p className="mt-1.5 text-xs text-[#d7e5d9]">{isRoundTrip ? "Round trip" : "One way"} · {bookingLabel}</p>
                 </div>
                 <div className="space-y-4 p-5">
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
@@ -395,7 +395,7 @@ export default function NewTripPage() {
                       </div>
                     ))}
                     <div className="col-span-2 flex gap-2.5 border-t border-stone-100 pt-3">
-                      <MapPin aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
+                      <MapPin aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                       <div><dt className="text-xs text-muted-foreground">Pickup</dt><dd className="break-words font-medium">{selectedStations.length ? selectedStations.map((station) => station.name).join(", ") : "Choose a station"}</dd></div>
                     </div>
                   </dl>

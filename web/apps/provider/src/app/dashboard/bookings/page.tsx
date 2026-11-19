@@ -240,14 +240,13 @@ export default function BookingsPage() {
   if (loading) {
     return (
       <div className="min-h-screen">
-        <Header 
-          title="Bookings" 
-          subtitle="Loading bookings..."
-        />
-        <div className="p-6 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <RefreshCw className="h-5 w-5 animate-spin" />
-            <span>Loading bookings...</span>
+        <Header title="Bookings" />
+        <div className="portal-content" role="status">
+          <span className="sr-only">Loading bookings…</span>
+          <div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse">
+            <div className="h-16 rounded-xl border border-border bg-muted" />
+            <div className="h-24 rounded-xl border border-border bg-muted" />
+            <div className="h-48 rounded-xl border border-border bg-muted" />
           </div>
         </div>
       </div>
@@ -258,7 +257,7 @@ export default function BookingsPage() {
     <div className="min-h-screen">
       <Header 
         title="Bookings" 
-        subtitle={`${totalBookings} total bookings`}
+        subtitle={`${totalBookings} ${totalBookings === 1 ? "booking" : "bookings"}`}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => providerId && loadBookings(providerId)}>
@@ -282,24 +281,26 @@ export default function BookingsPage() {
         )}
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="portal-toolbar">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              type="text"
-              placeholder="Search by customer, booking ID, or destination..."
+              type="search"
+              aria-label="Search bookings by customer, booking ID or destination"
+              placeholder="Search bookings"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-11 pl-11 pr-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter by booking status"
               className="h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
-              <option value="all">All Status</option>
+              <option value="all">All statuses</option>
               <option value="confirmed">Confirmed</option>
               <option value="pending">Pending</option>
               <option value="completed">Completed</option>
@@ -308,9 +309,10 @@ export default function BookingsPage() {
             <select
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value)}
+              aria-label="Filter by payment status"
               className="h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
-              <option value="all">All Payments</option>
+              <option value="all">All payments</option>
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
               <option value="refunded">Refunded</option>
@@ -318,9 +320,10 @@ export default function BookingsPage() {
             <Button 
               variant="outline" 
               leftIcon={<Filter className="h-4 w-4" />}
-              onClick={() => setShowFilters(!showFilters)}
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters((visible) => !visible)}
             >
-              More Filters
+              More filters
             </Button>
           </div>
         </div>
@@ -330,10 +333,11 @@ export default function BookingsPage() {
           <Card className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                <label htmlFor="booking-destination" className="text-sm font-medium text-muted-foreground mb-2 block">
                   Destination
                 </label>
                 <select
+                  id="booking-destination"
                   value={destinationFilter}
                   onChange={(e) => setDestinationFilter(e.target.value)}
                   className="w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -347,10 +351,11 @@ export default function BookingsPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Start Date
+                <label htmlFor="booking-start" className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Start date
                 </label>
                 <input
+                  id="booking-start"
                   type="date"
                   value={dateRangeFilter?.start || ""}
                   onChange={(e) => setDateRangeFilter({
@@ -361,10 +366,11 @@ export default function BookingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  End Date
+                <label htmlFor="booking-end" className="text-sm font-medium text-muted-foreground mb-2 block">
+                  End date
                 </label>
                 <input
+                  id="booking-end"
                   type="date"
                   value={dateRangeFilter?.end || ""}
                   onChange={(e) => setDateRangeFilter({
@@ -385,38 +391,29 @@ export default function BookingsPage() {
                     setDestinationFilter("all");
                   }}
                 >
-                  Clear Filters
+                  Clear date and destination filters
                 </Button>
               </div>
             )}
           </Card>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total Bookings</p>
-            <p className="text-2xl font-bold mt-1">{totalBookings}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Confirmed</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-600">
-              {bookings.filter((b) => b.status === "confirmed").length}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Pending Payment</p>
-            <p className="text-2xl font-bold mt-1 text-amber-600">
-              {bookings.filter((b) => b.payment_status === "pending").length}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="text-2xl font-bold mt-1 text-primary">
-              {formatCurrencyTotals(sumByCurrency(bookings.filter((b) => b.payment_status === "paid"), (booking) => Number(booking.total_price)))}
-            </p>
-          </Card>
-        </div>
+        <dl aria-label="Booking summary" className="portal-metrics grid grid-cols-2 rounded-xl border border-border bg-card xl:grid-cols-4">
+          {[
+            ["Total bookings", totalBookings],
+            ["Confirmed", bookings.filter((booking) => booking.status === "confirmed").length],
+            ["Pending payment", bookings.filter((booking) => booking.payment_status === "pending").length],
+            ["Total revenue", formatCurrencyTotals(sumByCurrency(
+              bookings.filter((booking) => booking.payment_status === "paid"),
+              (booking) => Number(booking.total_price),
+            ))],
+          ].map(([label, value]) => (
+            <div key={label} className="p-3.5 sm:p-4">
+              <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+              <dd className="mt-2 break-words text-xl font-semibold tabular-nums tracking-tight">{value}</dd>
+            </div>
+          ))}
+        </dl>
 
         {/* Bookings Table */}
         <Card>

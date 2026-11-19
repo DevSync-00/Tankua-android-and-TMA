@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -23,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@tankua/ui";
+import { ProviderBrand } from "./auth-shell";
 
 const dashboardPath = "/dashboard";
 const tripsPath = "/dashboard/trips";
@@ -88,7 +88,7 @@ export function ProviderNavigationButton() {
       aria-haspopup="dialog"
       aria-controls={mobileNavigationId}
       aria-expanded={menu.open}
-      className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 lg:hidden"
+      className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
     >
       <Menu aria-hidden="true" className="size-5" />
     </button>
@@ -111,20 +111,8 @@ function NavigationPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-20 shrink-0 items-center justify-between gap-2 border-b border-stone-200 px-4">
-        <Link
-          href={dashboardPath}
-          onClick={onClose}
-          className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-600"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-amber-200 bg-amber-50">
-            <Image src="/favicon.png" alt="" width={28} height={28} className="object-contain" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-lg font-bold leading-tight tracking-tight text-stone-950">Tankua</span>
-            <span className="block text-xs text-stone-600">Provider portal</span>
-          </span>
-        </Link>
+      <div className="flex h-[4.75rem] shrink-0 items-center justify-between gap-2 border-b border-border px-5">
+        <ProviderBrand href={dashboardPath} onClick={onClose} />
 
         {onClose ? (
           <button
@@ -132,17 +120,17 @@ function NavigationPanel({
             autoFocus
             onClick={onClose}
             aria-label="Close provider navigation"
-            className="grid size-10 shrink-0 place-items-center rounded-lg text-stone-600 hover:bg-stone-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+            className="grid size-10 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
           >
             <X aria-hidden="true" className="size-5" />
           </button>
         ) : null}
       </div>
 
-      <nav aria-label="Provider navigation" className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-4">
+      <nav aria-label="Provider navigation" className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-5">
         {navigationGroups.map(({ label, items }) => (
           <div key={label}>
-            <p className="mb-1 px-2.5 text-xs font-semibold text-stone-600">{label}</p>
+            <p className="mb-1 px-2.5 text-xs font-semibold text-muted-foreground">{label}</p>
             <ul aria-label={label} className="space-y-0.5">
               {items.map(({ label, href, icon: Icon }) => {
                 const exact = pathname === href;
@@ -153,7 +141,7 @@ function NavigationPanel({
                     key={href}
                     className={cn(
                       "flex items-center gap-0.5 rounded-lg",
-                      active ? "bg-amber-50 ring-1 ring-inset ring-amber-200" : "",
+                      active ? "bg-accent ring-1 ring-inset ring-primary/15" : "",
                     )}
                   >
                     <Link
@@ -161,11 +149,11 @@ function NavigationPanel({
                       onClick={onClose}
                       aria-current={exact ? "page" : active && !creatingTrip ? "location" : undefined}
                       className={cn(
-                        "flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-600",
-                        active ? "font-semibold text-stone-950" : "font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-950",
+                        "flex min-h-9 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                        active ? "font-semibold text-accent-foreground" : "font-medium text-foreground hover:bg-background",
                       )}
                     >
-                      <Icon aria-hidden="true" className={cn("size-4 shrink-0", active ? "text-amber-800" : "text-stone-500")} />
+                      <Icon aria-hidden="true" className={cn("size-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
                       <span>{label}</span>
                     </Link>
 
@@ -177,8 +165,8 @@ function NavigationPanel({
                         aria-label="Create trip"
                         title="Create trip"
                         className={cn(
-                          "m-0.5 inline-flex h-9 shrink-0 items-center justify-center gap-1 rounded-md px-2 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600 lg:w-9 lg:px-0",
-                          creatingTrip ? "bg-amber-200" : "bg-amber-50",
+                          "m-0.5 inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-md px-2 text-xs font-semibold text-primary transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring lg:w-8 lg:px-0",
+                          creatingTrip ? "bg-primary/15" : "bg-card",
                         )}
                       >
                         <Plus aria-hidden="true" className="size-4" />
@@ -193,8 +181,8 @@ function NavigationPanel({
         ))}
       </nav>
 
-      <div className="flex shrink-0 items-center gap-2 border-t border-stone-200 p-3">
-        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-stone-100 text-sm font-semibold text-stone-800">
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-border p-4">
+        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-accent text-sm font-semibold text-accent-foreground">
           {workspace.logoUrl ? (
             <img src={workspace.logoUrl} alt="" className="size-full object-cover" />
           ) : (
@@ -202,8 +190,8 @@ function NavigationPanel({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold leading-tight text-stone-950" title={workspace.name}>{workspace.name}</p>
-          <p className="text-xs text-stone-600">Workspace</p>
+          <p className="truncate text-sm font-semibold leading-tight" title={workspace.name}>{workspace.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Workspace</p>
         </div>
         <button
           type="button"
@@ -214,7 +202,7 @@ function NavigationPanel({
           }}
           aria-label="Sign out"
           title="Sign out"
-          className="grid size-10 shrink-0 place-items-center rounded-lg text-stone-600 hover:bg-stone-100 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+          className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-background hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
         >
           <LogOut aria-hidden="true" className="size-4" />
         </button>
@@ -271,7 +259,7 @@ export function ProviderNavigation({ children }: { children: ReactNode }) {
 
   return (
     <mobileNavigation.Provider value={{ open, show }}>
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 border-r border-stone-200 bg-white lg:block">
+      <aside className="provider-rail fixed inset-y-0 left-0 z-50 hidden w-60 border-r border-border lg:block">
         <NavigationPanel pathname={pathname} workspace={workspace} />
       </aside>
       <dialog
@@ -286,7 +274,7 @@ export function ProviderNavigation({ children }: { children: ReactNode }) {
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close();
         }}
-        className="fixed bottom-0 left-0 right-auto top-0 m-0 h-full max-h-none w-[min(20rem,90vw)] max-w-none border-0 bg-white p-0 text-stone-950 shadow-xl backdrop:bg-stone-950/50"
+        className="provider-rail fixed bottom-0 left-0 right-auto top-0 m-0 h-full max-h-none w-[min(19rem,90vw)] max-w-none border-0 p-0 text-foreground shadow-xl backdrop:bg-foreground/50"
       >
         <NavigationPanel pathname={pathname} workspace={workspace} onClose={() => dialogRef.current?.close()} />
       </dialog>

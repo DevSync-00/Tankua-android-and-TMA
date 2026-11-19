@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import "@tankua/ui/styles.css";
 import "./globals.css";
+import "./home.css";
 import { MarketingNavbar } from "@/components/MarketingNavbar";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { SITE_URL } from "@/lib/seo";
 
-const inter = Inter({ 
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../../../../packages/ui/src/fonts/Inter-Latin.woff2",
+  weight: "100 900",
+  display: "swap",
   variable: "--font-inter",
 });
 
-const playfair = Playfair_Display({ 
-  subsets: ["latin"],
+const playfair = localFont({
+  src: "./fonts/PlayfairDisplay.ttf",
+  weight: "400 900",
+  display: "swap",
   variable: "--font-playfair",
 });
 
@@ -43,6 +48,7 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: "/" },
   category: "travel",
+  other: { "page-type": "service", "site-kind": "other" },
 };
 
 export default function RootLayout({
@@ -77,14 +83,15 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" data-type="service" className="scroll-smooth motion-reduce:scroll-auto">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
+        <a href="#main-content" className="tankua-skip">Skip to content</a>
         <MarketingNavbar />
-        <div className="site-content">{children}</div>
+        <div id="main-content" className="site-content" tabIndex={-1}>{children}</div>
         <MarketingFooter />
       </body>
     </html>

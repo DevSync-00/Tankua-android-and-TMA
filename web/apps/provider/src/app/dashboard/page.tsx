@@ -7,11 +7,11 @@ import {
   Bus,
   CalendarDays,
   ChevronRight,
-  Clock3,
   Layers3,
   MapPin,
   Plus,
   RefreshCw,
+  Route,
   Star,
   Ticket,
   Users,
@@ -58,7 +58,7 @@ function SectionLink({ href, children }: { href: string; children: React.ReactNo
   return (
     <Link
       href={href}
-      className="inline-flex shrink-0 items-center gap-1 rounded-sm text-sm font-semibold text-stone-700 hover:text-stone-950 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex shrink-0 items-center gap-1 rounded-sm text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {children}
       <ChevronRight aria-hidden="true" className="size-4" />
@@ -74,16 +74,14 @@ function Metric({
   return (
     <Link
       href={href}
-      className="group flex min-w-0 items-start justify-between gap-2 rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-4"
+      className="group block min-w-0 p-3.5 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-4"
     >
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-foreground sm:text-sm">{label}</p>
-        <p className="mt-1 break-words text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{value}</p>
-        {comparison ? <p className="mt-1 text-xs tabular-nums text-muted-foreground">{comparison}</p> : null}
-      </div>
-      <span className="hidden shrink-0 rounded-lg bg-muted p-2.5 text-stone-600 group-hover:bg-accent group-hover:text-accent-foreground sm:block">
-        <Icon aria-hidden="true" className="size-4" />
-      </span>
+      <p className="flex items-start gap-2 text-xs font-semibold text-muted-foreground sm:items-center sm:text-sm">
+        <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 sm:mt-0" />
+        <span>{label}</span>
+      </p>
+      <p className="mt-2 break-words text-lg font-semibold tabular-nums tracking-tight sm:text-xl">{value}</p>
+      {comparison ? <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{comparison}</p> : null}
     </Link>
   );
 }
@@ -122,54 +120,65 @@ function getBookingLabel(booking: RecentBooking) {
 
 function TripSchedule({ trips }: { trips: UpcomingTrip[] | null }) {
   const [nextTrip, ...laterTrips] = trips ?? [];
+  const collectingInterest = nextTrip?.status === "collecting_interest";
+  const seatsOrInterest = collectingInterest ? nextTrip.interestCount : nextTrip?.passengers;
+  const goal = collectingInterest ? nextTrip.minimumInterest : nextTrip?.capacity;
   return (
     <section aria-labelledby="departure-heading" className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
-        <h2 id="departure-heading" className="text-base font-semibold sm:text-lg">Upcoming departures</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-4 sm:px-5">
+        <h2 id="departure-heading" className="text-lg font-semibold tracking-tight">Upcoming departures</h2>
         <SectionLink href="/dashboard/trips">All trips</SectionLink>
       </div>
       {nextTrip ? (
         <>
-          <div className="mx-4 rounded-lg bg-stone-950 px-4 py-5 text-white sm:mx-5 sm:px-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="portal-next-trip px-4 py-5 text-white sm:px-5 sm:py-6">
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-4">
               <div className="min-w-0">
-                <h3 className="break-words text-2xl font-semibold tracking-tight">{nextTrip.destination}</h3>
-                <p className="mt-2 flex items-start gap-2 text-sm text-stone-300">
-                  <CalendarDays aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-300" />
+                <h3 className="break-words text-2xl font-semibold tracking-tight sm:text-[1.75rem]">{nextTrip.destination}</h3>
+                <p className="mt-2 flex items-start gap-2 text-sm text-[#d7e5d9]">
+                  <CalendarDays aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                   <DepartureTime dateTime={nextTrip.departureDate} />
                 </p>
               </div>
-              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-amber-100">
+              <span className="rounded-full border border-white/25 px-2.5 py-1 text-xs font-semibold text-white">
                 {getTripLabel(nextTrip.status)}
               </span>
             </div>
-            <p className="mt-4 text-sm text-stone-200">
-              {nextTrip.status === "collecting_interest"
-                ? `${nextTrip.interestCount} of ${nextTrip.minimumInterest} travelers interested`
-                : `${nextTrip.passengers} of ${nextTrip.capacity} seats booked`}
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="mt-5 max-w-xs">
+              <p className="text-sm font-medium text-[#e5eee5]">
+                {seatsOrInterest}{goal ? ` of ${goal}` : ""} {collectingInterest ? "travelers interested" : "seats booked"}
+              </p>
+              {goal && goal > 0 ? (
+                <progress
+                  className="portal-seat-progress mt-2 block w-full"
+                  value={seatsOrInterest}
+                  max={goal}
+                  aria-label={collectingInterest ? "Interest toward the trip minimum" : "Seats booked"}
+                />
+              ) : null}
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
               <Link
                 href={`/dashboard/trips/${nextTrip.id}/edit`}
-                className={cn(buttonVariants({ size: "sm" }), "gap-2 shadow-none hover:shadow-none")}
+                className={cn(buttonVariants({ size: "sm", variant: "secondary" }), "gap-2 shadow-none hover:shadow-none")}
               >
                 {nextTrip.status === "upcoming" ? "Review activation" : "Manage trip"}
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
               {nextTrip.status === "upcoming" ? (
-                <p className="text-xs text-stone-300">Activation opens payments for reservations.</p>
+                <p className="text-xs text-[#d7e5d9]">Activation opens payments for reservations.</p>
               ) : null}
             </div>
           </div>
           {laterTrips.length ? (
-            <ul className="mt-3 divide-y divide-border px-4 pb-2 sm:px-5">
+            <ul className="divide-y divide-border px-4 sm:px-5">
               {laterTrips.map((trip) => (
                 <li key={trip.id}>
                   <Link
                     href={`/dashboard/trips/${trip.id}/edit`}
-                    className="group flex items-center gap-3 rounded-md py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group flex items-center gap-3 rounded-md py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-stone-600 group-hover:bg-accent group-hover:text-accent-foreground">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground">
                       <CalendarDays aria-hidden="true" className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -184,12 +193,17 @@ function TripSchedule({ trips }: { trips: UpcomingTrip[] | null }) {
                 </li>
               ))}
             </ul>
-          ) : <div className="h-4 sm:h-5" aria-hidden="true" />}
+          ) : null}
         </>
       ) : (
-        <p className="border-t border-border px-4 py-8 text-sm text-muted-foreground sm:px-5">
-          {trips === null ? "Upcoming departures are unavailable." : "Your future departures will appear here."}
-        </p>
+        <div className="px-4 py-7 sm:px-5">
+          <Route aria-hidden="true" className="mb-3 size-5 text-primary" />
+          <p className="text-sm font-semibold">{trips === null ? "Couldn’t load departures" : "No departures scheduled"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {trips === null ? "Refresh the overview to try again." : "Create a trip to start taking reservations or collecting interest."}
+          </p>
+          {trips !== null ? <div className="mt-3"><SectionLink href="/dashboard/trips/new">Create a trip</SectionLink></div> : null}
+        </div>
       )}
     </section>
   );
@@ -199,7 +213,7 @@ function RecentBookings({ bookings }: { bookings: RecentBooking[] | null }) {
   return (
     <section aria-labelledby="bookings-heading" className="min-w-0 rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
-        <h2 id="bookings-heading" className="text-base font-semibold sm:text-lg">Recent bookings</h2>
+        <h2 id="bookings-heading" className="text-lg font-semibold tracking-tight">Recent bookings</h2>
         <SectionLink href="/dashboard/bookings">All bookings</SectionLink>
       </div>
       {bookings?.length ? (
@@ -218,7 +232,7 @@ function RecentBookings({ bookings }: { bookings: RecentBooking[] | null }) {
                   variant={booking.paymentStatus === "paid" && booking.status !== "cancelled" ? "success" : "secondary"}
                   className={cn(
                     "mt-1 max-w-full justify-end px-2 leading-snug",
-                    (booking.paymentStatus !== "paid" || booking.status === "cancelled") && "bg-muted text-stone-700",
+                    (booking.paymentStatus !== "paid" || booking.status === "cancelled") && "bg-muted text-foreground",
                   )}
                 >
                   {getBookingLabel(booking)}
@@ -228,9 +242,12 @@ function RecentBookings({ bookings }: { bookings: RecentBooking[] | null }) {
           ))}
         </ul>
       ) : (
-        <p className="border-t border-border px-4 py-8 text-sm text-muted-foreground sm:px-5">
-          {bookings === null ? "Recent bookings are unavailable." : "Traveler reservations will appear here."}
-        </p>
+        <div className="border-t border-border px-4 py-7 sm:px-5">
+          <p className="text-sm font-semibold">{bookings === null ? "Couldn’t load bookings" : "No recent bookings"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {bookings === null ? "Refresh the overview to try again." : "New reservations and their payment status will appear here."}
+          </p>
+        </div>
       )}
     </section>
   );
@@ -240,7 +257,7 @@ function Reviews({ reviews }: { reviews: RecentReview[] | null }) {
   return (
     <section aria-labelledby="reviews-heading" className="min-w-0 rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
-        <h2 id="reviews-heading" className="text-base font-semibold sm:text-lg">Recent reviews</h2>
+        <h2 id="reviews-heading" className="text-lg font-semibold tracking-tight">Recent reviews</h2>
         <SectionLink href="/dashboard/reviews">All reviews</SectionLink>
       </div>
       {reviews?.length ? (
@@ -253,13 +270,13 @@ function Reviews({ reviews }: { reviews: RecentReview[] | null }) {
                   <p className="mt-1 text-xs text-muted-foreground">{review.trip} · {review.date}</p>
                 </div>
                 {review.rating !== null ? (
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-accent px-2 py-1 text-xs font-semibold text-stone-800">
-                    <Star aria-hidden="true" className="size-3.5 fill-amber-400 text-amber-600" />
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-accent px-2 py-1 text-xs font-semibold text-accent-foreground">
+                    <Star aria-hidden="true" className="size-3.5 fill-current" />
                     {review.rating}/5
                   </span>
                 ) : null}
               </div>
-              {review.comment ? <p className="mt-2.5 break-words text-sm text-stone-700">{review.comment}</p> : null}
+              {review.comment ? <p className="mt-2.5 break-words text-sm text-muted-foreground">{review.comment}</p> : null}
             </li>
           ))}
         </ul>
@@ -269,6 +286,21 @@ function Reviews({ reviews }: { reviews: RecentReview[] | null }) {
         </p>
       )}
     </section>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div role="status">
+      <span className="sr-only">Loading overview…</span>
+      <div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse">
+        <div className="h-24 rounded-xl border border-border bg-muted" />
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <div className="h-52 rounded-xl border border-border bg-muted sm:h-72" />
+          <div className="h-44 rounded-xl border border-border bg-muted sm:h-56" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -319,13 +351,14 @@ export default function DashboardPage() {
     <>
       <Header
         title="Overview"
+        subtitle="Departures, bookings and trip sales"
         actions={
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="gap-2 border border-border"
+              className="gap-2 border border-border bg-card"
               disabled={loading || !providerId}
               aria-label="Refresh overview"
               onClick={() => { if (providerId) void loadDashboard(providerId); }}
@@ -342,10 +375,7 @@ export default function DashboardPage() {
       />
       <div className="portal-content" aria-busy={loading}>
         {initialLoading ? (
-          <p role="status" className="flex items-center gap-2 rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
-            <Clock3 aria-hidden="true" className="size-4" />
-            Loading overview…
-          </p>
+          <DashboardSkeleton />
         ) : (
           <>
             {hasLoadError ? (
@@ -353,7 +383,7 @@ export default function DashboardPage() {
                 Some overview information is unavailable. Refresh to try again.
               </p>
             ) : null}
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <section aria-label="Performance summary" className="portal-metrics grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card xl:grid-cols-4">
               <Metric href="/dashboard/trips" label="Active trips" value={stats?.activeTrips ?? "—"} icon={Bus} />
               <Metric
                 href="/dashboard/bookings"
@@ -370,22 +400,22 @@ export default function DashboardPage() {
                 icon={Wallet}
               />
               <Metric href="/dashboard/reviews" label="Average rating" value={stats?.averageRating?.toFixed(1) ?? "—"} icon={Star} />
-            </div>
-            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+            </section>
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
               <TripSchedule trips={trips} />
               <RecentBookings bookings={bookings} />
             </div>
-            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
               <section aria-labelledby="actions-heading" className="rounded-xl border border-border bg-card">
-                <h2 id="actions-heading" className="px-4 py-4 text-base font-semibold sm:px-5 sm:text-lg">Quick actions</h2>
-                <ul className="grid divide-y divide-border border-t border-border sm:grid-cols-2 sm:divide-y-0">
+                <h2 id="actions-heading" className="px-4 py-4 text-lg font-semibold tracking-tight sm:px-5">Quick actions</h2>
+                <ul className="grid gap-px overflow-hidden rounded-b-xl border-t border-border bg-border sm:grid-cols-2">
                   {quickActions.map(({ href, label, icon: Icon }) => (
-                    <li key={href} className="min-w-0 sm:border-b sm:border-border sm:even:border-l sm:[&:nth-last-child(-n+2)]:border-b-0">
+                    <li key={href} className="min-w-0 bg-card">
                       <Link
                         href={href}
                         className="group flex h-full items-center gap-3 px-4 py-3.5 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5"
                       >
-                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-stone-600 group-hover:bg-accent">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-primary group-hover:bg-accent">
                           <Icon aria-hidden="true" className="size-4" />
                         </span>
                         <span className="min-w-0 flex-1 text-sm font-semibold">{label}</span>

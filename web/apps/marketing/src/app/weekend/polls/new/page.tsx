@@ -11,12 +11,12 @@ export const metadata = createPageMetadata({
 
 export default function PollCreatorPage({ searchParams }: { searchParams: { outing?: string | string[] } }) {
   return (
-    <main className="min-h-screen bg-[#fbfaf5] px-5 pb-16 pt-28 text-[#20251d] sm:px-8">
+    <main className="field-page px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
       <div className="mx-auto max-w-4xl">
-        <Link href="/weekend" className="inline-flex items-center gap-2 text-sm font-semibold text-[#4a5a48] hover:underline">
+        <Link href="/weekend" className="field-link">
           <ArrowLeft size={17} aria-hidden="true" /> Weekend planner
         </Link>
-        <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">Plan with friends</h1>
+        <h1 className="field-display field-display--detail mt-5">Plan with friends</h1>
         <p className="mt-3 max-w-xl leading-7 text-[#444b42]">
           Share one link so everyone can vote on where to go and when.
         </p>

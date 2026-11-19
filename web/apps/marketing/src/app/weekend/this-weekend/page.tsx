@@ -22,16 +22,16 @@ export default async function ThisWeekendPage() {
   const picks = getWeekendPicks(now);
 
   return (
-    <main className="min-h-screen bg-[#fbfaf5] px-5 pb-16 pt-28 text-[#20251d] sm:px-8 lg:pb-24">
+    <main className="field-page px-5 pb-16 pt-8 sm:px-8 sm:pt-12 lg:pb-24">
       <div className="mx-auto max-w-6xl">
-        <Link href="/weekend" className="inline-flex items-center gap-2 text-sm font-semibold text-[#4a5a48] hover:underline">
+        <Link href="/weekend" className="field-link">
           <ArrowLeft size={17} aria-hidden="true" /> Weekend planner
         </Link>
         <header className="mb-8 mt-5 rounded-2xl bg-[#263a2b] px-6 py-8 text-white sm:px-9 sm:py-11">
           <p className="inline-flex items-center gap-2 font-semibold text-[#ffe09a]">
             <CalendarDays size={19} aria-hidden="true" /> {formatWeekendDate(saturday, dateLabel)} – {formatWeekendDate(sunday, dateLabel)}
           </p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">This Weekend in Addis</h1>
+          <h1 className="field-display field-display--detail mt-3">This Weekend in Addis</h1>
         </header>
 
         <section aria-labelledby="dated-events">

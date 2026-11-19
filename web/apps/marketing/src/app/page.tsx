@@ -1,247 +1,100 @@
-"use client";
-
-import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  MapPin,
-  Menu,
-  Search,
-  Send,
-  ShieldCheck,
-  Star,
-  TicketCheck,
-  X,
-} from "lucide-react";
-import { formatCurrency } from "@tankua/ui";
-import { getFeaturedTours } from "@/lib/queries";
-import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
-
-const PROVIDER_URL = "https://provider.tankua.co";
+import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
+import { HomeDepartures } from "@/components/HomeDepartures";
+import { WeekendPhoto } from "@/components/WeekendPhoto";
 
 const destinations = [
-  { name: "Lalibela", line: "Living heritage carved in stone", image: "/images/pexels-ludo-van-den-nouweland-214324419-12344920.jpg", href: "/tours?q=Lalibela", className: "md:col-span-2 md:row-span-2" },
-  { name: "Danakil", line: "Earth at its most elemental", image: "/images/pexels-atypeek-12131129.jpg", href: "/tours?q=Danakil", className: "" },
-  { name: "Lake Tana", line: "Island monasteries and open water", image: "/images/pexels-lovetosmile-5034469.jpg", href: "/tours?q=Lake%20Tana", className: "" },
+  { name: "Simien Mountains", region: "Amhara", image: "/siemen.jpg" },
+  { name: "Danakil Depression", region: "Afar", image: "/images/pexels-atypeek-12131129.jpg" },
+  { name: "Lake Tana", region: "Amhara", image: "/images/pexels-lovetosmile-5034469.jpg" },
 ];
 
-type FeaturedTours = Awaited<ReturnType<typeof getFeaturedTours>>;
-
 export default function HomePage() {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [featured, setFeatured] = useState<FeaturedTours | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    getFeaturedTours().then((data) => {
-      if (!ignore) setFeatured(data);
-    });
-    return () => { ignore = true; };
-  }, []);
-
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const value = query.trim();
-    router.push(value ? `/tours?q=${encodeURIComponent(value)}` : "/tours");
-  };
-
   return (
-    <main className="min-h-screen bg-[#f7f5f0] text-[#181714]">
-      <section className="relative min-h-[780px] overflow-hidden bg-[#1c2119] text-white">
-        <Image
-          src="/images/beautiful-woman-with-backpack-smiling-holding-binoculars.jpg"
-          alt="Traveler exploring Ethiopia"
-          fill
-          priority
-          className="object-cover object-[62%_center]"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,18,13,.92)_0%,rgba(15,18,13,.72)_35%,rgba(15,18,13,.14)_72%,rgba(15,18,13,.05)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/45 to-transparent" />
-
-        <nav className="relative z-30 border-b border-white/15">
-          <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-            <Link href="/" className="flex items-center gap-3" aria-label="Tankua home">
-              <Image src="/favicon.png" alt="" width={38} height={38} className="rounded-[10px] bg-[#ffb800] p-1" />
-              <span className="text-xl font-extrabold tracking-[-.03em]">Tankua</span>
-            </Link>
-            <div className="hidden items-center gap-8 text-sm font-semibold md:flex">
-              <Link href="/tours" className="transition hover:text-[#ffc83d]">Explore</Link>
-              <Link href="/destinations" className="transition hover:text-[#ffc83d]">Destinations</Link>
-              <a href={PROVIDER_URL} className="transition hover:text-[#ffc83d]">For providers</a>
-              <Link href="/about" className="transition hover:text-[#ffc83d]">About</Link>
-            </div>
-            <div className="hidden items-center gap-3 md:flex">
-              <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center gap-2 border border-white/35 px-4 text-sm font-semibold transition hover:bg-white hover:text-[#181714]">
-                <Send className="h-4 w-4" /> Telegram
-              </a>
-              <Link href="/login" className="inline-flex h-11 items-center bg-[#ffb800] px-5 text-sm font-bold text-[#181714] transition hover:bg-[#ffc83d]">Sign in</Link>
-            </div>
-            <button type="button" onClick={() => setMenuOpen(!menuOpen)} className="grid h-11 w-11 place-items-center md:hidden" aria-label="Toggle menu">
-              {menuOpen ? <X /> : <Menu />}
-            </button>
-          </div>
-          {menuOpen && (
-            <div className="absolute inset-x-0 top-20 border-t border-white/10 bg-[#151713]/98 p-5 md:hidden">
-              <div className="grid gap-1 text-base font-semibold">
-                <Link href="/tours" className="px-3 py-3" onClick={() => setMenuOpen(false)}>Explore tours</Link>
-                <Link href="/destinations" className="px-3 py-3" onClick={() => setMenuOpen(false)}>Destinations</Link>
-                <a href={PROVIDER_URL} className="px-3 py-3">For providers</a>
-                <Link href="/about" className="px-3 py-3" onClick={() => setMenuOpen(false)}>About</Link>
-                <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center justify-center gap-2 bg-[#ffb800] px-4 py-3 text-[#181714]"><Send className="h-4 w-4" /> Open in Telegram</a>
+    <main className="tankua-home">
+      <section className="home-hero" aria-labelledby="home-title" data-enter>
+        <div className="tankua-wrap home-hero-grid">
+          <div className="home-hero-copy">
+            <h1 id="home-title">See Ethiopia<br className="home-hero-break" /> with local guides.</h1>
+            <p>Find tours run by Ethiopian operators, from the rock-hewn churches of Lalibela to the trails of the Simien Mountains.</p>
+            <form action="/tours" className="home-search" role="search" aria-label="Find a tour">
+              <label htmlFor="home-tour-search">Where do you want to go?</label>
+              <div className="home-search-controls">
+                <div className="home-search-field">
+                  <Search size={20} aria-hidden="true" />
+                  <input id="home-tour-search" type="search" name="q" placeholder="e.g. Lalibela" />
+                </div>
+                <button type="submit" className="tankua-button">Find tours <ArrowRight size={17} aria-hidden="true" /></button>
               </div>
-            </div>
-          )}
-        </nav>
-
-        <div className="relative z-10 mx-auto flex min-h-[700px] max-w-[1440px] items-center px-5 pb-36 pt-20 sm:px-8 lg:px-12">
-          <div className="max-w-[720px] font-sans">
-            <p className="mb-5 text-sm font-semibold text-[#ffc83d]">Explore Ethiopia</p>
-            <h1 className="max-w-[700px] text-5xl font-bold leading-[1.04] tracking-[-.04em] sm:text-6xl lg:text-[4.75rem]">
-              Discover Ethiopia.<br />Travel deeper.
-            </h1>
-            <p className="mt-6 max-w-[620px] text-lg leading-8 text-white/80 sm:text-xl">
-              Find unforgettable places, compare trips from verified local providers, and book with confidence.
-            </p>
-            <div className="mt-9 flex flex-wrap items-center gap-5">
-              <Link href="/tours" className="inline-flex h-14 items-center gap-3 bg-[#ffb800] px-7 font-semibold text-[#181714] transition hover:bg-[#ffc83d]">Explore trips <ArrowRight className="h-5 w-5" /></Link>
-              <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center gap-2 px-1 font-semibold text-white underline decoration-white/35 underline-offset-8 hover:decoration-white"><Send className="h-4 w-4" /> Open in Telegram</a>
-            </div>
+            </form>
+            <Link href="/tours" className="tankua-text-link">Browse all tours <ArrowRight size={17} aria-hidden="true" /></Link>
           </div>
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 z-20">
-          <form onSubmit={handleSearch} className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
-            <div className="grid bg-white text-[#181714] shadow-[0_24px_70px_rgba(0,0,0,.28)] sm:grid-cols-[1fr_auto]">
-              <label className="flex min-h-20 items-center gap-4 px-5 sm:px-7">
-                <Search className="h-6 w-6 shrink-0 text-[#a97400]" />
-                <span className="sr-only">Search Ethiopia</span>
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a place, city, or experience" className="w-full bg-transparent text-base font-medium outline-none placeholder:font-normal placeholder:text-[#807a70] sm:text-lg" />
-              </label>
-              <button type="submit" className="m-2 min-h-14 bg-[#181714] px-8 font-bold text-white transition hover:bg-[#33302a]">Search</button>
-            </div>
-          </form>
+          <Link href="/tours?q=Lalibela" className="home-hero-photo" aria-label="Find tours in Lalibela">
+            <Image
+              src="/images/pexels-ludo-van-den-nouweland-214324419-12344920.jpg"
+              alt="A visitor sits on a stone ledge in Lalibela's rock-cut churches"
+              fill
+              priority
+              sizes="(max-width: 820px) 100vw, 52vw"
+            />
+            <span className="home-photo-link">Lalibela, North Wollo <ArrowUpRight size={17} aria-hidden="true" /></span>
+          </Link>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 lg:px-12 lg:py-32">
-        <div className="mb-12 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <section className="home-destinations" aria-labelledby="home-destinations-title">
+        <div className="tankua-wrap">
+          <div className="home-section-heading">
+            <h2 id="home-destinations-title">Where to go in Ethiopia</h2>
+            <Link href="/destinations" className="tankua-text-link">All destinations <ArrowRight size={17} aria-hidden="true" /></Link>
+          </div>
+          <div className="home-destination-grid">
+            {destinations.map((destination) => (
+              <Link key={destination.name} href={`/tours?q=${encodeURIComponent(destination.name)}`} className="home-destination">
+                <Image src={destination.image} alt="" fill sizes="(max-width: 620px) 100vw, (max-width: 950px) 50vw, 33vw" />
+                <div className="home-destination-label">
+                  <div>
+                    <h3>{destination.name}</h3>
+                    <p>{destination.region}</p>
+                  </div>
+                  <span className="home-destination-arrow"><ArrowUpRight size={20} aria-hidden="true" /></span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="home-weekend" aria-labelledby="home-weekend-title">
+        <div className="tankua-wrap home-weekend-grid">
+          <WeekendPhoto />
+          <div className="home-weekend-copy">
+            <h2 id="home-weekend-title">A weekend in Addis</h2>
+            <p>Find a morning outing, a full day in the city, or an overnight trip. Share a poll so everyone can pick a plan.</p>
+            <Link href="/weekend" className="tankua-button">Plan a weekend <ArrowRight size={17} aria-hidden="true" /></Link>
+          </div>
+        </div>
+      </section>
+
+      <HomeDepartures />
+
+      <section className="home-guide" aria-labelledby="home-guide-title">
+        <div className="tankua-wrap home-guide-grid">
           <div>
-            <p className="mb-4 text-xs font-bold uppercase tracking-[.22em] text-[#9a6900]">Start with a place</p>
-            <h2 className="max-w-2xl text-4xl font-extrabold leading-tight tracking-[-.04em] sm:text-5xl">Ethiopia opens up one journey at a time.</h2>
+            <h2 id="home-guide-title">Good to know before you go</h2>
+            <p>Read up on Ethiopian food, the coffee ceremony, and the local calendar.</p>
+            <Link href="/guides" className="tankua-text-link">Read travel guides <ArrowRight size={17} aria-hidden="true" /></Link>
           </div>
-          <Link href="/destinations" className="inline-flex items-center gap-2 font-bold">All destinations <ArrowRight className="h-4 w-4" /></Link>
-        </div>
-        <div className="grid min-h-[680px] gap-4 md:grid-cols-4 md:grid-rows-2">
-          {destinations.map((destination) => (
-            <Link key={destination.name} href={destination.href} className={`group relative min-h-80 overflow-hidden bg-[#24221d] ${destination.className}`}>
-              <Image src={destination.image} alt={destination.name} fill className="object-cover transition duration-700 group-hover:scale-[1.04]" sizes="(max-width: 768px) 100vw, 50vw" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
-                <h3 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{destination.name}</h3>
-                <p className="mt-1 text-sm text-white/72">{destination.line}</p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#ffc83d]">Explore <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
-              </div>
-            </Link>
-          ))}
-          <div className="flex min-h-80 flex-col justify-between bg-[#ffb800] p-7 sm:p-9">
-            <span className="text-xs font-bold uppercase tracking-[.2em]">Not sure where to start?</span>
-            <div><h3 className="text-3xl font-extrabold leading-tight tracking-[-.04em]">Find a journey that fits you.</h3><Link href="/tours" className="mt-6 inline-flex items-center gap-2 border-b-2 border-[#181714] pb-1 font-bold">Browse all trips <ArrowRight className="h-4 w-4" /></Link></div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white py-24 lg:py-32">
-        <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
-          <div className="mb-12 flex items-end justify-between gap-5">
-            <h2 className="text-4xl font-extrabold tracking-[-.04em] sm:text-5xl">Upcoming tours</h2>
-            <Link href="/tours" className="inline-flex shrink-0 items-center gap-2 font-bold">View all <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-          {featured?.tours.length ? (
-            <div className="grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-              {featured.tours.map((tour) => (
-                <Link key={tour.id} href={`/tours/${tour.id}`} className="group block">
-                  <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e4dc]">
-                    <Image src={tour.image} alt={tour.name} fill className="object-cover transition duration-500 group-hover:scale-[1.035]" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
-                    <span className="absolute left-4 top-4 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[.12em]">{tour.category}</span>
-                  </div>
-                  <div className="pt-5">
-                    <div className="flex items-center justify-between gap-4 text-sm text-[#6f6a61]">
-                      <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#a97400]" />{tour.location}</span>
-                      {tour.providerReviews && (
-                        <span className="flex items-center gap-1 font-bold text-[#181714]" title="Provider rating">
-                          <Star aria-hidden="true" className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                          <span className="sr-only">Provider rating</span>{tour.providerReviews.rating.toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="mt-3 text-xl font-extrabold leading-7 tracking-[-.02em] group-hover:underline group-hover:decoration-[#ffb800] group-hover:decoration-2 group-hover:underline-offset-4">{tour.name}</h3>
-                    {tour.price !== null && (
-                      <p className="mt-3 text-sm text-[#6f6a61]"><strong className="text-base text-[#181714]">{formatCurrency(tour.price, tour.currency)}</strong> per person</p>
-                    )}
-                  </div>
-                </Link>
-              ))}
+          <Link href="/guides/ethiopian-coffee-ceremony-guide" className="home-guide-feature">
+            <div className="home-guide-photo"><Image src="/images/ethiopian-coffee-ceremony.jpg" alt="" fill sizes="(max-width: 660px) 30vw, 200px" /></div>
+            <div className="home-guide-label">
+              <h3>The Ethiopian coffee ceremony</h3>
+              <ArrowUpRight size={21} aria-hidden="true" />
             </div>
-          ) : (
-            <p className="text-[#6f6a61]" role="status">
-              {!featured
-                ? "Loading upcoming tours…"
-                : featured.error
-                  ? "Upcoming tour listings are unavailable right now."
-                  : "No upcoming tours are listed right now."}
-            </p>
-          )}
+          </Link>
         </div>
       </section>
-
-      <section className="bg-[#192019] py-24 text-white">
-        <div className="mx-auto grid max-w-[1440px] gap-14 px-5 sm:px-8 lg:grid-cols-[.85fr_1.15fr] lg:px-12">
-          <div><p className="mb-4 text-xs font-bold uppercase tracking-[.22em] text-[#ffc83d]">Travel with confidence</p><h2 className="text-4xl font-extrabold leading-tight tracking-[-.04em] sm:text-5xl">Local expertise.<br />Clear booking.<br />Real support.</h2></div>
-          <div className="grid gap-px bg-white/15 sm:grid-cols-2">
-            {[
-              [ShieldCheck, "Verified providers", "Book with vetted Ethiopian travel operators."],
-              [CalendarDays, "Transparent departures", "See the date, provider, pickup, and availability."],
-              [TicketCheck, "Digital tickets", "Keep confirmed trip details ready on your phone."],
-              [Check, "Secure checkout", "Prices and availability are checked before payment."],
-            ].map(([Icon, title, copy]) => {
-              const ItemIcon = Icon as typeof ShieldCheck;
-              return <div key={title as string} className="bg-[#192019] p-7 sm:p-9"><ItemIcon className="mb-7 h-7 w-7 text-[#ffc83d]" /><h3 className="text-xl font-extrabold">{title as string}</h3><p className="mt-3 leading-7 text-white/62">{copy as string}</p></div>;
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#ffb800] py-20">
-        <div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-8 px-5 sm:px-8 lg:flex-row lg:items-center lg:px-12">
-          <div><p className="mb-3 text-xs font-bold uppercase tracking-[.22em]">For Ethiopian travel businesses</p><h2 className="max-w-3xl text-4xl font-extrabold leading-tight tracking-[-.04em]">Bring your journeys to travelers across Tankua.</h2></div>
-          <a href={`${PROVIDER_URL}/register`} className="inline-flex h-14 shrink-0 items-center justify-center gap-3 bg-[#181714] px-7 font-bold text-white transition hover:bg-[#33302a]">Join as a provider <ArrowRight className="h-5 w-5" /></a>
-        </div>
-      </section>
-
-      <section className="bg-[#f7f5f0] py-24">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 text-center">
-          <Send className="mb-7 h-9 w-9 text-[#229ed9]" />
-          <h2 className="text-4xl font-extrabold tracking-[-.04em] sm:text-5xl">Tankua is ready inside Telegram.</h2>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-[#655f56]">Explore destinations and continue your journey without installing another app.</p>
-          <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex h-14 items-center gap-3 bg-[#229ed9] px-7 font-bold text-white transition hover:bg-[#178bc2]">Open Telegram Mini App <ArrowRight className="h-5 w-5" /></a>
-        </div>
-      </section>
-
-      <footer className="bg-[#121410] py-14 text-white/60">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-5 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-12">
-          <div className="flex items-center gap-3 font-extrabold text-white"><Image src="/favicon.png" alt="" width={32} height={32} className="rounded-lg" />Tankua</div>
-          <div className="flex flex-wrap gap-x-7 gap-y-3 text-sm"><Link href="/tours">Explore</Link><Link href="/about">About</Link><Link href="/contact">Support</Link><a href={PROVIDER_URL}>Provider portal</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
-          <p className="text-sm">© {new Date().getFullYear()} Tankua</p>
-        </div>
-      </footer>
     </main>
   );
 }

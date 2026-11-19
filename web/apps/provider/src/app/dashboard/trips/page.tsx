@@ -16,7 +16,7 @@ import {
   Copy,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, formatCurrency, ConfirmDialog, InlineBanner } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, buttonVariants, cn, formatCurrency, ConfirmDialog, InlineBanner } from "@tankua/ui";
 import { getProviderTrips, updateTripStatus, deleteTrip, type TripDetails } from "@/lib/queries";
 import { canCloseOutTrip, needsCloseout } from "@/lib/trip-closeout";
 
@@ -219,14 +219,14 @@ export default function TripsPage() {
   return (
     <div className="min-h-screen">
       <Header
-        title="My Trips"
+        title="Trips"
         subtitle={
           loading
-            ? "Loading trips..."
+            ? undefined
             : `${filteredTrips.length} ${filteredTrips.length === 1 ? "trip" : "trips"}`
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -236,15 +236,13 @@ export default function TripsPage() {
             >
               Refresh
             </Button>
-            <Link href="/dashboard/trips/bulk">
-              <Button variant="outline" size="sm" leftIcon={<Copy className="h-4 w-4" />}>
-                Bulk Create
-              </Button>
+            <Link href="/dashboard/trips/bulk" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}>
+              <Copy aria-hidden="true" className="size-4" />
+              Bulk create
             </Link>
-            <Link href="/dashboard/trips/new">
-              <Button size="sm" leftIcon={<Plus className="h-4 w-4" />}>
-                Create Trip
-              </Button>
+            <Link href="/dashboard/trips/new" className={cn(buttonVariants({ size: "sm" }), "gap-2 shadow-none hover:shadow-none")}>
+              <Plus aria-hidden="true" className="size-4" />
+              Create trip
             </Link>
           </div>
         }
@@ -263,8 +261,9 @@ export default function TripsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              type="text"
-              placeholder="Search trips..."
+              type="search"
+              aria-label="Search trips"
+              placeholder="Search trips"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-11 pl-11 pr-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
@@ -285,27 +284,19 @@ export default function TripsPage() {
           </select>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Scheduled or Ongoing</p>
-            <p className="text-2xl font-bold mt-1">{stats.scheduledCount}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total Seats</p>
-            <p className="text-2xl font-bold mt-1">{stats.totalSeats}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Booked Seats</p>
-            <p className="text-2xl font-bold mt-1 text-primary">{stats.bookedSeats}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Occupancy Rate</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-600">
-              {stats.occupancy}%
-            </p>
-          </Card>
-        </div>
+        <dl aria-label="Trip summary" className="portal-metrics grid grid-cols-2 rounded-xl border border-border bg-card xl:grid-cols-4">
+          {[
+            ["Scheduled or ongoing", stats.scheduledCount],
+            ["Total seats", stats.totalSeats],
+            ["Booked seats", stats.bookedSeats],
+            ["Occupancy", `${stats.occupancy}%`],
+          ].map(([label, value]) => (
+            <div key={label} className="p-3.5 sm:p-4">
+              <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+              <dd className="mt-2 text-xl font-semibold tabular-nums tracking-tight">{loading && !trips.length ? "—" : value}</dd>
+            </div>
+          ))}
+        </dl>
 
         {/* Error / Empty / Loading states */}
         {error && (
@@ -362,7 +353,13 @@ export default function TripsPage() {
           </Card>
         )}
 
+        {loading && !trips.length ? (
+          <div role="status" className="rounded-xl border border-border bg-card px-4 py-7 text-sm text-muted-foreground sm:px-5">
+            Loading trips…
+          </div>
+        ) : null}
         {/* Trips Table */}
+        {filteredTrips.length > 0 ? (
         <Card>
           <CardContent className="p-0">
             {/* Mobile Card View */}
@@ -533,6 +530,7 @@ export default function TripsPage() {
             </div>
           </CardContent>
         </Card>
+        ) : null}
       </div>
 
       <ConfirmDialog

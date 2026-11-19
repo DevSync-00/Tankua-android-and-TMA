@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Lock, Eye, EyeOff, Building2, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
-import { Button, Card } from "@tankua/ui";
+import { ArrowRight, CircleCheck } from "lucide-react";
+import { Button, buttonVariants, cn } from "@tankua/ui";
+import { AuthBackLink, AuthError, AuthHeading, AuthPasswordField, AuthShell } from "@/components/auth-shell";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -111,189 +111,56 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (isValidToken === null) {
-    return (
-      <div className="auth-surface flex min-h-screen items-center justify-center">
-        <div className="text-stone-600">Loading...</div>
-      </div>
-    );
-  }
-
-  if (isValidToken === false) {
-    return (
-      <div className="auth-surface flex min-h-screen items-center justify-center p-6">
-        <Card className="bg-white p-8 max-w-md w-full">
-          <div className="text-center space-y-4">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
-            <h2 className="text-2xl font-bold text-stone-950">Invalid or Expired Link</h2>
-            <p className="text-muted-foreground">
-              This password reset link is invalid or has expired. Please request a new one.
-            </p>
-            <div className="space-y-2 pt-4">
-              <Link href="/forgot-password">
-                <Button className="w-full">Request New Reset Link</Button>
-              </Link>
-              <Link href="/login">
-                <Button variant="outline" className="w-full">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Login
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="auth-surface flex min-h-screen">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%23D4A017' fill-opacity='0.5'/%3E%3C/svg%3E")`,
-          backgroundSize: "60px 60px",
-        }} />
-
-        <div className="relative">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#FFB800] flex items-center justify-center shadow-lg overflow-hidden">
-              <Image src="/favicon.png" alt="Tankua" width={34} height={34} className="object-contain" priority />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-stone-950">Tankua</span>
-              <span className="block text-sm text-stone-500">Provider Portal</span>
-            </div>
-          </Link>
-        </div>
-
-        <div className="relative space-y-8">
-          <h1 className="text-4xl font-bold leading-tight text-stone-950">
-            Set New Password
-          </h1>
-          <p className="text-xl text-stone-600">
-            Choose a strong password to secure your provider account.
-          </p>
-        </div>
-
-        <div className="relative text-sm text-stone-400">
-          © 2024 Tankua. All rights reserved.
-        </div>
-      </div>
-
-      {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-lg mb-4 overflow-hidden">
-              <Image src="/favicon.png" alt="Tankua" width={48} height={48} className="object-contain" priority />
-            </div>
-            <h1 className="text-2xl font-bold text-stone-950">Provider Portal</h1>
-          </div>
-
-          <Card className="bg-white p-8">
-            {success ? (
-              <div className="text-center space-y-6">
-                <div className="flex flex-col items-center gap-4 p-6 bg-green-50 border border-green-200 rounded-xl">
-                  <CheckCircle className="h-12 w-12 text-green-600" />
-                  <div>
-                    <p className="text-green-800 font-semibold mb-2">Password Reset Successful!</p>
-                    <p className="text-sm text-green-700">
-                      Your password has been updated. Redirecting to login...
-                    </p>
-                  </div>
-                </div>
-                <Link href="/login">
-                  <Button className="w-full">
-                    Go to Login
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <>
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-stone-950">Reset Password</h2>
-                  <p className="text-muted-foreground mt-2">Enter your new password below</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {error && (
-                    <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600">
-                      <AlertCircle className="h-5 w-5 shrink-0" />
-                      <p className="text-sm">{error}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="w-full h-12 pl-12 pr-12 bg-muted/50 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Must be at least 8 characters long
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        className="w-full h-12 pl-12 pr-12 bg-muted/50 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
-                    <Building2 className="h-5 w-5 mr-2" />
-                    Reset Password
-                  </Button>
-
-                  <div className="text-center">
-                    <Link href="/login" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
-                      <ArrowLeft className="h-4 w-4" />
-                      Back to Login
-                    </Link>
-                  </div>
-                </form>
-              </>
-            )}
-          </Card>
-        </div>
-      </div>
-    </div>
+    <AuthShell footer={<AuthBackLink />}>
+      {isValidToken === null ? (
+        <p role="status" className="text-sm text-muted-foreground">Checking your reset link…</p>
+      ) : isValidToken === false ? (
+        <>
+          <AuthHeading title="Reset link expired">
+            Your reset link is invalid or has expired. Request a new one to choose a password.
+          </AuthHeading>
+          <Link href="/forgot-password" className={cn(buttonVariants(), "auth-submit")}>Request a new link <ArrowRight aria-hidden="true" size={18} /></Link>
+        </>
+      ) : success ? (
+        <>
+          <span className="auth-state-icon"><CircleCheck aria-hidden="true" size={24} /></span>
+          <AuthHeading title="Password updated">
+            You can now sign in with your new password.
+          </AuthHeading>
+          <Link href="/login" className={cn(buttonVariants(), "auth-submit")}>Sign in <ArrowRight aria-hidden="true" size={18} /></Link>
+        </>
+      ) : (
+        <>
+          <AuthHeading title="Set a new password">
+            Use at least eight characters to secure your provider account.
+          </AuthHeading>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            {error ? <AuthError>{error}</AuthError> : null}
+            <AuthPasswordField
+              id="new-password"
+              label="New password"
+              value={password}
+              onChange={setPassword}
+              visible={showPassword}
+              onToggle={() => setShowPassword((visible) => !visible)}
+              autoComplete="new-password"
+            />
+            <AuthPasswordField
+              id="confirm-password"
+              label="Confirm password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              visible={showConfirmPassword}
+              onToggle={() => setShowConfirmPassword((visible) => !visible)}
+              autoComplete="new-password"
+            />
+            <Button type="submit" className="auth-submit" isLoading={isLoading}>
+              Update password <ArrowRight aria-hidden="true" size={18} />
+            </Button>
+          </form>
+        </>
+      )}
+    </AuthShell>
   );
 }

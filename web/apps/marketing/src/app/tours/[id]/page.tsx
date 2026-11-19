@@ -1,323 +1,196 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { 
-  MapPin, 
-  Star, 
-  Calendar, 
-  Users, 
-  Clock,
-  ArrowLeft,
-  CheckCircle2,
-  Share2,
-} from "lucide-react";
-import { Button, Card, Badge, formatCurrency } from "@tankua/ui";
+import { useParams } from "next/navigation";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock3, MapPin, Share2, Star, UsersRound } from "lucide-react";
+import { formatCurrency } from "@tankua/ui";
 import { getTourById } from "@/lib/queries";
 import { getTelegramTripUrl } from "@/lib/telegram";
 
 export default function TourDetailPage() {
-  const params = useParams();
+  const { id } = useParams<{ id: string }>();
   const [tour, setTour] = useState<Awaited<ReturnType<typeof getTourById>>>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [shareStatus, setShareStatus] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
-    async function loadTour() {
-      if (!params.id || typeof params.id !== 'string') {
-        setError("Invalid tour ID");
-        setLoading(false);
-        return;
-      }
+    let ignore = false;
+    setLoading(true);
+    setImageFailed(false);
+    setShareStatus("");
+    setShareUrl("");
 
+    getTourById(id).then((result) => {
+      if (ignore) return;
+      setTour(result);
+      setLoading(false);
+    });
+
+    return () => { ignore = true; };
+  }, [id]);
+
+  async function shareTour() {
+    if (!tour) return;
+    const url = window.location.href;
+    setShareStatus("");
+
+    if (navigator.share) {
       try {
-        const data = await getTourById(params.id);
-        if (data) {
-          setTour(data);
-        } else {
-          setError("Tour not found");
-        }
-      } catch (err) {
-        console.error("Error loading tour:", err);
-        setError("Failed to load tour details");
-      } finally {
-        setLoading(false);
+        await navigator.share({ title: tour.name, url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
       }
     }
-    loadTour();
-  }, [params.id]);
 
-  if (loading) {
-    return (
-      <main className="min-h-screen">
-        <div className="pt-32 pb-20 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ffb800] mx-auto"></div>
-          <p className="mt-4 text-[#181714]/60">Loading tour details...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (error || !tour) {
-    return (
-      <main className="min-h-screen">
-        <div className="pt-32 pb-20 text-center">
-          <h1 className="text-3xl font-bold text-[#181714] mb-4">Tour Not Found</h1>
-          <p className="text-[#181714]/60 mb-8">{error || "The tour you're looking for doesn't exist."}</p>
-          <Link href="/tours">
-            <Button>Browse All Tours</Button>
-          </Link>
-        </div>
-      </main>
-    );
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareStatus("Tour link copied.");
+    } catch {
+      setShareUrl(url);
+      setShareStatus("Select the link below to copy it.");
+    }
   }
 
   return (
-    <main className="min-h-screen">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffb800] to-[#ffc83d] flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">T</span>
-              </div>
-              <span className="text-xl font-bold text-[#181714]">Tankua</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <Link href="/tours">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Tours
-                </Button>
-              </Link>
-              <Link href="/download">
-                <Button size="sm">Download App</Button>
-              </Link>
-            </div>
+    <main className="field-page">
+      <div className="field-wrap py-7 sm:py-10">
+        <Link href="/tours" className="field-link"><ArrowLeft size={17} aria-hidden="true" />All tours</Link>
+        {loading ? (
+          <div className="field-empty mt-5" role="status">Loading tour details…</div>
+        ) : !tour ? (
+          <div className="field-empty mt-5">
+            <h1 className="field-display text-[var(--field-ink)]">Tour unavailable</h1>
+            <p>This tour could not be loaded. You can return to the directory to find another departure.</p>
+            <Link href="/tours" className="field-button">Browse tours<ArrowRight size={17} aria-hidden="true" /></Link>
           </div>
-        </div>
-      </nav>
-
-      {/* Hero Image */}
-      <section className="pt-20 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden mb-8">
-            <Image
-              src={tour.image}
-              alt={tour.name}
-              fill
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">{tour.category}</Badge>
-                {tour.interest && <Badge variant="secondary">Collecting interest</Badge>}
-                {tour.providerReviews && (
-                  <div className="flex items-center gap-1 text-white">
-                    <Star aria-hidden="true" className="h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                    <span className="font-semibold">{tour.providerReviews.rating.toFixed(1)}</span>
-                    <span className="text-sm opacity-80">({tour.providerReviews.count} provider {tour.providerReviews.count === 1 ? "review" : "reviews"})</span>
-                  </div>
+        ) : (
+          <>
+            <div className="mt-5 grid overflow-hidden rounded-xl border border-[var(--field-line)] bg-[#fffefa] md:grid-cols-[6fr_5fr]">
+              <div className="field-card-image min-h-[15rem] md:aspect-auto">
+                {imageFailed ? <MapPin size={34} aria-hidden="true" /> : (
+                  <Image
+                    src={tour.image}
+                    alt=""
+                    fill
+                    priority
+                    sizes="(max-width: 767px) 100vw, 49vw"
+                    unoptimized={tour.image.startsWith("http")}
+                    onError={() => setImageFailed(true)}
+                  />
                 )}
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{tour.name}</h1>
-              <div className="flex items-center gap-4 text-white/90">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-5 w-5" />
-                  <span>{tour.location}</span>
-                </div>
-                {tour.provider && (
-                  <div className="flex items-center gap-1">
-                    <span>by</span>
-                    <span className="font-semibold">{tour.provider.name}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Content */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold text-[#181714] mb-4">About This Tour</h2>
-                <p className="text-[#181714]/70 leading-relaxed whitespace-pre-line">
-                  {tour.description || "Experience an amazing journey through Ethiopia's beautiful destinations. This tour offers a perfect blend of adventure, culture, and natural beauty."}
+              <section className="px-6 py-8 sm:px-9 sm:py-11" aria-labelledby="tour-heading">
+                <h1 id="tour-heading" className="field-display field-display--detail">{tour.name}</h1>
+                <p className="field-card-meta mt-4">
+                  <span><MapPin size={16} aria-hidden="true" />{tour.location}</span>
+                  {tour.provider && <span>{tour.provider.name}</span>}
                 </p>
-              </Card>
-
-              {tour.inclusions.length > 0 && (
-                <Card className="p-6">
-                  <h2 className="text-2xl font-bold text-[#181714] mb-4">What's Included</h2>
-                  <ul className="space-y-3">
-                    {tour.inclusions.map((item, index) => (
-                      <li key={index} className="flex items-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-[#ffb800] flex-shrink-0" />
-                        <span className="text-[#181714]/70">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              )}
-
-              {tour.provider && (
-                <Card className="p-6">
-                  <h2 className="text-2xl font-bold text-[#181714] mb-4">About the Provider</h2>
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-xl bg-[#ffb800]/10 flex items-center justify-center text-[#ffb800] text-2xl font-bold">
-                      {tour.provider.name?.[0] || "P"}
+                {tour.providerReviews && (
+                  <p className="field-card-rating mt-3">
+                    <Star size={16} aria-hidden="true" />
+                    <strong>{tour.providerReviews.rating.toFixed(1)}</strong>
+                    <span>({tour.providerReviews.count} provider {tour.providerReviews.count === 1 ? "review" : "reviews"})</span>
+                  </p>
+                )}
+                <dl className="mt-6 space-y-3 border-t border-[var(--field-line)] pt-5 text-sm">
+                  {tour.departureDate && (
+                    <div className="flex items-baseline gap-2">
+                      <CalendarDays size={16} aria-hidden="true" className="shrink-0 self-center" />
+                      <dt>Departure</dt>
+                      <dd className="ml-auto text-right font-semibold">
+                        <time dateTime={tour.departureDate}>
+                          {new Date(tour.departureDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </time>
+                      </dd>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-[#181714] mb-1">{tour.provider.name}</h3>
-                      {tour.provider.description && (
-                        <p className="text-[#181714]/70 text-sm">{tour.provider.description}</p>
-                      )}
+                  )}
+                  {tour.durationMinutes !== null && (
+                    <div className="flex items-baseline gap-2">
+                      <Clock3 size={16} aria-hidden="true" className="shrink-0 self-center" />
+                      <dt>Duration</dt>
+                      <dd className="ml-auto text-right font-semibold">{tour.durationMinutes} minutes</dd>
                     </div>
-                  </div>
-                </Card>
-              )}
+                  )}
+                  {tour.tripType && (
+                    <div className="flex items-baseline gap-2">
+                      <UsersRound size={16} aria-hidden="true" className="shrink-0 self-center" />
+                      <dt>Trip type</dt>
+                      <dd className="ml-auto text-right font-semibold capitalize">{tour.tripType.replaceAll("_", " ")}</dd>
+                    </div>
+                  )}
+                </dl>
+              </section>
             </div>
 
-            {/* Booking Sidebar */}
-            <div className="lg:col-span-1">
-              <Card className="p-6 sticky top-24">
-                {tour.price !== null ? (
-                  <div className="mb-6">
-                    <div className="text-3xl font-bold text-[#ffb800] mb-1">{formatCurrency(tour.price, tour.currency)}</div>
-                    <div className="text-sm text-[#181714]/60">per person</div>
+            <div className="grid gap-9 py-9 sm:py-12 lg:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)] lg:gap-14">
+              <aside className="rounded-xl border border-[var(--field-line)] bg-[var(--field-wash)] p-6 sm:p-7 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:self-start" aria-labelledby="booking-heading">
+                <h2 id="booking-heading" className="text-lg font-semibold">Booking</h2>
+                <p className="mt-3 text-sm text-[var(--field-muted)]">
+                  {tour.price !== null ? <><strong className="text-xl tabular-nums text-[var(--field-ink)]">{formatCurrency(tour.price, tour.currency)}</strong> per person</> : "Price unavailable"}
+                </p>
+                {tour.interest ? (
+                  <div className="mt-4">
+                    <p className="field-card-interest">{tour.interest.count} of {tour.interest.minimum} travelers interested</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--field-muted)]">Express interest for free. You can reserve a seat once booking opens.</p>
+                    <a href={getTelegramTripUrl(tour.id)} className="field-button mt-4">Express interest in Telegram<ArrowRight size={17} aria-hidden="true" /></a>
+                  </div>
+                ) : tour.bookingOpen ? (
+                  <div className="mt-4">
+                    <Link href="/download" className="field-button">{tour.paymentOpen ? "Book in the app" : "Reserve in the app"}<ArrowRight size={17} aria-hidden="true" /></Link>
+                    {!tour.paymentOpen && <p className="mt-3 text-sm leading-6 text-[var(--field-muted)]">Reserve your seat now and pay once the trip is active.</p>}
                   </div>
                 ) : (
-                  <p className="mb-6 text-sm text-[#181714]/60">Price unavailable</p>
+                  <p className="mt-4 text-sm text-[var(--field-muted)]">This trip is unavailable for booking.</p>
                 )}
-
-                <div className="space-y-4 mb-6">
-                  {tour.departureDate && (
-                    <div className="flex items-center gap-3 text-[#181714]/70">
-                      <Calendar className="h-5 w-5 text-[#ffb800]" />
-                      <div>
-                        <div className="text-sm font-medium">Departure Date</div>
-                        <div className="text-sm">
-                          {new Date(tour.departureDate).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {tour.durationMinutes !== null && (
-                    <div className="flex items-center gap-3 text-[#181714]/70">
-                      <Clock className="h-5 w-5 text-[#ffb800]" />
-                      <div>
-                        <div className="text-sm font-medium">Duration</div>
-                        <div className="text-sm">{tour.durationMinutes} minutes</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {tour.tripType && (
-                    <div className="flex items-center gap-3 text-[#181714]/70">
-                      <Users className="h-5 w-5 text-[#ffb800]" />
-                      <div>
-                        <div className="text-sm font-medium">Trip type</div>
-                        <div className="text-sm capitalize">{tour.tripType}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  {tour.interest ? (
-                    <>
-                      <p className="font-semibold text-[#181714]">
-                        {tour.interest.count} of {tour.interest.minimum} travelers interested
-                      </p>
-                      <p className="text-sm text-[#181714]/70">
-                        Express interest for free. You can reserve a seat once booking opens.
-                      </p>
-                      <a
-                        href={getTelegramTripUrl(tour.id)}
-                        className="flex min-h-12 items-center justify-center rounded-xl bg-[#ffb800] px-4 text-sm font-semibold text-[#181714] hover:bg-[#ffc83d]"
-                      >
-                        Express interest in Telegram
-                      </a>
-                    </>
-                  ) : tour.bookingOpen ? (
-                    <Link href="/download">
-                      <Button className="w-full bg-[#ffb800] hover:bg-[#d99c00]" size="lg">
-                        {tour.paymentOpen ? "Book Now" : "Reserve a Seat"}
-                      </Button>
-                    </Link>
-                  ) : (
-                    <p className="text-sm font-medium text-[#181714]/70">This trip is unavailable for booking.</p>
-                  )}
-                  <Button variant="outline" className="w-full" size="lg">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share Tour
-                  </Button>
-                </div>
-
-                {tour.bookingOpen && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <p className="text-xs text-[#181714]/60 text-center">
-                      {tour.paymentOpen
-                        ? "Download the Tankua app to book this tour."
-                        : "Reserve a seat in the Tankua app and pay once the trip is active."}
-                    </p>
-                  </div>
+                <button type="button" className="field-link mt-2" onClick={shareTour}><Share2 size={16} aria-hidden="true" />Share this tour</button>
+                <p role="status" className="text-sm text-[var(--field-muted)]">{shareStatus}</p>
+                {shareUrl && (
+                  <input
+                    aria-label="Tour link"
+                    className="mt-2 w-full rounded border border-[var(--field-line)] bg-[#fffefa] p-2 text-base"
+                    value={shareUrl}
+                    onFocus={(event) => event.currentTarget.select()}
+                    readOnly
+                  />
                 )}
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
+              </aside>
 
-      {/* CTA */}
-      {tour.bookingOpen && (
-        <section className="py-20 bg-[#181714]">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Book This Tour?</h2>
-            <p className="text-lg text-white/70 mb-8">
-              {tour.paymentOpen
-                ? "Download the Tankua app to book this tour and get your digital ticket."
-                : "Download the Tankua app to reserve your seat."}
-            </p>
-            <Link href="/download">
-              <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
-                Download the App
-              </Button>
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* Footer */}
-      <footer className="bg-[#181714] border-t border-white/10 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#ffb800] flex items-center justify-center">
-                <span className="text-white font-bold">T</span>
+              <div className="space-y-8 lg:col-start-1 lg:row-start-1">
+                {tour.description && (
+                  <section>
+                    <h2 className="field-display">About the tour</h2>
+                    <p className="mt-4 max-w-[70ch] whitespace-pre-line leading-7 text-[var(--field-muted)]">{tour.description}</p>
+                  </section>
+                )}
+                {tour.inclusions.length > 0 && (
+                  <section className="border-t border-[var(--field-line)] pt-7">
+                    <h2 className="field-display">What’s included</h2>
+                    <ul className="mt-4 space-y-3">
+                      {tour.inclusions.map((item, index) => (
+                        <li key={index} className="flex items-start gap-2.5">
+                          <Check size={17} className="mt-1 shrink-0" aria-hidden="true" />{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+                {tour.provider && (
+                  <section className="border-t border-[var(--field-line)] pt-7">
+                    <h2 className="field-display">Your tour operator</h2>
+                    <p className="mt-4 font-semibold">{tour.provider.name}</p>
+                    {tour.provider.description && <p className="mt-2 max-w-[70ch] leading-7 text-[var(--field-muted)]">{tour.provider.description}</p>}
+                  </section>
+                )}
               </div>
-              <span className="text-white font-bold">Tankua</span>
             </div>
-            <p className="text-white/50 text-sm">
-              © {new Date().getFullYear()} Tankua. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+          </>
+        )}
+      </div>
     </main>
   );
 }

@@ -34,9 +34,9 @@ export default function OutingPage({ params }: Props) {
   if (!plan) notFound();
 
   return (
-    <main className="min-h-screen bg-[#fbfaf5] px-5 pb-16 pt-28 text-[#20251d] sm:px-8 lg:pb-24">
+    <main className="field-page px-5 pb-16 pt-8 sm:px-8 sm:pt-12 lg:pb-24">
       <div className="mx-auto max-w-6xl">
-        <Link href="/weekend" className="inline-flex items-center gap-2 text-sm font-semibold text-[#4a5a48] hover:underline">
+        <Link href="/weekend" className="field-link">
           <ArrowLeft size={17} aria-hidden="true" /> Weekend planner
         </Link>
         <header className="mb-7 mt-5 grid overflow-hidden rounded-2xl border border-[#dfdbce] bg-white lg:grid-cols-2">
@@ -46,7 +46,7 @@ export default function OutingPage({ params }: Props) {
               <span className="inline-flex items-center gap-1.5"><Clock3 size={16} aria-hidden="true" />{durationLabels[plan.duration]}</span>
               <span>{moodLabels[plan.mood]}</span>
             </p>
-            <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{plan.title}</h1>
+            <h1 className="field-display field-display--detail mt-4">{plan.title}</h1>
             <p className="mt-4 text-base leading-7 text-[#444b42] sm:text-lg">{plan.description}</p>
             <div className="mt-6">
               <SharePlanActions path={`/weekend/outings/${plan.slug}`} title={plan.title} />

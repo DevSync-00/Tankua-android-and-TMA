@@ -1,260 +1,74 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Menu, Send, Smartphone, X } from "lucide-react";
-import { AppDownloadButton } from "@/components/AppDownloadButton";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
-type NavItem = { label: string; href: string };
+const links = [
+  { href: "/tours", label: "Tours" },
+  { href: "/destinations", label: "Destinations" },
+  { href: "/weekend", label: "Weekend planner" },
+  { href: "/guides", label: "Travel guides" },
+];
 
-function navLinks(): NavItem[] {
-  return [
-    { label: "Tours", href: "/tours" },
-    { label: "Destinations", href: "/destinations" },
-    { label: "Weekend Planner", href: "/weekend" },
-    { label: "Travel Guides", href: "/guides" },
-    { label: "For Providers", href: "https://provider.tankua.co" },
-    { label: "About", href: "/about" },
-    { label: "Contact", href: "/contact" },
-  ];
-}
-
-function isExternalHref(href: string) {
-  return href.startsWith("http://") || href.startsWith("https://");
-}
-
-function navLinkActive(pathname: string, href: string) {
-  if (isExternalHref(href)) return false;
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function NavAnchor({
-  href,
-  children,
-  className,
-  onClick,
-}: {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-}) {
-  if (isExternalHref(href)) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={className} onClick={onClick}>
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link href={href} className={className} onClick={onClick}>
-      {children}
-    </Link>
-  );
-}
-
-function BoatLogo({ size = 34, className = "" }: { size?: number; className?: string }) {
-  return (
-    <Image src="/favicon.png" alt="Tankua" width={size} height={size} className={`rounded-lg object-contain ${className}`} priority />
-  );
-}
+// These pages already reserve space for the original fixed site header.
+const fixedHeaderRoutes = new Set(["/about", "/contact", "/download", "/faq", "/how-it-works", "/login", "/privacy", "/terms"]);
 
 export function MarketingNavbar() {
   const pathname = usePathname();
-  const hideNav = pathname.startsWith("/admin-portal") || pathname.startsWith("/provider-portal");
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [langLabel, setLangLabel] = useState("EN");
-
-  const isHome = pathname === "/";
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const menuOpen = openPath === pathname;
+  const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!isHome) return;
-    const onScroll = () => setIsScrolled(window.scrollY > 80);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isHome]);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (mobileMenuOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => {
-      document.body.style.overflow = "";
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpenPath(null);
+      menuButton.current?.focus();
     };
-  }, [mobileMenuOpen]);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
 
-  if (hideNav) return null;
-
-  const transparent = isHome && !isScrolled;
-  const solid = !transparent;
+  if (pathname.startsWith("/admin-portal") || pathname.startsWith("/provider-portal")) return null;
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        solid
-          ? "bg-white/95 backdrop-blur-md border-b border-black/10 shadow-sm"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        <div className="flex h-20 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-            <motion.div whileHover={{ rotate: [-6, 6, 0], transition: { duration: 0.5, ease: "easeInOut" } }}>
-              <BoatLogo size={34} />
-            </motion.div>
-            <span
-              className={`font-sans text-xl font-extrabold tracking-[-.03em] transition-colors ${
-                solid ? "text-brand-ink" : "text-white"
-              }`}
-            >
-              Tankua
-            </span>
-          </Link>
-
-          <div className="hidden lg:flex items-center gap-4 xl:gap-7">
-            {navLinks().map((l) => {
-              const active = navLinkActive(pathname, l.href);
-              const cls = `text-[13px] font-medium transition-colors relative group ${
-                active
-                  ? solid
-                    ? "text-brand-gold"
-                    : "text-brand-gold-light"
-                  : solid
-                    ? "text-brand-muted hover:text-brand-ink"
-                    : "text-white/80 hover:text-white"
-              }`;
-              return (
-                <NavAnchor key={l.href} href={l.href} className={cls}>
-                  {l.label}
-                  <span
-                    className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-[1.5px] rounded-full transition-all duration-200 bg-brand-gold ${
-                      active ? "w-full opacity-100" : "w-0 opacity-0 group-hover:w-full group-hover:opacity-100"
-                    }`}
-                  />
-                </NavAnchor>
-              );
-            })}
+    <header className={`tankua-header${fixedHeaderRoutes.has(pathname) ? " tankua-header-fixed" : ""}`}>
+      <div className="tankua-wrap tankua-header-inner">
+        <Link href="/" className="tankua-brand" aria-label="Tankua home" onClick={() => setOpenPath(null)}>
+          <Image src="/favicon.png" alt="" width={35} height={35} priority />
+          <span>Tankua</span>
+        </Link>
+        <button
+          ref={menuButton}
+          type="button"
+          className="tankua-menu-button"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-controls="tankua-navigation"
+          aria-expanded={menuOpen}
+          onClick={() => setOpenPath(menuOpen ? null : pathname)}
+        >
+          {menuOpen ? <X size={23} aria-hidden="true" /> : <Menu size={23} aria-hidden="true" />}
+        </button>
+        <nav id="tankua-navigation" className={`tankua-navigation${menuOpen ? " is-open" : ""}`} aria-label="Main navigation">
+          <div className="tankua-nav-links">
+            {links.map(({ href, label }) => (
+              <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined} onClick={() => setOpenPath(null)}>{label}</Link>
+            ))}
           </div>
-
-          <div className="hidden lg:flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setLangLabel((p) => (p === "EN" ? "አማ" : "EN"))}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors border ${
-                solid ? "text-brand-muted border-black/10 hover:bg-brand-sand" : "text-white/70 border-white/20 hover:text-white"
-              }`}
-              aria-label="Switch language"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {langLabel}
-            </button>
-            <a
-              href={TELEGRAM_MINI_APP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-[13px] font-medium transition-all ${
-                solid
-                  ? "bg-brand-gold/15 text-brand-ink border border-brand-gold/35 hover:bg-brand-gold/25"
-                  : "bg-white/12 text-white border border-white/22 hover:bg-white/18"
-              }`}
-            >
-              <Send className="h-4 w-4 shrink-0 opacity-90" />
-              Open in Telegram
+          <div className="tankua-nav-actions">
+            <Link href="/providers" aria-current={pathname === "/providers" ? "page" : undefined} onClick={() => setOpenPath(null)}>For providers</Link>
+            <Link href="/login" aria-current={pathname === "/login" ? "page" : undefined} onClick={() => setOpenPath(null)}>Sign in</Link>
+            <a href={TELEGRAM_MINI_APP_URL} target="_blank" rel="noopener noreferrer" className="tankua-button tankua-telegram" onClick={() => setOpenPath(null)}>
+              Open in Telegram <ArrowUpRight size={16} aria-hidden="true" />
             </a>
-            <Link href="/login">
-              <button
-                type="button"
-                className={`text-[13px] font-medium transition-colors ${solid ? "text-brand-ink hover:text-brand-gold" : "text-white/80 hover:text-white"}`}
-              >
-                Sign in
-              </button>
-            </Link>
           </div>
-
-          <button
-            type="button"
-            className={`lg:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${solid ? "text-brand-ink" : "text-white"}`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
+        </nav>
       </div>
-
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="lg:hidden fixed inset-0 overflow-y-auto bg-[#151713] z-50 flex flex-col px-6 py-8"
-          >
-            <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-2">
-                <BoatLogo size={34} />
-                <span className="font-sans font-extrabold text-lg text-white">Tankua</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 text-white/60 hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <nav className="space-y-1 flex-1">
-              {navLinks().map((l) => (
-                <NavAnchor
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block py-3.5 font-sans font-bold text-xl border-b border-white/5 ${
-                    navLinkActive(pathname, l.href) ? "text-brand-gold" : "text-white/80 hover:text-brand-gold"
-                  }`}
-                >
-                  {l.label}
-                </NavAnchor>
-              ))}
-            </nav>
-            <div className="pt-8 flex flex-col gap-3">
-              <a
-                href={TELEGRAM_MINI_APP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3 rounded-[10px] bg-brand-gold text-brand-ink font-medium text-[15px] inline-flex items-center justify-center gap-2 shadow-btn"
-              >
-                <Send className="h-5 w-5" />
-                Open in Telegram
-              </a>
-              <AppDownloadButton
-                className="w-full py-3 rounded-[10px] border border-white/15 text-white font-medium text-[15px] inline-flex items-center justify-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Smartphone className="h-5 w-5" />
-                Download the app
-              </AppDownloadButton>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <button type="button" className="w-full py-3 rounded-[10px] bg-brand-gold text-brand-ink font-medium text-[15px]">
-                  Sign in
-                </button>
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+    </header>
   );
 }

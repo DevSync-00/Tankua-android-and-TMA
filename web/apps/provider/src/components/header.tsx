@@ -90,22 +90,22 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white">
-      <div className="mx-auto grid min-h-20 max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto_auto] lg:px-8">
+    <header className="portal-header sticky top-0 z-40 border-b border-border">
+      <div className="mx-auto grid min-h-[4.75rem] max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto_auto] lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <ProviderNavigationButton />
           <div className="min-w-0">
             {parentSection ? (
               <Link
                 href={parentSection.href}
-                className="mb-0.5 inline-flex items-center gap-0.5 rounded text-xs font-medium text-stone-600 hover:text-stone-950 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+                className="mb-0.5 inline-flex items-center gap-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
               >
                 <ChevronLeft aria-hidden="true" className="size-3.5" />
                 {parentSection.label}
               </Link>
             ) : null}
-            <h1 className="text-lg font-semibold leading-tight tracking-tight text-stone-950 sm:text-xl">{title}</h1>
-            {subtitle ? <p className="mt-0.5 text-xs leading-snug text-stone-600 sm:text-sm">{subtitle}</p> : null}
+            <h1 className="portal-page-title">{title}</h1>
+            {subtitle ? <p className="mt-0.5 text-xs leading-snug text-muted-foreground sm:text-sm">{subtitle}</p> : null}
           </div>
         </div>
 
@@ -135,46 +135,46 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
                 if (!showNotifications && !notificationsLoading) void loadNotifications();
                 setShowNotifications(!showNotifications);
               }}
-              className="relative grid size-10 place-items-center rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+              className="relative grid size-10 place-items-center rounded-lg border border-border bg-card text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
               aria-expanded={showNotifications}
               aria-controls={panelId}
             >
               <Bell aria-hidden="true" className="size-4" />
-              {unreadCount > 0 ? <span className="absolute right-2 top-2 size-2 rounded-full bg-amber-600 ring-2 ring-white" /> : null}
+              {unreadCount > 0 ? <span className="absolute right-2 top-2 size-2 rounded-full bg-primary ring-2 ring-card" /> : null}
             </button>
 
             <section
               id={panelId}
               aria-label="Notifications"
               hidden={!showNotifications}
-              className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl"
+              className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-card shadow-lg"
             >
-              <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
-                <h2 className="text-sm font-semibold text-stone-950">Notifications</h2>
-                {unreadCount > 0 ? <span className="text-xs font-medium text-stone-600">{unreadCount} unread</span> : null}
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+                {unreadCount > 0 ? <span className="text-xs font-medium text-muted-foreground">{unreadCount} unread</span> : null}
               </div>
               <div className="max-h-80 overflow-y-auto overscroll-contain">
                 {notifications.length > 0 ? (
-                  <ul className="divide-y divide-stone-100">
+                  <ul className="divide-y divide-border">
                     {notifications.map((notification) => (
                       <li key={notification.id}>
                         <button
                           type="button"
                           onClick={() => handleNotificationClick(notification)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-600 ${notification.is_read ? "" : "bg-amber-50"}`}
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${notification.is_read ? "" : "bg-accent"}`}
                         >
                           <span
                             aria-hidden="true"
-                            className={`mt-1.5 size-2 shrink-0 rounded-full ${notification.is_read ? "bg-transparent" : "bg-amber-600"}`}
+                            className={`mt-1.5 size-2 shrink-0 rounded-full ${notification.is_read ? "bg-transparent" : "bg-primary"}`}
                           />
                           <span className="min-w-0">
-                            <span className="block break-words text-sm font-medium text-stone-950">
+                            <span className="block break-words text-sm font-medium text-foreground">
                               {!notification.is_read ? <span className="sr-only">Unread </span> : null}
                               {notification.title}
                             </span>
-                            <span className="mt-0.5 block break-words text-sm text-stone-600">{notification.message}</span>
-                            <span className="mt-1 block text-xs text-stone-600">
+                            <span className="mt-0.5 block break-words text-sm text-muted-foreground">{notification.message}</span>
+                            <span className="mt-1 block text-xs text-muted-foreground">
                               {formatNotificationTime(notification.created_at)}
                             </span>
                           </span>
@@ -184,18 +184,18 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
                   </ul>
                 ) : null}
                 {notificationError ? (
-                  <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-stone-700">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-muted-foreground">
                     <p>Couldn’t load notifications.</p>
                     <button
                       type="button"
                       onClick={loadNotifications}
-                      className="rounded font-semibold text-stone-950 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+                      className="rounded font-semibold text-foreground underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                     >
                       Retry
                     </button>
                   </div>
                 ) : notifications.length === 0 ? (
-                  <p className="px-4 py-4 text-sm text-stone-600">
+                  <p className="px-4 py-4 text-sm text-muted-foreground">
                     {notificationsLoading ? "Loading notifications…" : "No notifications yet"}
                   </p>
                 ) : null}
@@ -203,11 +203,11 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
             </section>
           </div>
 
-          <div className="hidden min-w-0 items-center gap-2 border-l border-stone-200 pl-3 xl:flex">
+          <div className="hidden min-w-0 items-center gap-2 border-l border-border pl-3 xl:flex">
             <Avatar name={currentUser.name} size="sm" />
             <div className="min-w-0">
-              <p className="max-w-28 truncate text-sm font-medium text-stone-900" title={currentUser.name}>{currentUser.name}</p>
-              {currentUser.role ? <p className="text-xs capitalize text-stone-600">{currentUser.role}</p> : null}
+              <p className="max-w-28 truncate text-sm font-medium text-foreground" title={currentUser.name}>{currentUser.name}</p>
+              {currentUser.role ? <p className="text-xs capitalize text-muted-foreground">{currentUser.role}</p> : null}
             </div>
           </div>
         </div>

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "@tankua/ui/styles.css";
 import "./globals.css";
 
-const inter = Inter({ 
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../../../../packages/ui/src/fonts/Inter-Latin.woff2",
+  weight: "100 900",
   variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -24,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} provider-app font-sans antialiased bg-background`}>
+      <body className={`${inter.variable} provider-app bg-background antialiased`}>
         {children}
       </body>
     </html>

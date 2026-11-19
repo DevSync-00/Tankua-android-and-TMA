@@ -42,52 +42,50 @@ export default function GuidePage({ params }: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f5f0] text-[#181714]">
+    <main className="field-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
       <article>
-        <header className="px-5 pb-12 pt-32 sm:px-8 lg:px-12 lg:pb-16">
-          <div className="mx-auto max-w-4xl">
-            <Link href="/guides" className="mb-10 inline-flex items-center gap-2 text-sm font-bold text-[#181714]/65 hover:text-[#181714]"><ArrowLeft className="h-4 w-4" />All travel guides</Link>
-            <p className="text-xs font-bold uppercase tracking-[.2em] text-[#9a6900]">{guide.category}</p>
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-[-.045em] sm:text-5xl lg:text-6xl">{guide.title}</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-[#181714]/68 sm:text-xl">{guide.description}</p>
-            <div className="mt-7 flex flex-wrap gap-5 border-t border-black/10 pt-6 text-sm text-[#181714]/55">
-              <span>By Tankua Travel Team</span><span className="flex items-center gap-2"><Clock className="h-4 w-4" />{guide.readingMinutes} min read</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" />{guide.location}</span><time dateTime={guide.updatedAt}>Updated {new Date(`${guide.updatedAt}T00:00:00Z`).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>
+        <header className="field-wrap pb-10 pt-8 sm:pt-12 lg:pb-14">
+          <div className="max-w-4xl">
+            <Link href="/guides" className="field-link mb-4"><ArrowLeft size={17} aria-hidden="true" />All travel guides</Link>
+            <h1 className="field-display field-display--detail">{guide.title}</h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-[var(--field-muted)] sm:text-xl">{guide.description}</p>
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 border-t border-[var(--field-line)] pt-5 text-sm text-[var(--field-muted)]">
+              <span>By Tankua Travel Team</span><span className="flex items-center gap-2"><Clock size={16} aria-hidden="true" />{guide.readingMinutes} min read</span><span className="flex items-center gap-2"><MapPin size={16} aria-hidden="true" />{guide.location}</span><time dateTime={guide.updatedAt}>Updated {new Date(`${guide.updatedAt}T00:00:00Z`).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>
             </div>
           </div>
         </header>
 
-        <div className="mx-auto max-w-[1160px] px-5 sm:px-8"><div className="relative aspect-[16/8] overflow-hidden bg-[#ded8ca]"><Image src={guide.image} alt={guide.imageAlt} fill priority className="object-cover" sizes="(max-width: 1160px) 100vw, 1160px" /></div></div>
+        <div className="field-wrap"><div className="relative aspect-[9/7] overflow-hidden bg-[var(--field-wash)] sm:aspect-[2/1]"><Image src={guide.image} alt={guide.imageAlt} fill priority className="object-cover" sizes="(max-width: 1280px) 100vw, 1280px" /></div></div>
 
-        <div className="mx-auto grid max-w-[1160px] gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,760px)_260px] lg:py-20">
-          <div className="text-[17px] leading-8 text-[#312f2a]">
-            <p className="text-xl font-medium leading-9 text-[#181714]">{guide.intro}</p>
+        <div className="field-wrap grid gap-12 py-10 sm:py-14 lg:grid-cols-[minmax(0,760px)_minmax(14rem,1fr)] lg:gap-20 lg:py-20">
+          <div className="max-w-[72ch] text-[17px] leading-8">
+            <p className="text-xl font-medium leading-9">{guide.intro}</p>
             {guide.sections.map((section) => (
               <section key={section.heading} className="mt-12">
-                <h2 className="text-3xl font-extrabold leading-tight tracking-[-.035em] text-[#181714]">{section.heading}</h2>
+                <h2 className="field-display">{section.heading}</h2>
                 {section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-5">{paragraph}</p>)}
-                {section.bullets && <ul className="mt-6 space-y-3 border-l-4 border-[#ffb800] bg-white p-6 pl-8">{section.bullets.map((bullet) => <li key={bullet} className="list-disc pl-1">{bullet}</li>)}</ul>}
+                {section.bullets && <ul className="mt-6 space-y-3 border border-[var(--field-line)] bg-[var(--field-wash)] p-6 pl-8">{section.bullets.map((bullet) => <li key={bullet} className="list-disc pl-1">{bullet}</li>)}</ul>}
               </section>
             ))}
             {guide.sources && (
-              <section className="mt-14 border-t border-black/15 pt-9" aria-labelledby="official-sources">
-                <h2 id="official-sources" className="text-2xl font-extrabold tracking-[-.025em] text-[#181714]">Official sources checked</h2>
-                <p className="mt-3 text-base leading-7 text-[#181714]/65">Entry, health, and security information can change. These sources were checked on {new Date(`${guide.updatedAt}T00:00:00Z`).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.</p>
+              <section className="mt-14 border-t border-[var(--field-line)] pt-9" aria-labelledby="official-sources">
+                <h2 id="official-sources" className="field-display">Official sources checked</h2>
+                <p className="mt-3 text-base leading-7 text-[var(--field-muted)]">Entry, health, and security information can change. These sources were checked on {new Date(`${guide.updatedAt}T00:00:00Z`).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.</p>
                 <ul className="mt-5 space-y-3 text-base">
                   {guide.sources.map((source) => (
                     <li key={source.url}>
-                      <a href={source.url} target="_blank" rel="noopener noreferrer" className="font-bold text-[#805500] underline decoration-[#ffb800] decoration-2 underline-offset-4 hover:text-[#181714]">{source.label}</a>
+                      <a href={source.url} target="_blank" rel="noopener noreferrer" className="field-link">{source.label}</a>
                     </li>
                   ))}
                 </ul>
               </section>
             )}
           </div>
-          <aside className="h-fit border-t-4 border-[#ffb800] bg-[#1c2119] p-7 text-white lg:sticky lg:top-28">
-            <p className="text-xs font-bold uppercase tracking-[.18em] text-[#ffc83d]">Continue planning</p>
-            <h2 className="mt-4 text-2xl font-extrabold leading-tight">Find a trip for {guide.location}</h2>
-            <p className="mt-4 text-sm leading-6 text-white/65">Compare options from local providers and review the itinerary before booking.</p>
-            <Link href={`/tours?q=${encodeURIComponent(guide.relatedTourQuery)}`} className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#ffb800] px-5 font-bold text-[#181714]">Explore related tours <ArrowRight className="h-4 w-4" /></Link>
+          <aside className="h-fit border border-[var(--field-line)] bg-[var(--field-wash)] p-6 lg:sticky lg:top-24">
+            <h2 className="text-xl font-semibold leading-tight">Tours in {guide.location}</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--field-muted)]">Compare options from local providers and review the itinerary before booking.</p>
+            <Link href={`/tours?q=${encodeURIComponent(guide.relatedTourQuery)}`} className="field-button mt-5">Find related tours<ArrowRight size={17} aria-hidden="true" /></Link>
           </aside>
         </div>
       </article>
