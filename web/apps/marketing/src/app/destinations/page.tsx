@@ -12,7 +12,7 @@ import {
   List,
   ArrowRight,
 } from "lucide-react";
-import { Button, Card, Badge } from "@tankua/ui";
+import { Button, Card, Badge, formatCurrencyTotals } from "@tankua/ui";
 
 const tourCategories = [
   { id: "all", name: "All Categories", icon: "≡ƒîì" },
@@ -230,9 +230,9 @@ export default function DestinationsPage() {
                       ))}
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      {destination.price !== null && (
+                      {(destination.fares.ETB !== undefined || destination.fares.USD !== undefined) && (
                         <p className="text-sm text-[#181714]/60">
-                          From <strong className="text-[#181714]">{destination.price.toLocaleString()} ETB</strong> per person
+                          From <strong className="text-[#181714]">{formatCurrencyTotals(destination.fares)}</strong> per person
                         </p>
                       )}
                       <Link href={`/tours?q=${encodeURIComponent(destination.name)}`}>
@@ -277,9 +277,9 @@ export default function DestinationsPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          {destination.price !== null && (
+                          {(destination.fares.ETB !== undefined || destination.fares.USD !== undefined) && (
                             <p className="mb-4 text-sm text-[#181714]/60">
-                              From <strong className="text-[#181714]">{destination.price.toLocaleString()} ETB</strong> per person
+                              From <strong className="text-[#181714]">{formatCurrencyTotals(destination.fares)}</strong> per person
                             </p>
                           )}
                           <Link href={`/tours?q=${encodeURIComponent(destination.name)}`}>

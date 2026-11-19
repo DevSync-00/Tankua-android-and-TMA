@@ -16,16 +16,18 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, StatCard, formatCurrency } from "@tankua/ui";
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, StatCard, formatCurrency, getTripCurrency, type TripCurrency } from "@tankua/ui";
 import { getEarningsSummary, getProviderBookings, type EarningsSummary } from "@/lib/queries";
 
 export default function EarningsPage() {
   const router = useRouter();
   const [providerId, setProviderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [earningsData, setEarningsData] = useState<EarningsSummary | null>(null);
+  const [selectedEarnings, setEarningsData] = useState<EarningsSummary | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [timeRange, setTimeRange] = useState("30d");
+  const [currency, setCurrency] = useState<TripCurrency>("ETB");
+  const earningsData = selectedEarnings?.currency === currency ? selectedEarnings : null;
   const [earningsByDestination, setEarningsByDestination] = useState<Array<{ destination: string; earnings: number; bookings: number }>>([]);
   const [earningsByTrip, setEarningsByTrip] = useState<Array<{ tripId: string; destination: string; date: string; earnings: number; bookings: number }>>([]);
   const [breakdownView, setBreakdownView] = useState<"destination" | "trip">("destination");
@@ -38,7 +40,7 @@ export default function EarningsPage() {
     if (providerId) {
       loadEarningsData();
     }
-  }, [providerId, timeRange]);
+  }, [providerId, timeRange, currency]);
 
   const loadProviderSession = () => {
     try {
@@ -69,8 +71,8 @@ export default function EarningsPage() {
     setLoading(true);
     try {
       const [summary, { bookings }] = await Promise.all([
-        getEarningsSummary(providerId),
-        getProviderBookings(providerId, { limit: 100 }),
+        getEarningsSummary(providerId, currency),
+        getProviderBookings(providerId, { limit: 100, currency }),
       ]);
       setEarningsData(summary);
 
@@ -84,6 +86,7 @@ export default function EarningsPage() {
           type: "earning" as const,
           description: `Booking ${b.id.substring(0, 8)} - ${b.trip?.destination?.name || b.destination_name || 'Trip'}`,
           amount: Number(b.base_price ?? b.total_price),
+          currency: b.currency,
           date: new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           status: b.status === 'completed' ? 'completed' : 'pending',
         }))
@@ -139,9 +142,9 @@ export default function EarningsPage() {
   };
 
   const exportTransactions = () => {
-    const rows = [["Reference","Description","Date","Amount (ETB)","Status"], ...transactions.map(item=>[item.id,item.description,item.date,item.amount,item.status])];
+    const rows = [["Reference","Description","Date","Amount","Currency","Status"], ...transactions.map(item=>[item.id,item.description,item.date,item.amount,item.currency,item.status])];
     const csv=rows.map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");
-    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`tankua-earnings-${timeRange}.csv`;anchor.click();URL.revokeObjectURL(url);
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`tankua-earnings-${currency}-${timeRange}.csv`;anchor.click();URL.revokeObjectURL(url);
   };
 
   const lastPayout = earningsData?.lastPayout;
@@ -156,7 +159,11 @@ export default function EarningsPage() {
         title="Earnings" 
         subtitle={loading ? "Loading earnings..." : "Track your revenue and payouts"}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select aria-label="Earnings currency" value={currency} onChange={(event) => setCurrency(getTripCurrency(event.target.value))} disabled={loading} className="h-9 rounded-lg border bg-background px-3 text-sm">
+              <option value="ETB">ETB</option>
+              <option value="USD">USD</option>
+            </select>
             <Button 
               variant="outline" 
               size="sm" 
@@ -166,7 +173,7 @@ export default function EarningsPage() {
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={exportTransactions} disabled={!transactions.length}>
+            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={exportTransactions} disabled={!earningsData || !transactions.length}>
               Export
             </Button>
             <Button size="sm" leftIcon={<Wallet className="h-4 w-4" />} onClick={()=>{window.location.href="mailto:provider-support@tankua.et?subject=Payout request";}}>
@@ -187,20 +194,20 @@ export default function EarningsPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 title="Total Earnings"
-                value={formatCurrency(earningsData.totalEarnings)}
+                value={formatCurrency(earningsData.totalEarnings, currency)}
                 changeLabel="all time"
                 icon={<Wallet className="h-6 w-6" />}
                 variant="primary"
               />
               <StatCard
                 title="This Month"
-                value={formatCurrency(earningsData.monthlyData[earningsData.monthlyData.length - 1]?.earnings || 0)}
+                value={formatCurrency(earningsData.monthlyData[earningsData.monthlyData.length - 1]?.earnings || 0, currency)}
                 changeLabel="this month"
                 icon={<TrendingUp className="h-6 w-6" />}
               />
               <StatCard
-                title="Pending Payouts (ETB)"
-                value={earningsData.pendingPayout !== null ? formatCurrency(earningsData.pendingPayout) : "—"}
+                title={`Pending Payouts (${currency})`}
+                value={earningsData.pendingPayout !== null ? formatCurrency(earningsData.pendingPayout, currency) : "—"}
                 icon={<Clock className="h-6 w-6" />}
               />
               <StatCard
@@ -284,7 +291,7 @@ export default function EarningsPage() {
                       <p className={`font-semibold ${
                         transaction.amount > 0 ? "text-emerald-600" : "text-foreground"
                       }`}>
-                        {transaction.amount > 0 ? "+" : ""}{formatCurrency(Math.abs(transaction.amount))}
+                        {transaction.amount > 0 ? "+" : ""}{formatCurrency(Math.abs(transaction.amount), transaction.currency)}
                       </p>
                       <Badge 
                         variant={transaction.status === "completed" ? "success" : "warning"} 
@@ -350,17 +357,17 @@ export default function EarningsPage() {
                 <div className="grid sm:grid-cols-3 gap-6">
                   <div className="p-6 bg-muted/30 rounded-xl text-center">
                     <p className="text-sm text-muted-foreground mb-2">Gross Earnings</p>
-                    <p className="text-3xl font-bold">{formatCurrency(earningsData.totalEarnings)}</p>
+                    <p className="text-3xl font-bold">{formatCurrency(earningsData.totalEarnings, currency)}</p>
                     <p className="text-sm text-muted-foreground mt-1">All time</p>
                   </div>
                   <div className="p-6 bg-muted/30 rounded-xl text-center">
                     <p className="text-sm text-muted-foreground mb-2">Provider Fees</p>
-                    <p className="text-3xl font-bold text-red-500">{formatCurrency(earningsData.providerFees)}</p>
+                    <p className="text-3xl font-bold text-red-500">{formatCurrency(earningsData.providerFees, currency)}</p>
                     <p className="text-sm text-muted-foreground mt-1">Service fee</p>
                   </div>
                   <div className="p-6 bg-primary/10 rounded-xl text-center">
                     <p className="text-sm text-muted-foreground mb-2">Net Earnings</p>
-                    <p className="text-3xl font-bold text-primary">{formatCurrency(earningsData.totalEarnings - earningsData.providerFees)}</p>
+                    <p className="text-3xl font-bold text-primary">{formatCurrency(earningsData.totalEarnings - earningsData.providerFees, currency)}</p>
                     <p className="text-sm text-muted-foreground mt-1">Your earnings</p>
                   </div>
                 </div>
@@ -407,7 +414,7 @@ export default function EarningsPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-emerald-600">{formatCurrency(item.earnings)}</p>
+                            <p className="font-semibold text-emerald-600">{formatCurrency(item.earnings, currency)}</p>
                             {earningsData.totalEarnings > 0 && (
                               <p className="text-xs text-muted-foreground">
                                 {((item.earnings / earningsData.totalEarnings) * 100).toFixed(1)}%
@@ -439,7 +446,7 @@ export default function EarningsPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-emerald-600">{formatCurrency(item.earnings)}</p>
+                            <p className="font-semibold text-emerald-600">{formatCurrency(item.earnings, currency)}</p>
                           </div>
                         </div>
                       ))}

@@ -1,11 +1,13 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { CalendarDays, ChevronDown, Clock3, ListChecks, MapPin, Route, Search, Ticket, Wallet } from "lucide-react";
 import Link from "next/link";
+import { getTripCurrency, type TripCurrency } from "@tankua/ui";
+import { tripCurrencies } from "@/lib/trip-currency";
 
 export const initialForm = {
   destinationId: "", summary: "", tripType: "round_trip",
   departureDate: "", departureTime: "06:00", returnDate: "", returnTime: "",
-  price: "", maxSeats: "", bookingMode: "immediate", minimumInterest: "",
+  price: "", currency: "ETB", maxSeats: "", bookingMode: "immediate", minimumInterest: "",
   tourCategory: "", itinerary: "", durationHours: "", transportationType: "",
   difficultyLevel: "easy", inclusions: "", exclusions: "", meetingInstructions: "",
   whatToBring: "", cancellationPolicy: "",
@@ -27,7 +29,7 @@ export const sections = [
 export const maxInterest = 2_147_483_647;
 export const maxSeats = 100;
 export const maxSummary = 280;
-export const minPrice = 100;
+export const minFares: Record<TripCurrency, number> = { ETB: 100, USD: 0.01 };
 
 const fieldClass = "block min-h-11 w-full min-w-0 rounded-lg border border-input bg-white px-3 py-2.5 text-sm outline-none focus:border-primary aria-[invalid=true]:border-red-500 disabled:bg-stone-50";
 
@@ -104,6 +106,7 @@ export function TripFormFields({
   );
   const selectedCount = stations?.data.filter(({ id }) => stationConfig[id]?.selected).length ?? 0;
   const waitsForInterest = form.bookingMode === "interest";
+  const currency = getTripCurrency(form.currency);
   const retry = <button type="button" onClick={retryOptions} className="font-semibold underline">Try again</button>;
 
   const bind = (field: keyof TripForm, hint?: string) => ({
@@ -161,9 +164,14 @@ export function TripFormFields({
       </Section>
 
       <Section id="pricing" title="Seats and pricing" icon={<Wallet className="h-4 w-4" />}>
+        <Field id="currency" label="Fare currency" hint="Changing the currency clears the fare and pickup surcharges.">
+          <select {...bind("currency", "currency change")}>
+            {tripCurrencies.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="maxSeats" label="Seats available" error={errors.maxSeats}><input {...bind("maxSeats")} type="number" inputMode="numeric" required min="1" max={maxSeats} step="1" placeholder="e.g. 24" /></Field>
-          <Field id="price" label="Price per seat (ETB)" error={errors.price}><input {...bind("price")} type="number" inputMode="decimal" required min={minPrice} step="0.01" placeholder="e.g. 2500" /></Field>
+          <Field id="price" label={`Price per seat (${currency})`} error={errors.price}><input {...bind("price")} type="number" inputMode="decimal" required min={minFares[currency]} step="0.01" placeholder={currency === "USD" ? "e.g. 25" : "e.g. 2500"} /></Field>
         </div>
       </Section>
 
@@ -201,7 +209,7 @@ export function TripFormFields({
                   <Field id={timeId} label="Pickup time (EAT)" error={errors[timeId]}>
                     <input {...accessibility(timeId, errors[timeId])} type="time" required value={config.pickupTime} onChange={(e) => updateStation(station, { pickupTime: e.target.value })} className={fieldClass} />
                   </Field>
-                  <Field id={priceId} label="Pickup surcharge (ETB)" error={errors[priceId]}>
+                  <Field id={priceId} label={`Pickup surcharge (${currency})`} error={errors[priceId]}>
                     <input {...accessibility(priceId, errors[priceId])} type="number" inputMode="decimal" min="0" step="0.01" value={config.extraPrice} onChange={(e) => updateStation(station, { extraPrice: e.target.value })} className={fieldClass} />
                   </Field>
                 </div>

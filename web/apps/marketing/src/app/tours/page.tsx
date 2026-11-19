@@ -14,7 +14,7 @@ import {
   List,
   ArrowRight,
 } from "lucide-react";
-import { Button, Card, Badge } from "@tankua/ui";
+import { Button, Card, Badge, formatCurrency } from "@tankua/ui";
 
 const tourCategories = [
   { id: "all", name: "All Tours", icon: "🌍" },
@@ -246,7 +246,7 @@ export default function ToursPage() {
                     <div className="flex items-center justify-between gap-2">
                       {tour.price !== null && (
                         <div>
-                          <span className="text-lg font-bold text-[#ffb800]">{tour.price.toLocaleString()} ETB</span>
+                          <span className="text-lg font-bold text-[#ffb800]">{formatCurrency(tour.price, tour.currency)}</span>
                           <span className="text-sm text-[#181714]/60"> /person</span>
                         </div>
                       )}
@@ -306,7 +306,7 @@ export default function ToursPage() {
                           )}
                           {tour.price !== null && (
                             <div className="mb-4">
-                              <span className="text-2xl font-bold text-[#ffb800]">{tour.price.toLocaleString()} ETB</span>
+                              <span className="text-2xl font-bold text-[#ffb800]">{formatCurrency(tour.price, tour.currency)}</span>
                               <span className="text-[#181714]/60"> /person</span>
                             </div>
                           )}

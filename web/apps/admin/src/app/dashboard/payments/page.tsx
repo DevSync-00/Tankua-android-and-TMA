@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, CreditCard, Download, RefreshCw, RotateCcw } from "lucide-react";
 import { Header } from "@/components/header";
 import { getPayments, updatePaymentStatus, type AdminPayment } from "@/lib/queries";
-import { Card, CardContent, Button, Badge, Avatar, formatCurrency } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, Avatar, formatCurrency, formatCurrencyTotals, sumByCurrency } from "@tankua/ui";
 
 type PaymentStatus = "pending" | "paid" | "refunded";
 
@@ -53,7 +53,7 @@ export default function PaymentsPage() {
 
   const exportPayments = () => {
     const rows = [
-      ["Payment ID", "Booking ID", "Customer", "Provider", "Method", "Amount", "Status", "Date"],
+      ["Payment ID", "Booking ID", "Customer", "Provider", "Method", "Amount", "Currency", "Status", "Date"],
       ...filteredPayments.map((payment) => [
         payment.id,
         payment.booking_id,
@@ -61,6 +61,7 @@ export default function PaymentsPage() {
         payment.provider_name,
         payment.method,
         payment.amount,
+        payment.currency,
         payment.status,
         payment.created_at,
       ]),
@@ -74,9 +75,7 @@ export default function PaymentsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const paidRevenue = payments
-    .filter((payment) => payment.status === "paid")
-    .reduce((sum, payment) => sum + payment.amount, 0);
+  const paidRevenue = sumByCurrency(payments.filter((payment) => payment.status === "paid"), (payment) => payment.amount);
 
   const badgeFor = (status: string) => {
     if (status === "paid") return <Badge variant="success" dot>Paid</Badge>;
@@ -109,7 +108,7 @@ export default function PaymentsPage() {
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            ["Paid revenue", formatCurrency(paidRevenue)],
+            ["Paid revenue", formatCurrencyTotals(paidRevenue)],
             ["Paid", payments.filter((p) => p.status === "paid").length],
             ["Pending", payments.filter((p) => p.status === "pending").length],
             ["Refunded", payments.filter((p) => p.status === "refunded").length],
@@ -174,7 +173,7 @@ export default function PaymentsPage() {
                         </td>
                         <td className="px-5 py-4 text-sm">{payment.provider_name}</td>
                         <td className="px-5 py-4"><Badge variant="secondary">{payment.method}</Badge></td>
-                        <td className="px-5 py-4 text-sm font-semibold">{formatCurrency(payment.amount)}</td>
+                        <td className="px-5 py-4 text-sm font-semibold">{formatCurrency(payment.amount, payment.currency)}</td>
                         <td className="px-5 py-4">{badgeFor(payment.status)}</td>
                         <td className="px-5 py-4 text-sm text-muted-foreground">
                           {new Date(payment.created_at).toLocaleString()}

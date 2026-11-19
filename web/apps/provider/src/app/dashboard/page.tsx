@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Avatar, Badge, Button, buttonVariants, cn, formatCurrency } from "@tankua/ui";
+import { Avatar, Badge, Button, buttonVariants, cn, formatCurrency, formatCurrencyTotals } from "@tankua/ui";
 import { Header } from "@/components/header";
 import {
   getProviderStats,
@@ -213,7 +213,7 @@ function RecentBookings({ bookings }: { bookings: RecentBooking[] | null }) {
                 <p className="mt-1 text-xs text-muted-foreground">{booking.time}</p>
               </div>
               <div className="max-w-[48%] shrink-0 text-right">
-                <p className="text-sm font-semibold tabular-nums">{formatCurrency(booking.amount)}</p>
+                <p className="text-sm font-semibold tabular-nums">{formatCurrency(booking.amount, booking.currency)}</p>
                 <Badge
                   variant={booking.paymentStatus === "paid" && booking.status !== "cancelled" ? "success" : "secondary"}
                   className={cn(
@@ -365,7 +365,7 @@ export default function DashboardPage() {
               <Metric
                 href="/dashboard/earnings"
                 label="Trip sales this month"
-                value={stats?.monthlyEarnings == null ? "—" : formatCurrency(stats.monthlyEarnings)}
+                value={stats?.monthlyEarnings == null ? "—" : formatCurrencyTotals(stats.monthlyEarnings)}
                 comparison={formatComparison(stats?.earningsChange, "last month")}
                 icon={Wallet}
               />

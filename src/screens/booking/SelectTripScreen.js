@@ -17,6 +17,7 @@ import { useBooking } from '../../contexts/BookingContext';
 import { useFeedback } from '../../contexts/FeedbackContext';
 import { expressTripInterest, getMyInterestedTripIds, getTrips } from '../../services/database';
 import ModernButton from '../../components/ModernButton';
+import { formatTripPrice } from '../../utils/tripCurrency';
 
 const SelectTripScreen = ({ navigation }) => {
   const { t } = useLanguage();
@@ -349,7 +350,7 @@ const SelectTripScreen = ({ navigation }) => {
                       </View>
                       <View style={styles.pricePill}>
                         <Text style={styles.pricePillText}>
-                          {trip.price ? `ETB ${trip.price}` : 'Price TBD'}
+                          {trip.price ? formatTripPrice(trip.price, trip.currency) : 'Price TBD'}
                         </Text>
                       </View>
                     </View>
@@ -371,7 +372,7 @@ const SelectTripScreen = ({ navigation }) => {
                   {trip.summary ? <Text style={styles.subtitle}>{trip.summary}</Text> : null}
                   <Text style={styles.subtitle}>{formatDate(trip.departure_date || trip.date)}</Text>
                   {trip.price != null && (
-                    <Text style={styles.subtitle}>ETB {Number(trip.price).toLocaleString()} per person</Text>
+                    <Text style={styles.subtitle}>{formatTripPrice(trip.price, trip.currency)} per person</Text>
                   )}
                   <Text style={styles.interestCount}>
                     {trip.interest_count} of {trip.minimum_interest} travelers interested

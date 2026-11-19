@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getTripCurrency, sumByCurrency, type CurrencyTotals, type TripCurrency } from '@tankua/ui';
 
 // ============================================
 // DASHBOARD STATISTICS
@@ -9,7 +10,7 @@ export interface DashboardStats {
   totalBookings: number;
   activeTrips: number;
   totalProviders: number;
-  totalRevenue: number;
+  totalRevenue: CurrencyTotals;
   usersChange?: number;
   bookingsChange?: number;
 }
@@ -20,6 +21,7 @@ export interface RecentBooking {
   destination: string;
   provider: string;
   amount: number;
+  currency: TripCurrency;
   status: string;
   date: string;
 }
@@ -48,7 +50,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from('bookings').select('id', { count: 'exact', head: true }),
     supabase.from('trips').select('id', { count: 'exact', head: true }).eq('status', 'upcoming'),
     supabase.from('providers').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('bookings').select('total_price').eq('payment_status', 'paid'),
+    supabase.from('bookings').select('total_price, currency').eq('payment_status', 'paid'),
     // Cumulative counts before the current 30-day period.
     supabase.from('users').select('id', { count: 'exact', head: true })
       .lt('created_at', thirtyDaysAgo.toISOString()),
@@ -64,7 +66,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const totalBookings = bookingsResult.count || 0;
   const activeTrips = tripsResult.count || 0;
   const totalProviders = providersResult.count || 0;
-  const totalRevenue = revenueResult.data?.reduce((sum, b) => sum + Number(b.total_price), 0) || 0;
+  const totalRevenue = sumByCurrency(revenueResult.data ?? [], (booking) => Number(booking.total_price));
 
   const prevUsers = prevUsersResult.count || 0;
   const prevBookings = prevBookingsResult.count || 0;
@@ -101,6 +103,7 @@ export interface ReportRanking {
 }
 
 export interface AdminReport {
+  currency: TripCurrency;
   totalRevenue: number;
   totalBookings: number;
   newUsers: number;
@@ -114,6 +117,7 @@ interface ReportBooking {
   id: string;
   created_at: string;
   total_price: number;
+  currency: string;
   payment_status: string;
   destination_id: string | null;
   destination_name: string | null;
@@ -131,7 +135,7 @@ async function getReportBookings(start: string, end: string, signal: AbortSignal
 
   while (true) {
     let query = supabase.from('bookings').select(`
-      id, created_at, total_price, payment_status, destination_id, destination_name,
+      id, created_at, total_price, currency, payment_status, destination_id, destination_name,
       provider_id, provider_name, trips (destinations (id, name), providers (id, name))
     `).gte('created_at', start).lt('created_at', end).order('id').limit(1000);
 
@@ -146,7 +150,7 @@ async function getReportBookings(start: string, end: string, signal: AbortSignal
   }
 }
 
-export async function getAdminReport(days: number, signal: AbortSignal): Promise<AdminReport> {
+export async function getAdminReport(days: number, signal: AbortSignal, currency: TripCurrency = 'ETB'): Promise<AdminReport> {
   const end = new Date();
   const start = new Date(end);
   start.setUTCHours(0, 0, 0, 0);
@@ -192,7 +196,7 @@ export async function getAdminReport(days: number, signal: AbortSignal): Promise
   };
 
   for (const booking of bookings) {
-    const paid = booking.payment_status === 'paid';
+    const paid = booking.payment_status === 'paid' && getTripCurrency(booking.currency) === currency;
     const revenue = paid ? Number(booking.total_price) : 0;
     totalRevenue += revenue;
     if (paid) paidBookingCount += 1;
@@ -216,6 +220,7 @@ export async function getAdminReport(days: number, signal: AbortSignal): Promise
     .slice(0, limit);
 
   return {
+    currency,
     totalRevenue,
     totalBookings: bookings.length,
     newUsers: usersResult.count ?? 0,
@@ -232,7 +237,7 @@ export async function getBookingTrends(days: number = 30): Promise<BookingTrend[
   
   const { data, error } = await supabase
     .from('bookings')
-    .select('created_at, total_price, payment_status')
+    .select('created_at, total_price, currency, payment_status')
     .gte('created_at', startDate.toISOString())
     .order('created_at', { ascending: true });
 
@@ -249,7 +254,7 @@ export async function getBookingTrends(days: number = 30): Promise<BookingTrend[
     const existing = trendsMap.get(date) || { bookings: 0, revenue: 0 };
     trendsMap.set(date, {
       bookings: existing.bookings + 1,
-      revenue: existing.revenue + (booking.payment_status === 'paid' ? (booking.total_price || 0) : 0),
+      revenue: existing.revenue + (booking.payment_status === 'paid' && getTripCurrency(booking.currency) === 'ETB' ? Number(booking.total_price || 0) : 0),
     });
   });
 
@@ -283,10 +288,12 @@ export async function getRevenueAnalytics(): Promise<RevenueAnalytics> {
     supabase
       .from('bookings')
       .select('total_price, payment_status, status')
+      .eq('currency', 'ETB')
       .eq('payment_status', 'paid'),
     supabase
       .from('bookings')
       .select('total_price, payment_status')
+      .eq('currency', 'ETB')
       .eq('payment_status', 'paid')
       .gte('created_at', firstDayOfMonth.toISOString()),
   ]);
@@ -323,6 +330,7 @@ export async function getRecentBookings(limit = 5): Promise<RecentBooking[]> {
     .select(`
       id,
       total_price,
+      currency,
       status,
       created_at,
       users (name, phone_number),
@@ -345,6 +353,7 @@ export async function getRecentBookings(limit = 5): Promise<RecentBooking[]> {
     destination: booking.trips?.destinations?.name || booking.destination_name || 'Unknown',
     provider: booking.trips?.providers?.name || 'Unknown',
     amount: booking.total_price || 0,
+    currency: getTripCurrency(booking.currency),
     status: booking.status,
     date: booking.created_at,
   }));
@@ -478,6 +487,7 @@ export interface BookingDetails {
   destination_name: string | null;
   seats: number;
   total_price: number;
+  currency: TripCurrency;
   status: string;
   payment_status: string;
   created_at: string;
@@ -495,6 +505,7 @@ export async function getBookings(options?: {
       id,
       seats,
       total_price,
+      currency,
       status,
       payment_status,
       created_at,
@@ -548,6 +559,7 @@ export async function getBookings(options?: {
       destination_name: b.destination_name,
       seats: b.seats,
       total_price: b.total_price,
+      currency: getTripCurrency(b.currency),
       status: b.status,
       payment_status: b.payment_status,
       created_at: b.created_at,
@@ -580,6 +592,7 @@ export interface AdminPayment {
   provider_name: string;
   method: string;
   amount: number;
+  currency: TripCurrency;
   status: string;
   created_at: string;
 }
@@ -590,6 +603,7 @@ export async function getPayments(): Promise<AdminPayment[]> {
     .select(`
       id,
       total_price,
+      currency,
       payment_status,
       created_at,
       users (name),
@@ -608,6 +622,7 @@ export async function getPayments(): Promise<AdminPayment[]> {
     provider_name: booking.trips?.providers?.name || 'Provider unavailable',
     method: 'Chapa',
     amount: Number(booking.total_price || 0),
+    currency: getTripCurrency(booking.currency),
     status: booking.payment_status || 'pending',
     created_at: booking.created_at,
   }));
@@ -630,6 +645,7 @@ export async function updatePaymentStatus(
 export interface ProviderPayoutBalance {
   provider_id: string;
   provider_name: string;
+  currency: TripCurrency;
   gross_amount: number;
   platform_fee: number;
   payable_amount: number;
@@ -643,6 +659,7 @@ export async function getProviderPayoutBalances(): Promise<ProviderPayoutBalance
       id,
       provider_id,
       total_price,
+      currency,
       status,
       payment_status,
       trips (providers (id, name))
@@ -659,9 +676,12 @@ export async function getProviderPayoutBalances(): Promise<ProviderPayoutBalance
     const providerId = booking.provider_id || booking.trips?.providers?.id;
     if (!providerId) continue;
     const gross = Number(booking.total_price || 0);
-    const current = balances.get(providerId) || {
+    const currency = getTripCurrency(booking.currency);
+    const key = `${providerId}:${currency}`;
+    const current = balances.get(key) || {
       provider_id: providerId,
       provider_name: booking.trips?.providers?.name || 'Unknown provider',
+      currency,
       gross_amount: 0,
       platform_fee: 0,
       payable_amount: 0,
@@ -671,10 +691,10 @@ export async function getProviderPayoutBalances(): Promise<ProviderPayoutBalance
     current.platform_fee += gross * 0.05;
     current.payable_amount += gross * 0.95;
     current.booking_count += 1;
-    balances.set(providerId, current);
+    balances.set(key, current);
   }
 
-  return Array.from(balances.values()).sort((a, b) => b.payable_amount - a.payable_amount);
+  return Array.from(balances.values()).sort((a, b) => a.currency.localeCompare(b.currency) || b.payable_amount - a.payable_amount);
 }
 
 // ============================================

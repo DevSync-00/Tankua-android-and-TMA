@@ -143,6 +143,7 @@ export interface Database {
           departure_date: string
           return_date: string | null
           price: number
+          currency: 'ETB' | 'USD'
           max_seats: number
           available_seats: number
           status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'collecting_interest'
@@ -160,6 +161,7 @@ export interface Database {
           departure_date: string
           return_date?: string | null
           price: number
+          currency?: 'ETB' | 'USD'
           max_seats: number
           available_seats?: number
           status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'collecting_interest'
@@ -176,6 +178,7 @@ export interface Database {
           departure_date?: string
           return_date?: string | null
           price?: number
+          currency?: 'ETB' | 'USD'
           max_seats?: number
           available_seats?: number
           status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'collecting_interest'
@@ -191,6 +194,7 @@ export interface Database {
           pickup_station_id: string | null
           seats: number
           total_price: number
+          currency: 'ETB' | 'USD'
           status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           payment_status: 'pending' | 'paid' | 'refunded'
           payment_method: string | null
@@ -205,6 +209,7 @@ export interface Database {
           pickup_station_id?: string | null
           seats?: number
           total_price: number
+          currency?: 'ETB' | 'USD'
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           payment_status?: 'pending' | 'paid' | 'refunded'
           payment_method?: string | null
@@ -219,6 +224,7 @@ export interface Database {
           pickup_station_id?: string | null
           seats?: number
           total_price?: number
+          currency?: 'ETB' | 'USD'
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           payment_status?: 'pending' | 'paid' | 'refunded'
           payment_method?: string | null

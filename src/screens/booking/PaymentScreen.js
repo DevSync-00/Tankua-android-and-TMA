@@ -28,6 +28,7 @@ import {
 import { supabase } from '../../config/supabase';
 import ModernButton from '../../components/ModernButton';
 import PaymentWebView from '../../components/PaymentWebView';
+import { formatTripPrice, getTripCurrency } from '../../utils/tripCurrency';
 
 const PaymentScreen = ({ navigation, route }) => {
   const { t } = useLanguage();
@@ -43,8 +44,7 @@ const PaymentScreen = ({ navigation, route }) => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
-  const [pendingTxRef, setPendingTxRef] = useState(null);
-  const [pendingBookingId, setPendingBookingId] = useState(null);
+  const [pendingPayment, setPendingPayment] = useState(null);
   const [booking, setBooking] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const submitting = useRef(false);
@@ -66,6 +66,7 @@ const PaymentScreen = ({ navigation, route }) => {
     total: booking.total_price,
   } : calculateTotalPrice();
   const totalPrice = price.total;
+  const currency = getTripCurrency(booking?.currency ?? currentBooking.trip?.currency);
 
   const viewTrips = () => navigation.getParent()?.navigate('MainTabs', { screen: 'Trips' });
 
@@ -183,6 +184,7 @@ const PaymentScreen = ({ navigation, route }) => {
       }
 
       const { id: bookingId, total_price: amount } = verification.booking;
+      const paymentCurrency = getTripCurrency(verification.booking.currency);
       const phoneNumber = user?.phone_number || user?.phoneNumber || '';
       const customerName = user?.name || 'Customer';
       const customerEmail = sanitizeEmailForChapa(user?.email, phoneNumber);
@@ -192,13 +194,14 @@ const PaymentScreen = ({ navigation, route }) => {
         bookingId,
         userId: user.id,
         amount,
+        currency: paymentCurrency,
         paymentMethod,
         transactionRef,
       });
 
       const paymentResult = await processPayment(paymentMethod, {
         amount,
-        currency: 'ETB',
+        currency: paymentCurrency,
         phoneNumber,
         bookingId,
         customerName,
@@ -213,8 +216,7 @@ const PaymentScreen = ({ navigation, route }) => {
           status: 'processing',
         }).catch(() => {});
 
-        setPendingTxRef(paymentResult.transactionRef);
-        setPendingBookingId(bookingId);
+        setPendingPayment({ txRef: transactionRef, bookingId, amount, currency: paymentCurrency });
         setCheckoutUrl(paymentResult.checkoutUrl);
         setCheckoutVisible(true);
         return;
@@ -240,8 +242,8 @@ const PaymentScreen = ({ navigation, route }) => {
 
   const handleCheckoutSuccess = () => {
     setCheckoutVisible(false);
-    if (pendingTxRef && pendingBookingId) {
-      verifyPaymentStatus(pendingTxRef, pendingBookingId);
+    if (pendingPayment) {
+      verifyPaymentStatus(pendingPayment);
     }
   };
 
@@ -251,13 +253,20 @@ const PaymentScreen = ({ navigation, route }) => {
     setPaymentProcessing(false);
   };
 
-  const verifyPaymentStatus = async (txRef, bookingId) => {
+  const verifyPaymentStatus = async (payment) => {
+    const { txRef, bookingId, amount, currency: paymentCurrency } = payment;
     setLoading(true);
     setPaymentProcessing(true);
     try {
       const verificationResult = await verifyPayment(paymentMethod, txRef);
 
       if (verificationResult.success && verificationResult.verified) {
+        const verified = verificationResult.paymentData;
+        if (verified?.tx_ref !== txRef || verified?.currency !== paymentCurrency ||
+            Number(verified?.amount) !== Number(amount)) {
+          throw new Error('Chapa returned different payment details.');
+        }
+
         const { error: updateError } = await supabase
           .from('bookings')
           .update({ 
@@ -299,7 +308,7 @@ const PaymentScreen = ({ navigation, route }) => {
           variant: 'info',
         }).then((checkAgain) => {
           if (checkAgain) {
-            verifyPaymentStatus(txRef, bookingId);
+            verifyPaymentStatus(payment);
           } else {
             setLoading(false);
             setPaymentProcessing(false);
@@ -467,19 +476,19 @@ const PaymentScreen = ({ navigation, route }) => {
           <View style={styles.receiptRowsContainer}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Base Ticket Price ({seats} {seats === 1 ? 'seat' : 'seats'})</Text>
-              <Text style={styles.summaryValue}>ETB {Number(price.basePrice) - pickupFee}</Text>
+              <Text style={styles.summaryValue}>{formatTripPrice(Number(price.basePrice) - pickupFee, currency)}</Text>
             </View>
 
             {pickupFee > 0 ? (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Pickup Station Add-on</Text>
-                <Text style={styles.summaryValue}>+ ETB {pickupFee}</Text>
+                <Text style={styles.summaryValue}>+ {formatTripPrice(pickupFee, currency)}</Text>
               </View>
             ) : null}
 
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Service Fee (5%)</Text>
-              <Text style={styles.summaryValue}>+ ETB {price.serviceFee}</Text>
+              <Text style={styles.summaryValue}>+ {formatTripPrice(price.serviceFee, currency)}</Text>
             </View>
           </View>
 
@@ -487,7 +496,7 @@ const PaymentScreen = ({ navigation, route }) => {
 
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>{canPay ? 'Total Due' : 'Trip Total'}</Text>
-            <Text style={styles.totalValue}>ETB {totalPrice}</Text>
+            <Text style={styles.totalValue}>{formatTripPrice(totalPrice, currency)}</Text>
           </View>
         </View> : null}
 
@@ -501,16 +510,16 @@ const PaymentScreen = ({ navigation, route }) => {
             <View style={styles.methodContent}>
               <Text style={styles.methodName}>{t('chapa') || 'Chapa Pay'}</Text>
               <Text style={styles.methodDescription}>
-                Instant online checkout via local providers
+                {currency === 'USD' ? 'US dollar checkout' : 'Instant online checkout via local providers'}
               </Text>
 
               {/* Supported Channel Badges */}
-              <View style={styles.channelsRow}>
+              {currency === 'ETB' && <View style={styles.channelsRow}>
                 <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>Telebirr</Text></View>
                 <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>CBE Birr</Text></View>
                 <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>Card</Text></View>
                 <View style={styles.channelBadge}><Text style={styles.channelBadgeText}>Bank</Text></View>
-              </View>
+              </View>}
             </View>
             <Ionicons name="checkmark-circle" size={22} color={COLORS.secondary} />
           </View>
@@ -535,7 +544,7 @@ const PaymentScreen = ({ navigation, route }) => {
       {!initializing ? <View style={styles.footer}>
         {canPay || canReserve ? <View style={styles.footerSummary}>
           <Text style={styles.footerTotalLabel}>{canPay ? 'Total Due' : 'Trip Total'}</Text>
-          <Text style={styles.footerTotalValue}>ETB {totalPrice}</Text>
+          <Text style={styles.footerTotalValue}>{formatTripPrice(totalPrice, currency)}</Text>
         </View> : null}
         <ModernButton
           title={canPay

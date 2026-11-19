@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { getBookingDisplay } from '../utils/bookingDisplay';
+import { formatTripPrice } from '../utils/tripCurrency';
 
 const TripTicketCard = forwardRef(({ booking, showInstructions = false, style }, ref) => {
   const { width } = useWindowDimensions();
@@ -66,7 +67,7 @@ const TripTicketCard = forwardRef(({ booking, showInstructions = false, style },
 
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total paid</Text>
-          <Text style={styles.totalValue}>{display.totalPrice} ETB</Text>
+          <Text style={styles.totalValue}>{formatTripPrice(display.totalPrice, booking?.currency)}</Text>
         </View>
       </View>
 

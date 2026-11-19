@@ -18,7 +18,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Avatar, StatCard, formatCurrency } from "@tankua/ui";
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Avatar, StatCard, formatCurrency, formatCurrencyTotals } from "@tankua/ui";
 import {
   getDashboardStats,
   getRecentBookings,
@@ -114,7 +114,7 @@ export default function DashboardPage() {
     },
     {
       title: "Revenue (Total)",
-      value: stats ? formatCurrency(stats.totalRevenue) : "—",
+      value: stats ? formatCurrencyTotals(stats.totalRevenue) : "—",
       changeLabel: "all time",
       icon: <CreditCard className="h-6 w-6" />,
     },
@@ -251,7 +251,7 @@ export default function DashboardPage() {
                             <p className="text-sm text-muted-foreground">{booking.provider}</p>
                           </td>
                           <td className="py-4 px-4">
-                            <p className="font-medium text-sm">{formatCurrency(booking.amount)}</p>
+                            <p className="font-medium text-sm">{formatCurrency(booking.amount, booking.currency)}</p>
                           </td>
                           <td className="py-4 px-4">
                             {getStatusBadge(booking.status)}
@@ -320,7 +320,7 @@ export default function DashboardPage() {
           {/* Revenue Analytics */}
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Analytics</CardTitle>
+              <CardTitle>ETB Revenue Analytics</CardTitle>
             </CardHeader>
             <CardContent>
               {revenueAnalytics ? (

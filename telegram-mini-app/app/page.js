@@ -43,7 +43,15 @@ const tabs = [
 ];
 const WEEKEND_PLANNER_URL = 'https://www.tankua.co/weekend';
 
-function money(n) { return `ETB ${Number(n).toLocaleString()}`; }
+const tripCurrency = currency => currency === 'USD' ? 'USD' : 'ETB';
+function money(amount, currency) {
+  const code = tripCurrency(currency);
+  const formatted = Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: code === 'USD' ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+  return `${code} ${formatted}`;
+}
 function vibrate(type = 'light') { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type); }
 
 const cityCoordinates = {
@@ -615,8 +623,8 @@ function HomeView({ user, destinations, trips, category, setCategory, open, goSe
 }
 
 function SectionHeader({ title, action, onAction }) { return <div className="section-head"><h2>{title}</h2>{action&&<button onClick={onAction}>{action}</button>}</div>; }
-function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(5,15,28,.88) 100%),url("${d.image}")`}}><div className="hero-content"><h3>{d.name}</h3><p className="hero-location"><MapPin size={13}/>{d.city}</p><div className="hero-meta"><span className="hero-rating"><Star size={13} fill="#ffb800" color="#ffb800"/> {d.rating}</span>{d.price ? <b className="hero-price">From {money(d.price)}</b> : null}</div></div></button>; }
-function DestinationCard({d,open}) { return <button className="destination-card" onClick={()=>open(d)}><div className="card-image" style={{backgroundImage:`url("${d.image}")`}}><span>{d.category}</span><Heart size={18}/></div><div className="card-copy"><h3>{d.name}</h3><p><MapPin size={13}/>{d.city}</p><div><span><Star size={13} fill="currentColor"/> {d.rating}</span><b>{money(d.price)}</b></div></div></button>; }
+function DestinationHero({d,open}) { return <button className="hero-card" onClick={()=>open(d)} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(5,15,28,.88) 100%),url("${d.image}")`}}><div className="hero-content"><h3>{d.name}</h3><p className="hero-location"><MapPin size={13}/>{d.city}</p><div className="hero-meta"><span className="hero-rating"><Star size={13} fill="#ffb800" color="#ffb800"/> {d.rating}</span>{d.price ? <b className="hero-price">From {money(d.price, d.currency)}</b> : null}</div></div></button>; }
+function DestinationCard({d,open}) { return <button className="destination-card" onClick={()=>open(d)}><div className="card-image" style={{backgroundImage:`url("${d.image}")`}}><span>{d.category}</span><Heart size={18}/></div><div className="card-copy"><h3>{d.name}</h3><p><MapPin size={13}/>{d.city}</p><div><span><Star size={13} fill="currentColor"/> {d.rating}</span>{d.price ? <b>{money(d.price, d.currency)}</b> : null}</div></div></button>; }
 
 function Detail({ destination:d, catalog, linkedTripId, back, book, expressInterest, checkTripInterest, notify, favorites = [], toggleFavorite }) {
   const destinationTrips = catalog.trips.filter(trip => trip.destination_id === d.id);
@@ -624,8 +632,10 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
   const interestTrips = destinationTrips.filter(isCollectingInterest);
   const destinationTrip = bookableTrips[0];
   const provider=(catalog.providers||[]).find(item=>item.id===destinationTrip?.provider_id);
-  const prices = bookableTrips.filter(trip => trip.price != null).map(trip => Number(trip.price)).filter(Number.isFinite);
-  const startingPrice = prices.length ? Math.min(...prices) : null;
+  const pricedTrips = bookableTrips.filter(trip => trip.price != null && Number.isFinite(Number(trip.price)));
+  const currencies = new Set(pricedTrips.map(trip => tripCurrency(trip.currency)));
+  const startingCurrency = currencies.size === 1 ? currencies.values().next().value : null;
+  const startingPrice = startingCurrency ? Math.min(...pricedTrips.map(trip => Number(trip.price))) : null;
   const isFavorite = favorites.includes(d.id);
 
   useEffect(() => {
@@ -702,7 +712,7 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
     </div>
     {bookableTrips.length > 0 && (
       <div className="sticky-cta">
-        <div>{startingPrice !== null && <><span>Starting from</span><b>{money(startingPrice)}</b><small>per person</small></>}</div>
+        <div>{startingPrice !== null && <><span>Starting from</span><b>{money(startingPrice, startingCurrency)}</b><small>per person</small></>}</div>
         <button onClick={book}>View bookable trips <ChevronRight size={18}/></button>
       </div>
     )}
@@ -732,7 +742,7 @@ function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }
           <h3>{departureLabel}</h3>
           {provider && <p>{provider.name}</p>}
         </div>
-        {trip.price != null && <b>{money(trip.price)} <small>per person</small></b>}
+        {trip.price != null && <b>{money(trip.price, trip.currency)} <small>per person</small></b>}
       </div>
       {trip.summary && <p className="interest-trip-summary">{trip.summary}</p>}
       <div className="interest-trip-progress">
@@ -792,7 +802,7 @@ function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
       return <button key={trip.id} className={`mobile-trip-card ${selected?'selected':''}`} onClick={()=>setBooking({...booking,trip,pickup:null,seats:1,passengers:[]})}>
         {provider&&<div className="trip-provider">{provider.logo_url?<img src={provider.logo_url} alt={`${provider.name} logo`}/>:<span><Building2/></span>}<div><small className="provider-eyebrow">OPERATED BY</small><b>{provider.name}</b><small><Star fill="currentColor"/>{Number(provider.rating||0).toFixed(1)} · Verified provider</small></div>{selected&&<Check/>}</div>}
         <div className="trip-schedule"><div><span>DEPARTURE</span><b>{trip.date}</b><small>{trip.time}</small></div><i><Bus/><span>{String(trip.trip_type||'scheduled').split('_').join(' ')}</span></i>{trip.return_date?<div><span>RETURN</span><b>{new Date(trip.return_date).toLocaleDateString([],{month:'short',day:'numeric'})}</b><small>{trip.arrival}</small></div>:<div><span>TRIP</span><b>One way</b><small>Scheduled</small></div>}</div>
-        <div className="trip-card-foot"><span><UsersRound/>{trip.left} seats available</span><b>{money(trip.price)} <small>/ seat</small></b></div>
+        <div className="trip-card-foot"><span><UsersRound/>{trip.left} seats available</span><b>{money(trip.price, trip.currency)} <small>/ seat</small></b></div>
         {selected&&<div className="trip-details">
           {trip.summary&&<p className="trip-summary">{trip.summary}</p>}
           {(trip.duration_minutes||trip.transportation_type||trip.difficulty_level)&&<div className="trip-detail-facts">
@@ -819,23 +829,46 @@ function PickupStep({pickups,booking,setBooking,back,next}) {
   const [view,setView]=useState('list');
   return <FlowPage step="pickup" back={back} title="Select Pickup Station" sub="Choose your preferred pickup location">
     <div className="view-toggle"><button className={view==='list'?'active':''} onClick={()=>setView('list')}><Navigation/>List</button><button className={view==='map'?'active':''} onClick={()=>setView('map')}><MapIcon/>Map</button></div>
-    {view==='list'?<div className="pickup-list">{pickups.map(p=><button key={p.id} className={`pickup-card ${booking.pickup?.id===p.id?'selected':''}`} onClick={()=>setBooking({...booking,pickup:p})}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice)}`:' · Included'}</small></div>{booking.pickup?.id===p.id&&<Check/>}</button>)}</div>:<div className="pickup-map"><div className="map-grid"/>{pickups.map((p,index)=><button key={p.id} className={`pickup-pin ${booking.pickup?.id===p.id?'selected':''}`} style={{left:`${18+(index*23)%65}%`,top:`${19+(index*29)%62}%`}} onClick={()=>setBooking({...booking,pickup:p})}><MapPin fill="currentColor"/><span>{p.name}</span></button>)}</div>}
+    {view==='list'?<div className="pickup-list">{pickups.map(p=><button key={p.id} className={`pickup-card ${booking.pickup?.id===p.id?'selected':''}`} onClick={()=>setBooking({...booking,pickup:p})}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice, booking.trip?.currency)}`:' · Included'}</small></div>{booking.pickup?.id===p.id&&<Check/>}</button>)}</div>:<div className="pickup-map"><div className="map-grid"/>{pickups.map((p,index)=><button key={p.id} className={`pickup-pin ${booking.pickup?.id===p.id?'selected':''}`} style={{left:`${18+(index*23)%65}%`,top:`${19+(index*29)%62}%`}} onClick={()=>setBooking({...booking,pickup:p})}><MapPin fill="currentColor"/><span>{p.name}</span></button>)}</div>}
     {!pickups.length&&<div className="flow-empty"><MapPin/><h3>No pickup stations</h3><p>This provider has not added pickup stations for this trip yet.</p></div>}
-    <div className="flow-sticky">{booking.pickup&&<div className="selected-pickup"><Check/><span><b>{booking.pickup.name}</b><small>{booking.pickup.time}{booking.pickup.extraPrice>0?` · +${money(booking.pickup.extraPrice)}`:''}</small></span></div>}<Continue disabled={!booking.pickup} onClick={next}/></div>
+    <div className="flow-sticky">{booking.pickup&&<div className="selected-pickup"><Check/><span><b>{booking.pickup.name}</b><small>{booking.pickup.time}{booking.pickup.extraPrice>0?` · +${money(booking.pickup.extraPrice, booking.trip?.currency)}`:''}</small></span></div>}<Continue disabled={!booking.pickup} onClick={next}/></div>
   </FlowPage>;
 }
 
 function SeatStep({destination,booking,setBooking,back,next}) {
   const limit=Math.min(8,Number(booking.trip?.left||booking.trip?.available_seats||8));
   return <FlowPage step="seats" back={back} title="Select Seats" sub="How many seats do you need?">
-    <div className="seat-picker mobile"><div className="people-art"><UsersRound/></div><div className="counter"><button disabled={booking.seats<=1} onClick={()=>setBooking({...booking,seats:booking.seats-1,passengers:[]})}><Minus/></button><div><b>{booking.seats}</b><span>{booking.seats===1?'seat':'seats'}</span></div><button disabled={booking.seats>=limit} onClick={()=>setBooking({...booking,seats:booking.seats+1,passengers:[]})}><Plus/></button></div><p>{limit} currently available · {money(booking.trip?.price||destination.price)} each</p></div>
+    <div className="seat-picker mobile"><div className="people-art"><UsersRound/></div><div className="counter"><button disabled={booking.seats<=1} onClick={()=>setBooking({...booking,seats:booking.seats-1,passengers:[]})}><Minus/></button><div><b>{booking.seats}</b><span>{booking.seats===1?'seat':'seats'}</span></div><button disabled={booking.seats>=limit} onClick={()=>setBooking({...booking,seats:booking.seats+1,passengers:[]})}><Plus/></button></div><p>{limit} currently available · {money(booking.trip?.price ?? destination.price, booking.trip?.currency ?? destination.currency)} each</p></div>
     <PriceSummary d={destination} booking={booking}/>
     <div className="flow-info"><Info/><span><b>Passenger details come next</b>We need a name and age for every traveler.</span></div>
     <div className="flow-sticky"><Continue onClick={next}/></div>
   </FlowPage>;
 }
-function PriceSummary({d,booking}) { const perSeat=Number(booking.trip?.price || d.price), base=perSeat*booking.seats+Number(booking.pickup?.extraPrice||0), fee=Math.round(base*.05); return <div className="summary"><h3>Estimated price</h3><p><span>{money(perSeat)} × {booking.seats}</span><b>{money(perSeat*booking.seats)}</b></p>{booking.pickup?.extraPrice>0&&<p><span>Pickup supplement</span><b>{money(booking.pickup.extraPrice)}</b></p>}<p><span>Service fee</span><b>{money(fee)}</b></p><hr/><p className="total"><span>Total</span><b>{money(base+fee)}</b></p><small>Final price is recalculated securely when you book.</small></div>; }
+function bookingPrices(booking, destination) {
+  const currency = tripCurrency(booking.trip?.currency ?? destination.currency);
+  const perSeat = Number(booking.trip?.price ?? destination.price);
+  const subtotal = perSeat * booking.seats;
+  const pickupFee = Number(booking.pickup?.extraPrice || 0);
+  const base = subtotal + pickupFee;
+  const baseCents = Math.round(base * 100);
+  const feeCents = Math.round(baseCents * 5 / 100);
+  const fee = currency === 'USD' ? feeCents / 100 : Math.round(base * 0.05);
+  const total = currency === 'USD' ? (baseCents + feeCents) / 100 : base + fee;
+  return { currency, perSeat, subtotal, pickupFee, fee, total };
+}
 
+function PriceSummary({ prices, seats }) {
+  const { currency, perSeat, subtotal, pickupFee, fee, total } = prices;
+  return <div className="summary">
+    <h3>Estimated price</h3>
+    <p><span>{money(perSeat, currency)} ? {seats}</span><b>{money(subtotal, currency)}</b></p>
+    {pickupFee > 0 && <p><span>Pickup supplement</span><b>{money(pickupFee, currency)}</b></p>}
+    <p><span>Service fee</span><b>{money(fee, currency)}</b></p>
+    <hr/>
+    <p className="total"><span>Total</span><b>{money(total, currency)}</b></p>
+    <small>Final price is recalculated securely when you book.</small>
+  </div>;
+}
 function PassengerForm({step,back,booking,setBooking,next}) {
   const [people,setPeople]=useState(()=>Array.from({length:booking.seats},(_,i)=>booking.passengers[i]||{name:'',age:''}));
   const update=(i,k,v)=>setPeople(current=>current.map((person,index)=>index===i?{...person,[k]:v}:person));
@@ -847,10 +880,9 @@ function ReviewBooking({back,destination,booking,trip,finish,submitting}) {
     return <FlowPage step="review" back={back} title="Trip unavailable" sub="Go back to select an available trip."/>;
   }
   const requestPayment = trip.status === 'active';
-  const base = Number(trip.price || destination.price) * booking.seats + Number(booking.pickup?.extraPrice || 0);
-  const total = base + Math.round(base * 0.05);
+  const prices = bookingPrices({ ...booking, trip }, destination);
   const label = submitting ? (requestPayment ? 'Creating secure checkout…' : 'Reserving seats…')
-    : (requestPayment ? `Continue · ${money(total)}` : 'Reserve seats');
+    : (requestPayment ? `Continue · ${money(prices.total, prices.currency)}` : 'Reserve seats');
   return (
     <FlowPage
       step="review"
@@ -860,9 +892,9 @@ function ReviewBooking({back,destination,booking,trip,finish,submitting}) {
     >
       {requestPayment && <>
         <div className="secure-note"><ShieldCheck/><span><b>Server-verified checkout</b>Price and seat availability are checked again before payment.</span></div>
-        <Choice selected><div className="pay-logo chapa"><img src="/chapa-logo.svg" alt="Chapa"/></div><div className="pay-copy"><b>Chapa</b><p>Card, bank or mobile money</p></div></Choice>
+        <Choice selected><div className="pay-logo chapa"><img src="/chapa-logo.svg" alt="Chapa"/></div><div className="pay-copy"><b>Chapa</b><p>{prices.currency === 'USD' ? 'US dollar checkout' : 'Card, bank or mobile money'}</p></div></Choice>
       </>}
-      <PriceSummary d={destination} booking={{ ...booking, trip }}/>
+      <PriceSummary prices={prices} seats={booking.seats}/>
       <Continue disabled={submitting} onClick={() => finish(requestPayment)} label={label}/>
     </FlowPage>
   );
@@ -925,6 +957,7 @@ function TicketView({booking,back}) {
         <div className="ticket-info">
           <div className="ticket-info-row"><span><small>Departure</small><b>{booking.trip.time}</b></span><span><small>Seats</small><b>{booking.seats}</b></span></div>
           <div className="ticket-info-row"><span><small>Pickup</small><b>{booking.pickup.name}</b></span><span><small>Booking</small><b className="ticket-booking-id">{booking.id}</b></span></div>
+          {booking.total > 0 && <div className="ticket-info-row"><span><small>Total paid</small><b>{money(booking.total, booking.currency)}</b></span></div>}
           <div className="qr">{qrImage?<img className="qr-code-image" src={qrImage} alt={`QR code for booking ${booking.id}`}/>:<div className="qr-loading" aria-label="Generating QR code"/>}<small>Scan to read booking {String(booking.id).slice(0,8).toUpperCase()}</small></div>
         </div>
       </div>
@@ -961,7 +994,7 @@ function SearchView({destinations,query,setQuery,open}) {
     </div>
     {!cleanQuery&&<div className="search-suggestions"><span>Try</span>{['Lalibela','Gondar','Nature','Adventure'].map(item=><button key={item} onClick={()=>setQuery(item)}>{item}</button>)}</div>}
     <div className="result-head"><b>{cleanQuery||selectedCat!=='All'?`${list.length} match${list.length===1?'':'es'}`:'Places for you'}</b><span>{cleanQuery||selectedCat!=='All'?'Filtered results':'Handpicked by Tankua'}</span></div>
-    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image} alt={d.name}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin size={12}/>{d.city}</p><div><span><Star size={12} fill="#ffb800" color="#ffb800"/>{d.rating||'New'}</span><b>From {money(d.price)}</b></div></div><i><ChevronRight size={16}/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>{setQuery('');setSelectedCat('All');}}>Show all places</button></div>}
+    {list.length?<div className="search-list">{list.map(d=><button key={d.id} onClick={()=>open(d)}><div className="search-thumb"><img src={d.image} alt={d.name}/><span>{d.category}</span></div><div className="search-copy"><h3>{d.name}</h3><p><MapPin size={12}/>{d.city}</p><div><span><Star size={12} fill="#ffb800" color="#ffb800"/>{d.rating||'New'}</span>{d.price ? <b>From {money(d.price, d.currency)}</b> : null}</div></div><i><ChevronRight size={16}/></i></button>)}</div>:<div className="search-empty"><span>🧭</span><h2>No journeys found</h2><p>Try another place, city, or experience.</p><button onClick={()=>{setQuery('');setSelectedCat('All');}}>Show all places</button></div>}
   </div>;
 }
 function TripsView({trips,destinations,open,explore,submitting}) {
@@ -1002,6 +1035,7 @@ function TripsView({trips,destinations,open,explore,submitting}) {
           <h3>{booking.destination.name}</h3>
           <p><CalendarDays/>{booking.trip.date} · {booking.trip.time}</p>
           <p><MapPin/>{booking.pickup.name}</p>
+          {booking.total > 0 && <p>{money(booking.total, booking.currency)}</p>}
           {action && <b>{action} <ChevronRight/></b>}
         </div>
       </>;
@@ -1077,7 +1111,7 @@ function MapView({destinations,open,back}) {
 
         const iconHtml=`<div class="map-pin-badge ${isSel?'selected':''}">
           <span class="pin-icon">📍</span>
-          <b class="pin-price">ETB ${priceStr}</b>
+          ${priceNum ? `<b class="pin-price">${tripCurrency(item.currency)} ${priceStr}</b>` : ''}
         </div>`;
 
         const customIcon=L.divIcon({

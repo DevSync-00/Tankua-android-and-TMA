@@ -26,11 +26,13 @@ import { OSM_TILE_URL } from '../../config/osm';
 import ModernPickupStationCard from '../../components/ModernPickupStationCard';
 import ModernButton from '../../components/ModernButton';
 import { getTripStations, getProviderPickupStations } from '../../services/database';
+import { formatTripPrice, getTripCurrency } from '../../utils/tripCurrency';
 
 const SelectPickupStationScreen = ({ navigation }) => {
   const { width, height } = useWindowDimensions();
   const { t } = useLanguage();
   const { currentBooking, updateBooking } = useBooking();
+  const currency = getTripCurrency(currentBooking.trip?.currency);
   const { showToast } = useFeedback();
   const [selectedStation, setSelectedStation] = useState(null);
   const [viewMode, setViewMode] = useState('list');
@@ -75,7 +77,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
         ? await getTripStations(currentBooking.trip.id)
         : await getProviderPickupStations(currentBooking.provider?.id);
       
-      if (rows.length === 0 && currentBooking.provider?.id) {
+      if (rows.length === 0 && currentBooking.provider?.id && currency === 'ETB') {
         rows = await getProviderPickupStations(currentBooking.provider.id);
       }
       
@@ -86,7 +88,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
           lat: Number(station.lat ?? station.latitude),
           lng: Number(station.lng ?? station.longitude),
           pickupTime: row.pickup_time || station.pickup_time || 'TBD',
-          extraPrice: Number(row.extra_price ?? station.extra_price ?? 0),
+          extraPrice: Number(row.extra_price ?? (currency === 'ETB' ? station.extra_price : 0) ?? 0),
         };
       }).filter((station) => Number.isFinite(station.lat) && Number.isFinite(station.lng));
       
@@ -239,6 +241,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
             <View style={styles.cardPadding}>
               <ModernPickupStationCard
                 station={item}
+                currency={currency}
                 onPress={() => handleStationSelect(item)}
                 selected={selectedStation?.id === item.id}
                 index={index}
@@ -263,6 +266,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
             <Animated.View style={[styles.mapStationCard, mapCardAnimatedStyle]}>
               <ModernPickupStationCard
                 station={selectedStation}
+                currency={currency}
                 onPress={() => {}}
                 selected={true}
               />
@@ -282,7 +286,7 @@ const SelectPickupStationScreen = ({ navigation }) => {
               <Text style={styles.selectedText}>{selectedStation.name}</Text>
               <Text style={styles.selectedSubtext}>
                 Departs {selectedStation.pickupTime}
-                {selectedStation.extraPrice > 0 ? ` • +ETB ${selectedStation.extraPrice}` : ''}
+                {selectedStation.extraPrice > 0 ? ` • +${formatTripPrice(selectedStation.extraPrice, currency)}` : ''}
               </Text>
             </View>
           </View>

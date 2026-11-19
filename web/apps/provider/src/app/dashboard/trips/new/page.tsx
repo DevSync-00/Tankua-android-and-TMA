@@ -5,19 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CircleCheck, MapPin } from "lucide-react";
 import { Header } from "@/components/header";
-import { Button, Card, ConfirmDialog } from "@tankua/ui";
+import { Button, Card, ConfirmDialog, getTripCurrency } from "@tankua/ui";
 import { createTrip } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
+import { tripMoneyPattern } from "@/lib/trip-currency";
 import {
-  initialForm, maxInterest, maxSeats, maxSummary, minPrice, sections, TripFormFields,
+  initialForm, maxInterest, maxSeats, maxSummary, minFares, sections, TripFormFields,
   type Destination, type Options, type Station, type StationConfig, type TripForm,
 } from "./trip-form-fields";
 
 type Draft = { form: TripForm; stations: Record<string, StationConfig> };
 const draftPrefix = "tankua-provider-trip-draft:v1:";
 const clockPattern = /^([01]\d|2[0-3]):[0-5]\d$/;
-const moneyPattern = /^\d+(\.\d{1,2})?$/;
 const fareFormat = new Intl.NumberFormat("en-ET", { maximumFractionDigits: 2 });
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Africa/Addis_Ababa", weekday: "short", day: "numeric", month: "short", year: "numeric",
@@ -33,6 +33,7 @@ function readDraft(key: string): Draft | null {
       const value = draft.form?.[field];
       if (typeof value === "string") form[field] = value;
     }
+    form.currency = getTripCurrency(form.currency);
     const stations = Object.fromEntries(
       Object.entries(draft.stations ?? {}).filter(([, config]) => config &&
         typeof config.selected === "boolean" && typeof config.pickupTime === "string" && typeof config.extraPrice === "string"),
@@ -73,6 +74,7 @@ export default function NewTripPage() {
   const draftKey = providerId ? draftPrefix + providerId : "";
 
   const isRoundTrip = form.tripType === "round_trip";
+  const currency = getTripCurrency(form.currency);
   const waitsForInterest = form.bookingMode === "interest";
   const departure = parseTripTime(form.departureDate, form.departureTime);
   const returnAt = isRoundTrip ? parseTripTime(form.returnDate, form.returnTime) : null;
@@ -149,6 +151,15 @@ export default function NewTripPage() {
   }
 
   function updateField(field: keyof TripForm, value: string) {
+    if (field === "currency") {
+      if (value === currency) return;
+      setForm((current) => ({ ...current, currency: getTripCurrency(value), price: "" }));
+      setStationConfig((current) => Object.fromEntries(
+        Object.entries(current).map(([id, config]) => [id, { ...config, extraPrice: "" }]),
+      ));
+      clearErrors("price", ...Object.keys(stationConfig).map((id) => "pickup-fee-" + id));
+      return;
+    }
     setForm((current) => ({ ...current, [field]: value }));
     if (field === "departureTime") clearErrors(field, "departureDate", "returnTime");
     else if (field === "departureDate" || field === "returnDate") clearErrors(field, "returnTime");
@@ -162,7 +173,7 @@ export default function NewTripPage() {
         ...(current[station.id] ?? {
           selected: false,
           pickupTime: form.departureTime,
-          extraPrice: String(station.extra_price ?? 0),
+          extraPrice: currency === "ETB" ? String(station.extra_price ?? 0) : "",
         }),
         ...updates,
       },
@@ -216,8 +227,8 @@ export default function NewTripPage() {
     }
 
     if (!Number.isInteger(seats) || seats < 1 || seats > maxSeats) issues.maxSeats = "Enter a whole number from 1 to 100.";
-    if (!Number.isFinite(price) || price < minPrice || !moneyPattern.test(form.price)) {
-      issues.price = "Enter at least ETB 100, with up to two decimal places.";
+    if (!Number.isFinite(price) || price < minFares[currency] || !tripMoneyPattern.test(form.price)) {
+      issues.price = `Enter at least ${currency} ${minFares[currency]}, with up to two decimal places.`;
     }
     if (!selectedStations.length) issues.pickup = "Select at least one active pickup station.";
     else if (missingStationIds.length) issues.pickup = "Remove the unavailable stations from this draft.";
@@ -225,7 +236,7 @@ export default function NewTripPage() {
     for (const { id } of selectedStations) {
       const { pickupTime, extraPrice } = stationConfig[id];
       if (!clockPattern.test(pickupTime)) issues["pickup-time-" + id] = "Enter a pickup time.";
-      if (extraPrice && (!moneyPattern.test(extraPrice) || !Number.isFinite(Number(extraPrice)))) {
+      if (extraPrice && (!tripMoneyPattern.test(extraPrice) || !Number.isFinite(Number(extraPrice)))) {
         issues["pickup-fee-" + id] = "Enter a nonnegative amount with up to two decimal places.";
       }
     }
@@ -264,6 +275,7 @@ export default function NewTripPage() {
         departure_date: departure.toISOString(),
         return_date: returnAt?.toISOString(),
         price,
+        currency,
         max_seats: seats,
         minimum_interest: waitsForInterest ? minimumInterest : undefined,
         summary,
@@ -312,7 +324,7 @@ export default function NewTripPage() {
     ["Departure", departure ? dateFormat.format(departure) + " · " + form.departureTime + " EAT" : "Choose date and time"],
     ...(returnAt ? [["Return", dateFormat.format(returnAt) + " · " + form.returnTime + " EAT"]] : []),
     ["Seats", form.maxSeats || "—"],
-    ["Per seat", form.price && Number.isFinite(Number(form.price)) ? "ETB " + fareFormat.format(Number(form.price)) : "—"],
+    ["Per seat", form.price && Number.isFinite(Number(form.price)) ? currency + " " + fareFormat.format(Number(form.price)) : "—"],
   ];
 
   return (

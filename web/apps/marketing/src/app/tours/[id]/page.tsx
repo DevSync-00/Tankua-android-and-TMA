@@ -14,7 +14,7 @@ import {
   CheckCircle2,
   Share2,
 } from "lucide-react";
-import { Button, Card, Badge } from "@tankua/ui";
+import { Button, Card, Badge, formatCurrency } from "@tankua/ui";
 import { getTourById } from "@/lib/queries";
 import { getTelegramTripUrl } from "@/lib/telegram";
 
@@ -192,7 +192,7 @@ export default function TourDetailPage() {
               <Card className="p-6 sticky top-24">
                 {tour.price !== null ? (
                   <div className="mb-6">
-                    <div className="text-3xl font-bold text-[#ffb800] mb-1">{tour.price.toLocaleString()} ETB</div>
+                    <div className="text-3xl font-bold text-[#ffb800] mb-1">{formatCurrency(tour.price, tour.currency)}</div>
                     <div className="text-sm text-[#181714]/60">per person</div>
                   </div>
                 ) : (

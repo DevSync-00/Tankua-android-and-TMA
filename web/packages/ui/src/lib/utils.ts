@@ -10,8 +10,32 @@ export function formatCurrency(amount: number, currency = "ETB"): string {
     style: "currency",
     currency: currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
+}
+
+export type TripCurrency = "ETB" | "USD";
+export type CurrencyTotals = Partial<Record<TripCurrency, number>>;
+
+export function getTripCurrency(currency: unknown): TripCurrency {
+  return currency === "USD" ? "USD" : "ETB";
+}
+
+export function sumByCurrency<T extends { currency: unknown }>(items: readonly T[], amount: (item: T) => number): CurrencyTotals {
+  const totals: CurrencyTotals = {};
+  for (const item of items) {
+    const currency = getTripCurrency(item.currency);
+    totals[currency] = (totals[currency] ?? 0) + amount(item);
+  }
+  return totals;
+}
+
+export function formatCurrencyTotals(totals: CurrencyTotals): string {
+  const values = (['ETB', 'USD'] as const).flatMap((currency) => {
+    const amount = totals[currency];
+    return amount === undefined ? [] : [formatCurrency(amount, currency)];
+  });
+  return values.join(" · ") || formatCurrency(0);
 }
 
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {

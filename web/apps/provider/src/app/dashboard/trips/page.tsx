@@ -381,7 +381,7 @@ export default function TripsPage() {
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <div>
-                        <p className="font-semibold text-sm">{formatCurrency(trip.price)}</p>
+                        <p className="font-semibold text-sm">{formatCurrency(trip.price, trip.currency)}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Users className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
@@ -463,7 +463,7 @@ export default function TripsPage() {
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          <p className="font-semibold text-sm">{formatCurrency(trip.price)}</p>
+                          <p className="font-semibold text-sm">{formatCurrency(trip.price, trip.currency)}</p>
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">

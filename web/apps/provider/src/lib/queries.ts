@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { getTripDateParts } from './trip-schedule';
+import { getTripCurrency, sumByCurrency, type CurrencyTotals, type TripCurrency } from '@tankua/ui';
 
 // ============================================
 // PROVIDER DASHBOARD
@@ -7,7 +8,7 @@ import { getTripDateParts } from './trip-schedule';
 
 export interface ProviderStats {
   todayBookings: number | null;
-  monthlyEarnings: number | null;
+  monthlyEarnings: CurrencyTotals | null;
   activeTrips: number | null;
   averageRating: number | null;
   bookingsChange: number | undefined;
@@ -31,6 +32,7 @@ export interface RecentBooking {
   destination: string;
   seats: number;
   amount: number;
+  currency: TripCurrency;
   time: string;
   status: string;
   paymentStatus: string | null;
@@ -77,13 +79,13 @@ export async function getProviderStats(providerId: string): Promise<ProviderStat
       .lt('created_at', today.toISOString()),
     supabase
       .from('bookings')
-      .select('base_price, total_price')
+      .select('base_price, total_price, currency')
       .eq('provider_id', providerId)
       .eq('payment_status', 'paid')
       .gte('created_at', firstDayOfMonth.toISOString()),
     supabase
       .from('bookings')
-      .select('base_price, total_price')
+      .select('base_price, total_price, currency')
       .eq('provider_id', providerId)
       .eq('payment_status', 'paid')
       .gte('created_at', lastMonthStart.toISOString())
@@ -101,13 +103,16 @@ export async function getProviderStats(providerId: string): Promise<ProviderStat
       .single(),
   ]);
 
-  const monthlyEarnings = monthlyEarningsData?.reduce((sum, booking) => sum + Number(booking.base_price ?? booking.total_price), 0) ?? null;
-  const lastMonthEarnings = lastMonthEarningsData?.reduce((sum, booking) => sum + Number(booking.base_price ?? booking.total_price), 0) ?? null;
+  const monthlyEarnings = monthlyEarningsData && sumByCurrency(monthlyEarningsData, (booking) => Number(booking.base_price ?? booking.total_price));
+  const lastMonthEarnings = lastMonthEarningsData && sumByCurrency(lastMonthEarningsData, (booking) => Number(booking.base_price ?? booking.total_price));
+  const earningsCurrencies = Object.keys({ ...lastMonthEarnings, ...monthlyEarnings }) as TripCurrency[];
+  const comparisonCurrency = earningsCurrencies.length === 1 ? earningsCurrencies[0] : undefined;
+  const previousEarnings = comparisonCurrency ? lastMonthEarnings?.[comparisonCurrency] ?? 0 : 0;
   const bookingsChange = todayBookings !== null && yesterdayBookings !== null && yesterdayBookings > 0
     ? Math.round(((todayBookings - yesterdayBookings) / yesterdayBookings) * 100)
     : undefined;
-  const earningsChange = monthlyEarnings !== null && lastMonthEarnings !== null && lastMonthEarnings > 0
-    ? Math.round(((monthlyEarnings - lastMonthEarnings) / lastMonthEarnings) * 100)
+  const earningsChange = comparisonCurrency && monthlyEarnings !== null && previousEarnings > 0
+    ? Math.round(((monthlyEarnings[comparisonCurrency] ?? 0) - previousEarnings) / previousEarnings * 100)
     : undefined;
   const rating = Number(provider?.rating);
 
@@ -167,6 +172,7 @@ export async function getRecentBookings(providerId: string, limit = 4): Promise<
       id,
       seats,
       total_price,
+      currency,
       status,
       payment_status,
       created_at,
@@ -207,6 +213,7 @@ export async function getRecentBookings(providerId: string, limit = 4): Promise<
       destination: booking.trips?.destinations?.name || booking.destination_name || 'Unknown destination',
       seats: booking.seats,
       amount: booking.total_price,
+      currency: getTripCurrency(booking.currency),
       time: timeAgo,
       status: booking.status,
       paymentStatus: booking.payment_status,
@@ -288,6 +295,7 @@ export interface BookingDetails {
   seats: number;
   base_price: number | null;
   total_price: number;
+  currency: TripCurrency;
   status: string;
   payment_status: string;
   created_at: string;
@@ -299,6 +307,7 @@ export async function getProviderBookings(
     limit?: number;
     offset?: number;
     status?: string;
+    currency?: TripCurrency;
   }
 ): Promise<{ bookings: BookingDetails[]; total: number }> {
   // Query bookings by provider_id directly (bookings have provider_id column)
@@ -310,6 +319,7 @@ export async function getProviderBookings(
       seats,
       base_price,
       total_price,
+      currency,
       status,
       payment_status,
       created_at,
@@ -331,6 +341,10 @@ export async function getProviderBookings(
 
   if (options?.status) {
     query = query.eq('status', options.status);
+  }
+
+  if (options?.currency) {
+    query = query.eq('currency', options.currency);
   }
 
   if (options?.limit) {
@@ -364,6 +378,7 @@ export async function getProviderBookings(
       seats: b.seats,
       base_price: b.base_price,
       total_price: b.total_price,
+      currency: getTripCurrency(b.currency),
       status: b.status,
       payment_status: b.payment_status,
       created_at: b.created_at,
@@ -401,6 +416,7 @@ export interface TripDetails {
   return_date: string | null;
   trip_type: string;
   price: number;
+  currency: TripCurrency;
   max_seats: number;
   available_seats: number;
   status: string;
@@ -459,6 +475,7 @@ export async function getProviderTrips(
       return_date: t.return_date,
       trip_type: t.trip_type,
       price: t.price,
+      currency: getTripCurrency(t.currency),
       max_seats: t.max_seats || 0,
       available_seats: t.available_seats || 0,
       status: t.status,
@@ -482,6 +499,7 @@ export async function createTrip(trip: {
   departure_date: string;
   return_date?: string;
   price: number;
+  currency?: 'ETB' | 'USD';
   max_seats: number;
   minimum_interest?: number;
   tour_category?: string;
@@ -518,6 +536,10 @@ export async function createTrip(trip: {
 
   if (!Number.isFinite(trip.price) || trip.price <= 0) {
     return { success: false, error: 'Enter a price greater than zero.' };
+  }
+
+  if (trip.currency !== undefined && trip.currency !== 'ETB' && trip.currency !== 'USD') {
+    return { success: false, error: 'Choose ETB or USD as the trip currency.' };
   }
 
   const seatLimit = stations === undefined ? MAX_TRIP_INTEGER : 100;
@@ -562,6 +584,7 @@ export async function createTrip(trip: {
     return_date: returnDate,
     date: getTripDateParts(trip.departure_date).date,
     price: trip.price,
+    currency: trip.currency,
     max_seats: trip.max_seats,
     available_seats: trip.max_seats,
     status: minimumInterest === undefined ? 'upcoming' : 'collecting_interest',
@@ -908,6 +931,7 @@ export async function updateDriverStatus(
 // ============================================
 
 export interface EarningsSummary {
+  currency: TripCurrency;
   totalEarnings: number;
   providerFees: number;
   pendingPayout: number | null;
@@ -915,7 +939,7 @@ export interface EarningsSummary {
   monthlyData: { month: string; earnings: number }[];
 }
 
-export async function getEarningsSummary(providerId: string): Promise<EarningsSummary> {
+export async function getEarningsSummary(providerId: string, currency: TripCurrency = 'ETB'): Promise<EarningsSummary> {
   const now = new Date();
   const startOfChart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
@@ -924,23 +948,26 @@ export async function getEarningsSummary(providerId: string): Promise<EarningsSu
       .from('bookings')
       .select('base_price, total_price, provider_fee')
       .eq('provider_id', providerId)
+      .eq('currency', currency)
       .eq('payment_status', 'paid'),
     supabase
       .from('bookings')
       .select('base_price, total_price, created_at')
       .eq('provider_id', providerId)
+      .eq('currency', currency)
       .eq('payment_status', 'paid')
       .gte('created_at', startOfChart.toISOString()),
     supabase
       .from('payouts')
       .select('amount')
       .eq('provider_id', providerId)
-      .eq('currency', 'ETB')
+      .eq('currency', currency)
       .in('status', ['pending', 'processing']),
     supabase
       .from('payouts')
       .select('amount, currency, processed_at')
       .eq('provider_id', providerId)
+      .eq('currency', currency)
       .eq('status', 'completed')
       .order('processed_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
@@ -983,6 +1010,7 @@ export async function getEarningsSummary(providerId: string): Promise<EarningsSu
   });
 
   return {
+    currency,
     totalEarnings,
     providerFees,
     pendingPayout,

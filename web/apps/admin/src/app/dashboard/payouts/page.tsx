@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Building2, Download, RefreshCw, Wallet } from "lucide-react";
 import { Header } from "@/components/header";
 import { getProviderPayoutBalances, type ProviderPayoutBalance } from "@/lib/queries";
-import { Card, CardContent, Button, Avatar, formatCurrency } from "@tankua/ui";
+import { Card, CardContent, Button, Avatar, formatCurrency, formatCurrencyTotals, sumByCurrency } from "@tankua/ui";
 
 export default function PayoutsPage() {
   const [balances, setBalances] = useState<ProviderPayoutBalance[]>([]);
@@ -28,23 +28,21 @@ export default function PayoutsPage() {
   }, [loadBalances]);
 
   const totals = useMemo(
-    () => balances.reduce(
-      (sum, item) => ({
-        gross: sum.gross + item.gross_amount,
-        fees: sum.fees + item.platform_fee,
-        payable: sum.payable + item.payable_amount,
-      }),
-      { gross: 0, fees: 0, payable: 0 }
-    ),
+    () => [
+      ["Gross paid bookings", sumByCurrency(balances, (balance) => balance.gross_amount)],
+      ["Tankua fee (5%)", sumByCurrency(balances, (balance) => balance.platform_fee)],
+      ["Provider payable", sumByCurrency(balances, (balance) => balance.payable_amount)],
+    ] as const,
     [balances]
   );
 
   const exportBalances = () => {
     const rows = [
-      ["Provider", "Paid bookings", "Gross", "Platform fee", "Payable"],
+      ["Provider", "Paid bookings", "Currency", "Gross", "Platform fee", "Payable"],
       ...balances.map((balance) => [
         balance.provider_name,
         balance.booking_count,
+        balance.currency,
         balance.gross_amount,
         balance.platform_fee,
         balance.payable_amount,
@@ -84,14 +82,10 @@ export default function PayoutsPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            ["Gross paid bookings", totals.gross],
-            ["Tankua fee (5%)", totals.fees],
-            ["Provider payable", totals.payable],
-          ].map(([label, amount]) => (
+          {totals.map(([label, amounts]) => (
             <Card key={label} className="p-5">
               <p className="text-sm text-muted-foreground">{label}</p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight">{formatCurrency(Number(amount))}</p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight">{formatCurrencyTotals(amounts)}</p>
             </Card>
           ))}
         </div>
@@ -99,7 +93,7 @@ export default function PayoutsPage() {
         <Card>
           <div className="border-b border-border p-5">
             <h2 className="font-semibold">Provider balances</h2>
-            <p className="text-sm text-muted-foreground">{balances.length} providers with paid bookings</p>
+            <p className="text-sm text-muted-foreground">{new Set(balances.map((balance) => balance.provider_id)).size} providers with paid bookings</p>
           </div>
           <CardContent className="p-0">
             {loading ? (
@@ -124,7 +118,7 @@ export default function PayoutsPage() {
                   </thead>
                   <tbody>
                     {balances.map((balance) => (
-                      <tr key={balance.provider_id} className="border-b border-border last:border-0 hover:bg-muted/30">
+                      <tr key={balance.provider_id + ":" + balance.currency} className="border-b border-border last:border-0 hover:bg-muted/30">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <Avatar name={balance.provider_name} size="sm" />
@@ -135,9 +129,9 @@ export default function PayoutsPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-sm">{balance.booking_count}</td>
-                        <td className="px-5 py-4 text-sm">{formatCurrency(balance.gross_amount)}</td>
-                        <td className="px-5 py-4 text-sm text-muted-foreground">{formatCurrency(balance.platform_fee)}</td>
-                        <td className="px-5 py-4 text-sm font-semibold">{formatCurrency(balance.payable_amount)}</td>
+                        <td className="px-5 py-4 text-sm">{formatCurrency(balance.gross_amount, balance.currency)}</td>
+                        <td className="px-5 py-4 text-sm text-muted-foreground">{formatCurrency(balance.platform_fee, balance.currency)}</td>
+                        <td className="px-5 py-4 text-sm font-semibold">{formatCurrency(balance.payable_amount, balance.currency)}</td>
                       </tr>
                     ))}
                   </tbody>

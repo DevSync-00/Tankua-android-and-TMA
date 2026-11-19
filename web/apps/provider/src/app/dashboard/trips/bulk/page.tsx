@@ -14,16 +14,18 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@tankua/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, getTripCurrency, type TripCurrency } from "@tankua/ui";
 import { supabase } from "@/lib/supabase";
 import { createTrip, getProviderTrips, type TripDetails } from "@/lib/queries";
 import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
+import { tripCurrencies, tripMoneyPattern } from "@/lib/trip-currency";
 
 interface TripTemplate {
   destinationId: string;
   destinationName: string;
   tripType: string;
   departureTime: string;
+  currency: TripCurrency;
   price: string;
   maxSeats: string;
   tourCategory: string;
@@ -38,6 +40,7 @@ interface BulkTrip {
   departureDate: string;
   departureTime: string;
   returnDate: string;
+  currency: TripCurrency;
   price: string;
   maxSeats: string;
   tourCategory: string;
@@ -58,6 +61,7 @@ export default function BulkTripPage() {
     destinationName: "",
     tripType: "round_trip",
     departureTime: "06:00",
+    currency: "ETB",
     price: "",
     maxSeats: "",
     tourCategory: "",
@@ -158,6 +162,7 @@ export default function BulkTripPage() {
             departureDate: currentDate.toISOString().split('T')[0],
             departureTime: template.departureTime,
             returnDate,
+            currency: template.currency,
             price: template.price,
             maxSeats: template.maxSeats,
             tourCategory: template.tourCategory,
@@ -182,6 +187,7 @@ export default function BulkTripPage() {
           departureDate: currentDate.toISOString().split('T')[0],
           departureTime: template.departureTime,
           returnDate,
+          currency: template.currency,
           price: template.price,
           maxSeats: template.maxSeats,
           tourCategory: template.tourCategory,
@@ -231,6 +237,7 @@ export default function BulkTripPage() {
         departureDate: currentDate.toISOString().split('T')[0],
         departureTime,
         returnDate,
+        currency: getTripCurrency(trip.currency),
         price: trip.price?.toString() || "",
         maxSeats: trip.max_seats?.toString() || "",
         tourCategory: trip.tour_category || "",
@@ -254,6 +261,7 @@ export default function BulkTripPage() {
         departureDate: "",
         departureTime: "06:00",
         returnDate: "",
+        currency: "ETB",
         price: "",
         maxSeats: "",
         tourCategory: "",
@@ -269,6 +277,7 @@ export default function BulkTripPage() {
   const updateTrip = (id: string, field: string, value: string) => {
     setBulkTrips(bulkTrips.map(trip => {
       if (trip.id === id) {
+        if (field === "currency") return { ...trip, currency: getTripCurrency(value), price: "" };
         const updated = { ...trip, [field]: value };
         if (field === 'destinationId') {
           const dest = destinations.find(d => d.id === value);
@@ -297,7 +306,7 @@ export default function BulkTripPage() {
       if (!departure || departure.getTime() <= now) errors.push("Future departure date and time required");
       if (trip.tripType === "round_trip" && !trip.returnDate) errors.push("Return date required for round trips");
       if (trip.returnDate && (!returnSchedule || (departure && returnSchedule < departure))) errors.push("Return date must be on or after departure");
-      if (!Number.isFinite(price) || price <= 0) errors.push("Valid price required");
+      if (!Number.isFinite(price) || price <= 0 || !tripMoneyPattern.test(trip.price)) errors.push("Enter a positive price with up to two decimal places");
       if (!Number.isInteger(seats) || seats <= 0) errors.push("Whole seat count required");
 
       if (errors.length > 0) isValid = false;
@@ -349,6 +358,7 @@ export default function BulkTripPage() {
           departure_date: departureDate.toISOString(),
           return_date: returnDate?.toISOString(),
           price: Number(trip.price),
+          currency: trip.currency,
           max_seats: Number(trip.maxSeats),
           tour_category: trip.tourCategory || undefined,
           itinerary: trip.itinerary || undefined,
@@ -500,10 +510,24 @@ export default function BulkTripPage() {
                   />
                 </div>
 
+                <label className="block text-sm font-medium">
+                  Fare currency
+                  <select
+                    value={template.currency}
+                    onChange={(e) => setTemplate({ ...template, currency: getTripCurrency(e.target.value), price: "" })}
+                    className="mt-2 w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm"
+                  >
+                    {tripCurrencies.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </label>
+
                 <div>
-                  <label className="block text-sm font-medium mb-2">Price (ETB) *</label>
+                  <label htmlFor="bulk-template-price" className="block text-sm font-medium mb-2">Price ({template.currency}) *</label>
                   <input
+                    id="bulk-template-price"
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     value={template.price}
                     onChange={(e) => setTemplate({ ...template, price: e.target.value })}
                     placeholder="500"
@@ -614,7 +638,7 @@ export default function BulkTripPage() {
                   <option value="">Select a trip</option>
                   {existingTrips.map(trip => (
                     <option key={trip.id} value={trip.id}>
-                      {trip.destination?.name || "Unnamed destination"} - {trip.departure_date ? new Date(trip.departure_date).toLocaleDateString(undefined, { timeZone: "Africa/Addis_Ababa" }) : 'TBD'}
+                      {trip.destination?.name || "Unnamed destination"} - {trip.departure_date ? new Date(trip.departure_date).toLocaleDateString(undefined, { timeZone: "Africa/Addis_Ababa" }) : 'TBD'} · {getTripCurrency(trip.currency)} {trip.price}
                     </option>
                   ))}
                 </select>
@@ -746,10 +770,24 @@ export default function BulkTripPage() {
                             </div>
                           )}
 
+                          <label className="block text-sm font-medium">
+                            Fare currency
+                            <select
+                              value={trip.currency}
+                              onChange={(e) => updateTrip(trip.id, "currency", e.target.value)}
+                              className="mt-2 w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm"
+                            >
+                              {tripCurrencies.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                            </select>
+                          </label>
+
                           <div>
-                            <label className="block text-sm font-medium mb-2">Price (ETB) *</label>
+                            <label htmlFor={`price-${trip.id}`} className="block text-sm font-medium mb-2">Price ({trip.currency}) *</label>
                             <input
+                              id={`price-${trip.id}`}
                               type="number"
+                              min="0.01"
+                              step="0.01"
                               value={trip.price}
                               onChange={(e) => updateTrip(trip.id, 'price', e.target.value)}
                               className="w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm"
@@ -790,7 +828,7 @@ export default function BulkTripPage() {
                         {trip.destinationName || "Unknown"} - {trip.departureDate} at {trip.departureTime}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {trip.tripType === "round_trip" ? "Round Trip" : "One Way"} • {trip.maxSeats} seats • {trip.price} ETB
+                        {trip.tripType === "round_trip" ? "Round Trip" : "One Way"} • {trip.maxSeats} seats • {trip.currency} {trip.price}
                       </p>
                     </div>
                     {trip.errors && trip.errors.length > 0 && (

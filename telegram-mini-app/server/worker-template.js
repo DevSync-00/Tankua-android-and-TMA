@@ -278,7 +278,7 @@ async function authenticate(request, env) {
 async function getCatalog(env, session) {
   const [destinations, trips, providers, stations, links, interests] = await Promise.all([
     supabaseAll(env, 'destinations?select=id,name,description,region,city,distance,images,tags,category,location,is_featured,is_popular&order=name.asc'),
-    supabaseAll(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,available_seats,max_seats,summary,itinerary,duration_minutes,transportation_type,difficulty_level,inclusions,exclusions,meeting_instructions,what_to_bring,cancellation_policy,status,minimum_interest,interest_count&status=in.(active,upcoming,collecting_interest)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc,id.asc`),
+    supabaseAll(env, `trips?select=id,destination_id,provider_id,trip_type,departure_date,return_date,price,currency,available_seats,max_seats,summary,itinerary,duration_minutes,transportation_type,difficulty_level,inclusions,exclusions,meeting_instructions,what_to_bring,cancellation_policy,status,minimum_interest,interest_count&status=in.(active,upcoming,collecting_interest)&departure_date=gt.${encodeURIComponent(new Date().toISOString())}&order=departure_date.asc,id.asc`),
     supabase(env, 'providers?select=id,name,description,logo_url,rating,total_trips&status=eq.active&order=name.asc'),
     supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,is_active&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
@@ -292,13 +292,16 @@ async function getCatalog(env, session) {
     .filter(trip => trip.status !== 'collecting_interest' || activeProviders.has(trip.provider_id))
     .map(trip => ({ ...trip, interested: interestedTrips.has(trip.id) }));
   const catalogDestinations = destinations.map(destination => {
-    const prices = catalogTrips
-      .filter(trip => trip.destination_id === destination.id && trip.status !== 'collecting_interest' && trip.price != null)
-      .map(trip => Number(trip.price))
-      .filter(Number.isFinite);
+    const pricedTrips = catalogTrips.filter(trip =>
+      trip.destination_id === destination.id && trip.status !== 'collecting_interest' &&
+      trip.price != null && Number.isFinite(Number(trip.price)),
+    );
+    const currencies = new Set(pricedTrips.map(trip => trip.currency ?? 'ETB'));
+    const currency = currencies.size === 1 ? currencies.values().next().value : null;
     return {
       ...destination,
-      price: prices.length ? Math.min(...prices) : null,
+      price: currency ? Math.min(...pricedTrips.map(trip => Number(trip.price))) : null,
+      currency,
       is_verified: true,
     };
   });
@@ -383,7 +386,7 @@ async function expressTripInterest(tripId, session, env) {
 async function initializePayment(request, session, env) {
   const { booking_id } = await request.json();
   if (typeof booking_id !== 'string' || !BOOKING_UUID_PATTERN.test(booking_id)) return json({ error: 'Invalid booking' }, 400);
-  const bookings = await supabase(env, `bookings?select=id,total_price,status,payment_status,payment_deadline,${BOOKING_TRIP_SELECT}&user_id=eq.${session.uid}&id=eq.${booking_id}&limit=1`);
+  const bookings = await supabase(env, `bookings?select=id,total_price,currency,status,payment_status,payment_deadline,${BOOKING_TRIP_SELECT}&user_id=eq.${session.uid}&id=eq.${booking_id}&limit=1`);
   const booking = bookings?.[0];
   if (!booking) return json({ error: 'Booking not found' }, 404);
   if (booking.payment_status === 'paid') return json({ error: 'Booking is already paid' }, 409);
@@ -398,6 +401,7 @@ async function initializePayment(request, session, env) {
   if (!(Date.parse(booking.payment_deadline) > now)) return json({ error: 'There is no open payment window for this booking' }, 409);
   if (!env.CHAPA_SECRET_KEY || !env.APP_ORIGIN) throw new Error('Payment service is not configured');
 
+  const currency = booking.currency ?? 'ETB';
   const txRef = `tankua-${crypto.randomUUID()}`;
   const transactionPath = `payment_transactions?transaction_ref=eq.${encodeURIComponent(txRef)}`;
   const headers = { Prefer: 'return=minimal' };
@@ -407,7 +411,7 @@ async function initializePayment(request, session, env) {
       booking_id: booking.id,
       user_id: session.uid,
       amount: booking.total_price,
-      currency: 'ETB',
+      currency,
       payment_method: 'chapa',
       transaction_ref: txRef,
       status: 'pending',
@@ -422,7 +426,7 @@ async function initializePayment(request, session, env) {
       headers: { authorization: `Bearer ${env.CHAPA_SECRET_KEY}`, 'content-type': 'application/json' },
       body: JSON.stringify({
         amount: Number(booking.total_price).toFixed(2),
-        currency: 'ETB',
+        currency,
         email: 'payments@tankua.co',
         first_name: 'Tankua',
         last_name: 'Traveler',
@@ -473,8 +477,10 @@ async function verifyPayment(txRef, env, expectedUserId = null) {
   });
   const result = await response.json();
   const paid = response.ok && result.status === 'success' && ['success', 'successful'].includes(result.data?.status);
-  const amountMatches = Number(result.data?.amount) === Number(transaction.amount);
-  if (paid && amountMatches) {
+  const matches = Number(result.data?.amount) === Number(transaction.amount) &&
+    result.data?.currency === (transaction.currency ?? 'ETB') &&
+    result.data?.tx_ref === txRef;
+  if (paid && matches) {
     await Promise.all([
       supabase(env, `payment_transactions?transaction_ref=eq.${encodeURIComponent(txRef)}`, {
         method: 'PATCH',
@@ -488,7 +494,7 @@ async function verifyPayment(txRef, env, expectedUserId = null) {
       }),
     ]);
   }
-  return json({ paid: paid && amountMatches, status: paid && amountMatches ? 'paid' : transaction.status, booking_id: transaction.booking_id });
+  return json({ paid: paid && matches, status: paid && matches ? 'paid' : transaction.status, booking_id: transaction.booking_id });
 }
 
 async function updateProfile(request, session, env) {

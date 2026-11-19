@@ -187,7 +187,7 @@ export default function BookingsPage() {
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-border">
                         <div>
-                          <p className="font-semibold text-sm">{formatCurrency(booking.total_price)}</p>
+                          <p className="font-semibold text-sm">{formatCurrency(booking.total_price, booking.currency)}</p>
                           {getPaymentBadge(booking.payment_status)}
                         </div>
                         <div className="flex items-center gap-1">
@@ -288,7 +288,7 @@ export default function BookingsPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div>
-                            <p className="font-semibold text-sm">{formatCurrency(booking.total_price)}</p>
+                            <p className="font-semibold text-sm">{formatCurrency(booking.total_price, booking.currency)}</p>
                             {getPaymentBadge(booking.payment_status)}
                           </div>
                         </td>

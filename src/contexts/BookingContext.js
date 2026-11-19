@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
 import { BOOKING_WITH_TRIP } from '../services/bookingService';
+import { calculatePriceWithFees, getTripCurrency } from '../utils/tripCurrency';
 
 const BookingContext = createContext();
 
@@ -105,6 +106,7 @@ export const BookingProvider = ({ children }) => {
         service_fee: price.serviceFee,
         provider_fee: price.providerFee,
         total_price: price.total,
+        currency: getTripCurrency(currentBooking.trip?.currency),
         status: 'confirmed',
         payment_status: 'pending',
         qr_code: generateQRCode(),
@@ -127,7 +129,8 @@ export const BookingProvider = ({ children }) => {
 
   const calculateTotalPrice = () => {
     // Get price from trip if available, otherwise use default
-    let basePricePerSeat = currentBooking.trip?.price || 500; // Use trip price or default to 500 ETB
+    const currency = getTripCurrency(currentBooking.trip?.currency);
+    let basePricePerSeat = Number(currentBooking.trip?.price || 500);
     
     // Apply trip type multipliers if needed (only if not already in trip price)
     if (currentBooking.tripType === 'private' && !currentBooking.trip?.price) {
@@ -141,19 +144,15 @@ export const BookingProvider = ({ children }) => {
 
     // Add pickup station extra price if applicable
     if (currentBooking.pickupStation?.extraPrice) {
-      basePrice += currentBooking.pickupStation.extraPrice;
+      basePrice += Number(currentBooking.pickupStation.extraPrice);
     }
 
     // Add vehicle extra price for private trips
-    if (currentBooking.vehicleType?.price) {
-      basePrice += currentBooking.vehicleType.price;
+    if (currency === 'ETB' && currentBooking.vehicleType?.price) {
+      basePrice += Number(currentBooking.vehicleType.price);
     }
 
-    const serviceFee = Math.round(basePrice * 0.05); // 5% charged to rider
-    const providerFee = Math.round(basePrice * 0.05); // 5% cut from provider
-    const total = basePrice + serviceFee;
-
-    return { basePrice, serviceFee, providerFee, total };
+    return calculatePriceWithFees(basePrice, currency);
   };
 
   const generateQRCode = () => {

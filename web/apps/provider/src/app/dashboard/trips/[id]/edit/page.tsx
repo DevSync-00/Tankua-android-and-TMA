@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, MapPin } from "lucide-react";
 import { Header } from "@/components/header";
-import { Button, Card } from "@tankua/ui";
+import { Button, Card, getTripCurrency, type TripCurrency } from "@tankua/ui";
 import { supabase } from "@/lib/supabase";
 import { getProviderTrip, replaceTripPickupStations, updateTrip, updateTripStatus } from "@/lib/queries";
 import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
@@ -14,6 +14,7 @@ type Station = { id: string; name: string; city: string | null; address: string 
 type StationValue = { selected: boolean; pickupTime: string; extraPrice: string };
 type SavedTripState = {
   status: string;
+  currency: TripCurrency;
   tripType: string;
   departureAt: number;
   departureDate: string;
@@ -38,6 +39,7 @@ export default function EditTripPage() {
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
+  const currency = savedTrip?.currency ?? "ETB";
 
   const isCollectingInterest = savedTrip?.status === "collecting_interest";
   const cancelledBeforeGoal = savedTrip?.status === "cancelled"
@@ -81,6 +83,7 @@ export default function EditTripPage() {
       setForm(loadedForm);
       setSavedTrip({
         status: loadedForm.status,
+        currency: getTripCurrency(trip.currency),
         tripType: loadedForm.tripType,
         departureAt: Date.parse(departureIso),
         departureDate: loadedForm.departureDate,
@@ -141,7 +144,7 @@ export default function EditTripPage() {
     if(!tripResult.success){setError(tripResult.error||"Could not update trip.");setSaving(false);return;}
     const stationResult=await replaceTripPickupStations(id,selected.map(station=>({
       station_id:station.id,pickup_time:stationConfig[station.id].pickupTime,
-      extra_price:Number(stationConfig[station.id].extraPrice||station.extra_price||0),
+      extra_price:Number(stationConfig[station.id].extraPrice || 0),
     })));
     if(!stationResult.success){setError(stationResult.error||"Trip updated, but pickup stations could not be saved.");setSaving(false);return;}
     if (activating) {
@@ -209,15 +212,36 @@ export default function EditTripPage() {
             </p>
           </div>
         )}
-        <label>Price per seat (ETB) *<input required min="1" step="0.01" type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
+        <label>Price per seat ({currency}) *<input required min={currency === "USD" ? "0.01" : "1"} step="0.01" type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label>Maximum seats *<input required min="1" type="number" value={form.maxSeats} onChange={e=>setForm({...form,maxSeats:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label>Tour category<input value={form.tourCategory} onChange={e=>setForm({...form,tourCategory:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border"/></label>
         <label className="md:col-span-2">Itinerary<textarea rows={4} value={form.itinerary} onChange={e=>setForm({...form,itinerary:e.target.value})} className="mt-1 w-full px-3 py-3 rounded-xl border resize-none"/></label>
       </Card>
       <Card className="p-5 space-y-3"><h2 className="font-semibold flex gap-2"><MapPin className="h-5 w-5 text-primary"/>Pickup Stations</h2>
         {!stations.length?<p className="text-sm text-muted-foreground">No active stations. <Link href="/dashboard/pickup-stations" className="text-primary">Create one first.</Link></p>:stations.map(station=>{
-          const value=stationConfig[station.id]||{selected:false,pickupTime:"",extraPrice:String(station.extra_price||0)};
-          return <div key={station.id} className={`border rounded-xl p-4 ${value.selected?"border-primary bg-primary/5":""}`}><label className="flex gap-3"><input type="checkbox" checked={value.selected} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,selected:e.target.checked}})}/><span><b>{station.name}</b><small className="block text-muted-foreground">{[station.address,station.city].filter(Boolean).join(", ")}</small></span></label>{value.selected&&<div className="grid grid-cols-2 gap-3 mt-3 pl-6"><input type="time" value={value.pickupTime} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,pickupTime:e.target.value}})} className="px-3 py-2 rounded-lg border"/><input type="number" min="0" step="0.01" value={value.extraPrice} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,extraPrice:e.target.value}})} className="px-3 py-2 rounded-lg border" placeholder="Extra price"/></div>}</div>;
+          const value = stationConfig[station.id] ?? {
+            selected: false,
+            pickupTime: "",
+            extraPrice: currency === "ETB" ? String(station.extra_price ?? 0) : "",
+          };
+          return (
+            <div key={station.id} className={`border rounded-xl p-4 ${value.selected ? "border-primary bg-primary/5" : ""}`}>
+              <label className="flex gap-3">
+                <input type="checkbox" checked={value.selected} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,selected:e.target.checked}})}/>
+                <span><b>{station.name}</b><small className="block text-muted-foreground">{[station.address,station.city].filter(Boolean).join(", ")}</small></span>
+              </label>
+              {value.selected ? (
+                <div className="grid gap-3 mt-3 sm:grid-cols-2 sm:pl-6">
+                  <label className="text-sm">Pickup time (EAT)
+                    <input type="time" required value={value.pickupTime} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,pickupTime:e.target.value}})} className="mt-1 w-full px-3 py-2 rounded-lg border"/>
+                  </label>
+                  <label className="text-sm">Pickup surcharge ({currency})
+                    <input type="number" min="0" step="0.01" value={value.extraPrice} onChange={e=>setStationConfig({...stationConfig,[station.id]:{...value,extraPrice:e.target.value}})} className="mt-1 w-full px-3 py-2 rounded-lg border"/>
+                  </label>
+                </div>
+              ) : null}
+            </div>
+          );
         })}
       </Card>
       <div className="flex justify-end gap-3"><Link href="/dashboard/trips"><Button type="button" variant="outline">Cancel</Button></Link><Button type="submit" isLoading={saving} leftIcon={<CheckCircle className="h-4 w-4"/>}>Save Trip</Button></div>

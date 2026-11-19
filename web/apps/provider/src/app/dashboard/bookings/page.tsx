@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, Avatar, formatCurrency, InlineBanner } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, Avatar, formatCurrency, formatCurrencyTotals, sumByCurrency, InlineBanner } from "@tankua/ui";
 import { getProviderBookings, updateBookingStatus, type BookingDetails } from "@/lib/queries";
 
 export default function BookingsPage() {
@@ -230,8 +230,8 @@ export default function BookingsPage() {
 
   const exportBookings = () => {
     const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
-    const rows = filteredBookings.map((booking) => [booking.id, booking.user?.name || "Unknown", booking.trip?.destination?.name || booking.destination_name || "Unknown", booking.trip?.departure_date || "", booking.seats, booking.total_price, booking.status, booking.payment_status]);
-    const csv = [["Booking ID", "Customer", "Destination", "Departure", "Seats", "Amount (ETB)", "Status", "Payment"], ...rows].map((row) => row.map(escape).join(",")).join("\n");
+    const rows = filteredBookings.map((booking) => [booking.id, booking.user?.name || "Unknown", booking.trip?.destination?.name || booking.destination_name || "Unknown", booking.trip?.departure_date || "", booking.seats, booking.total_price, booking.currency, booking.status, booking.payment_status]);
+    const csv = [["Booking ID", "Customer", "Destination", "Departure", "Seats", "Amount", "Currency", "Status", "Payment"], ...rows].map((row) => row.map(escape).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url; anchor.download = `tankua-bookings-${new Date().toISOString().slice(0, 10)}.csv`; anchor.click(); URL.revokeObjectURL(url);
@@ -413,7 +413,7 @@ export default function BookingsPage() {
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Total Revenue</p>
             <p className="text-2xl font-bold mt-1 text-primary">
-              {formatCurrency(bookings.filter((b) => b.payment_status === "paid").reduce((acc, b) => acc + b.total_price, 0))}
+              {formatCurrencyTotals(sumByCurrency(bookings.filter((b) => b.payment_status === "paid"), (booking) => Number(booking.total_price)))}
             </p>
           </Card>
         </div>
@@ -457,7 +457,7 @@ export default function BookingsPage() {
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground">Amount</p>
-                          <p className="font-semibold text-sm mt-1">{formatCurrency(booking.total_price)}</p>
+                          <p className="font-semibold text-sm mt-1">{formatCurrency(booking.total_price, booking.currency)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-muted-foreground">Payment</p>
@@ -566,7 +566,7 @@ export default function BookingsPage() {
                             <p className="text-sm font-medium">{booking.seats}</p>
                           </td>
                           <td className="py-4 px-4">
-                            <p className="font-semibold text-sm">{formatCurrency(booking.total_price)}</p>
+                            <p className="font-semibold text-sm">{formatCurrency(booking.total_price, booking.currency)}</p>
                           </td>
                           <td className="py-4 px-4">
                             {getStatusBadge(booking.status)}
@@ -618,7 +618,7 @@ export default function BookingsPage() {
           </CardContent>
         </Card>
       </div>
-      {selectedBooking && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" onClick={() => setSelectedBooking(null)}><Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Booking #{selectedBooking.id.slice(0, 8)}</p><h2 className="mt-1 text-xl font-bold">{selectedBooking.trip?.destination?.name || selectedBooking.destination_name || "Booking details"}</h2></div><Button variant="ghost" size="sm" onClick={() => setSelectedBooking(null)}>Close</Button></div><div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-4 text-sm"><span><small className="block text-muted-foreground">Customer</small><b>{selectedBooking.user?.name || "Unknown"}</b></span><span><small className="block text-muted-foreground">Phone</small><b>{selectedBooking.user?.phone_number || "Not provided"}</b></span><span><small className="block text-muted-foreground">Seats</small><b>{selectedBooking.seats}</b></span><span><small className="block text-muted-foreground">Amount</small><b>{formatCurrency(selectedBooking.total_price)}</b></span><span><small className="block text-muted-foreground">Status</small>{getStatusBadge(selectedBooking.status)}</span><span><small className="block text-muted-foreground">Payment</small>{getPaymentBadge(selectedBooking)}</span></div></Card></div>}
+      {selectedBooking && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" onClick={() => setSelectedBooking(null)}><Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Booking #{selectedBooking.id.slice(0, 8)}</p><h2 className="mt-1 text-xl font-bold">{selectedBooking.trip?.destination?.name || selectedBooking.destination_name || "Booking details"}</h2></div><Button variant="ghost" size="sm" onClick={() => setSelectedBooking(null)}>Close</Button></div><div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-4 text-sm"><span><small className="block text-muted-foreground">Customer</small><b>{selectedBooking.user?.name || "Unknown"}</b></span><span><small className="block text-muted-foreground">Phone</small><b>{selectedBooking.user?.phone_number || "Not provided"}</b></span><span><small className="block text-muted-foreground">Seats</small><b>{selectedBooking.seats}</b></span><span><small className="block text-muted-foreground">Amount</small><b>{formatCurrency(selectedBooking.total_price, selectedBooking.currency)}</b></span><span><small className="block text-muted-foreground">Status</small>{getStatusBadge(selectedBooking.status)}</span><span><small className="block text-muted-foreground">Payment</small>{getPaymentBadge(selectedBooking)}</span></div></Card></div>}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   TicketCheck,
   X,
 } from "lucide-react";
+import { formatCurrency } from "@tankua/ui";
 import { getFeaturedTours } from "@/lib/queries";
 import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
@@ -183,7 +184,7 @@ export default function HomePage() {
                     </div>
                     <h3 className="mt-3 text-xl font-extrabold leading-7 tracking-[-.02em] group-hover:underline group-hover:decoration-[#ffb800] group-hover:decoration-2 group-hover:underline-offset-4">{tour.name}</h3>
                     {tour.price !== null && (
-                      <p className="mt-3 text-sm text-[#6f6a61]"><strong className="text-base text-[#181714]">ETB {tour.price.toLocaleString()}</strong> per person</p>
+                      <p className="mt-3 text-sm text-[#6f6a61]"><strong className="text-base text-[#181714]">{formatCurrency(tour.price, tour.currency)}</strong> per person</p>
                     )}
                   </div>
                 </Link>

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getTripCurrency, type CurrencyTotals } from '@tankua/ui';
 
 const FALLBACK_TOUR_IMAGE = 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop';
 
@@ -17,7 +18,7 @@ type ReviewSummary = {
 };
 
 const listingColumns = `
-  id, price, status, minimum_interest, interest_count,
+  id, price, currency, status, minimum_interest, interest_count,
   destination:destinations!inner(name, city, category, images, description, region),
   provider:providers(id)
 `;
@@ -64,6 +65,7 @@ async function getProviderReviewSummary(providerId?: string): Promise<ReviewSumm
 function mapListing(trip: {
   id: string;
   price: number | null;
+  currency: string | null;
   status: string;
   minimum_interest: number | null;
   interest_count: number;
@@ -85,6 +87,7 @@ function mapListing(trip: {
     category: destination.category || 'general',
     image: destination.images?.[0] || FALLBACK_TOUR_IMAGE,
     price: trip.price,
+    currency: getTripCurrency(trip.currency),
     interest: trip.status === 'collecting_interest' && trip.minimum_interest !== null
       ? { count: trip.interest_count, minimum: trip.minimum_interest }
       : null,
@@ -164,13 +167,18 @@ export async function getDestinations(options?: CatalogOptions) {
   try {
     let query = supabase
       .from('destinations')
-      .select('id, name, city, region, category, images, description, tags, trips(price)', { count: 'exact' })
-      .in('trips.status', ['active', 'upcoming'])
-      .gt('trips.departure_date', new Date().toISOString())
-      .not('trips.price', 'is', null)
-      .order('price', { referencedTable: 'trips' })
-      .limit(1, { referencedTable: 'trips' })
+      .select('id, name, city, region, category, images, description, tags, etb_trips:trips(price), usd_trips:trips(price)', { count: 'exact' })
       .order('name');
+
+    const now = new Date().toISOString();
+    for (const [alias, currency] of [['etb_trips', 'ETB'], ['usd_trips', 'USD']] as const) {
+      query = query.in(`${alias}.status`, ['active', 'upcoming'])
+        .eq(`${alias}.currency`, currency)
+        .gt(`${alias}.departure_date`, now)
+        .not(`${alias}.price`, 'is', null)
+        .order('price', { referencedTable: alias })
+        .limit(1, { referencedTable: alias });
+    }
 
     const search = options?.search?.trim();
     if (search) {
@@ -197,7 +205,10 @@ export async function getDestinations(options?: CatalogOptions) {
         location: (destination.city || destination.region || 'Ethiopia') as string,
         category: (destination.category || 'general') as string,
         image: (destination.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
-        price: (destination.trips?.[0]?.price ?? null) as number | null,
+        fares: {
+          ETB: destination.etb_trips?.[0]?.price ?? undefined,
+          USD: destination.usd_trips?.[0]?.price ?? undefined,
+        } as CurrencyTotals,
         description: (destination.description || '') as string,
         tags: (destination.tags || [destination.category].filter(Boolean)) as string[],
       })),
@@ -243,6 +254,7 @@ export async function getTourById(id: string) {
       category: (destination?.category || 'general') as string,
       image: (destination?.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
       price: (data.price ?? null) as number | null,
+      currency: getTripCurrency(data.currency),
       interest,
       bookingOpen,
       paymentOpen: bookingOpen && data.status === 'active',

@@ -17,6 +17,7 @@ import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isBookingValid } from '../services/bookingService';
 import Loader from '../components/Loader';
+import { formatTripPrice } from '../utils/tripCurrency';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -131,7 +132,7 @@ const BookingCard = ({ item, onViewTicket, onPay }) => {
       <View style={styles.cardFooter}>
         <View>
           <Text style={styles.priceLabel}>Total</Text>
-          <Text style={styles.priceValue}>{totalPrice.toLocaleString()} ETB</Text>
+          <Text style={styles.priceValue}>{formatTripPrice(totalPrice, item.currency)}</Text>
         </View>
 
         {action ? (

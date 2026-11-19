@@ -64,7 +64,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-bold text-[#181714] mb-4">3. Bookings and Payments</h2>
               <ul className="list-disc pl-6 space-y-2">
                 <li>All bookings are subject to availability</li>
-                <li>Prices are displayed in ETB and may change without notice</li>
+                <li>Prices are displayed in Ethiopian birr (ETB) or US dollars (USD) and may change without notice</li>
                 <li>Payment must be completed to confirm booking</li>
                 <li>Refunds are subject to our cancellation policy</li>
               </ul>

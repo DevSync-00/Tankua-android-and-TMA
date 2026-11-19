@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
+import { formatTripPrice } from '../utils/tripCurrency';
 
 const ModernPickupStationCard = ({ 
   station, 
+  currency,
   onPress, 
   selected = false,
   showDistance = true,
@@ -69,7 +71,7 @@ const ModernPickupStationCard = ({
                 color={station.extraPrice > 0 ? COLORS.iconSecondary : COLORS.success} 
               />
               <Text style={[styles.detailText, station.extraPrice > 0 ? styles.extraPriceText : styles.freeText]}>
-                {station.extraPrice > 0 ? `+ETB ${station.extraPrice}` : 'Included'}
+                {station.extraPrice > 0 ? `+${formatTripPrice(station.extraPrice, currency)}` : 'Included'}
               </Text>
             </View>
           )}

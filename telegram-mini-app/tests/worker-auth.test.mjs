@@ -40,7 +40,10 @@ const originalFetch = globalThis.fetch;
 let lastEdgePayload = null;
 let lastInterestPayload = null;
 let bookingRecord = null;
+let transactionRecord = null;
+let chapaVerification = null;
 let rejectPaymentClaim = false;
+let extraBookableTrips = [];
 const paymentSteps = [];
 const collectingTrip = { id: tripId, destination_id: 'destination', provider_id: 'provider', price: 100, status: 'collecting_interest', minimum_interest: 3, interest_count: 2 };
 const bookableTrip = { id: nextTripId, destination_id: 'destination', provider_id: 'provider', price: 200, status: 'upcoming', minimum_interest: null, interest_count: 0 };
@@ -51,10 +54,17 @@ globalThis.fetch = async (url, options = {}) => {
     case '/rest/v1/rpc/delete_expired_unpaid_bookings':
       return Response.json(0);
     case '/rest/v1/bookings':
+      if (options.method === 'PATCH') {
+        paymentSteps.push({ method: 'BOOKING', body: JSON.parse(options.body) });
+        return new Response(null, { status: 204 });
+      }
       assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
       assert.match(requestUrl.searchParams.get('select'), /scheduled_trip:trips\(status,departure_date\)/);
       return Response.json(bookingRecord ? [bookingRecord] : []);
     case '/rest/v1/payment_transactions': {
+      if (!options.method || options.method === 'GET') {
+        return Response.json(transactionRecord ? [transactionRecord] : []);
+      }
       paymentSteps.push({ method: options.method, body: JSON.parse(options.body) });
       if (options.method === 'POST' && rejectPaymentClaim) {
         return Response.json({ message: 'Payment opens when this trip becomes active' }, { status: 409 });
@@ -72,7 +82,7 @@ globalThis.fetch = async (url, options = {}) => {
       return Response.json([{ id: 'destination', name: 'Test destination' }]);
     case '/rest/v1/trips':
       assert.equal(requestUrl.searchParams.get('status'), 'in.(active,upcoming,collecting_interest)');
-      return Response.json([collectingTrip, bookableTrip]);
+      return Response.json([collectingTrip, bookableTrip, ...extraBookableTrips]);
     case '/rest/v1/providers':
       return Response.json([{ id: 'provider', name: 'Test provider' }]);
     case '/rest/v1/pickup_stations':
@@ -81,6 +91,10 @@ globalThis.fetch = async (url, options = {}) => {
     case '/rest/v1/trip_interests':
       assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
       return Response.json([{ trip_id: tripId }]);
+  }
+  if (requestUrl.pathname.startsWith('/v1/transaction/verify/')) {
+    assert.equal(requestUrl.pathname.split('/').at(-1), transactionRecord.transaction_ref);
+    return Response.json({ status: 'success', data: chapaVerification });
   }
   if (value.includes('/functions/v1/telegram-auth')) {
     lastEdgePayload = JSON.parse(options.body);
@@ -188,8 +202,21 @@ test('catalog displays interest progress without using gated fares as bookable p
   assert.equal(anonymous.status, 200);
   const catalog = await authorized.json();
   assert.equal(catalog.destinations[0].price, 200);
+  assert.equal(catalog.destinations[0].currency, 'ETB');
   assert.deepEqual(catalog.trips, [{ ...collectingTrip, interested: true }, { ...bookableTrip, interested: false }]);
   assert.equal((await anonymous.json()).trips[0].interested, false);
+});
+
+test('catalog avoids comparing prices in different currencies', async (t) => {
+  extraBookableTrips = [{ ...bookableTrip, id: 'dollar-trip', currency: 'USD', price: 10 }];
+  t.after(() => { extraBookableTrips = []; });
+
+  const response = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/catalog`), env);
+  assert.equal(response.status, 200);
+  const catalog = await response.json();
+  assert.equal(catalog.destinations[0].price, null);
+  assert.equal(catalog.destinations[0].currency, null);
+  assert.equal(catalog.trips.find(trip => trip.id === 'dollar-trip').currency, 'USD');
 });
 
 test('keeps an upcoming reservation in Trips and enables checkout only after activation', async () => {
@@ -233,6 +260,8 @@ test('keeps an upcoming reservation in Trips and enables checkout only after act
   assert.deepEqual(paymentSteps.map(step => step.method), ['POST', 'CHAPA', 'PATCH']);
   assert.equal(paymentSteps[0].body.transaction_ref, checkout.transaction_ref);
   assert.equal(paymentSteps[1].body.tx_ref, checkout.transaction_ref);
+  assert.equal(paymentSteps[0].body.currency, 'ETB');
+  assert.equal(paymentSteps[1].body.currency, 'ETB');
   assert.deepEqual(paymentSteps[2].body, { checkout_url: checkout.checkout_url });
 
   paymentSteps.length = 0;
@@ -240,4 +269,55 @@ test('keeps an upcoming reservation in Trips and enables checkout only after act
   const statusChanged = await payment();
   assert.equal(statusChanged.status, 409);
   assert.deepEqual(paymentSteps.map(step => step.method), ['POST']);
+});
+
+test('charges a USD booking in USD and verifies its currency, amount, and reference', async (t) => {
+  const future = new Date(Date.now() + 3600000).toISOString();
+  const headers = { cookie: travelerSession(), origin: env.APP_ORIGIN };
+  bookingRecord = {
+    id: bookingId,
+    status: 'confirmed',
+    payment_status: 'pending',
+    payment_deadline: future,
+    total_price: 21.49,
+    currency: 'USD',
+    scheduled_trip: { status: 'active', departure_date: future },
+  };
+  rejectPaymentClaim = false;
+  paymentSteps.length = 0;
+  t.after(() => {
+    bookingRecord = null;
+    transactionRecord = null;
+    chapaVerification = null;
+    paymentSteps.length = 0;
+  });
+
+  const created = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/payments/chapa`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ booking_id: bookingId }),
+  }), env);
+  assert.equal(created.status, 200);
+  const { transaction_ref: reference } = await created.json();
+  assert.equal(paymentSteps[0].body.currency, 'USD');
+  assert.equal(paymentSteps[1].body.currency, 'USD');
+  assert.equal(paymentSteps[1].body.amount, '21.49');
+  transactionRecord = paymentSteps[0].body;
+  paymentSteps.length = 0;
+
+  const verify = async () => {
+    const response = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/payments/status?tx_ref=${reference}`, { headers }), env);
+    assert.equal(response.status, 200);
+    return (await response.json()).paid;
+  };
+  chapaVerification = { status: 'success', currency: 'ETB', amount: 21.49, tx_ref: reference };
+  assert.equal(await verify(), false);
+  chapaVerification = { ...chapaVerification, currency: 'USD', amount: 21.50 };
+  assert.equal(await verify(), false);
+  chapaVerification = { ...chapaVerification, amount: 21.49, tx_ref: 'another-reference' };
+  assert.equal(await verify(), false);
+  assert.deepEqual(paymentSteps, []);
+  chapaVerification = { ...chapaVerification, tx_ref: reference };
+  assert.equal(await verify(), true);
+  assert.deepEqual(paymentSteps.map(step => step.method), ['PATCH', 'BOOKING']);
 });

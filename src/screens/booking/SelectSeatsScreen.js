@@ -6,6 +6,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/the
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import ModernButton from '../../components/ModernButton';
+import { formatTripPrice, getTripCurrency } from '../../utils/tripCurrency';
 
 const SelectSeatsScreen = ({ navigation }) => {
   const { t } = useLanguage();
@@ -13,11 +14,13 @@ const SelectSeatsScreen = ({ navigation }) => {
   const [seats, setSeats] = useState(1);
 
   const isPrivateTrip = currentBooking.tripType === 'private';
+  const currency = getTripCurrency(currentBooking.trip?.currency);
+  const pricePerSeat = Number(currentBooking.trip?.price ?? (isPrivateTrip ? 1500 : 500));
 
   const vehicleTypes = [
     { id: 'sedan', name: 'Sedan', capacity: 4, icon: 'car-outline', price: 0 },
-    { id: 'suv', name: 'SUV', capacity: 7, icon: 'car-sport-outline', price: 200 },
-    { id: 'van', name: 'Van', capacity: 12, icon: 'bus-outline', price: 500 },
+    { id: 'suv', name: 'SUV', capacity: 7, icon: 'car-sport-outline', price: currency === 'ETB' ? 200 : 0 },
+    { id: 'van', name: 'Van', capacity: 12, icon: 'bus-outline', price: currency === 'ETB' ? 500 : 0 },
   ];
 
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -153,7 +156,7 @@ const SelectSeatsScreen = ({ navigation }) => {
                   </View>
                   <View style={styles.vehicleRight}>
                     {vehicle.price > 0 ? (
-                      <Text style={styles.vehiclePrice}>+ETB {vehicle.price}</Text>
+                      <Text style={styles.vehiclePrice}>+{formatTripPrice(vehicle.price, currency)}</Text>
                     ) : (
                       <Text style={styles.vehicleFreeText}>Standard</Text>
                     )}
@@ -219,7 +222,7 @@ const SelectSeatsScreen = ({ navigation }) => {
             <View style={styles.priceBreakdownCard}>
               <View style={styles.priceBreakdownRow}>
                 <Text style={styles.priceBreakdownLabel}>Base Price per Seat</Text>
-                <Text style={styles.priceBreakdownValue}>ETB {currentBooking.trip?.price || 500}</Text>
+                <Text style={styles.priceBreakdownValue}>{formatTripPrice(pricePerSeat, currency)}</Text>
               </View>
               <View style={styles.priceBreakdownRow}>
                 <Text style={styles.priceBreakdownLabel}>Passengers Selected</Text>
@@ -228,7 +231,7 @@ const SelectSeatsScreen = ({ navigation }) => {
               <View style={styles.priceBreakdownDivider} />
               <View style={styles.priceBreakdownRow}>
                 <Text style={styles.priceTotalLabel}>Estimated Subtotal</Text>
-                <Text style={styles.priceTotalValue}>ETB {(currentBooking.trip?.price || 500) * seats}</Text>
+                <Text style={styles.priceTotalValue}>{formatTripPrice(pricePerSeat * seats, currency)}</Text>
               </View>
             </View>
           </View>
@@ -248,11 +251,11 @@ const SelectSeatsScreen = ({ navigation }) => {
       {/* Sticky Bottom Actions */}
       <View style={styles.footer}>
         <View style={styles.footerSummary}>
-          <Text style={styles.footerTotalLabel}>Total Amount</Text>
+          <Text style={styles.footerTotalLabel}>Fare subtotal</Text>
           <Text style={styles.footerTotalValue}>
-            ETB {isPrivateTrip 
-              ? (currentBooking.trip?.price || 1500) + (selectedVehicle?.price || 0)
-              : (currentBooking.trip?.price || 500) * seats}
+            {formatTripPrice(isPrivateTrip
+              ? pricePerSeat * (selectedVehicle?.capacity || 1) + (selectedVehicle?.price || 0)
+              : pricePerSeat * seats, currency)}
           </Text>
         </View>
         <ModernButton

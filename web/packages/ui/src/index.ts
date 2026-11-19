@@ -9,6 +9,6 @@ export { ConfirmDialog, type ConfirmDialogProps } from "./components/confirm-dia
 export { InlineBanner, type InlineBannerProps } from "./components/inline-banner";
 
 // Utilities
-export { cn, formatCurrency, formatDate, formatRelativeTime, truncate, generateInitials, slugify } from "./lib/utils";
+export { cn, formatCurrency, formatCurrencyTotals, getTripCurrency, sumByCurrency, formatDate, formatRelativeTime, truncate, generateInitials, slugify, type CurrencyTotals, type TripCurrency } from "./lib/utils";
 
 

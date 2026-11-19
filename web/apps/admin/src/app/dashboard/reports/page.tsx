@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, CreditCard, Download, RefreshCw, TrendingUp, Users } from "lucide-react";
 import { Header } from "@/components/header";
 import { getAdminReport, type AdminReport, type BookingTrend, type ReportRanking } from "@/lib/queries";
-import { Button, Card, CardContent, CardHeader, CardTitle, StatCard, formatCurrency } from "@tankua/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, StatCard, formatCurrency, getTripCurrency, type TripCurrency } from "@tankua/ui";
 
 const ranges = [
   { days: 7, label: "Last 7 days" },
@@ -18,10 +18,11 @@ type ReportState =
   | { status: "error" }
   | { status: "ready"; report: AdminReport };
 
-function TrendChart({ trends, metric, monthly }: {
+function TrendChart({ trends, metric, monthly, currency }: {
   trends: BookingTrend[];
   metric: "revenue" | "bookings";
   monthly: boolean;
+  currency: TripCurrency;
 }) {
   const isRevenue = metric === "revenue";
   const maximum = Math.max(...trends.map((trend) => trend[metric]), 0);
@@ -33,7 +34,7 @@ function TrendChart({ trends, metric, monthly }: {
 
   return (
     <Card>
-      <CardHeader><CardTitle>{isRevenue ? "Revenue Trend" : "Bookings Trend"}</CardTitle></CardHeader>
+      <CardHeader><CardTitle>{isRevenue ? `Revenue Trend (${currency})` : "Bookings Trend"}</CardTitle></CardHeader>
       <CardContent>
         {maximum === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
@@ -44,7 +45,7 @@ function TrendChart({ trends, metric, monthly }: {
             <ul className="flex gap-2" style={{ minWidth: trends.length * 45 }}>
               {trends.map((trend) => {
                 const date = formatDate.format(new Date(trend.date));
-                const value = isRevenue ? formatCurrency(trend.revenue) : `${trend.bookings.toLocaleString()} bookings`;
+                const value = isRevenue ? formatCurrency(trend.revenue, currency) : `${trend.bookings.toLocaleString()} bookings`;
                 return (
                   <li key={trend.date} className="flex min-w-0 flex-1 flex-col gap-2" title={`${date} · ${value}`}>
                     <div className="flex h-52 items-end" aria-hidden="true">
@@ -66,7 +67,7 @@ function TrendChart({ trends, metric, monthly }: {
   );
 }
 
-function Ranking({ title, rows, empty }: { title: string; rows: ReportRanking[]; empty: string }) {
+function Ranking({ title, rows, empty, currency }: { title: string; rows: ReportRanking[]; empty: string; currency: TripCurrency }) {
   return (
     <Card>
       <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -86,7 +87,7 @@ function Ranking({ title, rows, empty }: { title: string; rows: ReportRanking[];
                     </p>
                   </div>
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-primary">{formatCurrency(row.revenue)}</span>
+                <span className="shrink-0 text-sm font-semibold text-primary">{formatCurrency(row.revenue, currency)}</span>
               </li>
             ))}
           </ol>
@@ -97,20 +98,21 @@ function Ranking({ title, rows, empty }: { title: string; rows: ReportRanking[];
 }
 
 function exportReport(report: AdminReport, days: number) {
+  const paidRevenue = `Paid revenue (${report.currency})`;
   const rows = [
     ["Summary", "Value"],
-    ["Paid revenue (ETB)", report.totalRevenue],
+    [paidRevenue, report.totalRevenue],
     ["Total bookings", report.totalBookings],
     ["New users", report.newUsers],
-    ["Average paid booking (ETB)", report.averageBookingValue ?? ""],
+    [`Average paid booking (${report.currency})`, report.averageBookingValue ?? ""],
     [],
-    ["Period start (UTC)", "Bookings", "Paid revenue (ETB)"],
+    ["Period start (UTC)", "Bookings", paidRevenue],
     ...report.trends.map((trend) => [trend.date.slice(0, 10), trend.bookings, trend.revenue]),
     [],
-    ["Top destinations", "Bookings", "Paid revenue (ETB)"],
+    ["Top destinations", "Bookings", paidRevenue],
     ...report.topDestinations.map((row) => [row.name, row.bookings, row.revenue]),
     [],
-    ["Top providers", "Bookings", "Paid revenue (ETB)"],
+    ["Top providers", "Bookings", paidRevenue],
     ...report.topProviders.map((row) => [row.name, row.bookings, row.revenue]),
   ];
   const csv = rows.map((row) => row.map((value) => {
@@ -121,19 +123,20 @@ function exportReport(report: AdminReport, days: number) {
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `tankua-report-${days}d.csv`;
+  anchor.download = `tankua-report-${report.currency}-${days}d.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
 
 export default function ReportsPage() {
   const [days, setDays] = useState(183);
+  const [currency, setCurrency] = useState<TripCurrency>("ETB");
   const [reload, setReload] = useState(0);
   const [state, setState] = useState<ReportState>({ status: "loading" });
 
   useEffect(() => {
     const controller = new AbortController();
-    getAdminReport(days, controller.signal).then((report) => {
+    getAdminReport(days, controller.signal, currency).then((report) => {
       if (!controller.signal.aborted) setState({ status: "ready", report });
     }).catch((error) => {
       if (!controller.signal.aborted) {
@@ -142,7 +145,7 @@ export default function ReportsPage() {
       }
     });
     return () => controller.abort();
-  }, [days, reload]);
+  }, [days, reload, currency]);
 
   const report = state.status === "ready" ? state.report : null;
 
@@ -152,7 +155,19 @@ export default function ReportsPage() {
         title="Reports"
         subtitle="Analytics and insights"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Report revenue currency"
+              value={currency}
+              onChange={(event) => {
+                setState({ status: "loading" });
+                setCurrency(getTripCurrency(event.target.value));
+              }}
+              className="h-9 rounded-lg border border-border bg-background px-3 text-sm"
+            >
+              <option value="ETB">ETB</option>
+              <option value="USD">USD</option>
+            </select>
             <select
               aria-label="Report date range"
               value={days}
@@ -191,16 +206,16 @@ export default function ReportsPage() {
         {report && (
           <>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard title="Paid Revenue" value={formatCurrency(report.totalRevenue)} icon={<CreditCard className="h-6 w-6" />} variant="primary" />
+              <StatCard title={`Paid Revenue (${report.currency})`} value={formatCurrency(report.totalRevenue, report.currency)} icon={<CreditCard className="h-6 w-6" />} variant="primary" />
               <StatCard title="Total Bookings" value={report.totalBookings.toLocaleString()} icon={<CalendarCheck className="h-6 w-6" />} />
               <StatCard title="New Users" value={report.newUsers.toLocaleString()} icon={<Users className="h-6 w-6" />} />
-              <StatCard title="Avg. Paid Booking" value={report.averageBookingValue === null ? "—" : formatCurrency(report.averageBookingValue)} icon={<TrendingUp className="h-6 w-6" />} />
+              <StatCard title={`Avg. Paid Booking (${report.currency})`} value={report.averageBookingValue === null ? "—" : formatCurrency(report.averageBookingValue, report.currency)} icon={<TrendingUp className="h-6 w-6" />} />
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
-              <TrendChart trends={report.trends} metric="revenue" monthly={days > 30} />
-              <TrendChart trends={report.trends} metric="bookings" monthly={days > 30} />
-              <Ranking title="Top Destinations" rows={report.topDestinations} empty="No destination bookings in this period." />
-              <Ranking title="Top Providers" rows={report.topProviders} empty="No provider bookings in this period." />
+              <TrendChart trends={report.trends} metric="revenue" monthly={days > 30} currency={report.currency} />
+              <TrendChart trends={report.trends} metric="bookings" monthly={days > 30} currency={report.currency} />
+              <Ranking title="Top Destinations" rows={report.topDestinations} empty="No destination bookings in this period." currency={report.currency} />
+              <Ranking title="Top Providers" rows={report.topProviders} empty="No provider bookings in this period." currency={report.currency} />
             </div>
           </>
         )}
