@@ -87,7 +87,7 @@ function CatalogCard({ entry, listView }: { entry: CatalogEntry; listView: boole
             </p>
           )}
           {tour?.interest && (
-            <p className="field-card-interest">{tour.interest.count} of {tour.interest.minimum} travelers interested</p>
+            <p className="field-card-interest">Planned departure</p>
           )}
           <div className="field-card-end">
             {price && <p><strong>{price}</strong> <span>per person</span></p>}

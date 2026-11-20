@@ -311,8 +311,8 @@ export default function App() {
     try {
       const freshCatalog = await refreshCatalog();
       const trip = freshCatalog.trips.find(item => item.id === tripId);
-      if (trip && isBookableTrip(trip)) notify('Booking is open for this trip!');
-      else if (trip && isCollectingInterest(trip)) notify('This trip is still collecting interest.');
+      if (trip && isBookableTrip(trip)) notify('Reservations are open.');
+      else if (trip && isCollectingInterest(trip)) notify('Reservations open once the minimum group size is met.');
       else notify('This trip is currently unavailable.');
     } catch (error) {
       notify(error.message);
@@ -328,8 +328,8 @@ export default function App() {
         ...previous,
         trips: previous.trips.map(item => item.id === trip_id ? { ...item, ...updates } : item),
       }));
-      if (isBookableTrip(result)) notify('The interest goal was reached. Booking is open!');
-      else if (isCollectingInterest(result) && result.interested) notify('Your interest has been registered.');
+      if (isBookableTrip(result)) notify(result.interested ? 'Interest registered. Reservations are open.' : 'Reservations are open.');
+      else if (isCollectingInterest(result) && result.interested) notify('Interest registered.');
       else notify('This trip is currently unavailable.');
       refreshCatalog().catch(() => {});
     } catch (error) {
@@ -604,7 +604,7 @@ function HomeView({ user, destinations, trips, category, setCategory, open, goSe
     </>}
     {collectingInterest.length > 0 && (
       <section>
-        <SectionHeader title="Trips accepting interest" />
+        <SectionHeader title="Planned departures" />
         <div className="interest-destinations">
           {collectingInterest.map(destination => (
             <button className="interest-destination" key={destination.id} type="button" onClick={() => open(destination)}>
@@ -692,8 +692,8 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
     <div className="detail-content">
       {interestTrips.length > 0 && (
         <section className="interest-trips">
-          <h2>Trips accepting interest</h2>
-          <p className="body-copy">Booking opens when enough travelers express interest.</p>
+          <h2>Planned departures</h2>
+          <p className="body-copy">Reservations open once the minimum group size is met.</p>
           {interestTrips.map(trip => (
             <InterestTripCard
               key={trip.id}
@@ -724,8 +724,6 @@ function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }
   const [pending, setPending] = useState(false);
   const departure = new Date(trip.departure_date);
   const departureLabel = departure.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-  const interestCount = trip.interest_count;
-  const minimumInterest = trip.minimum_interest;
 
   const handleAction = async () => {
     setPending(true);
@@ -746,14 +744,10 @@ function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }
         {trip.price != null && <b>{money(trip.price, trip.currency)} <small>per person</small></b>}
       </div>
       {trip.summary && <p className="interest-trip-summary">{trip.summary}</p>}
-      <div className="interest-trip-progress">
-        <p><strong>{interestCount} of {minimumInterest}</strong> interested</p>
-        <progress max={minimumInterest} value={interestCount} aria-label="Travelers interested" />
-      </div>
       <div className="interest-trip-action">
-        <small>{trip.interested ? 'Interest registered' : 'Free to express interest'}</small>
+        <small>{trip.interested ? 'Interest registered' : 'Free to register'}</small>
         <button type="button" disabled={pending} onClick={handleAction}>
-          {pending ? 'Updating…' : trip.interested ? 'Check status' : 'I’m interested'}
+          {pending ? 'Updating…' : trip.interested ? 'Check status' : 'Register interest'}
         </button>
       </div>
     </article>

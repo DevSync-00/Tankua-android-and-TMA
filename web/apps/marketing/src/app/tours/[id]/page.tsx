@@ -135,9 +135,9 @@ export default function TourDetailPage() {
                 </p>
                 {tour.interest ? (
                   <div className="mt-4">
-                    <p className="field-card-interest">{tour.interest.count} of {tour.interest.minimum} travelers interested</p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--field-muted)]">Express interest for free. You can reserve a seat once booking opens.</p>
-                    <a href={getTelegramTripUrl(tour.id)} className="field-button mt-4">Express interest in Telegram<ArrowRight size={17} aria-hidden="true" /></a>
+                    <p className="field-card-interest">Planned departure</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--field-muted)]">Reservations open once the minimum group size is met. Registering interest is free.</p>
+                    <a href={getTelegramTripUrl(tour.id)} className="field-button mt-4">Register interest in Telegram<ArrowRight size={17} aria-hidden="true" /></a>
                   </div>
                 ) : tour.bookingOpen ? (
                   <div className="mt-4">

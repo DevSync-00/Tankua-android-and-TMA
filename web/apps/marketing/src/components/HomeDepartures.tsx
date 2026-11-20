@@ -59,7 +59,7 @@ export function HomeDepartures() {
                   )}
                 </div>
                 <h3>{tour.name}</h3>
-                {tour.interest && <p>Collecting interest · {tour.interest.count} of {tour.interest.minimum} travelers</p>}
+                {tour.interest && <p>Planned departure</p>}
                 {tour.price !== null && <p><strong>{formatCurrency(tour.price, tour.currency)}</strong> per person</p>}
               </Link>
             ))}

@@ -4043,14 +4043,7 @@ img {
 .interest-trip small { color: var(--muted); }
 .interest-trip-heading b { white-space: nowrap; font-size: 14px; }
 .interest-trip .interest-trip-summary { margin-top: 10px; }
-.interest-trip-progress { margin: 12px 0; }
-.interest-trip progress {
-  display: block;
-  width: 100%;
-  height: 9px;
-  margin-top: 6px;
-  accent-color: var(--gold-dark);
-}
+.interest-trip-action { margin-top: 12px; }
 
 .interest-trip-action button {
   min-height: 44px;

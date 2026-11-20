@@ -117,7 +117,7 @@ const SelectTripScreen = ({ navigation }) => {
         && Date.parse(trip.departure_date) > Date.now()) {
         showToast({ type: 'success', title: 'Booking is open', message: 'You can now book this trip.' });
       } else if (result.status === 'collecting_interest' && result.interested) {
-        showToast({ type: 'success', title: 'Interest recorded', message: 'Check back to see when booking opens.' });
+        showToast({ type: 'success', title: 'Interest registered', message: 'Check back to see when reservations open.' });
       } else {
         showToast({ type: 'warning', title: 'Trip unavailable', message: 'This trip is no longer accepting interest.' });
       }
@@ -363,8 +363,8 @@ const SelectTripScreen = ({ navigation }) => {
 
         {interestTrips.length > 0 && (
           <View style={styles.interestSection}>
-            <Text style={styles.interestSectionTitle}>Trips collecting interest</Text>
-            <Text style={styles.subtitle}>Booking opens when enough travelers express interest.</Text>
+            <Text style={styles.interestSectionTitle}>Planned departures</Text>
+            <Text style={styles.subtitle}>Reservations open once the minimum group size is met.</Text>
             <View style={styles.tripsList}>
               {interestTrips.map((trip) => (
                 <View key={trip.id} style={[styles.tripCard, styles.interestCard]}>
@@ -374,11 +374,8 @@ const SelectTripScreen = ({ navigation }) => {
                   {trip.price != null && (
                     <Text style={styles.subtitle}>{formatTripPrice(trip.price, trip.currency)} per person</Text>
                   )}
-                  <Text style={styles.interestCount}>
-                    {trip.interest_count} of {trip.minimum_interest} travelers interested
-                  </Text>
                   <ModernButton
-                    title={interestedTripIds.has(trip.id) ? 'Interest registered' : 'Express interest'}
+                    title={interestedTripIds.has(trip.id) ? 'Interest registered' : 'Register interest'}
                     onPress={() => handleExpressInterest(trip)}
                     disabled={refreshing || pendingInterestId !== null || interestedTripIds.has(trip.id)}
                     loading={pendingInterestId === trip.id}
@@ -542,10 +539,6 @@ const styles = StyleSheet.create({
   },
   interestCard: {
     gap: SPACING.sm,
-  },
-  interestCount: {
-    color: COLORS.secondary,
-    fontWeight: '700',
   },
   tripCard: {
     backgroundColor: COLORS.white,
