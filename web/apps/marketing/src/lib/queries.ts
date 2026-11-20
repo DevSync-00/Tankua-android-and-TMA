@@ -98,7 +98,7 @@ function mapListing(trip: {
 }
 
 export function getFeaturedTours(limit = 4) {
-  return loadTours({ limit }, 'created_at', false);
+  return loadTours({ limit }, 'created_at', false, true);
 }
 
 export function getTours(options?: CatalogOptions) {
