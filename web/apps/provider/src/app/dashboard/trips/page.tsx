@@ -14,6 +14,7 @@ import {
   Trash2,
   RefreshCw,
   Copy,
+  Share2,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card, CardContent, Button, Badge, buttonVariants, cn, formatCurrency, ConfirmDialog, InlineBanner } from "@tankua/ui";
@@ -405,6 +406,9 @@ export default function TripsPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         {renderActivateButton(trip)}
+                        <Link href={`/dashboard/trips/${trip.id}/promotion`} className={buttonVariants({ variant: "ghost", size: "sm", className: "min-h-10 gap-1.5" })}>
+                          <Share2 className="h-4 w-4" aria-hidden="true" /> Promote
+                        </Link>
                         {Date.parse(trip.departure_date) > Date.now() ? <>
                           <Button
                             variant="ghost"
@@ -499,6 +503,9 @@ export default function TripsPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-1">
                             {renderActivateButton(trip)}
+                            <Link href={`/dashboard/trips/${trip.id}/promotion`} className={buttonVariants({ variant: "ghost", size: "sm", className: "min-h-10 gap-1.5" })}>
+                              <Share2 className="h-4 w-4" aria-hidden="true" /> Promote
+                            </Link>
                             {Date.parse(trip.departure_date) > Date.now() ? <>
                               <Button
                                 variant="ghost"

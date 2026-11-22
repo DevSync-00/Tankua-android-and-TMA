@@ -5,10 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Check, Clock3, MapPin, Share2, Star, UsersRound } from "lucide-react";
-import { formatCurrency } from "@tankua/ui";
+import { formatCurrency, getTripPromotionChannel, type TripPromotionChannel } from "@tankua/ui";
 import { formatDepartureDate } from "@/lib/departure-date";
 import { getTourById } from "@/lib/queries";
 import { getTelegramTripUrl } from "@/lib/telegram";
+import { supabase } from "@/lib/supabase";
 
 export default function TourDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,11 +19,14 @@ export default function TourDetailPage() {
   const [shareStatus, setShareStatus] = useState("");
   const [shareUrl, setShareUrl] = useState("");
   const [backHref, setBackHref] = useState("/tours");
+  const [channel, setChannel] = useState<TripPromotionChannel | null>(null);
 
   useEffect(() => {
     let ignore = false;
-    const from = new URL(window.location.href).searchParams.get("from");
+    const params = new URL(window.location.href).searchParams;
+    const from = params.get("from");
     setBackHref(from === "/tours" || from?.startsWith("/tours?") ? from : "/tours");
+    setChannel(getTripPromotionChannel(params.get("channel")));
     setLoading(true);
     setImageFailed(false);
     setShareStatus("");
@@ -37,9 +41,25 @@ export default function TourDetailPage() {
     return () => { ignore = true; };
   }, [id]);
 
+  useEffect(() => {
+    if (loading || !channel || tour?.id !== id || !window.crypto?.randomUUID) return;
+    const key = `tankua-promotion:${id}:${channel}`;
+    let visitId = window.crypto.randomUUID();
+    try {
+      const saved = sessionStorage.getItem(key);
+      if (saved) visitId = saved as typeof visitId;
+      else sessionStorage.setItem(key, visitId);
+    } catch {
+      // The anonymous page view still works when storage is unavailable.
+    }
+    void supabase.rpc("record_trip_promotion_visit", { p_trip_id: id, p_channel: channel, p_visit_id: visitId }).then(() => {});
+  }, [channel, id, loading, tour]);
+
   async function shareTour() {
     if (!tour) return;
-    const url = new URL(window.location.pathname, window.location.origin).toString();
+    const address = new URL(window.location.pathname, window.location.origin);
+    if (channel) address.searchParams.set("channel", channel);
+    const url = address.toString();
     setShareStatus("");
 
     if (navigator.share) {
@@ -135,19 +155,19 @@ export default function TourDetailPage() {
               <aside className="rounded-xl border border-[var(--field-line)] bg-[var(--field-wash)] p-6 sm:p-7 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:self-start" aria-labelledby="booking-heading">
                 <h2 id="booking-heading" className="text-lg font-semibold">Booking</h2>
                 <p className="mt-3 text-sm text-[var(--field-muted)]">
-                  {tour.price !== null ? <><strong className="text-xl tabular-nums text-[var(--field-ink)]">{formatCurrency(tour.price, tour.currency)}</strong> per person</> : "Price unavailable"}
+                  {tour.price !== null ? <><strong className="text-xl tabular-nums text-[var(--field-ink)]">{formatCurrency(tour.price, tour.currency)}</strong> {tour.currency === "USD" ? "USD per person" : "per person"}</> : "Price unavailable"}
                 </p>
                 {tour.interest ? (
                   <div className="mt-4">
                     <p className="field-card-interest">Planned departure</p>
                     <p className="mt-2 text-sm leading-6 text-[var(--field-muted)]">Reservations open once the minimum group size is met. Registering interest is free.</p>
-                    <a href={getTelegramTripUrl(tour.id)} className="field-button mt-4 w-full justify-between">Register interest in Telegram<ArrowUpRight size={17} aria-hidden="true" /></a>
+                    <a href={getTelegramTripUrl(tour.id, channel)} className="field-button mt-4 w-full justify-between">Register interest in Telegram<ArrowUpRight size={17} aria-hidden="true" /></a>
                   </div>
                 ) : tour.bookingOpen ? (
                   <div className="mt-4">
-                    <a href={getTelegramTripUrl(tour.id)} className="field-button w-full justify-between">{tour.paymentOpen ? "Book in Telegram" : "Reserve in Telegram"}<ArrowUpRight size={17} aria-hidden="true" /></a>
+                    <a href={getTelegramTripUrl(tour.id, channel)} className="field-button w-full justify-between">{tour.paymentOpen ? "Book in Telegram" : "Reserve in Telegram"}<ArrowUpRight size={17} aria-hidden="true" /></a>
                     <p className="mt-3 text-sm leading-6 text-[var(--field-muted)]">
-                      {tour.paymentOpen ? "Choose a pickup point and seats for this departure in Telegram." : "Reserve your seat now. Payment opens when the operator confirms the trip."}
+                      {tour.paymentOpen ? "Choose your pickup and seats, then continue to payment in Telegram." : "Reserve your seat now. Payment opens when the operator confirms the trip."}
                     </p>
                   </div>
                 ) : (
@@ -170,6 +190,25 @@ export default function TourDetailPage() {
               </aside>
 
               <div className="space-y-8 lg:col-start-1 lg:row-start-1">
+                {tour.pickups.length > 0 && (
+                  <section aria-labelledby="pickup-heading" className="rounded-xl border border-[var(--field-line)] bg-[#fffefa] p-5 sm:p-7">
+                    <h2 id="pickup-heading" className="text-xl font-semibold">Pickup options</h2>
+                    <ul className="mt-3 divide-y divide-[var(--field-line)]">
+                      {tour.pickups.map((pickup) => (
+                        <li key={pickup.id} className="flex items-start gap-3 py-3 last:pb-0">
+                          <MapPin size={17} aria-hidden="true" className="mt-0.5 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold">{pickup.name}</p>
+                            <p className="text-sm text-[var(--field-muted)]">
+                              {(pickup.is_address_pickup ? [pickup.city, "Pickup at your address"] : [pickup.address, pickup.city]).filter(Boolean).join(" · ")}
+                            </p>
+                          </div>
+                          {pickup.time && <time dateTime={pickup.time.slice(0, 5)} className="shrink-0 text-sm font-medium tabular-nums">{pickup.time.slice(0, 5)} EAT</time>}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
                 {tour.description && (
                   <section>
                     <h2 className="field-display">About the tour</h2>

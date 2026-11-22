@@ -244,7 +244,7 @@ export default function App() {
         setAuthStatus('telegram-required');
         return;
       }
-      const { user: verifiedUser } = await api('/api/auth/telegram', {
+      const { user: verifiedUser, launchTripId } = await api('/api/auth/telegram', {
         method: 'POST',
         body: JSON.stringify({ initData: tg.initData }),
       });
@@ -273,8 +273,7 @@ export default function App() {
         }
         window.history.replaceState({}, '', window.location.pathname);
       } else {
-        const launchParameter = new URLSearchParams(tg.initData).get('start_param');
-        const tripId = launchParameter?.match(/^trip_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1]?.toLowerCase();
+        const tripId = launchTripId;
         if (tripId) {
           const trip = productionData.catalogData.trips.find(item => item.id === tripId);
           const destination = productionData.catalogData.destinations.find(item => item.id === trip?.destination_id);

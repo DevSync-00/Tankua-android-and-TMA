@@ -230,7 +230,8 @@ export async function getTourById(id: string) {
       .select(`
         *,
         destination:destinations(name, city, region, category, images, description),
-        provider:providers(id, name, description)
+        provider:providers(id, name, description),
+        pickups:trip_pickup_stations(pickup_time, station:pickup_stations(id,name,city,address,is_active,is_address_pickup))
       `)
       .eq('id', id)
       .maybeSingle();
@@ -249,6 +250,10 @@ export async function getTourById(id: string) {
     const reservationsOpen = (data.status === 'upcoming' || data.status === 'active') && isFutureDeparture;
     const soldOut = reservationsOpen && Number(data.available_seats) < 1;
     const bookingOpen = reservationsOpen && !soldOut;
+    const pickups = (data.pickups as {
+      pickup_time: string | null;
+      station: { id: string; name: string; city: string | null; address: string | null; is_active: boolean; is_address_pickup: boolean } | null;
+    }[] | null)?.flatMap(({ station, pickup_time }) => station?.is_active ? [{ ...station, time: pickup_time }] : []) ?? [];
 
     return {
       id: data.id as string,
@@ -266,6 +271,7 @@ export async function getTourById(id: string) {
       provider,
       providerReviews: await getProviderReviewSummary(provider?.id),
       departureDate,
+      pickups,
       tripType: (data.trip_type ?? null) as string | null,
       durationMinutes: (data.duration_minutes ?? null) as number | null,
       inclusions: (data.inclusions ?? []) as string[],

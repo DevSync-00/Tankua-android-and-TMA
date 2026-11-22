@@ -9,6 +9,7 @@ export { ConfirmDialog, type ConfirmDialogProps } from "./components/confirm-dia
 export { InlineBanner, type InlineBannerProps } from "./components/inline-banner";
 
 // Utilities
+export { tripPromotionChannels, getTripPromotionChannel, type TripPromotionChannel } from "./lib/trip-promotion";
 export { cn, formatCurrency, formatCurrencyTotals, getTripCurrency, sumByCurrency, formatDate, formatRelativeTime, truncate, generateInitials, slugify, type CurrencyTotals, type TripCurrency } from "./lib/utils";
 
 

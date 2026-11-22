@@ -133,6 +133,7 @@ async function supabase(env, path, { method = 'GET', body, headers = {} } = {}) 
   if (!response.ok) {
     const error = new Error(data?.message || data?.hint || `Database request failed (${response.status})`);
     error.status = response.status;
+    error.code = data?.code;
     throw error;
   }
   return data;
@@ -266,10 +267,16 @@ async function authenticate(request, env) {
   const user = users?.[0];
   if (!user) throw new Error('Unable to create Telegram profile');
   const now = Math.floor(Date.now() / 1000);
-  const token = await signSession({ uid: user.id, tid: String(telegramId), iat: now, exp: now + SESSION_TTL_SECONDS }, env.SESSION_SECRET);
+  // The launch parameter is part of the Telegram payload verified above.
+  const launch = new URLSearchParams(body.initData).get('start_param')?.match(
+    /^trip_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:_(telegram|whatsapp|instagram))?$/i,
+  );
+  const launchTripId = launch?.[1]?.toLowerCase() ?? null;
+  const promotion = launch?.[2] ? { tripId: launchTripId, channel: launch[2].toLowerCase() } : undefined;
+  const token = await signSession({ uid: user.id, tid: String(telegramId), iat: now, exp: now + SESSION_TTL_SECONDS, promotion }, env.SESSION_SECRET);
   await auditTelegramAuth(request, env, { telegramId, userId: user.id, success: true });
   return json(
-    { user: safeUser(user) },
+    { user: safeUser(user), launchTripId },
     200,
     { 'set-cookie': `${SESSION_COOKIE}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_SECONDS}` },
   );
@@ -362,24 +369,34 @@ async function createBooking(request, session, env) {
   const body = await request.json();
   const seats = Number(body.seats);
   if (!Number.isInteger(seats) || seats < 1 || seats > 8) throw new Error('Seats must be between 1 and 8');
-  if (![body.trip_id, body.station_id, body.idempotency_key].every(value => BOOKING_UUID_PATTERN.test(value || ''))) throw new Error('Invalid booking identifiers');
+  if (![body.trip_id, body.station_id, body.idempotency_key].every(value => typeof value === 'string' && BOOKING_UUID_PATTERN.test(value))) throw new Error('Invalid booking identifiers');
   const passengers = validatePassengers(body.passengers, seats);
   const pickupAddress = typeof body.pickup_address === 'string' ? body.pickup_address.trim() : null;
   if (body.pickup_address != null && (!pickupAddress || pickupAddress.length < 5 || pickupAddress.length > 240)) {
     return json({ error: 'Enter a pickup address between 5 and 240 characters' }, 400);
   }
-  const booking = await supabase(env, 'rpc/create_miniapp_booking', {
-    method: 'POST',
-    body: {
-      p_user_id: session.uid,
-      p_trip_id: body.trip_id,
-      p_station_id: body.station_id,
-      p_seats: seats,
-      p_passengers: passengers,
-      p_idempotency_key: body.idempotency_key,
-      p_pickup_address: pickupAddress,
-    },
-  });
+  const payload = {
+    p_user_id: session.uid,
+    p_trip_id: body.trip_id,
+    p_station_id: body.station_id,
+    p_seats: seats,
+    p_passengers: passengers,
+    p_idempotency_key: body.idempotency_key,
+    p_pickup_address: pickupAddress,
+  };
+  const promotion = session.promotion;
+  let booking;
+  if (promotion?.tripId === body.trip_id.toLowerCase()) {
+    try {
+      booking = await supabase(env, 'rpc/create_promoted_miniapp_booking', {
+        method: 'POST', body: { ...payload, p_channel: promotion.channel },
+      });
+    } catch (error) {
+      // During a staged rollout, the booking flow can precede the database migration.
+      if (error.code !== 'PGRST202') throw error;
+    }
+  }
+  booking ??= await supabase(env, 'rpc/create_miniapp_booking', { method: 'POST', body: payload });
   return json({ booking: Array.isArray(booking) ? booking[0] : booking }, 201);
 }
 
