@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { 
   Users, 
   CalendarCheck, 
@@ -14,8 +15,9 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Filter,
   RefreshCw,
+  FileText,
+  LifeBuoy,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Avatar, StatCard, formatCurrency, formatCurrencyTotals } from "@tankua/ui";
@@ -43,22 +45,25 @@ export default function DashboardPage() {
     averageBookingValue: number;
     revenueByStatus: Array<{ status: string; revenue: number }>;
   } | null>(null);
+  const dashboardRequest = useRef(0);
 
   useEffect(() => {
     loadDashboardData();
   }, [timeRange]);
 
   const loadDashboardData = async () => {
+    const request = ++dashboardRequest.current;
     setLoading(true);
     try {
       const [statsData, bookingsData, destinationsData, trendsData, revenueData] = await Promise.all([
         getDashboardStats(),
         getRecentBookings(5),
         getTopDestinations(4),
-        getBookingTrends(30),
+        getBookingTrends(Number.parseInt(timeRange, 10)),
         getRevenueAnalytics(),
       ]);
 
+      if (request !== dashboardRequest.current) return;
       setStats(statsData);
       setRecentBookings(bookingsData);
       setTopDestinations(destinationsData);
@@ -67,7 +72,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     } finally {
-      setLoading(false);
+      if (request === dashboardRequest.current) setLoading(false);
     }
   };
 
@@ -125,7 +130,7 @@ export default function DashboardPage() {
     },
   ];
 
-  if (loading) {
+  if (loading && !stats) {
     return (
       <div className="min-h-screen">
         <Header 
@@ -145,8 +150,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <Header 
-        title="Dashboard" 
-        subtitle={`Welcome back! Here's what's happening with Tankua.`}
+        title="Operations"
+        subtitle="Review activity and open the queues that need your attention."
         actions={
           <Button 
             variant="outline" 
@@ -160,14 +165,32 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="p-6 space-y-6">
+      <div className="space-y-6 p-4 sm:p-6">
+        <section aria-labelledby="work-queues" className="space-y-3">
+          <h2 id="work-queues" className="text-lg font-semibold tracking-tight">Work queues</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            {[
+              { href: "/dashboard/provider-applications", title: "Provider applications", detail: "Review operators awaiting approval", icon: FileText },
+              { href: "/dashboard/payouts", title: "Payouts", detail: "Review operator balances and payouts", icon: CreditCard },
+              { href: "/dashboard/support", title: "Support", detail: "Respond to open requests", icon: LifeBuoy },
+            ].map(({ href, title, detail, icon: Icon }) => (
+              <Link href={href} key={href} className="group flex min-h-24 items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent focus-visible:outline-primary">
+                <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                <span className="flex-1"><strong className="block text-sm">{title}</strong><span className="mt-1 block text-sm text-muted-foreground">{detail}</span></span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+        </section>
         {/* Time range filter */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-2 text-sm font-medium">Booking trend</span>
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Booking trend range">
             <Button 
               variant={timeRange === "7d" ? "default" : "ghost"} 
               size="sm"
               onClick={() => setTimeRange("7d")}
+              aria-pressed={timeRange === "7d"}
             >
               7 Days
             </Button>
@@ -175,6 +198,7 @@ export default function DashboardPage() {
               variant={timeRange === "30d" ? "default" : "ghost"} 
               size="sm"
               onClick={() => setTimeRange("30d")}
+              aria-pressed={timeRange === "30d"}
             >
               30 Days
             </Button>
@@ -182,13 +206,11 @@ export default function DashboardPage() {
               variant={timeRange === "90d" ? "default" : "ghost"} 
               size="sm"
               onClick={() => setTimeRange("90d")}
+              aria-pressed={timeRange === "90d"}
             >
               90 Days
             </Button>
           </div>
-          <Button variant="outline" size="sm" leftIcon={<Filter className="h-4 w-4" />}>
-            Filter
-          </Button>
         </div>
 
         {/* Stats Grid */}
@@ -211,7 +233,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Bookings</CardTitle>
-              <Button variant="ghost" size="sm">View All</Button>
+              <Link href="/dashboard/bookings" className="text-sm font-medium text-primary hover:underline">All bookings</Link>
             </CardHeader>
             <CardContent>
               {recentBookings.length === 0 ? (
@@ -277,10 +299,12 @@ export default function DashboardPage() {
           {/* Booking Trends */}
           <Card>
             <CardHeader>
-              <CardTitle>Booking Trends (Last 30 Days)</CardTitle>
+              <CardTitle>Bookings in the last {Number.parseInt(timeRange, 10)} days</CardTitle>
             </CardHeader>
             <CardContent>
-              {bookingTrends.length === 0 ? (
+              {loading ? (
+                <p className="py-8 text-center text-muted-foreground" role="status">Loading booking trend…</p>
+              ) : bookingTrends.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No booking data available</p>
                 </div>
@@ -291,6 +315,7 @@ export default function DashboardPage() {
                     <span className="font-semibold">{bookingTrends.reduce((sum, t) => sum + t.bookings, 0)}</span>
                   </div>
                   <div className="space-y-2">
+                    {bookingTrends.length > 7 && <p className="text-xs text-muted-foreground">Most recent 7 days</p>}
                     {bookingTrends.slice(-7).map((trend, index) => {
                       const maxBookings = Math.max(...bookingTrends.map(t => t.bookings), 1);
                       const percentage = (trend.bookings / maxBookings) * 100;

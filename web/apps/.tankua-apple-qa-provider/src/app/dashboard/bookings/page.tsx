@@ -1,0 +1,622 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  Search, 
+  Filter, 
+  Calendar,
+  ChevronDown,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  Download,
+  Phone,
+  RefreshCw,
+} from "lucide-react";
+import { Header } from "@/components/header";
+import { Card, CardContent, Button, Badge, Avatar, formatCurrency, formatCurrencyTotals, sumByCurrency, InlineBanner } from "@tankua/ui";
+import { getProviderBookings, updateBookingStatus, type BookingDetails } from "@/lib/queries";
+
+export default function BookingsPage() {
+  const router = useRouter();
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<BookingDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string } | null>(null);
+  const [destinationFilter, setDestinationFilter] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+  const [totalBookings, setTotalBookings] = useState(0);
+  const [destinations, setDestinations] = useState<Array<{ id: string; name: string }>>([]);
+  const [banner, setBanner] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
+
+  useEffect(() => {
+    loadProviderSession();
+  }, [router]);
+
+  const loadDestinations = () => {
+    // Extract unique destinations from bookings
+    const uniqueDestinations = new Map<string, { id: string; name: string }>();
+    
+    bookings.forEach((booking) => {
+      const destinationName = booking.trip?.destination?.name || booking.destination_name;
+      const destinationId = booking.trip?.destination?.id || booking.destination_id;
+      
+      if (destinationName && destinationId) {
+        if (!uniqueDestinations.has(destinationId)) {
+          uniqueDestinations.set(destinationId, {
+            id: destinationId,
+            name: destinationName,
+          });
+        }
+      }
+    });
+    
+    setDestinations(Array.from(uniqueDestinations.values()));
+  };
+
+  useEffect(() => {
+    // Reload destinations when bookings change
+    if (bookings.length > 0) {
+      loadDestinations();
+    }
+  }, [bookings]);
+
+  const loadProviderSession = () => {
+    try {
+      const stored = localStorage.getItem("provider_user");
+      if (!stored) {
+        router.replace("/login");
+        return;
+      }
+
+      const parsed = JSON.parse(stored);
+      const id = parsed?.provider_id || parsed?.provider?.id;
+      
+      if (!id) {
+        router.replace("/login");
+        return;
+      }
+
+      setProviderId(id);
+      loadBookings(id);
+    } catch (err) {
+      console.error("Failed to load provider session", err);
+      router.replace("/login");
+    }
+  };
+
+  const loadBookings = async (id: string) => {
+    setLoading(true);
+    try {
+      const result = await getProviderBookings(id, {
+        limit: 100, // Load more bookings
+      });
+      setBookings(result.bookings);
+      setTotalBookings(result.total);
+    } catch (error) {
+      console.error("Error loading bookings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "TBD";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return { date: "TBD", time: "" };
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      time: date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }),
+    };
+  };
+
+  const filteredBookings = bookings.filter((booking) => {
+    const customerName = booking.user?.name || "Unknown";
+    const destinationName = booking.trip?.destination?.name || booking.destination_name || "Unknown";
+    const bookingId = booking.id.substring(0, 8).toLowerCase();
+    
+    const matchesSearch = 
+      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bookingId.includes(searchQuery.toLowerCase()) ||
+      destinationName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
+    const matchesPayment = paymentFilter === "all" || booking.payment_status === paymentFilter;
+    
+    const matchesDestination = destinationFilter === "all" || 
+      destinationName === destinationFilter;
+    
+    let matchesDate = true;
+    if (dateRangeFilter?.start && dateRangeFilter?.end) {
+      const bookingDate = booking.trip?.departure_date || booking.created_at;
+      const bookingDateObj = new Date(bookingDate);
+      const startDate = new Date(dateRangeFilter.start);
+      const endDate = new Date(dateRangeFilter.end);
+      endDate.setHours(23, 59, 59, 999); // Include entire end date
+      matchesDate = bookingDateObj >= startDate && bookingDateObj <= endDate;
+    }
+    
+    return matchesSearch && matchesStatus && matchesPayment && matchesDestination && matchesDate;
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return <Badge variant="success" dot>Confirmed</Badge>;
+      case "pending":
+        return <Badge variant="warning" dot>Pending</Badge>;
+      case "cancelled":
+        return <Badge variant="destructive" dot>Cancelled</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const getPaymentBadge = (booking: BookingDetails) => {
+    switch (booking.payment_status) {
+      case "paid":
+        return <Badge variant="success">Paid</Badge>;
+      case "pending":
+        if (booking.status !== "cancelled" && booking.trip?.status === "upcoming"
+          && Date.parse(booking.trip.departure_date) > Date.now()) {
+          return <Badge variant="secondary">Awaiting trip activation</Badge>;
+        }
+        return <Badge variant="warning">Pending</Badge>;
+      case "refunded":
+        return <Badge variant="default">Refunded</Badge>;
+      default:
+        return <Badge>{booking.payment_status}</Badge>;
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedBookings.length === filteredBookings.length) {
+      setSelectedBookings([]);
+    } else {
+      setSelectedBookings(filteredBookings.map((b) => b.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    if (selectedBookings.includes(id)) {
+      setSelectedBookings(selectedBookings.filter((b) => b !== id));
+    } else {
+      setSelectedBookings([...selectedBookings, id]);
+    }
+  };
+
+  const handleStatusUpdate = async (bookingId: string, newStatus: string) => {
+    try {
+      const result = await updateBookingStatus(bookingId, { status: newStatus });
+      if (result.success) {
+        if (providerId) {
+          await loadBookings(providerId);
+        }
+        setBanner({ message: `Booking status updated to ${newStatus}`, variant: "success" });
+      } else {
+        setBanner({ message: result.error || "Failed to update booking status", variant: "error" });
+      }
+    } catch (err) {
+      console.error("Error updating booking status:", err);
+      setBanner({ message: "Failed to update booking status. Please try again.", variant: "error" });
+    }
+  };
+
+  const exportBookings = () => {
+    const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const rows = filteredBookings.map((booking) => [booking.id, booking.user?.name || "Unknown", booking.trip?.destination?.name || booking.destination_name || "Unknown", booking.trip?.departure_date || "", booking.seats, booking.total_price, booking.currency, booking.status, booking.payment_status]);
+    const csv = [["Booking ID", "Customer", "Destination", "Departure", "Seats", "Amount", "Currency", "Status", "Payment"], ...rows].map((row) => row.map(escape).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = `tankua-bookings-${new Date().toISOString().slice(0, 10)}.csv`; anchor.click(); URL.revokeObjectURL(url);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Bookings" />
+        <div className="portal-content" role="status">
+          <span className="sr-only">Loading bookings…</span>
+          <div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse">
+            <div className="h-16 rounded-xl border border-border bg-muted" />
+            <div className="h-24 rounded-xl border border-border bg-muted" />
+            <div className="h-48 rounded-xl border border-border bg-muted" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <Header 
+        title="Bookings" 
+        subtitle={`${totalBookings} ${totalBookings === 1 ? "booking" : "bookings"}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => providerId && loadBookings(providerId)}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={exportBookings} disabled={!filteredBookings.length}>
+              Export
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="portal-content">
+        {banner && (
+          <InlineBanner
+            message={banner.message}
+            variant={banner.variant}
+            onDismiss={() => setBanner(null)}
+          />
+        )}
+
+        {/* Filters */}
+        <div className="portal-toolbar">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="search"
+              aria-label="Search bookings by customer, booking ID or destination"
+              placeholder="Search bookings"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-11 pl-11 pr-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter by booking status"
+              className="h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="all">All statuses</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              aria-label="Filter by payment status"
+              className="h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="all">All payments</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="refunded">Refunded</option>
+            </select>
+            <Button 
+              variant="outline" 
+              leftIcon={<Filter className="h-4 w-4" />}
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters((visible) => !visible)}
+            >
+              More filters
+            </Button>
+          </div>
+        </div>
+
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <Card className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="booking-destination" className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Destination
+                </label>
+                <select
+                  id="booking-destination"
+                  value={destinationFilter}
+                  onChange={(e) => setDestinationFilter(e.target.value)}
+                  className="w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="all">All Destinations</option>
+                  {destinations.map((dest) => (
+                    <option key={dest.id} value={dest.name}>
+                      {dest.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="booking-start" className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Start date
+                </label>
+                <input
+                  id="booking-start"
+                  type="date"
+                  value={dateRangeFilter?.start || ""}
+                  onChange={(e) => setDateRangeFilter({
+                    ...dateRangeFilter || { start: "", end: "" },
+                    start: e.target.value
+                  })}
+                  className="w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label htmlFor="booking-end" className="text-sm font-medium text-muted-foreground mb-2 block">
+                  End date
+                </label>
+                <input
+                  id="booking-end"
+                  type="date"
+                  value={dateRangeFilter?.end || ""}
+                  onChange={(e) => setDateRangeFilter({
+                    ...dateRangeFilter || { start: "", end: "" },
+                    end: e.target.value
+                  })}
+                  className="w-full h-11 px-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+            </div>
+            {(dateRangeFilter?.start || dateRangeFilter?.end || destinationFilter !== "all") && (
+              <div className="mt-4 flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateRangeFilter(null);
+                    setDestinationFilter("all");
+                  }}
+                >
+                  Clear date and destination filters
+                </Button>
+              </div>
+            )}
+          </Card>
+        )}
+
+        <dl aria-label="Booking summary" className="portal-metrics grid grid-cols-2 rounded-xl border border-border bg-card xl:grid-cols-4">
+          {[
+            ["Total bookings", totalBookings],
+            ["Confirmed", bookings.filter((booking) => booking.status === "confirmed").length],
+            ["Pending payment", bookings.filter((booking) => booking.payment_status === "pending").length],
+            ["Total revenue", formatCurrencyTotals(sumByCurrency(
+              bookings.filter((booking) => booking.payment_status === "paid"),
+              (booking) => Number(booking.total_price),
+            ))],
+          ].map(([label, value]) => (
+            <div key={label} className="p-3.5 sm:p-4">
+              <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+              <dd className="mt-2 break-words text-xl font-semibold tabular-nums tracking-tight">{value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* Bookings Table */}
+        <Card>
+          <CardContent className="p-0">
+            {/* Mobile Card View */}
+            <div className="lg:hidden divide-y divide-border">
+              {filteredBookings.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>No bookings found</p>
+                </div>
+              ) : (
+                filteredBookings.map((booking) => {
+                  const customerName = booking.user?.name || "Unknown";
+                  const destinationName = booking.trip?.destination?.name || booking.destination_name || "Unknown";
+                  const tripDate = booking.trip?.departure_date ? formatDate(booking.trip.departure_date) : formatDate(booking.created_at);
+                  const phone = booking.user?.phone_number || "";
+                  
+                  return (
+                    <div key={booking.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Avatar name={customerName} size="sm" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{customerName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{booking.id.substring(0, 8)}</p>
+                          </div>
+                        </div>
+                        {getStatusBadge(booking.status)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm truncate">{destinationName}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{tripDate}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Seats</p>
+                          <p className="text-sm font-medium mt-1">{booking.seats}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Amount</p>
+                          <p className="font-semibold text-sm mt-1">{formatCurrency(booking.total_price, booking.currency)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Payment</p>
+                          <div className="mt-1">{getPaymentBadge(booking)}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                        {phone && (
+                          <a href={`tel:${phone}`} className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-muted">
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        )}
+                        {booking.status === "pending" && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
+                              onClick={() => handleStatusUpdate(booking.id, "confirmed")}
+                              title="Confirm Booking"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-red-500 hover:text-red-600"
+                              onClick={() => handleStatusUpdate(booking.id, "cancelled")}
+                              title="Cancel Booking"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedBooking(booking)} title="View booking details">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
+              {filteredBookings.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>No bookings found</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="text-left py-4 px-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedBookings.length === filteredBookings.length && filteredBookings.length > 0}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                        />
+                      </th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Destination</th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Trip Date</th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Seats</th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Amount</th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                      <th className="text-left py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment</th>
+                      <th className="text-left py-4 px-4"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map((booking) => {
+                      const customerName = booking.user?.name || "Unknown";
+                      const destinationName = booking.trip?.destination?.name || booking.destination_name || "Unknown";
+                      const tripDate = booking.trip?.departure_date ? formatDate(booking.trip.departure_date) : formatDate(booking.created_at);
+                      const phone = booking.user?.phone_number || "";
+                      
+                      return (
+                        <tr key={booking.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                          <td className="py-4 px-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedBookings.includes(booking.id)}
+                              onChange={() => toggleSelect(booking.id)}
+                              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                            />
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar name={customerName} size="sm" />
+                              <div>
+                                <p className="font-medium text-sm">{customerName}</p>
+                                <p className="text-xs text-muted-foreground">{booking.id.substring(0, 8)}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <p className="text-sm truncate max-w-[180px]">{destinationName}</p>
+                          </td>
+                          <td className="py-4 px-4">
+                            <p className="text-sm">{tripDate}</p>
+                          </td>
+                          <td className="py-4 px-4">
+                            <p className="text-sm font-medium">{booking.seats}</p>
+                          </td>
+                          <td className="py-4 px-4">
+                            <p className="font-semibold text-sm">{formatCurrency(booking.total_price, booking.currency)}</p>
+                          </td>
+                          <td className="py-4 px-4">
+                            {getStatusBadge(booking.status)}
+                          </td>
+                          <td className="py-4 px-4">
+                            {getPaymentBadge(booking)}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-2">
+                              {phone && (
+                                <a href={`tel:${phone}`} className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-muted">
+                                  <Phone className="h-4 w-4" />
+                                </a>
+                              )}
+                              {booking.status === "pending" && (
+                                <>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
+                                    onClick={() => handleStatusUpdate(booking.id, "confirmed")}
+                                    title="Confirm Booking"
+                                  >
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-red-500 hover:text-red-600"
+                                    onClick={() => handleStatusUpdate(booking.id, "cancelled")}
+                                    title="Cancel Booking"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedBooking(booking)} title="View booking details">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      {selectedBooking && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" onClick={() => setSelectedBooking(null)}><Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Booking #{selectedBooking.id.slice(0, 8)}</p><h2 className="mt-1 text-xl font-bold">{selectedBooking.trip?.destination?.name || selectedBooking.destination_name || "Booking details"}</h2></div><Button variant="ghost" size="sm" onClick={() => setSelectedBooking(null)}>Close</Button></div><div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-4 text-sm"><span><small className="block text-muted-foreground">Customer</small><b>{selectedBooking.user?.name || "Unknown"}</b></span><span><small className="block text-muted-foreground">Phone</small><b>{selectedBooking.user?.phone_number || "Not provided"}</b></span><span><small className="block text-muted-foreground">Seats</small><b>{selectedBooking.seats}</b></span>{selectedBooking.pickup_station?.pickup_address ? <span className="col-span-2"><small className="block text-muted-foreground">Traveler pickup address</small><b className="break-words">{selectedBooking.pickup_station.pickup_address}</b></span> : null}<span><small className="block text-muted-foreground">Amount</small><b>{formatCurrency(selectedBooking.total_price, selectedBooking.currency)}</b></span><span><small className="block text-muted-foreground">Status</small>{getStatusBadge(selectedBooking.status)}</span><span><small className="block text-muted-foreground">Payment</small>{getPaymentBadge(selectedBooking)}</span></div></Card></div>}
+    </div>
+  );
+}
+

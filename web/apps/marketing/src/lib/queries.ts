@@ -18,7 +18,7 @@ type ReviewSummary = {
 };
 
 const listingColumns = `
-  id, price, currency, status, minimum_interest, interest_count,
+  id, price, currency, status, minimum_interest, interest_count, departure_date,
   destination:destinations!inner(name, city, category, images, description, region),
   provider:providers(id)
 `;
@@ -69,6 +69,7 @@ function mapListing(trip: {
   status: string;
   minimum_interest: number | null;
   interest_count: number;
+  departure_date: string | null;
   destination: {
     name: string;
     city: string | null;
@@ -88,6 +89,7 @@ function mapListing(trip: {
     image: destination.images?.[0] || FALLBACK_TOUR_IMAGE,
     price: trip.price,
     currency: getTripCurrency(trip.currency),
+    departureDate: trip.departure_date,
     interest: trip.status === 'collecting_interest' && trip.minimum_interest !== null
       ? { count: trip.interest_count, minimum: trip.minimum_interest }
       : null,
@@ -244,8 +246,9 @@ export async function getTourById(id: string) {
     const interest = data.status === 'collecting_interest' && minimumInterest !== null && isFutureDeparture
       ? { count: data.interest_count as number, minimum: minimumInterest }
       : null;
-    const bookingOpen = (data.status === 'upcoming' || data.status === 'active')
-      && (minimumInterest === null || isFutureDeparture);
+    const reservationsOpen = (data.status === 'upcoming' || data.status === 'active') && isFutureDeparture;
+    const soldOut = reservationsOpen && Number(data.available_seats) < 1;
+    const bookingOpen = reservationsOpen && !soldOut;
 
     return {
       id: data.id as string,
@@ -257,6 +260,7 @@ export async function getTourById(id: string) {
       currency: getTripCurrency(data.currency),
       interest,
       bookingOpen,
+      soldOut,
       paymentOpen: bookingOpen && data.status === 'active',
       description: (data.summary || destination?.description || '') as string,
       provider,

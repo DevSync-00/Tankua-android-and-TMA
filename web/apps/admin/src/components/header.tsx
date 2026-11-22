@@ -1,249 +1,157 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  Search, 
-  Bell, 
-  ChevronDown, 
-  Menu,
-  Sun,
-  Moon,
-  Settings,
-  User,
-  LogOut
-} from "lucide-react";
-import { Button, Badge, Avatar } from "@tankua/ui";
+import { Bell, ChevronDown, LogOut, Settings } from "lucide-react";
+import { Avatar } from "@tankua/ui";
 import {
-  getInAppNotifications,
-  markNotificationRead,
-  formatNotificationTime,
-  type InAppNotification,
+  formatNotificationTime, getInAppNotifications, markNotificationRead, type InAppNotification,
 } from "@tankua/database";
+import { AdminMenuButton } from "./sidebar";
 
-interface HeaderProps {
-  title: string;
-  subtitle?: string;
-  actions?: React.ReactNode;
-}
+type Panel = "notifications" | "account";
 
-export function Header({ title, subtitle, actions }: HeaderProps) {
+export function Header({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [panel, setPanel] = useState<Panel | null>(null);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const [notificationError, setNotificationError] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState({ name: "Administrator", email: "", role: "admin" });
-  const notificationsRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  const notificationButton = useRef<HTMLButtonElement>(null);
+  const accountButton = useRef<HTMLButtonElement>(null);
 
   const loadNotifications = useCallback(async () => {
     try {
-      const data = await getInAppNotifications("admin");
-      setNotifications(data);
+      setNotifications(await getInAppNotifications("admin"));
+      setNotificationError(false);
     } catch (error) {
       console.error("Failed to load admin notifications:", error);
+      setNotificationError(true);
     }
   }, []);
 
   useEffect(() => {
-    loadNotifications();
+    void loadNotifications();
     try {
       const stored = JSON.parse(localStorage.getItem("admin_user") || "{}");
-      setCurrentAdmin({
-        name: stored.name || stored.email || "Administrator",
-        email: stored.email || "",
-        role: stored.role || "admin",
-      });
+      setCurrentAdmin({ name: stored.name || stored.email || "Administrator", email: stored.email || "", role: stored.role || "admin" });
     } catch {
-      // Keep the neutral fallback for legacy sessions.
+      // Default to the generic account name for legacy sessions.
     }
   }, [loadNotifications]);
 
   useEffect(() => {
-    if (showNotifications) {
-      loadNotifications();
-    }
-  }, [showNotifications, loadNotifications]);
+    if (!panel) return;
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-        setShowNotifications(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
+    const closeOutside = (event: PointerEvent) => {
+      if (!toolsRef.current?.contains(event.target as Node)) setPanel(null);
     };
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setPanel(null);
+      (panel === "account" ? accountButton : notificationButton).current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeWithEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeWithEscape);
+    };
+  }, [panel]);
 
-    if (showNotifications || showUserMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showNotifications, showUserMenu]);
+  const unreadCount = notifications.filter((notification) => !notification.is_read).length;
+  const role = currentAdmin.role === "super_admin" ? "Super admin" : "Administrator";
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const handleNotificationClick = async (notification: InAppNotification) => {
+  async function openNotification(notification: InAppNotification) {
     if (!notification.is_read) {
       try {
         await markNotificationRead(notification.id);
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, is_read: true } : n
-          )
-        );
+        setNotifications((previous) => previous.map((item) => item.id === notification.id ? { ...item, is_read: true } : item));
       } catch (error) {
         console.error("Failed to mark notification as read:", error);
       }
     }
-
     if (notification.action_url) {
-      setShowNotifications(false);
+      setPanel(null);
       router.push(notification.action_url);
     }
-  };
+  }
+
+  async function signOut() {
+    const { supabase } = await import("@/lib/supabase");
+    await supabase.auth.signOut();
+    localStorage.removeItem("admin_user");
+    router.replace("/login");
+  }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-xl">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-        {/* Left side - Title */}
-        <div className="flex-1 min-w-0">
-          <h1 className="truncate text-lg font-semibold tracking-tight text-stone-950 sm:text-xl">{title}</h1>
-          {subtitle && <p className="text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>}
+    <header className="admin-header">
+      <div className="admin-header-inner">
+        <AdminMenuButton />
+        <div className="admin-header-title">
+          <h1>{title}</h1>
+          {subtitle && <p>{subtitle}</p>}
         </div>
-
-        {/* Right side - Actions */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-          {actions}
-
-          {/* Search */}
-          <div className="hidden lg:flex items-center relative">
-            <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-64 pl-10 pr-4 rounded-xl bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            />
-          </div>
-
-          {/* Notifications */}
-          <div className="relative" ref={notificationsRef}>
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-xl hover:bg-muted transition-colors touch-manipulation"
-              aria-label="Notifications"
-            >
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-slide-down z-50">
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                  <h3 className="font-semibold">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <Badge variant="default">{unreadCount} new</Badge>
-                  )}
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="p-4 text-sm text-muted-foreground text-center">
-                      No notifications yet
-                    </p>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`p-4 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer ${
-                          !notification.is_read ? "bg-primary/5" : ""
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-2 h-2 mt-2 rounded-full ${!notification.is_read ? "bg-primary" : "bg-transparent"}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{notification.title}</p>
-                            <p className="text-sm text-muted-foreground truncate">{notification.message}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {formatNotificationTime(notification.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className="p-3 border-t border-border">
-                  <Button
-                    variant="ghost"
-                    className="w-full"
-                    size="sm"
-                    onClick={() => {
-                      setShowNotifications(false);
-                      router.push("/dashboard/notifications");
-                    }}
-                  >
-                    View All Notifications
-                  </Button>
-                </div>
+        {actions && <div className="admin-header-actions">{actions}</div>}
+        <div className="admin-header-tools" ref={toolsRef}>
+          <button
+            ref={notificationButton}
+            type="button"
+            className="admin-icon-button"
+            aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
+            aria-controls="admin-notifications"
+            aria-expanded={panel === "notifications"}
+            onClick={() => {
+              if (panel !== "notifications") void loadNotifications();
+              setPanel(panel === "notifications" ? null : "notifications");
+            }}
+          >
+            <Bell size={19} aria-hidden="true" />
+            {unreadCount > 0 && <span className="admin-unread-indicator" />}
+          </button>
+          {panel === "notifications" && (
+            <section className="admin-popover" id="admin-notifications" aria-label="Notifications">
+              <div className="admin-popover-heading">
+                <h2>Notifications</h2>{unreadCount > 0 && <span>{unreadCount} unread</span>}
               </div>
-            )}
-          </div>
-
-          {/* User Menu */}
-          <div className="relative" ref={userMenuRef}>
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition-colors touch-manipulation"
-              aria-label="User menu"
-            >
-              <Avatar name={currentAdmin.name} size="sm" />
-              <div className="hidden lg:block text-left">
-                <p className="max-w-36 truncate text-sm font-medium">{currentAdmin.name}</p>
-                <p className="text-xs capitalize text-muted-foreground">{currentAdmin.role.replace("_", " ")}</p>
+              <div className="admin-notification-list">
+                {notificationError && <p role="status">Notifications couldn’t load. Open the notifications page to try again.</p>}
+                {!notificationError && notifications.length === 0 && <p>No notifications yet.</p>}
+                {notifications.map((notification) => (
+                  <button type="button" key={notification.id} onClick={() => void openNotification(notification)} className="admin-notification-item" data-unread={!notification.is_read}>
+                    <strong>{notification.title}</strong>
+                    <span>{notification.message}</span>
+                    <small>{formatNotificationTime(notification.created_at)}</small>
+                  </button>
+                ))}
               </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground hidden lg:block" />
-            </button>
-
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-slide-down z-50">
-                <div className="p-4 border-b border-border">
-                  <p className="font-medium">{currentAdmin.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">{currentAdmin.email}</p>
-                </div>
-                <div className="p-2">
-                  <button onClick={() => router.push("/dashboard/settings")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm">
-                    <User className="h-4 w-4" />
-                    Profile
-                  </button>
-                  <button onClick={() => router.push("/dashboard/settings")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </button>
-                </div>
-                <div className="p-2 border-t border-border">
-                  <button
-                    onClick={async () => {
-                      const { supabase } = await import("@/lib/supabase");
-                      await supabase.auth.signOut();
-                      localStorage.removeItem("admin_user");
-                      router.replace("/login");
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors text-sm"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </button>
-                </div>
+              <Link href="/dashboard/notifications" className="admin-popover-link" onClick={() => setPanel(null)}>View all notifications</Link>
+            </section>
+          )}
+          <button
+            ref={accountButton}
+            type="button"
+            className="admin-account-button"
+            onClick={() => setPanel(panel === "account" ? null : "account")}
+            aria-label="Account options"
+            aria-controls="admin-account"
+            aria-expanded={panel === "account"}
+          >
+            <Avatar name={currentAdmin.name} size="sm" />
+            <ChevronDown size={15} className="hidden xl:block" aria-hidden="true" />
+          </button>
+          {panel === "account" && (
+            <section className="admin-popover admin-popover--account" id="admin-account" aria-label="Account options">
+              <div className="admin-popover-heading admin-account-copy">
+                <strong>{currentAdmin.name}</strong><span>{role}</span>
+                {currentAdmin.email && currentAdmin.email !== currentAdmin.name && <span>{currentAdmin.email}</span>}
               </div>
-            )}
-          </div>
+              <Link href="/dashboard/settings" className="admin-popover-link" onClick={() => setPanel(null)}><Settings size={17} aria-hidden="true" />Account settings</Link>
+              <button type="button" className="admin-popover-link" onClick={signOut}><LogOut size={17} aria-hidden="true" />Sign out</button>
+            </section>
+          )}
         </div>
       </div>
     </header>

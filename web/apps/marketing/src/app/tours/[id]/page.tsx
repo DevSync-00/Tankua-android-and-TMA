@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock3, MapPin, Share2, Star, UsersRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Check, Clock3, MapPin, Share2, Star, UsersRound } from "lucide-react";
 import { formatCurrency } from "@tankua/ui";
+import { formatDepartureDate } from "@/lib/departure-date";
 import { getTourById } from "@/lib/queries";
 import { getTelegramTripUrl } from "@/lib/telegram";
 
@@ -16,9 +17,12 @@ export default function TourDetailPage() {
   const [imageFailed, setImageFailed] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const [shareUrl, setShareUrl] = useState("");
+  const [backHref, setBackHref] = useState("/tours");
 
   useEffect(() => {
     let ignore = false;
+    const from = new URL(window.location.href).searchParams.get("from");
+    setBackHref(from === "/tours" || from?.startsWith("/tours?") ? from : "/tours");
     setLoading(true);
     setImageFailed(false);
     setShareStatus("");
@@ -35,7 +39,7 @@ export default function TourDetailPage() {
 
   async function shareTour() {
     if (!tour) return;
-    const url = window.location.href;
+    const url = new URL(window.location.pathname, window.location.origin).toString();
     setShareStatus("");
 
     if (navigator.share) {
@@ -59,7 +63,7 @@ export default function TourDetailPage() {
   return (
     <main className="field-page">
       <div className="field-wrap py-7 sm:py-10">
-        <Link href="/tours" className="field-link"><ArrowLeft size={17} aria-hidden="true" />All tours</Link>
+        <Link href={backHref} className="field-link" scroll={false}><ArrowLeft size={17} aria-hidden="true" />Back to tours</Link>
         {loading ? (
           <div className="field-empty mt-5" role="status">Loading tour details…</div>
         ) : !tour ? (
@@ -104,7 +108,7 @@ export default function TourDetailPage() {
                       <dt>Departure</dt>
                       <dd className="ml-auto text-right font-semibold">
                         <time dateTime={tour.departureDate}>
-                          {new Date(tour.departureDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                          {formatDepartureDate(tour.departureDate, true)}
                         </time>
                       </dd>
                     </div>
@@ -137,15 +141,20 @@ export default function TourDetailPage() {
                   <div className="mt-4">
                     <p className="field-card-interest">Planned departure</p>
                     <p className="mt-2 text-sm leading-6 text-[var(--field-muted)]">Reservations open once the minimum group size is met. Registering interest is free.</p>
-                    <a href={getTelegramTripUrl(tour.id)} className="field-button mt-4">Register interest in Telegram<ArrowRight size={17} aria-hidden="true" /></a>
+                    <a href={getTelegramTripUrl(tour.id)} className="field-button mt-4 w-full justify-between">Register interest in Telegram<ArrowUpRight size={17} aria-hidden="true" /></a>
                   </div>
                 ) : tour.bookingOpen ? (
                   <div className="mt-4">
-                    <Link href="/download" className="field-button">{tour.paymentOpen ? "Book in the app" : "Reserve in the app"}<ArrowRight size={17} aria-hidden="true" /></Link>
-                    {!tour.paymentOpen && <p className="mt-3 text-sm leading-6 text-[var(--field-muted)]">Reserve your seat now and pay once the trip is active.</p>}
+                    <a href={getTelegramTripUrl(tour.id)} className="field-button w-full justify-between">{tour.paymentOpen ? "Book in Telegram" : "Reserve in Telegram"}<ArrowUpRight size={17} aria-hidden="true" /></a>
+                    <p className="mt-3 text-sm leading-6 text-[var(--field-muted)]">
+                      {tour.paymentOpen ? "Choose a pickup point and seats for this departure in Telegram." : "Reserve your seat now. Payment opens when the operator confirms the trip."}
+                    </p>
                   </div>
                 ) : (
-                  <p className="mt-4 text-sm text-[var(--field-muted)]">This trip is unavailable for booking.</p>
+                  <div className="mt-4 space-y-2 text-sm">
+                    <p className="text-[var(--field-muted)]">{tour.soldOut ? "This departure is sold out." : "This departure is unavailable for booking."}</p>
+                    <Link href="/tours" className="field-link">Browse upcoming tours</Link>
+                  </div>
                 )}
                 <button type="button" className="field-link mt-2" onClick={shareTour}><Share2 size={16} aria-hidden="true" />Share this tour</button>
                 <p role="status" className="text-sm text-[var(--field-muted)]">{shareStatus}</p>

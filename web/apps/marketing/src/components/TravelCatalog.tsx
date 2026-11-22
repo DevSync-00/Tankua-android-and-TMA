@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowDown, ArrowRight, Grid2X2, List, MapPin, Search, Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowRight, CalendarDays, Grid2X2, List, MapPin, Search, Star } from "lucide-react";
 import { formatCurrency, formatCurrencyTotals } from "@tankua/ui";
 import { getDestinations, getTours } from "@/lib/queries";
+import { formatDepartureDate } from "@/lib/departure-date";
 import { FieldHero } from "./FieldHero";
 
 const categories = [
@@ -42,11 +43,11 @@ const settings = {
   },
 };
 
-function CatalogCard({ entry, listView }: { entry: CatalogEntry; listView: boolean }) {
+function CatalogCard({ entry, listView, catalogHref }: { entry: CatalogEntry; listView: boolean; catalogHref: string }) {
   const [imageFailed, setImageFailed] = useState(false);
   const tour = "currency" in entry ? entry : null;
   const destination = "fares" in entry ? entry : null;
-  const href = tour ? `/tours/${tour.id}` : `/tours?q=${encodeURIComponent(entry.name)}`;
+  const href = tour ? `/tours/${tour.id}?from=${encodeURIComponent(catalogHref)}` : `/tours?q=${encodeURIComponent(entry.name)}`;
   const fares = destination?.fares;
   const price = tour && tour.price !== null
     ? formatCurrency(tour.price, tour.currency)
@@ -58,7 +59,10 @@ function CatalogCard({ entry, listView }: { entry: CatalogEntry; listView: boole
 
   return (
     <article className="field-card">
-      <Link href={href} className="field-card-link">
+      <Link href={href} prefetch={false} onClick={() => {
+        if (!tour) return;
+        try { sessionStorage.setItem("tankua-catalog-return", JSON.stringify([catalogHref, window.scrollY])); } catch {}
+      }} className="field-card-link">
         <div className="field-card-image">
           {imageFailed ? <MapPin size={28} aria-hidden="true" /> : (
             <Image
@@ -77,6 +81,7 @@ function CatalogCard({ entry, listView }: { entry: CatalogEntry; listView: boole
             <span><MapPin size={15} aria-hidden="true" />{entry.location}</span>
             {category && <span>{category}</span>}
           </p>
+          {tour?.departureDate && <p className="field-card-meta"><span><CalendarDays size={15} aria-hidden="true" /><time dateTime={tour.departureDate}>{formatDepartureDate(tour.departureDate)}</time></span></p>}
           {entry.description && <p className="field-card-description">{entry.description}</p>}
           {tags.length > 0 && <p className="field-card-tags">{(listView ? tags : tags.slice(0, 2)).join(" · ")}</p>}
           {tour?.providerReviews && (
@@ -99,15 +104,17 @@ function CatalogCard({ entry, listView }: { entry: CatalogEntry; listView: boole
   );
 }
 
-export function TravelCatalog({ type, initialQuery = "", initialCategory = "all" }: {
+export function TravelCatalog({ type, initialQuery = "", initialCategory = "all", initialRegion = "", initialListView = false }: {
   type: CatalogType;
   initialQuery?: string;
   initialCategory?: string;
+  initialRegion?: string;
+  initialListView?: boolean;
 }) {
   const [search, setSearch] = useState(initialQuery);
-  const [region, setRegion] = useState("");
+  const [region, setRegion] = useState(initialRegion);
   const [category, setCategory] = useState(initialCategory);
-  const [listView, setListView] = useState(false);
+  const [listView, setListView] = useState(initialListView);
   const [items, setItems] = useState<CatalogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [pending, setPending] = useState(true);
@@ -115,6 +122,30 @@ export function TravelCatalog({ type, initialQuery = "", initialCategory = "all"
   const [attempt, setAttempt] = useState(0);
   const config = settings[type];
   const hasFilters = Boolean(search || region || category !== "all");
+  const restored = useRef(false);
+  const filters = new URLSearchParams();
+  if (search) filters.set("q", search);
+  if (category !== "all") filters.set("category", category);
+  if (region) filters.set("region", region);
+  if (listView) filters.set("view", "list");
+  const catalogHref = "/" + type + (filters.size ? "?" + filters : "");
+
+  useEffect(() => {
+    if (type !== "tours") return;
+    const url = new URL(window.location.href);
+    if (url.pathname + url.search !== catalogHref) window.history.replaceState(window.history.state, "", catalogHref + url.hash);
+  }, [catalogHref, type]);
+
+  useEffect(() => {
+    if (restored.current || pending || failed) return;
+    restored.current = true;
+    try {
+      const [href, scroll]: [string, number] = JSON.parse(sessionStorage.getItem("tankua-catalog-return") || "[]");
+      if (href !== catalogHref || !Number.isFinite(scroll)) return;
+      sessionStorage.removeItem("tankua-catalog-return");
+      requestAnimationFrame(() => window.scrollTo({ top: scroll, behavior: "instant" }));
+    } catch {}
+  }, [catalogHref, failed, pending]);
 
   useEffect(() => {
     let ignore = false;
@@ -171,15 +202,15 @@ export function TravelCatalog({ type, initialQuery = "", initialCategory = "all"
             </span>
           </label>
           <label>
-            <span>Region</span>
-            <select value={region} onChange={(event) => setRegion(event.target.value)}>
+            <span id={`${type}-region-label`}>Region</span>
+            <select aria-labelledby={`${type}-region-label`} value={region} onChange={(event) => setRegion(event.target.value)}>
               <option value="">All regions</option>
               {regions.map((value) => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
           <label>
-            <span>Category</span>
-            <select value={category} onChange={(event) => setCategory(event.target.value)}>
+            <span id={`${type}-category-label`}>Category</span>
+            <select aria-labelledby={`${type}-category-label`} value={category} onChange={(event) => setCategory(event.target.value)}>
               {categories.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
               {!categories.some(({ id }) => id === category) && <option value={category}>{category}</option>}
             </select>
@@ -218,7 +249,7 @@ export function TravelCatalog({ type, initialQuery = "", initialCategory = "all"
             </div>
           ) : (
             <div className={`field-cards${listView ? " field-cards--list" : ""}`}>
-              {items.map((entry) => <CatalogCard key={`${entry.id}-${entry.image}`} entry={entry} listView={listView} />)}
+              {items.map((entry) => <CatalogCard key={`${entry.id}-${entry.image}`} entry={entry} listView={listView} catalogHref={catalogHref} />)}
             </div>
           )}
         </div>

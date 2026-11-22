@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, ArrowUpRight, Bell, Bus, CalendarDays, Check, ChevronRight, CircleHelp,
   Building2, Clock3, Compass, Gift, Heart, Home, Info, LocateFixed, Map as MapIcon,
@@ -79,6 +79,13 @@ function destinationCoordinates(destination) {
 const hasFutureDeparture = trip => Date.parse(trip.departure_date) > Date.now();
 const isCollectingInterest = trip => trip.status === 'collecting_interest' && hasFutureDeparture(trip);
 const isBookableTrip = trip => (trip.status === 'active' || trip.status === 'upcoming') && hasFutureDeparture(trip);
+const canSelectTrip = trip => isBookableTrip(trip) && Number(trip.available_seats) > 0;
+const tripDay = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Africa/Addis_Ababa', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+});
+const tripClock = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Africa/Addis_Ababa', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
 const isPendingBooking = booking => booking.status === 'confirmed'
   && booking.payment_status === 'pending';
 const isAwaitingActivation = booking => isPendingBooking(booking)
@@ -94,6 +101,8 @@ export default function App() {
   const [screen, setScreen] = useState(null);
   const [selected, setSelected] = useState(fallbackDestinations[0]);
   const [linkedTripId, setLinkedTripId] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const linkedReviewTracked = useRef(false);
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'telebirr' });
@@ -273,6 +282,7 @@ export default function App() {
             setSelected(normalizeDestination(destination));
             setLinkedTripId(trip.id);
             setScreen('detail');
+            if (canSelectTrip(trip)) trackBookingStep('departure_opened');
           } else {
             notify('This trip is currently unavailable.');
           }
@@ -338,17 +348,32 @@ export default function App() {
     }
   };
 
-  const startBooking = async () => {
+  const startBooking = async (requestedTripId) => {
     try {
       const freshCatalog = await refreshCatalog();
-      const available = freshCatalog.trips.some(trip => trip.destination_id === selected.id && isBookableTrip(trip));
-      if (!available) return notify('No scheduled trips are currently available');
+      const available = freshCatalog.trips.filter(trip => trip.destination_id === selected.id && canSelectTrip(trip));
+      const trip = requestedTripId ? available.find(trip => trip.id === requestedTripId) : null;
+      if (requestedTripId && !trip) return notify('This departure is no longer available.');
+      if (!available.length) return notify('No scheduled trips are currently available.');
       bookingAttempt.current = null;
-      setBooking({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'chapa' });
+      setBooking({ trip, requestedTripId, pickup: null, seats: 1, passengers: [], payment: 'chapa' });
       setScreen('trip');
+      window.scrollTo(0, 0);
     } catch (error) {
-      notify(error.message || 'Could not refresh pickup stations');
+      notify(error.message || 'Could not check availability.');
     }
+  };
+  const trackBookingStep = (event) => {
+    void api('/api/booking-funnel', { method: 'POST', body: JSON.stringify({ event }), keepalive: true }).catch(() => {});
+  };
+  const moveBooking = (step) => {
+    if (step === 'review' && booking.requestedTripId === linkedTripId && !linkedReviewTracked.current) {
+      linkedReviewTracked.current = true;
+      trackBookingStep('review_reached');
+    }
+    setScreen(step);
+    window.scrollTo(0, 0);
+    vibrate();
   };
   const redirectToCheckout = async (bookingId) => {
     const { checkout_url } = await api('/api/payments/chapa', {
@@ -383,11 +408,10 @@ export default function App() {
         reservation,
         ...previous.filter(item => item.id !== created.id),
       ]);
+      setReceipt(reservation);
       goTab('trips');
       if (requestPayment && canPayBooking(reservation)) {
         await redirectToCheckout(created.id);
-      } else {
-        notify('Reservation saved. Check My Trips for payment status.');
       }
     } catch (error) {
       notify(error.message);
@@ -427,7 +451,7 @@ export default function App() {
   const content = () => {
     if (screen === 'detail') return <Detail destination={selected} catalog={catalog} linkedTripId={linkedTripId} back={goBack} book={startBooking} expressInterest={expressInterest} checkTripInterest={checkTripInterest} notify={notify} favorites={favorites} toggleFavorite={toggleFavorite} />;
     if (['trip','pickup','seats','passengers','review'].includes(screen))
-      return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={(s) => { setScreen(s); window.scrollTo(0,0); vibrate(); }} finish={finishBooking} submitting={submitting} />;
+      return <BookingFlow step={screen} destination={selected} catalog={catalog} booking={booking} setBooking={setBooking} back={goBack} next={moveBooking} finish={finishBooking} submitting={submitting} />;
     if (screen === 'confirmation') return <Confirmation booking={booking} home={() => goTab('home')} ticket={() => { setTicketBackScreen('confirmation'); setScreen('ticket'); }} />;
     if (screen === 'ticket') return <TicketView booking={booking} back={() => setScreen(ticketBackScreen)} />;
     if (screen === 'notifications') return <NotificationsView back={goBack} notifications={profileData.notifications} api={api} onChange={loadProfileData} />;
@@ -442,7 +466,7 @@ export default function App() {
     if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} code={profileData.referral_code} />;
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} trips={catalog.trips} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
-    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} open={openTrip} explore={() => goTab('home')} submitting={submitting} />;
+    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} explore={() => goTab('home')} submitting={submitting} />;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
     return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} api={api} />;
   };
@@ -457,7 +481,7 @@ export default function App() {
       {!hideTabs && <nav className="bottom-nav">
         {tabs.map(([id, Icon, label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => goTab(id)}><Icon size={22}/><span>{label}</span></button>)}
       </nav>}
-      {toast && <div className="toast"><Check size={16}/>{toast}</div>}
+      <div role="status">{toast && <div className="toast">{toast}</div>}</div>
     </main>
   );
 }
@@ -483,7 +507,7 @@ function normalizeBookingForUi(item, destinations) {
   const rawDate = departure || item.departure_date || item.date || item.created_at;
   const dateObj = rawDate ? new Date(rawDate) : null;
   const dateStr = dateObj && !isNaN(dateObj.getTime())
-    ? dateObj.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+    ? tripDay.format(dateObj)
     : (typeof rawDate === 'string' ? rawDate : 'Upcoming');
   return {
     ...item,
@@ -495,7 +519,7 @@ function normalizeBookingForUi(item, destinations) {
     trip: {
       date: dateStr,
       time: departure && dateObj && !Number.isNaN(dateObj.getTime())
-        ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        ? `${tripClock.format(dateObj)} EAT`
         : item.departure_time || item.pickup_time || '06:00 AM',
     },
     pickup: item.pickup || item.pickup_station || { name: item.pickup_name || 'Pickup station' },
@@ -629,7 +653,9 @@ function DestinationCard({d,open}) { return <button className="destination-card"
 
 function Detail({ destination:d, catalog, linkedTripId, back, book, expressInterest, checkTripInterest, notify, favorites = [], toggleFavorite }) {
   const destinationTrips = catalog.trips.filter(trip => trip.destination_id === d.id);
-  const bookableTrips = destinationTrips.filter(isBookableTrip);
+  const bookableTrips = destinationTrips.filter(canSelectTrip);
+  const linkedTrip = destinationTrips.find(trip => trip.id === linkedTripId);
+  const linkedReservation = linkedTrip && !isCollectingInterest(linkedTrip);
   const interestTrips = destinationTrips.filter(isCollectingInterest);
   const destinationTrip = bookableTrips[0];
   const provider=(catalog.providers||[]).find(item=>item.id===destinationTrip?.provider_id);
@@ -641,7 +667,7 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
 
   useEffect(() => {
     if (!linkedTripId) return;
-    const card = document.getElementById(`trip-interest-${linkedTripId}`);
+    const card = document.getElementById(`departure-${linkedTripId}`);
     card?.scrollIntoView({ block: 'center' });
     card?.focus({ preventScroll: true });
   }, [linkedTripId]);
@@ -690,6 +716,26 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
       <div className="detail-title"><span>{d.category}</span><h1>{d.name}</h1><p><MapPin size={15}/>{d.city}, {d.region}</p></div>
     </div>
     <div className="detail-content">
+      {linkedReservation && (
+        <section className="interest-trips" aria-labelledby="linked-departure-title">
+          <h2 id="linked-departure-title">Your departure</h2>
+          <article className="interest-trip" id={`departure-${linkedTrip.id}`} tabIndex={-1}>
+            <div className="interest-trip-heading">
+              <div>
+                {linkedTrip.departure_date && <h3><time dateTime={linkedTrip.departure_date}>{tripDay.format(new Date(linkedTrip.departure_date))}</time></h3>}
+                {linkedTrip.departure_date && <p>{tripClock.format(new Date(linkedTrip.departure_date))} EAT</p>}
+              </div>
+              {linkedTrip.price != null && <b>{money(linkedTrip.price, linkedTrip.currency)} <small>per person</small></b>}
+            </div>
+            {linkedTrip.summary && <p className="interest-trip-summary">{linkedTrip.summary}</p>}
+            {canSelectTrip(linkedTrip) ? (
+              <LinkedBookingAction trip={linkedTrip} book={book} />
+            ) : (
+              <p className="interest-trip-summary">{isBookableTrip(linkedTrip) ? 'This departure is sold out.' : 'This departure is no longer available.'}</p>
+            )}
+          </article>
+        </section>
+      )}
       {interestTrips.length > 0 && (
         <section className="interest-trips">
           <h2>Planned departures</h2>
@@ -714,16 +760,34 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
     {bookableTrips.length > 0 && (
       <div className="sticky-cta">
         <div>{startingPrice !== null && <><span>Starting from</span><b>{money(startingPrice, startingCurrency)}</b><small>per person</small></>}</div>
-        <button onClick={book}>View bookable trips <ChevronRight size={18}/></button>
+        <button onClick={() => book()}>{linkedTrip ? 'See all departures' : 'View bookable trips'} <ChevronRight size={18}/></button>
       </div>
     )}
   </div>;
 }
 
+function LinkedBookingAction({ trip, book }) {
+  const [pending, setPending] = useState(false);
+  async function continueBooking() {
+    setPending(true);
+    try {
+      await book(trip.id);
+    } finally {
+      setPending(false);
+    }
+  }
+  return (
+    <div className="interest-trip-action">
+      <small>{trip.status === 'upcoming' ? 'Payment opens after confirmation' : 'Booking open'}</small>
+      <button type="button" disabled={pending} onClick={continueBooking}>{pending ? 'Checking seats…' : 'Continue'}</button>
+    </div>
+  );
+}
+
 function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }) {
   const [pending, setPending] = useState(false);
   const departure = new Date(trip.departure_date);
-  const departureLabel = departure.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const departureLabel = tripDay.format(departure);
 
   const handleAction = async () => {
     setPending(true);
@@ -735,10 +799,10 @@ function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }
   };
 
   return (
-    <article className="interest-trip" id={`trip-interest-${trip.id}`} tabIndex={-1}>
+    <article className="interest-trip" id={`departure-${trip.id}`} tabIndex={-1}>
       <div className="interest-trip-heading">
         <div>
-          <h3>{departureLabel}</h3>
+          <h3><time dateTime={trip.departure_date}>{departureLabel} · {tripClock.format(departure)} EAT</time></h3>
           {provider && <p>{provider.name}</p>}
         </div>
         {trip.price != null && <b>{money(trip.price, trip.currency)} <small>per person</small></b>}
@@ -756,34 +820,49 @@ function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }
 
 function FlowHeader({ step, back }) {
   const steps = ['trip','pickup','seats','passengers','review']; const index=steps.indexOf(step);
-  return <><header className="flow-head"><button onClick={back}><ArrowLeft/></button><div><span>STEP {index+1} OF 5</span><b>{['Select trip','Pickup station','Choose seats','Passenger details','Review booking'][index]}</b></div></header><div className="progress"><i style={{width:`${(index+1)*20}%`}}/></div></>;
+  return <><header className="flow-head"><button onClick={back} aria-label="Go back"><ArrowLeft/></button><div><span>STEP {index+1} OF 5</span><b>{['Select trip','Pickup station','Choose seats','Passenger details','Review booking'][index]}</b></div></header><div className="progress"><i style={{width:`${(index+1)*20}%`}}/></div></>;
 }
 function BookingFlow({ step, destination, catalog, booking, setBooking, back, next, finish, submitting }) {
-  const trips = catalog.trips.filter(trip => trip.destination_id === destination.id && isBookableTrip(trip)).map(trip => {
+  const trips = catalog.trips.filter(trip => trip.destination_id === destination.id && canSelectTrip(trip) && (!booking.requestedTripId || trip.id === booking.requestedTripId)).map(trip => {
     const departure = new Date(trip.departure_date);
     const arrival = trip.return_date ? new Date(trip.return_date) : null;
     return {
       ...trip,
-      time: departure.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      arrival: arrival ? arrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—',
-      date: departure.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }),
+      time: `${tripClock.format(departure)} EAT`,
+      arrival: arrival ? `${tripClock.format(arrival)} EAT` : '—',
+      date: tripDay.format(departure),
       label: trip.trip_type === 'private' ? 'Private trip' : trip.trip_type === 'holiday' ? 'Holiday departure' : 'Group trip',
       left: Number(trip.available_seats || 0),
     };
   });
-  const linkByStation = new Map(catalog.trip_pickup_stations.filter(link => link.trip_id === booking.trip?.id).map(link => [link.station_id, link]));
-  const pickups = catalog.stations.filter(station => linkByStation.has(station.id)).map(station => {
-    const link = linkByStation.get(station.id);
-    return { ...station, sub: station.is_address_pickup ? [station.city, station.address].filter(Boolean).join(' / ') : station.address || station.city || '', time: link.pickup_time, extraPrice: Number(link.extra_price || 0) };
-  });
-  if(step==='trip') return <TripStep destination={destination} trips={trips} providers={catalog.providers||[]} booking={booking} setBooking={setBooking} back={back} next={()=>next('pickup')}/>;
-  if(step==='pickup') return <PickupStep pickups={pickups} booking={booking} setBooking={setBooking} back={back} next={()=>next('seats')}/>;
-  if(step==='seats') return <SeatStep destination={destination} booking={booking} setBooking={setBooking} back={back} next={()=>next('passengers')}/>;
-  if(step==='passengers') return <PassengerForm step={step} back={back} booking={booking} setBooking={setBooking} next={()=>next('review')}/>;
+  const tripId = booking.trip?.id;
+  const pickups = useMemo(() => {
+    const linkByStation = new Map(catalog.trip_pickup_stations.filter(link => link.trip_id === tripId).map(link => [link.station_id, link]));
+    return catalog.stations.filter(station => linkByStation.has(station.id)).map(station => {
+      const link = linkByStation.get(station.id);
+      return { ...station, sub: station.is_address_pickup ? [station.city, station.address].filter(Boolean).join(' / ') : station.address || station.city || '', time: link.pickup_time?.slice(0, 5), extraPrice: Number(link.extra_price || 0) };
+    });
+  }, [catalog, tripId]);
   const currentTrip = trips.find(trip => trip.id === booking.trip?.id);
-  return <ReviewBooking back={back} destination={destination} booking={booking} trip={currentTrip} finish={finish} submitting={submitting}/>;
+  if(step==='trip') return <TripStep destination={destination} trips={trips} providers={catalog.providers||[]} booking={booking} setBooking={setBooking} back={back} next={()=>next('pickup')}/>;
+  if (!currentTrip) return <FlowPage step={step} back={back} title="Departure unavailable" sub="Go back to choose an available departure."/>;
+  return <div className="booking-context">
+    <div className="booking-context-summary">
+      <b>{destination.name}</b>
+      <span>{currentTrip.date} · {currentTrip.time}</span>
+      <span>{booking.pickup && `${booking.pickup.name} · `}{money(bookingPrices({ ...booking, trip: currentTrip }, destination).total, currentTrip.currency)} est. total</span>
+    </div>
+    {step === 'pickup' ? <PickupStep pickups={pickups} booking={booking} setBooking={setBooking} back={back} next={()=>next('seats')}/> :
+      step === 'seats' ? <SeatStep destination={destination} booking={booking} setBooking={setBooking} back={back} next={()=>next('passengers')}/> :
+      step === 'passengers' ? <PassengerForm step={step} back={back} booking={booking} setBooking={setBooking} next={()=>next('review')}/> :
+      <ReviewBooking back={back} destination={destination} booking={booking} trip={currentTrip} finish={finish} submitting={submitting}/>}
+  </div>;
 }
-function FlowPage({step,back,title,sub,children}) { return <div className="flow-page"><FlowHeader step={step} back={back}/><div className="flow-body"><h1>{title}</h1><p className="lead">{sub}</p>{children}</div></div>; }
+function FlowPage({step,back,title,sub,children}) {
+  const heading = useRef(null);
+  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [step]);
+  return <div className="flow-page"><FlowHeader step={step} back={back}/><div className="flow-body"><h1 ref={heading} tabIndex={-1}>{title}</h1><p className="lead">{sub}</p>{children}</div></div>;
+}
 function Choice({selected,onClick,children}) { return <button className={`choice ${selected?'selected':''}`} onClick={onClick}>{children}<i className="radio">{selected&&<Check/>}</i></button>; }
 function Continue({disabled,onClick,label='Continue'}) { return <button className="continue" disabled={disabled} onClick={onClick}>{label}<ChevronRight/></button>; }
 
@@ -794,7 +873,7 @@ function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
     <div className="mobile-trip-list">{trips.map(trip=>{
       const provider=providerById.get(trip.provider_id);
       const selected=booking.trip?.id===trip.id;
-      return <button key={trip.id} className={`mobile-trip-card ${selected?'selected':''}`} onClick={()=>setBooking({...booking,trip,pickup:null,seats:1,passengers:[]})}>
+      return <button key={trip.id} aria-pressed={selected} className={`mobile-trip-card ${selected?'selected':''}`} onClick={()=>{if (!selected) setBooking({...booking,trip,pickup:null,seats:1,passengers:[]})}}>
         {provider&&<div className="trip-provider">{provider.logo_url?<img src={provider.logo_url} alt={`${provider.name} logo`}/>:<span><Building2/></span>}<div><small className="provider-eyebrow">OPERATED BY</small><b>{provider.name}</b><small><Star fill="currentColor"/>{Number(provider.rating||0).toFixed(1)} · Verified provider</small></div>{selected&&<Check/>}</div>}
         <div className="trip-schedule"><div><span>DEPARTURE</span><b>{trip.date}</b><small>{trip.time}</small></div><i><Bus/><span>{String(trip.trip_type||'scheduled').split('_').join(' ')}</span></i>{trip.return_date?<div><span>RETURN</span><b>{new Date(trip.return_date).toLocaleDateString([],{month:'short',day:'numeric'})}</b><small>{trip.arrival}</small></div>:<div><span>TRIP</span><b>One way</b><small>Scheduled</small></div>}</div>
         <div className="trip-card-foot"><span><UsersRound/>{trip.left} seats available</span><b>{money(trip.price, trip.currency)} <small>/ seat</small></b></div>
@@ -816,20 +895,23 @@ function TripStep({destination,trips,providers,booking,setBooking,back,next}) {
     })}</div>
     {!trips.length&&<div className="flow-empty"><CalendarDays/><h3>No trips available</h3><p>Please check back later or choose another destination.</p></div>}
     <div className="flow-info"><Info/><span><b>Transparent pricing</b>Tankua adds a 5% service fee at checkout.</span></div>
-    <div className="flow-sticky"><Continue disabled={!booking.trip} onClick={next}/></div>
+    <div className="flow-sticky"><Continue disabled={!trips.some(trip => trip.id === booking.trip?.id)} onClick={next}/></div>
   </FlowPage>;
 }
 
 function PickupStep({pickups,booking,setBooking,back,next}) {
   const [view,setView]=useState('list');
+  const mapped = useMemo(() => pickups.filter(pickup => !pickup.is_address_pickup && pickup.lat != null && pickup.lng != null &&
+    Math.abs(Number(pickup.lat)) <= 90 && Math.abs(Number(pickup.lng)) <= 180 && (Number(pickup.lat) !== 0 || Number(pickup.lng) !== 0)), [pickups]);
   const selected = booking.pickup;
   const canContinue = selected && (!selected.is_address_pickup || selected.pickup_address?.trim().length >= 5);
-  const choosePickup = pickup => {
-    if (selected?.id !== pickup.id) setBooking({ ...booking, pickup });
-  };
-  return <FlowPage step="pickup" back={back} title="Select pickup location" sub="Choose your preferred pickup location">
-    <div className="view-toggle"><button className={view==='list'?'active':''} onClick={()=>setView('list')}><Navigation/>List</button><button className={view==='map'?'active':''} onClick={()=>setView('map')}><MapIcon/>Map</button></div>
-    {view==='list'?<div className="pickup-list">{pickups.map(p=><button key={p.id} className={`pickup-card ${booking.pickup?.id===p.id?'selected':''}`} onClick={()=>choosePickup(p)}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice, booking.trip?.currency)}`:' · Included'}</small></div>{booking.pickup?.id===p.id&&<Check/>}</button>)}</div>:<div className="pickup-map"><div className="map-grid"/>{pickups.filter(p=>!p.is_address_pickup).map((p,index)=><button key={p.id} className={`pickup-pin ${booking.pickup?.id===p.id?'selected':''}`} style={{left:`${18+(index*23)%65}%`,top:`${19+(index*29)%62}%`}} onClick={()=>choosePickup(p)}><MapPin fill="currentColor"/><span>{p.name}</span></button>)}</div>}
+  const choosePickup = useCallback(pickup => {
+    setBooking(current => current.pickup?.id === pickup.id ? current : { ...current, pickup });
+  }, [setBooking]);
+  return <FlowPage step="pickup" back={back} title="Choose a pickup point" sub="Pickup times are shown in EAT.">
+    {mapped.length > 0 && <div className="view-toggle" role="group" aria-label="Pickup view"><button aria-pressed={view==='list'} className={view==='list'?'active':''} onClick={()=>setView('list')}><Navigation/>List</button><button aria-pressed={view==='map'} className={view==='map'?'active':''} onClick={()=>setView('map')}><MapIcon/>Map</button></div>}
+    {view==='map' && mapped.length > 0 ? <PickupMap pickups={mapped} selectedId={selected?.id} choose={choosePickup} /> :
+      <div className="pickup-list">{pickups.map(p=><button key={p.id} aria-pressed={selected?.id===p.id} className={`pickup-card ${selected?.id===p.id?'selected':''}`} onClick={()=>choosePickup(p)}><span><MapPin/></span><div><b>{p.name}</b><p>{p.sub}</p><small>Pickup at {p.time}{p.extraPrice>0?` · +${money(p.extraPrice, booking.trip?.currency)}`:' · Included'}</small></div>{selected?.id===p.id&&<Check/>}</button>)}</div>}
     {selected?.is_address_pickup && <div className="passenger-card">
       <label>Pickup address in {selected.city}
         <input
@@ -842,15 +924,55 @@ function PickupStep({pickups,booking,setBooking,back,next}) {
       </label>
     </div>}
     {!pickups.length&&<div className="flow-empty"><MapPin/><h3>No pickup stations</h3><p>This provider has not added pickup stations for this trip yet.</p></div>}
-    <div className="flow-sticky">{booking.pickup&&<div className="selected-pickup"><Check/><span><b>{booking.pickup.name}</b><small>{booking.pickup.time}{booking.pickup.extraPrice>0?` · +${money(booking.pickup.extraPrice, booking.trip?.currency)}`:''}</small></span></div>}<Continue disabled={!canContinue} onClick={next}/></div>
+    <div className="flow-sticky"><Continue disabled={!canContinue} onClick={next}/></div>
   </FlowPage>;
+}
+
+function PickupMap({ pickups, selectedId, choose }) {
+  const element = useRef(null);
+  const markers = useRef(new Map());
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let disposed = false;
+    let map;
+    import('leaflet').then(({ default: L }) => {
+      if (disposed || !element.current) return;
+      map = L.map(element.current, { scrollWheelZoom: false, zoomAnimation: false });
+      const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      tiles.once('tileerror', () => setFailed(true));
+      for (const pickup of pickups) {
+        const marker = L.marker([Number(pickup.lat), Number(pickup.lng)], {
+          icon: L.divIcon({ className: 'pickup-map-marker', iconSize: [24, 24] }),
+          title: pickup.name, alt: pickup.name, riseOnHover: true,
+        }).addTo(map).on('click', () => choose(pickup));
+        markers.current.set(pickup.id, marker);
+      }
+      map.fitBounds(pickups.map(pickup => [Number(pickup.lat), Number(pickup.lng)]), { padding: [36, 36], maxZoom: 15, animate: false });
+      setReady(true);
+    }).catch(() => { if (!disposed) setFailed(true); });
+    const current = markers.current;
+    return () => { disposed = true; map?.remove(); current.clear(); };
+  }, [pickups, choose]);
+  useEffect(() => {
+    if (!ready) return;
+    for (const [id, marker] of markers.current) {
+      const node = marker.getElement();
+      node?.classList.toggle('selected', id === selectedId);
+      node?.setAttribute('aria-pressed', String(id === selectedId));
+    }
+  }, [ready, selectedId]);
+  return <><div ref={element} className="pickup-map" aria-label="Pickup station map" />
+    {failed && <p className="body-copy" role="status">Map tiles couldn’t load. Use List to choose a pickup station.</p>}</>;
 }
 
 function SeatStep({destination,booking,setBooking,back,next}) {
   const limit=Math.min(8,Number(booking.trip?.left||booking.trip?.available_seats||8));
   return <FlowPage step="seats" back={back} title="Select Seats" sub="How many seats do you need?">
     <div className="seat-picker mobile"><div className="people-art"><UsersRound/></div><div className="counter"><button disabled={booking.seats<=1} onClick={()=>setBooking({...booking,seats:booking.seats-1,passengers:[]})}><Minus/></button><div><b>{booking.seats}</b><span>{booking.seats===1?'seat':'seats'}</span></div><button disabled={booking.seats>=limit} onClick={()=>setBooking({...booking,seats:booking.seats+1,passengers:[]})}><Plus/></button></div><p>{limit} currently available · {money(booking.trip?.price ?? destination.price, booking.trip?.currency ?? destination.currency)} each</p></div>
-    <PriceSummary d={destination} booking={booking}/>
+    <PriceSummary prices={bookingPrices(booking, destination)} seats={booking.seats}/>
     <div className="flow-info"><Info/><span><b>Passenger details come next</b>We need a name and age for every traveler.</span></div>
     <div className="flow-sticky"><Continue onClick={next}/></div>
   </FlowPage>;
@@ -872,7 +994,7 @@ function PriceSummary({ prices, seats }) {
   const { currency, perSeat, subtotal, pickupFee, fee, total } = prices;
   return <div className="summary">
     <h3>Estimated price</h3>
-    <p><span>{money(perSeat, currency)} ? {seats}</span><b>{money(subtotal, currency)}</b></p>
+    <p><span>{money(perSeat, currency)} × {seats}</span><b>{money(subtotal, currency)}</b></p>
     {pickupFee > 0 && <p><span>Pickup supplement</span><b>{money(pickupFee, currency)}</b></p>}
     <p><span>Service fee</span><b>{money(fee, currency)}</b></p>
     <hr/>
@@ -1059,8 +1181,9 @@ function bookingTab(booking) {
   return ending <= Date.now() ? 'completed' : 'upcoming';
 }
 
-function TripsView({trips,destinations,open,explore,submitting}) {
+function TripsView({trips,destinations,receipt,dismissReceipt,open,explore,submitting}) {
   const [filter,setFilter]=useState('upcoming');
+  const latestReceipt = receipt && (trips.find(trip => trip.id === receipt.id) || receipt);
   const filtered=trips.filter(trip=>bookingTab(trip)===filter);
   const labels={upcoming:'Upcoming',completed:'Past',cancelled:'Cancelled'};
   const upcomingCount=trips.filter(trip=>bookingTab(trip)==='upcoming').length;
@@ -1069,6 +1192,10 @@ function TripsView({trips,destinations,open,explore,submitting}) {
       <div className="trips-hero-copy"><p className="eyebrow">YOUR JOURNEYS</p><h1>My trips</h1><span>Tickets, pickup details and travel plans</span></div>
       <div className="trips-count"><b>{upcomingCount}</b><span>Upcoming</span></div>
     </header>
+    {latestReceipt && isPendingBooking(latestReceipt) && <aside className="reservation-notice" aria-label="Reservation status">
+      <div role="status"><b>Seats reserved</b><p>{isAwaitingActivation(latestReceipt) ? 'You can pay here once the operator confirms the trip.' : canPayBooking(latestReceipt) ? 'Complete payment below to confirm your booking.' : 'Check your trip below for the latest payment status.'}</p></div>
+      <button type="button" aria-label="Dismiss reservation status" onClick={dismissReceipt}><X size={18} /></button>
+    </aside>}
     <div className="segmented">
       {['upcoming','completed','cancelled'].map(item=><button key={item} className={filter===item?'active':''} onClick={()=>{setFilter(item);vibrate();}}>{labels[item]}</button>)}
     </div>

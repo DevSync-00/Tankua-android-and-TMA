@@ -1,22 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   CalendarCheck,
-  Search,
-  Filter,
-  MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   MapPin,
-  Users,
+  ArrowUpRight,
+  X,
   RefreshCw,
-  CheckCircle,
-  XCircle,
-  Clock,
 } from "lucide-react";
 import { Header } from "@/components/header";
-import { Card, CardContent, Button, Badge, Avatar, Input, formatCurrency } from "@tankua/ui";
+import { Card, CardContent, Button, Badge, Avatar, formatCurrency } from "@tankua/ui";
 import { getBookings, updateBookingStatus, type BookingDetails } from "@/lib/queries";
 
 export default function BookingsPage() {
@@ -27,12 +22,41 @@ export default function BookingsPage() {
   const [paymentFilter, setPaymentFilter] = useState<string>("");
   const [page, setPage] = useState(1);
   const limit = 10;
+  const [selected, setSelected] = useState<BookingDetails | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const panel = useRef<HTMLDialogElement>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const refresh = useRef<HTMLButtonElement>(null);
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    if (selected && !panel.current?.open) panel.current?.showModal();
+  }, [selected]);
+
+  function viewBooking(booking: BookingDetails, button: HTMLButtonElement) {
+    trigger.current = button;
+    setFeedback("");
+    setCancelling(false);
+    setSelected(booking);
+  }
+
+  function closeBooking() {
+    setSelected(null);
+    setCancelling(false);
+    requestAnimationFrame(() => {
+      if (trigger.current?.isConnected) trigger.current.focus();
+      else refresh.current?.focus();
+    });
+  }
 
   useEffect(() => {
     loadBookings();
   }, [page, statusFilter, paymentFilter]);
 
   const loadBookings = async () => {
+    const request = ++requestId.current;
     setLoading(true);
     try {
       const result = await getBookings({
@@ -41,26 +65,42 @@ export default function BookingsPage() {
         status: statusFilter || undefined,
         paymentStatus: paymentFilter || undefined,
       });
+      if (request !== requestId.current) return;
       setBookings(result.bookings);
       setTotal(result.total);
     } catch (error) {
       console.error("Error loading bookings:", error);
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   };
 
-  const handleStatusUpdate = async (id: string, newStatus: string) => {
-    const success = await updateBookingStatus(id, { status: newStatus });
-    if (success) {
-      loadBookings();
+  async function handleStatusUpdate(status: "confirmed" | "cancelled") {
+    if (!selected || updating) return;
+    setFeedback("");
+    setUpdating(true);
+    try {
+      const success = await updateBookingStatus(selected.id, { status }, "pending");
+      if (!success) {
+        setFeedback("This booking could not be updated. Close this panel and refresh the queue.");
+        return;
+      }
+      setSelected({ ...selected, status });
+      setFeedback(status === "confirmed" ? "Booking confirmed." : "Booking cancelled.");
+      setCancelling(false);
+      await loadBookings();
+    } catch {
+      setFeedback("There was a problem updating this booking. Try again.");
+    } finally {
+      setUpdating(false);
     }
-  };
+  }
 
   const totalPages = Math.ceil(total / limit);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
+      timeZone: "Africa/Addis_Ababa",
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -101,7 +141,7 @@ export default function BookingsPage() {
         title="Bookings"
         subtitle={`Manage ${total.toLocaleString()} bookings`}
         actions={
-          <Button variant="outline" size="sm" onClick={loadBookings}>
+          <Button ref={refresh} variant="outline" size="sm" onClick={loadBookings}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -144,7 +184,7 @@ export default function BookingsPage() {
         {/* Bookings Table */}
         <Card>
           <CardContent className="p-0">
-            {loading ? (
+            {loading && bookings.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
@@ -190,33 +230,9 @@ export default function BookingsPage() {
                           <p className="font-semibold text-sm">{formatCurrency(booking.total_price, booking.currency)}</p>
                           {getPaymentBadge(booking.payment_status)}
                         </div>
-                        <div className="flex items-center gap-1">
-                          {booking.status === "pending" && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50"
-                                onClick={() => handleStatusUpdate(booking.id, "confirmed")}
-                                title="Confirm"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                onClick={() => handleStatusUpdate(booking.id, "cancelled")}
-                                title="Cancel"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
+                        <Button variant="outline" size="sm" aria-haspopup="dialog" onClick={(event) => viewBooking(booking, event.currentTarget)}>
+                            Open <ArrowUpRight className="ml-1 h-4 w-4" aria-hidden="true" />
                           </Button>
-                        </div>
                       </div>
                     </div>
                   ))}
@@ -296,33 +312,9 @@ export default function BookingsPage() {
                           {getStatusBadge(booking.status)}
                         </td>
                         <td className="py-4 px-6">
-                          <div className="flex items-center gap-1">
-                            {booking.status === "pending" && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50"
-                                  onClick={() => handleStatusUpdate(booking.id, "confirmed")}
-                                  title="Confirm"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                  onClick={() => handleStatusUpdate(booking.id, "cancelled")}
-                                  title="Cancel"
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button variant="outline" size="sm" aria-haspopup="dialog" onClick={(event) => viewBooking(booking, event.currentTarget)}>
+                            Open <ArrowUpRight className="ml-1 h-4 w-4" aria-hidden="true" />
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -364,6 +356,54 @@ export default function BookingsPage() {
           </div>
         )}
       </div>
+      <dialog ref={panel} className="admin-booking-panel" aria-labelledby="booking-panel-title"
+        onClose={closeBooking} onCancel={(event) => { if (updating) event.preventDefault(); }}>
+        {selected && (
+          <div className="space-y-6 p-5 sm:p-7" aria-busy={updating}>
+            <header className="flex items-start justify-between gap-4 border-b border-border pb-5">
+              <div>
+                <p className="text-sm text-muted-foreground">Booking details</p>
+                <h2 id="booking-panel-title" className="mt-1 text-xl font-semibold tracking-tight">{selected.trip?.destination?.name || selected.destination_name || "Trip"}</h2>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">Booking {getStatusBadge(selected.status)}</span>
+                  <span className="inline-flex items-center gap-1.5">Payment {getPaymentBadge(selected.payment_status)}</span>
+                </div>
+              </div>
+              <Button type="button" variant="ghost" size="icon" aria-label="Close booking" disabled={updating} onClick={() => panel.current?.close()}><X className="h-5 w-5" /></Button>
+            </header>
+            <dl className="grid gap-4 text-sm min-[360px]:grid-cols-2">
+              {[
+                ["Traveler", selected.user?.name || "Unknown traveler"],
+                ["Phone", selected.user?.phone_number || "Unavailable"],
+                ["Departure", selected.trip?.departure_date ? formatDate(selected.trip.departure_date) : "Unscheduled"],
+                ["Provider", selected.trip?.provider?.name || "Unavailable"],
+                ["Seats", selected.seats],
+                ["Pickup", selected.pickup_station?.name || selected.pickup_station?.stationName || "Not selected"],
+                ["Total", formatCurrency(selected.total_price, selected.currency)],
+                ["Created", formatDate(selected.created_at)],
+                ["Booking reference", selected.id],
+              ].map(([label, value]) => (
+                <div key={label} className={label === "Booking reference" ? "min-w-0 min-[360px]:col-span-2" : "min-w-0"}>
+                  <dt className="text-muted-foreground">{label}</dt><dd className="mt-0.5 break-words font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {selected.status === "pending" && (
+              <div className="flex flex-wrap items-center gap-3 border-t border-border pt-5">
+                {cancelling ? <>
+                  <p className="w-full text-sm">Cancel this traveler?s reservation?</p>
+                  <Button variant="outline" type="button" disabled={updating} onClick={() => setCancelling(false)}>Keep booking</Button>
+                  <Button variant="destructive" type="button" isLoading={updating} onClick={() => handleStatusUpdate("cancelled")}>Cancel booking</Button>
+                </> : <>
+                  <Button type="button" isLoading={updating} onClick={() => handleStatusUpdate("confirmed")}>Confirm booking</Button>
+                  <Button variant="outline" type="button" disabled={updating} onClick={() => setCancelling(true)}>Cancel booking</Button>
+                </>}
+              </div>
+            )}
+            <p role="status" className="text-sm text-muted-foreground">{feedback}</p>
+          </div>
+        )}
+      </dialog>
     </div>
   );
 }

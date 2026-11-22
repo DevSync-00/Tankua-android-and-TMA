@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MapPin, Star } from "lucide-react";
 import { formatCurrency } from "@tankua/ui";
+import { formatDepartureDate } from "@/lib/departure-date";
 import type { getFeaturedTours } from "@/lib/queries";
 
 type FeaturedTours = Awaited<ReturnType<typeof getFeaturedTours>>["tours"];
@@ -59,6 +60,7 @@ export function HomeDepartures() {
                   )}
                 </div>
                 <h3>{tour.name}</h3>
+                {tour.departureDate && <p><time dateTime={tour.departureDate}>{formatDepartureDate(tour.departureDate)}</time></p>}
                 {tour.interest && <p>Planned departure</p>}
                 {tour.price !== null && <p><strong>{formatCurrency(tour.price, tour.currency)}</strong> per person</p>}
               </Link>

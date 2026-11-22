@@ -570,19 +570,23 @@ export async function getBookings(options?: {
 
 export async function updateBookingStatus(
   id: string,
-  updates: { status?: string; payment_status?: string }
+  updates: { status?: string; payment_status?: string },
+  expectedStatus?: string
 ): Promise<boolean> {
-  const { error } = await supabase
+  const query = supabase
     .from('bookings')
     .update(updates)
     .eq('id', id);
+  const result = expectedStatus
+    ? await query.eq('status', expectedStatus).select('id').maybeSingle()
+    : await query;
 
-  if (error) {
-    console.error('Error updating booking:', error);
+  if (result.error) {
+    console.error('Error updating booking:', result.error);
     return false;
   }
   
-  return true;
+  return expectedStatus ? Boolean(result.data) : true;
 }
 
 export interface AdminPayment {

@@ -10,6 +10,7 @@ import { createTrip, getProviderTrip } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { getTripDateParts, parseTripTime } from "@/lib/trip-schedule";
 import { tripMoneyPattern } from "@/lib/trip-currency";
+import { AnnouncementDraftPanel } from "./announcement-draft";
 import {
   initialForm, maxInterest, maxSeats, maxSummary, minFares, sections, TripFormFields,
   type Destination, type Options, type Station, type StationConfig, type TripForm,
@@ -370,6 +371,10 @@ export default function NewTripPage() {
             <div ref={errorSummary} role="alert" tabIndex={-1} className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{saveError}</div>
           ) : null}
 
+          <AnnouncementDraftPanel form={form} destinations={destinations?.data ?? []} disabled={saving} apply={(updates) => {
+            setForm((current) => ({ ...current, ...updates }));
+            setErrors((current) => Object.fromEntries(Object.entries(current).filter(([field]) => !(field in updates))));
+          }} />
           <form noValidate onSubmit={publishTrip} aria-busy={saving} className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_19rem] xl:gap-6">
             <nav aria-label="Trip form sections" className="rounded-xl border bg-white px-4 py-3 xl:hidden">
               <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
@@ -382,11 +387,12 @@ export default function NewTripPage() {
             <aside id="review" tabIndex={-1} aria-label="Trip review" className="min-w-0 scroll-mt-40 space-y-4 focus:outline-none xl:sticky xl:top-32">
               <Card className="overflow-hidden rounded-xl border border-border bg-card p-0 shadow-none">
                 <div className="portal-next-trip px-5 py-4 text-white">
-                  <h2 className="text-sm font-medium text-[#d7e5d9]">Trip preview</h2>
+                  <h2 className="text-sm font-medium text-[#d7e5d9]">Traveler preview</h2>
                   <p className="mt-1 break-words text-xl font-semibold tracking-tight">{selectedDestination?.name || "Choose a destination"}</p>
                   <p className="mt-1.5 text-xs text-[#d7e5d9]">{isRoundTrip ? "Round trip" : "One way"} · {bookingLabel}</p>
                 </div>
                 <div className="space-y-4 p-5">
+                  {form.summary && <p dir="auto" className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{form.summary}</p>}
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
                     {preview.map(([label, value]) => (
                       <div key={label} className={label === "Departure" || label === "Return" ? "col-span-2" : "min-w-0"}>
