@@ -10,6 +10,10 @@ npm-debug.*
 *.orig.*
 web-build/
 dist/
+.next/
+.turbo/
+*.tsbuildinfo
+/web/apps/.tankua-*-qa-*/
 
 # macOS
 .DS_Store

@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"components\\\\header.tsx -> @/lib/supabase\":{\"id\":\"components\\\\header.tsx -> @/lib/supabase\",\"files\":[]},\"components\\\\sidebar.tsx -> @/lib/supabase\":{\"id\":\"components\\\\sidebar.tsx -> @/lib/supabase\",\"files\":[]},\"lib\\\\queries.ts -> @/lib/supabase\":{\"id\":\"lib\\\\queries.ts -> @/lib/supabase\",\"files\":[]}}"
