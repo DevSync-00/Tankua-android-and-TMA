@@ -13,7 +13,7 @@ interface DescriptionEditorProps {
 /**
  * Textarea with a small formatting toolbar and a live preview.
  * Writes the plain-text formatting that every Tankua app renders:
- * "## Heading", "- bullet", "**bold**", blank line between paragraphs.
+ * "## Heading", "- bullet", "**bold**", one paragraph per line.
  */
 export function DescriptionEditor({ value, onChange, placeholder }: DescriptionEditorProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -122,7 +122,7 @@ export function DescriptionEditor({ value, onChange, placeholder }: DescriptionE
       )}
 
       <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-        <code>## Heading</code> · <code>- bullet</code> · <code>**bold**</code> · blank line for a new paragraph
+        <code>## Heading</code> · <code>- bullet</code> · <code>**bold**</code> · each line is its own paragraph
       </p>
     </div>
   );

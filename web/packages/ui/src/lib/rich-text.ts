@@ -5,7 +5,7 @@
  *   ## Heading         a section heading (#, ## or ###)
  *   - item / * item    a bullet point
  *   **bold**           bold text
- *   blank line         starts a new paragraph
+ *   each line          is its own paragraph (blank lines are ignored)
  *
  * Anything else is plain text; no HTML is ever interpreted.
  */
@@ -21,25 +21,21 @@ export type RichTextBlock =
 
 export function parseRichText(text: string | null | undefined): RichTextBlock[] {
   const blocks: RichTextBlock[] = [];
-  let paragraph: { type: "paragraph"; lines: string[] } | null = null;
   let list: { type: "list"; items: string[] } | null = null;
   for (const raw of String(text || '').replace(/\r\n?/g, '\n').split('\n')) {
     const line = raw.trim();
     if (!line) {
-      paragraph = null;
       list = null;
       continue;
     }
     const heading = line.match(HEADING);
     if (heading) {
-      paragraph = null;
       list = null;
       blocks.push({ type: 'heading', text: heading[1].trim() });
       continue;
     }
     const bullet = line.match(BULLET);
     if (bullet) {
-      paragraph = null;
       if (!list) {
         list = { type: "list", items: [] };
         blocks.push(list);
@@ -48,11 +44,7 @@ export function parseRichText(text: string | null | undefined): RichTextBlock[] 
       continue;
     }
     list = null;
-    if (!paragraph) {
-      paragraph = { type: "paragraph", lines: [] };
-      blocks.push(paragraph);
-    }
-    paragraph.lines.push(line);
+    blocks.push({ type: "paragraph", lines: [line] });
   }
   return blocks;
 }

@@ -3875,8 +3875,12 @@ img {
   line-height: 1.65;
 }
 
+.rich-text {
+  margin-bottom: 18px;
+}
+
 .rich-text > * + * {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .rich-text p,

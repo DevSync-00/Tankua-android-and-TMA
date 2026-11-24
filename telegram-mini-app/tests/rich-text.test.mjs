@@ -13,7 +13,8 @@ Plan a full day.`;
 
 test('splits paragraphs, headings and bullet lists', () => {
   assert.deepEqual(parseRichText(sample), [
-    { type: 'paragraph', lines: ['Lalibela is famous for its **rock-hewn churches**.', 'Carved in the 12th century.'] },
+    { type: 'paragraph', lines: ['Lalibela is famous for its **rock-hewn churches**.'] },
+    { type: 'paragraph', lines: ['Carved in the 12th century.'] },
     { type: 'heading', text: 'Highlights' },
     { type: 'list', items: ['Biete Ghiorgis', 'Timket festival'] },
     { type: 'paragraph', lines: ['Plan a full day.'] },
