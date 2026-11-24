@@ -21,12 +21,13 @@ export function generateMetadata({ params }: Props): Metadata {
   const guide = getGuide(params.slug);
   if (!guide) return { title: "Guide Not Found", robots: { index: false, follow: false } };
   const path = `/guides/${guide.slug}`;
+  const image = { url: guide.image, alt: guide.imageAlt };
   return {
     title: guide.title,
     description: guide.description,
     alternates: { canonical: path },
-    openGraph: { title: guide.title, description: guide.description, url: path, type: "article", publishedTime: guide.publishedAt, modifiedTime: guide.updatedAt, siteName: "Tankua" },
-    twitter: { card: "summary", title: guide.title, description: guide.description },
+    openGraph: { title: guide.title, description: guide.description, url: path, type: "article", publishedTime: guide.publishedAt, modifiedTime: guide.updatedAt, siteName: "Tankua", images: [image] },
+    twitter: { card: "summary_large_image", title: guide.title, description: guide.description, images: [image] },
   };
 }
 
@@ -75,6 +76,12 @@ export default async function GuidePage({ params }: Props) {
           {imageCredit && (
             <figcaption className="mt-2 text-sm text-[var(--field-muted)]">
               <a href={imageCredit.url} className="underline">{imageCredit.label}</a>
+              {imageCredit.license && (
+                <>
+                  {" · "}
+                  <a href={imageCredit.license.url} className="underline">{imageCredit.license.label}</a>
+                </>
+              )}
             </figcaption>
           )}
         </figure>
