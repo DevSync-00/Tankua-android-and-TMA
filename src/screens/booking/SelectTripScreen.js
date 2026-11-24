@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +16,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/the
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useFeedback } from '../../contexts/FeedbackContext';
-import { expressTripInterest, getMyTripInterests, getTrips } from '../../services/database';
+import { expressTripInterest, getMyTripInterests, getTrips, getTripStations } from '../../services/database';
 import ModernButton from '../../components/ModernButton';
 import { formatTripPrice } from '../../utils/tripCurrency';
 
@@ -27,9 +28,10 @@ const SelectTripScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(currentBooking.trip || null);
-  // Seats this traveler has pledged per trip, and the seat count they are choosing now.
-  const [pledgedSeats, setPledgedSeats] = useState({});
-  const [draftSeats, setDraftSeats] = useState({});
+  // This traveler's saved pledge per trip, what they are choosing now, and each trip's pickup points.
+  const [pledges, setPledges] = useState({});
+  const [drafts, setDrafts] = useState({});
+  const [pickupsByTrip, setPickupsByTrip] = useState({});
   const [pendingInterestId, setPendingInterestId] = useState(null);
   const submittingInterest = useRef(false);
 
@@ -73,13 +75,28 @@ const SelectTripScreen = ({ navigation }) => {
 
       const data = await getTrips({ destinationId: destination.id, includeInterest: true });
       const interestIds = data.filter((trip) => trip.status === 'collecting_interest').map((trip) => trip.id);
-      const myInterests = await getMyTripInterests(interestIds).catch((error) => {
-        console.error('Error loading trip interests:', error);
-        return null;
-      });
+      const [myInterests, pickupLists] = await Promise.all([
+        getMyTripInterests(interestIds).catch((error) => {
+          console.error('Error loading trip interests:', error);
+          return null;
+        }),
+        Promise.all(interestIds.map((id) => getTripStations(id).catch(() => []))),
+      ]);
       if (myInterests) {
-        setPledgedSeats((previous) => ({ ...previous, ...myInterests }));
+        setPledges((previous) => ({ ...previous, ...myInterests }));
       }
+      setPickupsByTrip(Object.fromEntries(interestIds.map((id, index) => [
+        id,
+        pickupLists[index]
+          .filter((link) => link.pickup_stations?.is_active !== false)
+          .map((link) => ({
+            id: link.station_id,
+            name: link.pickup_stations?.name || 'Pickup point',
+            time: link.pickup_time,
+            extraPrice: Number(link.extra_price || 0),
+            isAddress: Boolean(link.pickup_stations?.is_address_pickup),
+          })),
+      ])));
       setTrips(data);
     } catch (error) {
       console.error('Error loading trips:', error);
@@ -102,44 +119,88 @@ const SelectTripScreen = ({ navigation }) => {
     }
   };
 
-  const seatLimit = (trip) => Math.max(1, Math.min(20, trip.max_seats || 20));
-  const chosenSeats = (trip) => draftSeats[trip.id] ?? pledgedSeats[trip.id] ?? 1;
+  // Matches the database: one pledge becomes one booking, capped at 8 seats.
+  const seatLimit = (trip) => Math.max(1, Math.min(8, trip.max_seats || 8));
+  const draftFor = (trip) => {
+    const saved = pledges[trip.id];
+    const pickups = pickupsByTrip[trip.id] || [];
+    return {
+      seats: saved?.seats ?? 1,
+      pickupStationId: saved?.pickupStationId ?? (pickups.length === 1 ? pickups[0].id : null),
+      pickupAddress: saved?.pickupAddress ?? '',
+      ...drafts[trip.id],
+    };
+  };
+  const updateDraft = (trip, changes) => {
+    setDrafts((previous) => ({ ...previous, [trip.id]: { ...draftFor(trip), ...changes } }));
+  };
   const changeSeats = (trip, delta) => {
-    const next = Math.min(seatLimit(trip), Math.max(1, chosenSeats(trip) + delta));
-    setDraftSeats((previous) => ({ ...previous, [trip.id]: next }));
+    updateDraft(trip, { seats: Math.min(seatLimit(trip), Math.max(1, draftFor(trip).seats + delta)) });
+  };
+  const draftProblem = (trip) => {
+    const draft = draftFor(trip);
+    const pickups = pickupsByTrip[trip.id] || [];
+    if (pickups.length === 0) return null;
+    const pickup = pickups.find((item) => item.id === draft.pickupStationId);
+    if (!pickup) return 'Choose a pickup point';
+    if (pickup.isAddress && draft.pickupAddress.trim().length < 5) return 'Enter your pickup address';
+    return null;
+  };
+  const draftUnchanged = (trip) => {
+    const saved = pledges[trip.id];
+    const draft = draftFor(trip);
+    return Boolean(saved)
+      && saved.seats === draft.seats
+      && saved.pickupStationId === draft.pickupStationId
+      && (saved.pickupAddress || '') === draft.pickupAddress.trim();
   };
 
   const handleExpressInterest = async (trip) => {
-    const seats = chosenSeats(trip);
-    if (submittingInterest.current || pledgedSeats[trip.id] === seats) return;
+    const draft = draftFor(trip);
+    if (submittingInterest.current || draftUnchanged(trip) || draftProblem(trip)) return;
 
     submittingInterest.current = true;
     setPendingInterestId(trip.id);
     try {
-      const wasPledged = pledgedSeats[trip.id] != null;
-      const result = await expressTripInterest(trip.id, seats);
+      const wasPledged = pledges[trip.id] != null;
+      const pickup = (pickupsByTrip[trip.id] || []).find((item) => item.id === draft.pickupStationId);
+      const result = await expressTripInterest(trip.id, {
+        seats: draft.seats,
+        pickupStationId: draft.pickupStationId,
+        pickupAddress: pickup?.isAddress ? draft.pickupAddress : null,
+      });
       if (result.interested && result.seats != null) {
-        setPledgedSeats((previous) => ({ ...previous, [trip.id]: result.seats }));
-        setDraftSeats((previous) => ({ ...previous, [trip.id]: result.seats }));
+        const saved = {
+          seats: result.seats,
+          pickupStationId: result.pickup_station_id ?? null,
+          pickupAddress: result.pickup_address ?? '',
+          bookingId: result.booking_id ?? null,
+        };
+        setPledges((previous) => ({ ...previous, [trip.id]: saved }));
+        setDrafts((previous) => ({ ...previous, [trip.id]: saved }));
       }
       setTrips((previous) => previous.map((item) => item.id === trip.id
         ? { ...item, status: result.status, interest_count: result.interest_count }
         : item));
-      if ((result.status === 'upcoming' || result.status === 'active')
+      const seatWord = `${result.seats} ${result.seats === 1 ? 'seat' : 'seats'}`;
+      if (result.reservation_result === 'reserved') {
+        showToast({ type: 'success', title: 'Your seats are reserved', message: `Your pledge reached the group goal. Your ${seatWord} ${result.seats === 1 ? 'is' : 'are'} held for you in My Trips.` });
+      } else if ((result.status === 'upcoming' || result.status === 'active')
         && Date.parse(trip.departure_date) > Date.now()) {
         showToast({ type: 'success', title: 'Booking is open', message: 'The group goal was reached. You can now book this trip.' });
       } else if (result.status === 'collecting_interest' && result.interested) {
         showToast({
           type: 'success',
-          title: wasPledged ? 'Seats updated' : 'Interest registered',
-          message: `${result.seats} ${result.seats === 1 ? 'seat' : 'seats'} pledged. We'll message you when reservations open.`,
+          title: wasPledged ? 'Pledge updated' : 'Seats pledged',
+          message: `${seatWord} pledged. When the goal is reached we'll reserve them and message you.`,
         });
       } else {
         showToast({ type: 'warning', title: 'Trip unavailable', message: 'This trip is no longer accepting interest.' });
       }
     } catch (error) {
       console.error('Error expressing trip interest:', error);
-      showToast({ type: 'error', title: 'Interest unavailable', message: 'Refresh the trips and try again.' });
+      const message = /pickup|address|seats/i.test(error?.message || '') ? error.message : 'Refresh the trips and try again.';
+      showToast({ type: 'error', title: 'Pledge not saved', message });
     } finally {
       submittingInterest.current = false;
       setPendingInterestId(null);
@@ -385,8 +446,14 @@ const SelectTripScreen = ({ navigation }) => {
             </Text>
             <View style={styles.tripsList}>
               {interestTrips.map((trip) => {
-                const pledged = pledgedSeats[trip.id];
-                const seats = chosenSeats(trip);
+                const pledged = pledges[trip.id];
+                const draft = draftFor(trip);
+                const seats = draft.seats;
+                const pickups = pickupsByTrip[trip.id] || [];
+                const chosenPickup = pickups.find((item) => item.id === draft.pickupStationId);
+                const problem = draftProblem(trip);
+                const unchanged = draftUnchanged(trip);
+                const seatWord = `${seats} ${seats === 1 ? 'seat' : 'seats'}`;
                 const goal = trip.minimum_interest || 0;
                 const progress = goal ? Math.min(1, (trip.interest_count || 0) / goal) : 0;
                 const busy = refreshing || pendingInterestId !== null;
@@ -431,14 +498,61 @@ const SelectTripScreen = ({ navigation }) => {
                         <Ionicons name="add" size={18} color={COLORS.secondary} />
                       </TouchableOpacity>
                     </View>
+                    {pickups.length > 0 && (
+                      <View style={styles.pickupGroup} accessibilityRole="radiogroup" accessibilityLabel="Pickup point">
+                        <Text style={styles.seatPickerLabel}>Pickup point</Text>
+                        {pickups.map((pickup) => {
+                          const selected = pickup.id === draft.pickupStationId;
+                          return (
+                            <TouchableOpacity
+                              key={pickup.id}
+                              style={[styles.pickupOption, selected && styles.pickupOptionSelected]}
+                              onPress={() => updateDraft(trip, { pickupStationId: pickup.id })}
+                              disabled={busy}
+                              accessibilityRole="radio"
+                              accessibilityState={{ selected }}
+                            >
+                              <Ionicons
+                                name={selected ? 'radio-button-on' : 'radio-button-off'}
+                                size={18}
+                                color={selected ? COLORS.primary : COLORS.grayLight}
+                              />
+                              <Text style={styles.pickupOptionText}>
+                                {pickup.name}{pickup.time ? ` · ${pickup.time}` : ''}
+                                {pickup.extraPrice > 0 ? ` · +${formatTripPrice(pickup.extraPrice, trip.currency)}` : ''}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                        {chosenPickup?.isAddress && (
+                          <TextInput
+                            style={styles.pickupAddressInput}
+                            value={draft.pickupAddress}
+                            onChangeText={(text) => updateDraft(trip, { pickupAddress: text })}
+                            placeholder="Your pickup address, e.g. Bole, near Edna Mall"
+                            placeholderTextColor={COLORS.grayLight}
+                            maxLength={240}
+                            editable={!busy}
+                            accessibilityLabel="Pickup address"
+                          />
+                        )}
+                      </View>
+                    )}
+                    <Text style={styles.pledgeHint}>
+                      {pledged?.bookingId
+                        ? 'Your seats are reserved. See My Trips.'
+                        : 'When the goal is reached, we reserve your seats automatically. You pay only once the trip is confirmed.'}
+                    </Text>
                     <ModernButton
-                      title={pledged == null
-                        ? `Pledge ${seats} ${seats === 1 ? 'seat' : 'seats'}`
-                        : pledged === seats
-                          ? `${pledged} ${pledged === 1 ? 'seat' : 'seats'} pledged`
-                          : `Update to ${seats} ${seats === 1 ? 'seat' : 'seats'}`}
+                      title={problem && !unchanged
+                        ? problem
+                        : pledged == null
+                          ? `Pledge ${seatWord}`
+                          : unchanged
+                            ? `${pledged.seats} ${pledged.seats === 1 ? 'seat' : 'seats'} pledged`
+                            : 'Update pledge'}
                       onPress={() => handleExpressInterest(trip)}
-                      disabled={busy || pledged === seats}
+                      disabled={busy || unchanged || Boolean(problem)}
                       loading={pendingInterestId === trip.id}
                       icon="hand-left-outline"
                       variant="outline"
@@ -642,6 +756,44 @@ const styles = StyleSheet.create({
   },
   seatButtonDisabled: {
     opacity: 0.35,
+  },
+  pickupGroup: {
+    gap: SPACING.xs,
+  },
+  pickupOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    minHeight: 44,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    backgroundColor: COLORS.white,
+  },
+  pickupOptionSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.cardBackground,
+  },
+  pickupOptionText: {
+    flex: 1,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.secondary,
+  },
+  pickupAddressInput: {
+    minHeight: 44,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    backgroundColor: COLORS.white,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.secondary,
+  },
+  pledgeHint: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.iconSecondary,
+    lineHeight: 18,
   },
   seatCount: {
     minWidth: 28,

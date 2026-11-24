@@ -328,23 +328,59 @@ export default function App() {
     }
   };
 
-  const expressInterest = async (trip, seats = 1) => {
+  const expressInterest = async (trip, pledge) => {
     try {
-      const { interest } = await api(`/api/trips/${trip.id}/interest`, { method: 'POST', body: JSON.stringify({ seats }) });
-      const { trip_id, seats: pledgedSeats, ...updates } = interest;
-      if (updates.interested) updates.pledged_seats = pledgedSeats;
+      const { interest } = await api(`/api/trips/${trip.id}/interest`, {
+        method: 'POST',
+        body: JSON.stringify({
+          seats: pledge.seats,
+          pickup_station_id: pledge.pickupStationId || null,
+          pickup_address: pledge.pickupAddress || null,
+        }),
+      });
+      const { trip_id, seats: pledgedSeats, pickup_station_id, pickup_address, booking_id, reservation_result, ...updates } = interest;
+      if (updates.interested) {
+        Object.assign(updates, {
+          pledged_seats: pledgedSeats,
+          pledged_pickup_station_id: pickup_station_id,
+          pledged_pickup_address: pickup_address,
+          reserved_booking_id: booking_id,
+        });
+      }
       const result = { ...trip, ...updates };
       setCatalog(previous => ({
         ...previous,
         trips: previous.trips.map(item => item.id === trip_id ? { ...item, ...updates } : item),
       }));
-      if (isBookableTrip(result)) notify(result.interested ? 'The group goal was reached. Reservations are open.' : 'Reservations are open.');
-      else if (isCollectingInterest(result) && result.interested) notify(`${pledgedSeats} ${pledgedSeats === 1 ? 'seat' : 'seats'} pledged. We will message you here when reservations open.`);
+      const seatWord = `${pledgedSeats} ${pledgedSeats === 1 ? 'seat' : 'seats'}`;
+      if (reservation_result === 'reserved') {
+        notify(`Your pledge reached the goal. Your ${seatWord} ${pledgedSeats === 1 ? 'is' : 'are'} reserved in My trips.`);
+        refreshBookings().catch(() => {});
+      } else if (isBookableTrip(result)) notify(result.interested ? 'The group goal was reached. Reservations are open.' : 'Reservations are open.');
+      else if (isCollectingInterest(result) && result.interested) notify(`${seatWord} pledged. When the goal is reached we reserve them and message you here.`);
       else notify('This trip is currently unavailable.');
       refreshCatalog().catch(() => {});
     } catch (error) {
       notify(error.message);
       refreshCatalog().catch(() => {});
+    }
+  };
+
+  const releaseBooking = async booking => {
+    const seats = booking.seats || 1;
+    const question = `Release your ${seats} ${seats === 1 ? 'seat' : 'seats'}? They go back on sale for other travelers.`;
+    const webApp = window.Telegram?.WebApp;
+    const confirmed = webApp?.showConfirm
+      ? await new Promise(resolve => webApp.showConfirm(question, resolve))
+      : window.confirm(question);
+    if (!confirmed) return;
+    try {
+      await api(`/api/bookings/${booking.id}/release`, { method: 'POST' });
+      notify('Seats released. Thanks for letting others go in your place.');
+      await refreshBookings();
+      refreshCatalog().catch(() => {});
+    } catch (error) {
+      notify(error.message);
     }
   };
 
@@ -466,7 +502,7 @@ export default function App() {
     if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} code={profileData.referral_code} />;
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} trips={catalog.trips} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
-    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} explore={() => goTab('home')} submitting={submitting} />;
+    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} release={releaseBooking} explore={() => goTab('home')} submitting={submitting} />;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
     return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} api={api} />;
   };
@@ -745,6 +781,7 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
               key={trip.id}
               trip={trip}
               provider={catalog.providers.find(item => item.id === trip.provider_id)}
+              catalog={catalog}
               expressInterest={expressInterest}
             />
           ))}
@@ -783,23 +820,51 @@ function LinkedBookingAction({ trip, book }) {
   );
 }
 
-function InterestTripCard({ trip, provider, expressInterest }) {
+function InterestTripCard({ trip, provider, catalog, expressInterest }) {
   const [pending, setPending] = useState(false);
-  const pledged = trip.interested ? (trip.pledged_seats ?? 1) : null;
-  const limit = Math.max(1, Math.min(20, trip.max_seats || 20));
-  const [seats, setSeats] = useState(pledged ?? 1);
+  // Matches the database: one pledge becomes one booking, capped at 8 seats.
+  const limit = Math.max(1, Math.min(8, trip.max_seats || 8));
+  const pickups = useMemo(() => {
+    const linkByStation = new Map((catalog?.trip_pickup_stations || [])
+      .filter(link => link.trip_id === trip.id)
+      .map(link => [link.station_id, link]));
+    return (catalog?.stations || []).filter(station => linkByStation.has(station.id)).map(station => {
+      const link = linkByStation.get(station.id);
+      return { ...station, time: link.pickup_time?.slice(0, 5), extraPrice: Number(link.extra_price || 0) };
+    });
+  }, [catalog, trip.id]);
+  const saved = trip.interested ? {
+    seats: trip.pledged_seats ?? 1,
+    pickupStationId: trip.pledged_pickup_station_id ?? null,
+    pickupAddress: trip.pledged_pickup_address ?? '',
+  } : null;
+  const [draft, setDraft] = useState(() => saved ?? {
+    seats: 1,
+    pickupStationId: pickups.length === 1 ? pickups[0].id : null,
+    pickupAddress: '',
+  });
+  useEffect(() => {
+    if (saved) setDraft(saved);
+  }, [trip.pledged_seats, trip.pledged_pickup_station_id, trip.pledged_pickup_address]);
+
   const departure = new Date(trip.departure_date);
   const departureLabel = tripDay.format(departure);
   const goal = trip.minimum_interest || 0;
   const count = trip.interest_count || 0;
-  const unchanged = pledged === seats;
-
-  useEffect(() => { if (pledged != null) setSeats(pledged); }, [pledged]);
+  const chosen = pickups.find(item => item.id === draft.pickupStationId);
+  const problem = pickups.length && !chosen ? 'Choose a pickup point'
+    : chosen?.is_address_pickup && draft.pickupAddress.trim().length < 5 ? 'Enter your pickup address' : null;
+  const unchanged = Boolean(saved) && saved.seats === draft.seats
+    && saved.pickupStationId === draft.pickupStationId
+    && (saved.pickupAddress || '') === draft.pickupAddress.trim();
 
   const handleAction = async () => {
     setPending(true);
     try {
-      await expressInterest(trip, seats);
+      await expressInterest(trip, {
+        ...draft,
+        pickupAddress: chosen?.is_address_pickup ? draft.pickupAddress.trim() : null,
+      });
     } finally {
       setPending(false);
     }
@@ -821,14 +886,48 @@ function InterestTripCard({ trip, provider, expressInterest }) {
           <small>{count} of {goal} seats pledged{goal > count ? ` · ${goal - count} to go` : ''}</small>
         </div>
       )}
+      {pickups.length > 0 && (
+        <div className="interest-pickup">
+          <label htmlFor={`pickup-${trip.id}`}>Pickup point</label>
+          <select
+            id={`pickup-${trip.id}`}
+            value={draft.pickupStationId || ''}
+            disabled={pending}
+            onChange={event => setDraft({ ...draft, pickupStationId: event.target.value || null })}
+          >
+            <option value="">Choose a pickup point…</option>
+            {pickups.map(item => (
+              <option key={item.id} value={item.id}>
+                {item.name}{item.time ? ` · ${item.time}` : ''}{item.extraPrice > 0 ? ` · +${money(item.extraPrice, trip.currency)}` : ''}
+              </option>
+            ))}
+          </select>
+          {chosen?.is_address_pickup && (
+            <input
+              type="text"
+              value={draft.pickupAddress}
+              maxLength={240}
+              disabled={pending}
+              aria-label="Pickup address"
+              placeholder="Your pickup address, e.g. Bole, near Edna Mall"
+              onChange={event => setDraft({ ...draft, pickupAddress: event.target.value })}
+            />
+          )}
+        </div>
+      )}
+      <p className="interest-hint">
+        {trip.reserved_booking_id
+          ? 'Your seats are reserved. See My trips.'
+          : 'When the goal is reached, we reserve your seats automatically. You pay only once the trip is confirmed.'}
+      </p>
       <div className="interest-trip-action">
         <div className="interest-seats" aria-label="Seats to pledge">
-          <button type="button" disabled={pending || seats <= 1} onClick={() => setSeats(seats - 1)} aria-label="Fewer seats"><Minus /></button>
-          <b aria-live="polite">{seats} {seats === 1 ? 'seat' : 'seats'}</b>
-          <button type="button" disabled={pending || seats >= limit} onClick={() => setSeats(seats + 1)} aria-label="More seats"><Plus /></button>
+          <button type="button" disabled={pending || draft.seats <= 1} onClick={() => setDraft({ ...draft, seats: draft.seats - 1 })} aria-label="Fewer seats"><Minus /></button>
+          <b aria-live="polite">{draft.seats} {draft.seats === 1 ? 'seat' : 'seats'}</b>
+          <button type="button" disabled={pending || draft.seats >= limit} onClick={() => setDraft({ ...draft, seats: draft.seats + 1 })} aria-label="More seats"><Plus /></button>
         </div>
-        <button type="button" disabled={pending || unchanged} onClick={handleAction}>
-          {pending ? 'Updating…' : pledged == null ? 'Pledge seats' : unchanged ? 'Pledged' : 'Update pledge'}
+        <button type="button" disabled={pending || unchanged || Boolean(problem)} onClick={handleAction}>
+          {pending ? 'Updating…' : problem && !unchanged ? problem : !saved ? 'Pledge seats' : unchanged ? 'Pledged' : 'Update pledge'}
         </button>
       </div>
     </article>
@@ -1198,7 +1297,7 @@ function bookingTab(booking) {
   return ending <= Date.now() ? 'completed' : 'upcoming';
 }
 
-function TripsView({trips,destinations,receipt,dismissReceipt,open,explore,submitting}) {
+function TripsView({trips,destinations,receipt,dismissReceipt,open,release,explore,submitting}) {
   const [filter,setFilter]=useState('upcoming');
   const latestReceipt = receipt && (trips.find(trip => trip.id === receipt.id) || receipt);
   const filtered=trips.filter(trip=>bookingTab(trip)===filter);
@@ -1244,9 +1343,12 @@ function TripsView({trips,destinations,receipt,dismissReceipt,open,explore,submi
           {action && <b>{action} <ChevronRight/></b>}
         </div>
       </>;
-      return action
-        ? <button className="booked-card" onClick={() => open(raw)} disabled={submitting} key={booking.id}>{card}</button>
-        : <article className="booked-card" key={booking.id}>{card}</article>;
+      const body = action
+        ? <button className="booked-card" onClick={() => open(raw)} disabled={submitting}>{card}</button>
+        : <article className="booked-card">{card}</article>;
+      return filter === 'upcoming' && isPendingBooking(raw) && release
+        ? <div className="booked-card-group" key={booking.id}>{body}<button type="button" className="release-seats" onClick={() => release(raw)} disabled={submitting}>Can’t make it? Release seats</button></div>
+        : <div className="booked-card-group" key={booking.id}>{body}</div>;
     }) : <div className="empty"><span><Bus/></span><h2>No {labels[filter].toLowerCase()} trips</h2><p>{filter==='upcoming'?'Your next adventure is waiting. Book a trip and it will show up here.':`Your ${labels[filter].toLowerCase()} journeys will appear here.`}</p>{filter==='upcoming'&&<button onClick={explore}>Explore destinations</button>}</div>}
   </div>;
 }

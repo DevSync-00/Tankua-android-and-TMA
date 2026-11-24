@@ -290,14 +290,24 @@ async function getCatalog(env, session) {
     supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,lat,lng,is_active,is_address_pickup&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
     session
-      ? supabaseAll(env, `trip_interests?select=trip_id,seats&user_id=eq.${encodeURIComponent(session.uid)}&order=trip_id.asc`)
+      ? supabaseAll(env, `trip_interests?select=trip_id,seats,pickup_station_id,pickup_address,booking_id&user_id=eq.${encodeURIComponent(session.uid)}&order=trip_id.asc`)
       : [],
   ]);
   const activeProviders = new Set(providers.map(provider => provider.id));
-  const pledgedSeats = new Map(interests.map(interest => [interest.trip_id, interest.seats ?? 1]));
+  const pledges = new Map(interests.map(interest => [interest.trip_id, interest]));
   const catalogTrips = trips
     .filter(trip => trip.status !== 'collecting_interest' || activeProviders.has(trip.provider_id))
-    .map(trip => ({ ...trip, interested: pledgedSeats.has(trip.id), pledged_seats: pledgedSeats.get(trip.id) ?? null }));
+    .map(trip => {
+      const pledge = pledges.get(trip.id);
+      return {
+        ...trip,
+        interested: Boolean(pledge),
+        pledged_seats: pledge ? pledge.seats ?? 1 : null,
+        pledged_pickup_station_id: pledge?.pickup_station_id ?? null,
+        pledged_pickup_address: pledge?.pickup_address ?? null,
+        reserved_booking_id: pledge?.booking_id ?? null,
+      };
+    });
   const catalogDestinations = destinations.map(destination => {
     const pricedTrips = catalogTrips.filter(trip =>
       trip.destination_id === destination.id && trip.status !== 'collecting_interest' &&
@@ -405,11 +415,22 @@ async function expressTripInterest(request, tripId, session, env) {
     return json({ error: 'Invalid trip' }, 400);
   }
   const body = await request.json().catch(() => ({}));
-  const seats = body?.seats === undefined ? 1 : Number(body.seats);
-  if (!Number.isInteger(seats) || seats < 1 || seats > 20) return json({ error: 'Choose between 1 and 20 seats' }, 400);
+  const seats = body?.seats === undefined ? 1 : body.seats;
+  if (!Number.isInteger(seats) || seats < 1 || seats > 8) return json({ error: 'Choose between 1 and 8 seats' }, 400);
+  const pickupStationId = body?.pickup_station_id ?? null;
+  if (pickupStationId !== null && (typeof pickupStationId !== 'string' || !BOOKING_UUID_PATTERN.test(pickupStationId))) {
+    return json({ error: 'Choose a pickup point offered for this trip' }, 400);
+  }
+  const pickupAddress = typeof body?.pickup_address === 'string' ? body.pickup_address.trim().slice(0, 240) : null;
   const interest = await supabase(env, 'rpc/express_trip_interest_for_user', {
     method: 'POST',
-    body: { p_trip_id: tripId, p_user_id: session.uid, p_seats: seats },
+    body: {
+      p_trip_id: tripId,
+      p_user_id: session.uid,
+      p_seats: seats,
+      p_pickup_station_id: pickupStationId,
+      p_pickup_address: pickupAddress || null,
+    },
   });
   return json({ interest });
 }
@@ -779,6 +800,14 @@ async function handleApi(request, env, requestId) {
   if (tripInterestMatch && request.method === 'POST') return expressTripInterest(request, tripInterestMatch[1], session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
+  const releaseMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/release$/i);
+  if (releaseMatch && BOOKING_UUID_PATTERN.test(releaseMatch[1]) && request.method === 'POST') {
+    const released = await supabase(env, 'rpc/release_unpaid_booking_for_user', {
+      method: 'POST',
+      body: { p_booking_id: releaseMatch[1], p_user_id: session.uid },
+    });
+    return json({ released });
+  }
   const reviewMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/review$/i);
   if (reviewMatch && BOOKING_UUID_PATTERN.test(reviewMatch[1]) && request.method === 'POST') {
     return reviewCompletedBooking(request, session, env, reviewMatch[1]);

@@ -4088,6 +4088,36 @@ img {
   place-items: center;
 }
 .interest-seats button svg { width: 17px; height: 17px; }
+
+.interest-pickup { margin-top: 12px; display: grid; gap: 6px; }
+.interest-pickup label { font-size: 13px; font-weight: 700; color: var(--navy); }
+.interest-pickup select,
+.interest-pickup input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+}
+.interest-trip .interest-hint { margin-top: 10px; color: var(--muted); font-size: 12px; }
+
+.booked-card-group .booked-card + .release-seats { margin-top: -6px; }
+.release-seats {
+  min-height: 44px;
+  margin: 0 0 10px 4px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+.release-seats:disabled { opacity: .5; }
 .interest-trip-action .interest-seats button:disabled { opacity: .3; }
 
 .booking-context-summary {

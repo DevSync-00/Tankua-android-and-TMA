@@ -15,6 +15,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
+import { releaseUnpaidBooking } from '../services/database';
 import { isBookingValid } from '../services/bookingService';
 import Loader from '../components/Loader';
 import { formatTripPrice } from '../utils/tripCurrency';
@@ -56,7 +58,7 @@ const getStatusConfig = (status) =>
 
 // ─── Booking Card ─────────────────────────────────────────────────────────────
 
-const BookingCard = ({ item, onViewTicket, onPay }) => {
+const BookingCard = ({ item, onViewTicket, onPay, onRelease, releasing }) => {
   const destinationName =
     item.destination_name || item.church_name || item.churchName || 'Unknown Destination';
   const status        = item.status || 'confirmed';
@@ -173,6 +175,17 @@ const BookingCard = ({ item, onViewTicket, onPay }) => {
           <Text style={styles.reservationNote}>Payment opens when the trip is active</Text>
         ) : null}
       </View>
+      {pendingPayment && tab === 'upcoming' && onRelease ? (
+        <TouchableOpacity
+          style={styles.releaseBtn}
+          onPress={() => onRelease(item)}
+          disabled={releasing}
+          accessibilityRole="button"
+          accessibilityLabel={`Release ${seats} ${seats === 1 ? 'seat' : 'seats'} for ${destinationName}`}
+        >
+          <Text style={styles.releaseBtnText}>{releasing ? 'Releasing…' : "Can't make it? Release seats"}</Text>
+        </TouchableOpacity>
+      ) : null}
       {item.trip?.revised_end_at && tab === 'upcoming' ? (
         <Text style={styles.reservationNote}>
           Revised end: {new Date(item.trip.revised_end_at).toLocaleString('en-GB', {
@@ -227,6 +240,8 @@ const TripsScreen = ({ navigation }) => {
   const [bookings, setBookings]     = useState([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [releasingId, setReleasingId] = useState(null);
+  const { showToast, confirm } = useFeedback();
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -245,6 +260,28 @@ const TripsScreen = ({ navigation }) => {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const onRefresh = () => { setRefreshing(true); load(); };
+
+  const handleRelease = async (booking) => {
+    const seats = booking.seats || 1;
+    const ok = await confirm({
+      title: 'Release your seats?',
+      message: `Your ${seats} ${seats === 1 ? 'seat goes' : 'seats go'} back on sale for other travelers. You can book again later if seats are still available.`,
+      confirmText: 'Release seats',
+      cancelText: 'Keep them',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    setReleasingId(booking.id);
+    try {
+      await releaseUnpaidBooking(booking.id);
+      showToast({ type: 'success', title: 'Seats released', message: 'Thanks for letting others go in your place.' });
+      await load();
+    } catch (error) {
+      showToast({ type: 'error', title: 'Could not release seats', message: error?.message || 'Please try again.' });
+    } finally {
+      setReleasingId(null);
+    }
+  };
 
   const filtered = bookings.filter(booking => bookingTab(booking) === activeTab);
   const counts = bookings.reduce((totals, booking) => {
@@ -305,6 +342,8 @@ const TripsScreen = ({ navigation }) => {
               item={item}
               onViewTicket={(b) => navigation.navigate('Ticket', { booking: b })}
               onPay={(b) => navigation.navigate('BookingFlow', { screen: 'Payment', params: { bookingId: b.id } })}
+              onRelease={handleRelease}
+              releasing={releasingId === item.id}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -546,6 +585,18 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm + 2,
     borderRadius: BORDER_RADIUS.lg,
     ...SHADOWS.small,
+  },
+  releaseBtn: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    marginTop: SPACING.xs,
+  },
+  releaseBtnText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.semibold || '600',
+    color: COLORS.error,
+    textDecorationLine: 'underline',
   },
   ticketBtnText: {
     fontSize: FONTS.sizes.sm,

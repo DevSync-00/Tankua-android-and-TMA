@@ -39,6 +39,7 @@ function telegramInitData(user, authDate = Math.floor(Date.now() / 1000)) {
 const originalFetch = globalThis.fetch;
 let lastEdgePayload = null;
 let lastInterestPayload = null;
+let lastReleasePayload = null;
 let lastBookingPayload = null;
 let bookingRecord = null;
 let transactionRecord = null;
@@ -81,6 +82,9 @@ globalThis.fetch = async (url, options = {}) => {
     case '/v1/transaction/initialize':
       paymentSteps.push({ method: 'CHAPA', body: JSON.parse(options.body) });
       return Response.json({ status: 'success', data: { checkout_url: 'https://checkout.chapa.co/test' } });
+    case '/rest/v1/rpc/release_unpaid_booking_for_user':
+      lastReleasePayload = JSON.parse(options.body);
+      return Response.json({ booking_id: lastReleasePayload.p_booking_id, status: 'cancelled', seats_released: 2 });
     case '/rest/v1/rpc/express_trip_interest_for_user': {
       lastInterestPayload = JSON.parse(options.body);
       return Response.json({ trip_id: tripId, status: 'upcoming', minimum_interest: 3, interest_count: 3, interested: true });
@@ -97,7 +101,7 @@ globalThis.fetch = async (url, options = {}) => {
       return Response.json([]);
     case '/rest/v1/trip_interests':
       assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
-      return Response.json([{ trip_id: tripId, seats: 3 }]);
+      return Response.json([{ trip_id: tripId, seats: 3, pickup_station_id: '7d1e3c2a-5b4f-4a8e-9c1d-2f3e4a5b6c7d', pickup_address: null, booking_id: null }]);
   }
   if (requestUrl.pathname.startsWith('/v1/transaction/verify/')) {
     assert.equal(requestUrl.pathname.split('/').at(-1), transactionRecord.transaction_ref);
@@ -239,10 +243,12 @@ test('interest registration requires a session and uses its traveler identity', 
   const response = await worker.fetch(new Request(interestUrl, {
     method: 'POST',
     headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
-    body: JSON.stringify({ user_id: 'ignore-caller-identity', seats: 3 }),
+    body: JSON.stringify({ user_id: 'ignore-caller-identity', seats: 3, pickup_station_id: '7d1e3c2a-5b4f-4a8e-9c1d-2f3e4a5b6c7d', pickup_address: '  Bole  ' }),
   }), env);
   assert.equal(response.status, 200);
-  assert.deepEqual(lastInterestPayload, { p_trip_id: tripId, p_user_id: userId, p_seats: 3 });
+  assert.deepEqual(lastInterestPayload, {
+    p_trip_id: tripId, p_user_id: userId, p_seats: 3, p_pickup_station_id: '7d1e3c2a-5b4f-4a8e-9c1d-2f3e4a5b6c7d', p_pickup_address: 'Bole',
+  });
   assert.deepEqual(await response.json(), {
     interest: { trip_id: tripId, status: 'upcoming', minimum_interest: 3, interest_count: 3, interested: true },
   });
@@ -252,10 +258,12 @@ test('interest registration requires a session and uses its traveler identity', 
     method: 'POST',
     headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
   }), env);
-  assert.deepEqual(lastInterestPayload, { p_trip_id: tripId, p_user_id: userId, p_seats: 1 });
+  assert.deepEqual(lastInterestPayload, {
+    p_trip_id: tripId, p_user_id: userId, p_seats: 1, p_pickup_station_id: null, p_pickup_address: null,
+  });
 
   lastInterestPayload = null;
-  for (const seats of [0, 21, 2.5, 'four']) {
+  for (const seats of [0, 9, 2.5, 'four']) {
     const invalid = await worker.fetch(new Request(interestUrl, {
       method: 'POST',
       headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
@@ -264,6 +272,30 @@ test('interest registration requires a session and uses its traveler identity', 
     assert.equal(invalid.status, 400, `seats ${seats} should be rejected`);
   }
   assert.equal(lastInterestPayload, null);
+
+  const badPickup = await worker.fetch(new Request(interestUrl, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
+    body: JSON.stringify({ seats: 2, pickup_station_id: 'not-a-uuid' }),
+  }), env);
+  assert.equal(badPickup.status, 400);
+  assert.equal(lastInterestPayload, null);
+});
+
+test('travelers release their own unpaid reservation through the Worker', async () => {
+  const releaseUrl = `${env.APP_ORIGIN}/api/bookings/b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e/release`;
+  const unauthorized = await worker.fetch(new Request(releaseUrl, { method: 'POST' }), env);
+  assert.equal(unauthorized.status, 401);
+  assert.equal(lastReleasePayload, null);
+
+  const response = await worker.fetch(new Request(releaseUrl, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
+    body: JSON.stringify({ user_id: 'ignore-caller-identity' }),
+  }), env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(lastReleasePayload, { p_booking_id: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', p_user_id: userId });
+  assert.equal((await response.json()).released.status, 'cancelled');
 });
 
 test('catalog displays interest progress without using gated fares as bookable prices', async () => {
@@ -276,8 +308,14 @@ test('catalog displays interest progress without using gated fares as bookable p
   assert.equal(catalog.destinations[0].price, 200);
   assert.equal(catalog.destinations[0].currency, 'ETB');
   assert.deepEqual(catalog.trips, [
-    { ...collectingTrip, interested: true, pledged_seats: 3 },
-    { ...bookableTrip, interested: false, pledged_seats: null },
+    {
+      ...collectingTrip, interested: true, pledged_seats: 3,
+      pledged_pickup_station_id: '7d1e3c2a-5b4f-4a8e-9c1d-2f3e4a5b6c7d', pledged_pickup_address: null, reserved_booking_id: null,
+    },
+    {
+      ...bookableTrip, interested: false, pledged_seats: null,
+      pledged_pickup_station_id: null, pledged_pickup_address: null, reserved_booking_id: null,
+    },
   ]);
   assert.equal((await anonymous.json()).trips[0].interested, false);
 });

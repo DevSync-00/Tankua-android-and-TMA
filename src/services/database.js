@@ -319,22 +319,45 @@ export const getTrips = async (filters = {}) => {
   }
 };
 
-/** Seats the signed-in traveler pledged, keyed by trip id. */
+/**
+ * The signed-in traveler's pledges, keyed by trip id:
+ * { seats, pickupStationId, pickupAddress, bookingId }.
+ */
 export const getMyTripInterests = async (tripIds) => {
   if (tripIds.length === 0) return {};
 
   const { data, error } = await supabase
     .from('trip_interests')
-    .select('trip_id, seats')
+    .select('trip_id, seats, pickup_station_id, pickup_address, booking_id')
     .in('trip_id', tripIds);
 
   if (error) throw error;
-  return Object.fromEntries(data.map(({ trip_id, seats }) => [trip_id, seats ?? 1]));
+  return Object.fromEntries(data.map((row) => [row.trip_id, {
+    seats: row.seats ?? 1,
+    pickupStationId: row.pickup_station_id ?? null,
+    pickupAddress: row.pickup_address ?? '',
+    bookingId: row.booking_id ?? null,
+  }]));
 };
 
-/** Pledge (or change) seats on a trip that is collecting interest. */
-export const expressTripInterest = async (tripId, seats = 1) => {
-  const { data, error } = await supabase.rpc('express_trip_interest', { p_trip_id: tripId, p_seats: seats });
+/**
+ * Pledge (or change) seats and a pickup point on a trip collecting interest.
+ * When the goal is reached, pledges with a pickup point become reservations.
+ */
+export const expressTripInterest = async (tripId, { seats = 1, pickupStationId = null, pickupAddress = null } = {}) => {
+  const { data, error } = await supabase.rpc('express_trip_interest', {
+    p_trip_id: tripId,
+    p_seats: seats,
+    p_pickup_station_id: pickupStationId,
+    p_pickup_address: pickupAddress?.trim() || null,
+  });
+  if (error) throw error;
+  return data;
+};
+
+/** Release an unpaid reservation so its seats go back on sale. */
+export const releaseUnpaidBooking = async (bookingId) => {
+  const { data, error } = await supabase.rpc('release_unpaid_booking', { p_booking_id: bookingId });
   if (error) throw error;
   return data;
 };
