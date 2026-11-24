@@ -100,8 +100,18 @@ function mapListing(trip: {
   };
 }
 
-export function getFeaturedTours(limit = 4) {
-  return loadTours({ limit }, 'created_at', false, true);
+/**
+ * Homepage featured trips: the ones admins picked (in their order), topped up
+ * with the newest open trips so the section is never empty. Departed or
+ * closed featured trips drop out automatically.
+ */
+export async function getFeaturedTours(limit = 4) {
+  const picked = await loadTours({ limit }, 'created_at', false, true, true);
+  if (picked.error || picked.tours.length >= limit) return picked;
+  const newest = await loadTours({ limit: limit + picked.tours.length }, 'created_at', false, true);
+  const pickedIds = new Set(picked.tours.map((tour) => tour.id));
+  const tours = [...picked.tours, ...newest.tours.filter((tour) => !pickedIds.has(tour.id))].slice(0, limit);
+  return { tours, total: tours.length, error: newest.error && picked.tours.length === 0 };
 }
 
 export function getTours(options?: CatalogOptions) {
@@ -113,13 +123,17 @@ async function loadTours(
   orderBy: 'created_at' | 'departure_date',
   ascending: boolean,
   includeInterest = false,
+  featuredOnly = false,
 ) {
   try {
     let query = supabase
       .from('trips')
       .select(listingColumns, { count: 'exact' })
-      .gt('departure_date', new Date().toISOString())
-      .order(orderBy, { ascending });
+      .gt('departure_date', new Date().toISOString());
+
+    query = featuredOnly
+      ? query.not('featured_rank', 'is', null).order('featured_rank', { ascending: true })
+      : query.order(orderBy, { ascending });
 
     query = includeInterest && !options?.bookableOnly
       ? query.in('status', [...BOOKABLE_TOUR_STATUSES, 'collecting_interest'])

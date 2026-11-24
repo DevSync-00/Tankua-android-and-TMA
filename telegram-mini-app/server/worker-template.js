@@ -356,6 +356,11 @@ async function getBookings(session, env) {
       method: 'POST', body: { p_user_id: session.uid },
     });
     await Promise.allSettled(attempts.map(({ transaction_ref }) => verifyPayment(transaction_ref, env, session.uid, true)));
+    // Top-ups paid by a traveler who left before returning from checkout.
+    const pendingChanges = await supabase(env, 'rpc/list_pending_change_payments', {
+      method: 'POST', body: { p_user_id: session.uid },
+    }).catch(() => []);
+    await Promise.allSettled((pendingChanges || []).map(({ transaction_ref }) => verifyPayment(transaction_ref, env, session.uid)));
   }
   await supabase(env, 'rpc/delete_expired_unpaid_bookings', { method: 'POST', body: {} });
   const bookings = await supabase(
@@ -471,13 +476,21 @@ async function initializePayment(request, session, env) {
     headers,
   });
 
+  const checkoutUrl = await openChapaCheckout(env, txRef, booking.total_price, currency, 'Trip booking payment');
+  return json({ checkout_url: checkoutUrl, transaction_ref: txRef });
+}
+
+// Opens a Chapa checkout for a payment_transactions row that already exists.
+async function openChapaCheckout(env, txRef, amount, currency, description) {
+  const transactionPath = `payment_transactions?transaction_ref=eq.${encodeURIComponent(txRef)}`;
+  const headers = { Prefer: 'return=minimal' };
   let checkoutUrl;
   try {
     const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
       method: 'POST',
       headers: { authorization: `Bearer ${env.CHAPA_SECRET_KEY}`, 'content-type': 'application/json' },
       body: JSON.stringify({
-        amount: Number(booking.total_price).toFixed(2),
+        amount: Number(amount).toFixed(2),
         currency,
         email: 'payments@tankua.co',
         first_name: 'Tankua',
@@ -485,7 +498,7 @@ async function initializePayment(request, session, env) {
         tx_ref: txRef,
         callback_url: `${env.APP_ORIGIN}/api/webhooks/chapa`,
         return_url: `${env.APP_ORIGIN}/?payment_return=1&tx_ref=${encodeURIComponent(txRef)}`,
-        customization: { title: 'Tankua Booking', description: 'Trip booking payment' },
+        customization: { title: 'Tankua Booking', description },
       }),
     });
     const result = await response.json();
@@ -515,7 +528,43 @@ async function initializePayment(request, session, env) {
     body: { checkout_url: checkoutUrl },
     headers,
   });
-  return json({ checkout_url: checkoutUrl, transaction_ref: txRef });
+  return checkoutUrl;
+}
+
+// Booking changes: quote (apply false) or apply. Travelers never pass a top-up amount.
+function changeParams(bookingId, session, change) {
+  const c = change && typeof change === 'object' ? change : {};
+  const id = value => (typeof value === 'string' && BOOKING_UUID_PATTERN.test(value) ? value : null);
+  return {
+    p_booking_id: bookingId,
+    p_user_id: session.uid,
+    p_action: ['pickup', 'seats', 'reschedule'].includes(c.action) ? c.action : null,
+    p_seats: Number.isInteger(c.seats) ? c.seats : null,
+    p_trip_id: id(c.trip_id),
+    p_station_id: id(c.station_id),
+    p_pickup_address: typeof c.pickup_address === 'string' ? c.pickup_address.trim().slice(0, 240) || null : null,
+  };
+}
+
+async function changeBooking(request, bookingId, session, env) {
+  const body = await request.json().catch(() => ({}));
+  const params = changeParams(bookingId, session, body.change);
+  if (!params.p_action) return json({ error: 'Choose what to change' }, 400);
+  const result = await supabase(env, 'rpc/change_booking_for_user', {
+    method: 'POST',
+    body: { ...params, p_apply: body.apply === true },
+  });
+  return json({ change: result });
+}
+
+async function startChangePayment(request, bookingId, session, env) {
+  if (!env.CHAPA_SECRET_KEY || !env.APP_ORIGIN) throw new Error('Payment service is not configured');
+  const body = await request.json().catch(() => ({}));
+  const params = changeParams(bookingId, session, body.change);
+  if (!params.p_action) return json({ error: 'Choose what to change' }, 400);
+  const payment = await supabase(env, 'rpc/create_change_payment_for_user', { method: 'POST', body: params });
+  const checkoutUrl = await openChapaCheckout(env, payment.transaction_ref, payment.amount, payment.currency, 'Booking change payment');
+  return json({ checkout_url: checkoutUrl, transaction_ref: payment.transaction_ref, amount: payment.amount, currency: payment.currency });
 }
 
 async function verifyPayment(txRef, env, expectedUserId = null, closeout = false) {
@@ -533,6 +582,16 @@ async function verifyPayment(txRef, env, expectedUserId = null, closeout = false
   const matches = Number(result.data?.amount) === Number(transaction.amount) &&
     result.data?.currency === (transaction.currency ?? 'ETB') &&
     result.data?.tx_ref === txRef;
+  if (paid && matches && transaction.purpose === 'change') {
+    const outcome = await supabase(env, 'rpc/complete_change_payment', {
+      method: 'POST',
+      body: { p_transaction_ref: txRef, p_provider_response: result.data },
+    });
+    return json({
+      paid: true, status: 'paid', booking_id: transaction.booking_id, purpose: 'change',
+      applied: Boolean(outcome?.applied), reason: outcome?.reason ?? null,
+    });
+  }
   if (paid && matches) {
     await Promise.all([
       supabase(env, `payment_transactions?transaction_ref=eq.${encodeURIComponent(txRef)}`, {
@@ -558,7 +617,7 @@ async function verifyPayment(txRef, env, expectedUserId = null, closeout = false
       });
     }
   }
-  return json({ paid: paid && matches, status: paid && matches ? 'paid' : transaction.status, booking_id: transaction.booking_id });
+  return json({ paid: paid && matches, status: paid && matches ? 'paid' : transaction.status, booking_id: transaction.booking_id, purpose: transaction.purpose ?? 'booking' });
 }
 
 async function reviewCompletedBooking(request, session, env, bookingId) {
@@ -800,6 +859,14 @@ async function handleApi(request, env, requestId) {
   if (tripInterestMatch && request.method === 'POST') return expressTripInterest(request, tripInterestMatch[1], session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
+  const changeMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/change$/i);
+  if (changeMatch && BOOKING_UUID_PATTERN.test(changeMatch[1]) && request.method === 'POST') {
+    return changeBooking(request, changeMatch[1], session, env);
+  }
+  const changePaymentMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/change-payment$/i);
+  if (changePaymentMatch && BOOKING_UUID_PATTERN.test(changePaymentMatch[1]) && request.method === 'POST') {
+    return startChangePayment(request, changePaymentMatch[1], session, env);
+  }
   const cancellationMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/cancellation$/i);
   if (cancellationMatch && BOOKING_UUID_PATTERN.test(cancellationMatch[1]) && request.method === 'GET') {
     const quote = await supabase(env, 'rpc/booking_cancellation_terms', {

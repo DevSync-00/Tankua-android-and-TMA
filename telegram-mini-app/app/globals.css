@@ -4118,6 +4118,73 @@ img {
   text-decoration: underline;
 }
 .release-seats:disabled { opacity: .5; }
+
+.booked-card-actions { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: -6px 0 10px 4px; }
+.booked-card-actions .release-seats { margin: 0; }
+.change-booking {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+.change-booking:disabled { opacity: .5; }
+
+.change-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 26, 47, 0.45);
+}
+.change-sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  background: var(--paper);
+  color: var(--navy);
+  display: grid;
+  gap: 12px;
+}
+.change-sheet header { display: flex; align-items: center; justify-content: space-between; }
+.change-sheet header h2 { margin: 0; font-size: 18px; }
+.change-sheet header button {
+  width: 44px; height: 44px; border: 0; border-radius: 12px; background: white; color: var(--navy);
+  display: grid; place-items: center;
+}
+.change-sheet .segmented { margin: 0; }
+.change-sheet .interest-pickup { margin-top: 0; }
+.change-seats { justify-content: center; }
+.change-quote {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  font-size: 14px;
+}
+.change-quote div { display: flex; justify-content: space-between; gap: 12px; }
+.change-quote span { color: var(--muted); }
+.change-reason { margin: 0; color: #b42318; font-weight: 700; font-size: 13px; }
+.change-submit {
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 800;
+  font-size: 15px;
+}
+.change-submit:disabled { opacity: .55; }
 .interest-trip-action .interest-seats button:disabled { opacity: .3; }
 
 .booking-context-summary {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRightLeft, Bus, History, RefreshCw, X, AlertTriangle } from "lucide-react";
+import { ArrowDown, ArrowRightLeft, ArrowUp, Bus, History, RefreshCw, Star, X, AlertTriangle } from "lucide-react";
 import { Header } from "@/components/header";
 import {
   Badge,
@@ -20,6 +20,7 @@ import {
   getTripHandoverPreview,
   getTripHandovers,
   handOverTrip,
+  setFeaturedTrips,
   type HandoverRevenuePolicy,
   type HandoverTrip,
   type Provider,
@@ -50,16 +51,59 @@ export default function TripsPage() {
   const [loading, setLoading] = useState(true);
   const [banner, setBanner] = useState<BannerState>(null);
   const [selectedTrip, setSelectedTrip] = useState<HandoverTrip | null>(null);
+  const [savingFeatured, setSavingFeatured] = useState(false);
+
+  // Featured trips come from the unfiltered list so the order is complete.
+  const [allTrips, setAllTrips] = useState<HandoverTrip[]>([]);
+  const featured = useMemo(
+    () => allTrips.filter((trip) => trip.featuredRank !== null).sort((a, b) => (a.featuredRank ?? 0) - (b.featuredRank ?? 0)),
+    [allTrips],
+  );
+  const canFeature = (trip: HandoverTrip) =>
+    ["upcoming", "active", "collecting_interest"].includes(trip.status)
+    && Boolean(trip.departure_date) && Date.parse(trip.departure_date as string) > Date.now();
+  const featuredIds = featured.map((trip) => trip.id);
+
+  const saveFeatured = async (ids: string[], message: string) => {
+    setSavingFeatured(true);
+    try {
+      await setFeaturedTrips(ids);
+      setBanner({ message, variant: "success" });
+      await load();
+    } catch (error) {
+      setBanner({ message: error instanceof Error ? error.message : "Could not update featured trips.", variant: "error" });
+    } finally {
+      setSavingFeatured(false);
+    }
+  };
+  const feature = (trip: HandoverTrip) => {
+    if (featuredIds.length >= 12) {
+      setBanner({ message: "Feature at most 12 trips. Take one down first.", variant: "error" });
+      return;
+    }
+    saveFeatured([...featuredIds, trip.id], trip.destination + " is now featured on the homepage.");
+  };
+  const takeDown = (trip: HandoverTrip) =>
+    saveFeatured(featuredIds.filter((id) => id !== trip.id), trip.destination + " was taken down from the homepage.");
+  const move = (index: number, delta: number) => {
+    const ids = [...featuredIds];
+    const target = index + delta;
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    saveFeatured(ids, "Featured order updated.");
+  };
 
   const load = async () => {
     setLoading(true);
     try {
-      const [tripList, providerResult, history] = await Promise.all([
+      const [tripList, everyTrip, providerResult, history] = await Promise.all([
         getHandoverTrips({ providerId: providerFilter || undefined }),
+        providerFilter ? getHandoverTrips() : Promise.resolve(null),
         getProviders({ limit: 500 }),
         getTripHandovers(),
       ]);
       setTrips(tripList);
+      setAllTrips(everyTrip ?? tripList);
       setProviders(providerResult.providers);
       setHandovers(history);
     } catch (error) {
@@ -77,7 +121,7 @@ export default function TripsPage() {
     <div className="min-h-screen">
       <Header
         title="Trips"
-        subtitle="Hand trips Tankua organized over to a provider's account"
+        subtitle="Choose the homepage's featured trips and hand trips over to providers"
         actions={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -103,6 +147,50 @@ export default function TripsPage() {
             ))}
           </select>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5" /> Featured on the homepage
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Shown first on tankua.et, in this order. Empty spots are filled with the newest trips, and featured trips drop off by themselves once they depart.
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {featured.length === 0 ? (
+              <p className="px-6 pb-6 text-sm text-muted-foreground">
+                No trips are featured yet, so the homepage shows the newest ones. Use Feature on a trip below.
+              </p>
+            ) : (
+              <ol className="divide-y divide-border">
+                {featured.map((trip, index) => (
+                  <li key={trip.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 sm:px-6">
+                    <span className="text-sm font-semibold text-muted-foreground w-6">{index + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{trip.destination}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {departure(trip.departure_date)} · {trip.provider?.name ?? "No provider"}
+                        {!canFeature(trip) ? " · no longer open, hidden from the homepage" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => move(index, -1)} disabled={savingFeatured || index === 0} aria-label={"Move " + trip.destination + " up"}>
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => move(index, 1)} disabled={savingFeatured || index === featured.length - 1} aria-label={"Move " + trip.destination + " down"}>
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => takeDown(trip)} disabled={savingFeatured}>
+                        Take down
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -137,14 +225,30 @@ export default function TripsPage() {
                       <span className="font-medium text-foreground">{trip.bookings}</span> bookings ·{" "}
                       <span className="font-medium text-foreground">{trip.paidBookings}</span> paid
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedTrip(trip)}
-                      leftIcon={<ArrowRightLeft className="h-4 w-4" />}
-                    >
-                      Hand over
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {trip.featuredRank !== null ? (
+                        <Badge variant="gold">Featured #{featured.findIndex((item) => item.id === trip.id) + 1}</Badge>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => feature(trip)}
+                          disabled={savingFeatured || !canFeature(trip)}
+                          title={canFeature(trip) ? undefined : "Only upcoming, open trips can be featured"}
+                          leftIcon={<Star className="h-4 w-4" />}
+                        >
+                          Feature
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedTrip(trip)}
+                        leftIcon={<ArrowRightLeft className="h-4 w-4" />}
+                      >
+                        Hand over
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

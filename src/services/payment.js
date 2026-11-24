@@ -25,6 +25,20 @@ const invokePayment = async (body) => {
 export const startChapaPayment = (bookingId) =>
   invokePayment({ action: 'initialize', bookingId });
 
-/** Ask the server to verify with Chapa. Returns { paid, status, bookingId }. */
+/**
+ * Start a top-up checkout for a booking change that costs more.
+ * change = { action, seats, tripId, stationId, pickupAddress }.
+ * Returns { checkoutUrl, transactionRef, amount, currency }.
+ */
+export const startChangePayment = (bookingId, change) =>
+  invokePayment({ action: 'initialize_change', bookingId, change });
+
+/** Complete any top-ups paid in a checkout the traveler left early. Returns { checked, completed }. */
+export const verifyPendingChangePayments = () => invokePayment({ action: 'verify_pending' });
+
+/**
+ * Ask the server to verify with Chapa.
+ * Returns { paid, status, bookingId, purpose } and, for top-ups, { applied, reason }.
+ */
 export const verifyChapaPayment = (transactionRef) =>
   invokePayment({ action: 'verify', transactionRef });

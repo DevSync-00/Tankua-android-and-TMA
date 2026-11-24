@@ -41,6 +41,10 @@ let lastEdgePayload = null;
 let lastInterestPayload = null;
 let lastReleasePayload = null;
 let lastCancelPayload = null;
+let lastChangePayload = null;
+let lastChangePaymentPayload = null;
+let lastCompletePayload = null;
+let pendingChangeRefs = [];
 let lastQuotePayload = null;
 let lastBookingPayload = null;
 let bookingRecord = null;
@@ -88,6 +92,17 @@ globalThis.fetch = async (url, options = {}) => {
     case '/v1/transaction/initialize':
       paymentSteps.push({ method: 'CHAPA', body: JSON.parse(options.body) });
       return Response.json({ status: 'success', data: { checkout_url: 'https://checkout.chapa.co/test' } });
+    case '/rest/v1/rpc/change_booking_for_user':
+      lastChangePayload = JSON.parse(options.body);
+      return Response.json({ allowed: false, needs_top_up: true, top_up_amount: 210, new_total: 2310, currency: 'ETB' });
+    case '/rest/v1/rpc/create_change_payment_for_user':
+      lastChangePaymentPayload = JSON.parse(options.body);
+      return Response.json({ transaction_ref: 'tankua-chg-test', amount: 210, currency: 'ETB' });
+    case '/rest/v1/rpc/list_pending_change_payments':
+      return Response.json(pendingChangeRefs);
+    case '/rest/v1/rpc/complete_change_payment':
+      lastCompletePayload = JSON.parse(options.body);
+      return Response.json({ applied: true, booking_id: 'd4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f70' });
     case '/rest/v1/rpc/booking_cancellation_terms':
       lastQuotePayload = JSON.parse(options.body);
       return Response.json({ can_cancel: true, paid: true, refund_amount: 1050, refund_percentage: 100, currency: 'ETB' });
@@ -292,6 +307,77 @@ test('interest registration requires a session and uses its traveler identity', 
   }), env);
   assert.equal(badPickup.status, 400);
   assert.equal(lastInterestPayload, null);
+});
+
+test('booking changes use the traveler identity and never accept a top-up amount from the client', async () => {
+  const url = `${env.APP_ORIGIN}/api/bookings/d4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f70/change`;
+  const headers = { cookie: travelerSession(), origin: env.APP_ORIGIN };
+  assert.equal((await worker.fetch(new Request(url, { method: 'POST' }), env)).status, 401);
+
+  const bad = await worker.fetch(new Request(url, { method: 'POST', headers, body: JSON.stringify({ change: { action: 'teleport' } }) }), env);
+  assert.equal(bad.status, 400);
+  assert.equal(lastChangePayload, null);
+
+  const quote = await worker.fetch(new Request(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ apply: false, p_top_up_paid: 99999, change: { action: 'pickup', station_id: '7d1e3c2a-5b4f-4a8e-9c1d-2f3e4a5b6c7d', p_top_up_paid: 99999 } }),
+  }), env);
+  assert.equal(quote.status, 200);
+  assert.deepEqual(lastChangePayload, {
+    p_booking_id: 'd4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f70', p_user_id: userId, p_action: 'pickup', p_seats: null, p_trip_id: null,
+    p_station_id: '7d1e3c2a-5b4f-4a8e-9c1d-2f3e4a5b6c7d', p_pickup_address: null, p_apply: false,
+  });
+  assert.equal((await quote.json()).change.top_up_amount, 210);
+});
+
+test('a top-up checkout charges exactly the difference and completes the change after Chapa confirms it', async (t) => {
+  t.after(() => {
+    transactionRecord = null;
+    chapaVerification = null;
+    paymentSteps.length = 0;
+  });
+  const headers = { cookie: travelerSession(), origin: env.APP_ORIGIN };
+  const started = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/bookings/d4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f70/change-payment`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ change: { action: 'seats', seats: 3 } }),
+  }), env);
+  assert.equal(started.status, 200);
+  assert.equal(lastChangePaymentPayload.p_user_id, userId);
+  assert.equal(lastChangePaymentPayload.p_seats, 3);
+  const chapa = paymentSteps.find(step => step.method === 'CHAPA');
+  assert.equal(chapa.body.amount, '210.00');
+  assert.equal(chapa.body.tx_ref, 'tankua-chg-test');
+  assert.match(chapa.body.return_url, /payment_return=1&tx_ref=tankua-chg-test/);
+  paymentSteps.length = 0;
+
+  transactionRecord = { transaction_ref: 'tankua-chg-test', user_id: userId, booking_id: 'd4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f70', status: 'processing', currency: 'ETB', amount: 210, purpose: 'change' };
+  chapaVerification = { status: 'success', currency: 'ETB', amount: 210, tx_ref: 'tankua-chg-test' };
+  const status = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/payments/status?tx_ref=tankua-chg-test`, { headers }), env);
+  assert.equal(status.status, 200);
+  const outcome = await status.json();
+  assert.equal(outcome.purpose, 'change');
+  assert.equal(outcome.applied, true);
+  assert.equal(lastCompletePayload.p_transaction_ref, 'tankua-chg-test');
+  // A top-up never marks the booking paid again directly.
+  assert.equal(paymentSteps.some(step => step.method === 'BOOKING'), false);
+});
+
+test('opening My Trips completes a top-up the traveler paid but never returned from', async (t) => {
+  t.after(() => {
+    pendingChangeRefs = [];
+    transactionRecord = null;
+    chapaVerification = null;
+    lastCompletePayload = null;
+  });
+  pendingChangeRefs = [{ transaction_ref: 'tankua-chg-left' }];
+  transactionRecord = { transaction_ref: 'tankua-chg-left', user_id: userId, booking_id: 'd4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f70', status: 'processing', currency: 'ETB', amount: 210, purpose: 'change' };
+  chapaVerification = { status: 'success', currency: 'ETB', amount: 210, tx_ref: 'tankua-chg-left' };
+  lastCompletePayload = null;
+  const response = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/bookings`, { headers: { cookie: travelerSession() } }), env);
+  assert.equal(response.status, 200);
+  assert.equal(lastCompletePayload?.p_transaction_ref, 'tankua-chg-left');
 });
 
 test('travelers quote and cancel their own paid booking through the Worker', async () => {

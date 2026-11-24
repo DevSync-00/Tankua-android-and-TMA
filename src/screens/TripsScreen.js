@@ -17,6 +17,7 @@ import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from '../contexts/FeedbackContext';
 import { releaseUnpaidBooking } from '../services/database';
+import { verifyPendingChangePayments } from '../services/payment';
 import { isBookingValid } from '../services/bookingService';
 import Loader from '../components/Loader';
 import { formatTripPrice } from '../utils/tripCurrency';
@@ -271,7 +272,15 @@ const TripsScreen = ({ navigation }) => {
     }
   }, [userId, getUserBookings]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => {
+    load();
+    // A top-up paid in a checkout the traveler left early is completed here.
+    if (userId) {
+      verifyPendingChangePayments()
+        .then((result) => { if (result?.completed > 0) load(); })
+        .catch(() => {});
+    }
+  }, [load, userId]));
 
   const onRefresh = () => { setRefreshing(true); load(); };
 

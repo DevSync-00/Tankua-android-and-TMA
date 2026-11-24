@@ -107,6 +107,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState({ trip: null, pickup: null, seats: 1, passengers: [], payment: 'telebirr' });
   const [ticketBackScreen, setTicketBackScreen] = useState('confirmation');
+  const [changingBooking, setChangingBooking] = useState(null);
   const [bookedTrips, setBookedTrips] = useState([
     {
       id: 'TNK-92041',
@@ -262,7 +263,13 @@ export default function App() {
       if (params.get('payment_return') === '1' && txRef) {
         const payment = await api(`/api/payments/status?tx_ref=${encodeURIComponent(txRef)}`);
         const rawBooking = productionData.bookings.find(item => item.id === payment.booking_id);
-        if (payment.paid && rawBooking) {
+        if (payment.purpose === 'change') {
+          notify(!payment.paid ? 'Your payment is still processing. Your booking changes once it is confirmed.'
+            : payment.applied ? 'Payment received. Your booking has been updated.'
+              : `We couldn't make that change (${payment.reason || 'no longer possible'}). Your booking is unchanged and your payment will be refunded.`);
+          setTab('trips');
+          refreshBookings().catch(() => {});
+        } else if (payment.paid && rawBooking) {
           const live = productionData.catalogData.destinations.map(normalizeDestination);
           setBooking(normalizeBookingForUi(rawBooking, live));
           setScreen('confirmation');
@@ -529,7 +536,10 @@ export default function App() {
     if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} code={profileData.referral_code} />;
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} trips={catalog.trips} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
-    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} release={releaseBooking} cancelPaid={cancelPaidBooking} explore={() => goTab('home')} submitting={submitting} />;
+    if (tab === 'trips') return <><TripsView change={setChangingBooking} destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} release={releaseBooking} cancelPaid={cancelPaidBooking} explore={() => goTab('home')} submitting={submitting} />
+      {changingBooking && <ChangeBookingSheet booking={changingBooking} catalog={catalog} api={api} notify={notify}
+        close={() => setChangingBooking(null)}
+        done={async () => { setChangingBooking(null); await refreshBookings(); refreshCatalog().catch(() => {}); }} />}</>;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
     return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} api={api} />;
   };
@@ -1324,7 +1334,7 @@ function bookingTab(booking) {
   return ending <= Date.now() ? 'completed' : 'upcoming';
 }
 
-function TripsView({trips,destinations,receipt,dismissReceipt,open,release,cancelPaid,explore,submitting}) {
+function TripsView({trips,destinations,receipt,dismissReceipt,open,release,cancelPaid,change,explore,submitting}) {
   const [filter,setFilter]=useState('upcoming');
   const latestReceipt = receipt && (trips.find(trip => trip.id === receipt.id) || receipt);
   const filtered=trips.filter(trip=>bookingTab(trip)===filter);
@@ -1378,12 +1388,180 @@ function TripsView({trips,destinations,receipt,dismissReceipt,open,release,cance
         : <article className="booked-card">{card}</article>;
       const cancellable = filter === 'upcoming' && paid && raw.status === 'confirmed'
         && ['upcoming', 'active'].includes(raw.scheduled_trip?.status) && hasFutureDeparture(raw.scheduled_trip);
+      const changeLink = change && filter === 'upcoming' && (isPendingBooking(raw) || cancellable)
+        ? <button type="button" className="change-booking" onClick={() => change(raw)} disabled={submitting}>Change pickup, seats or date</button>
+        : null;
       return filter === 'upcoming' && isPendingBooking(raw) && release
-        ? <div className="booked-card-group" key={booking.id}>{body}<button type="button" className="release-seats" onClick={() => release(raw)} disabled={submitting}>Can’t make it? Release seats</button></div>
+        ? <div className="booked-card-group" key={booking.id}>{body}<div className="booked-card-actions">{changeLink}<button type="button" className="release-seats" onClick={() => release(raw)} disabled={submitting}>Can’t make it? Release seats</button></div></div>
         : cancellable && cancelPaid
-          ? <div className="booked-card-group" key={booking.id}>{body}<button type="button" className="release-seats" onClick={() => cancelPaid(raw)} disabled={submitting}>Cancel booking</button></div>
+          ? <div className="booked-card-group" key={booking.id}>{body}<div className="booked-card-actions">{changeLink}<button type="button" className="release-seats" onClick={() => cancelPaid(raw)} disabled={submitting}>Cancel booking</button></div></div>
           : <div className="booked-card-group" key={booking.id}>{body}</div>;
     }) : <div className="empty"><span><Bus/></span><h2>No {labels[filter].toLowerCase()} trips</h2><p>{filter==='upcoming'?'Your next adventure is waiting. Book a trip and it will show up here.':`Your ${labels[filter].toLowerCase()} journeys will appear here.`}</p>{filter==='upcoming'&&<button onClick={explore}>Explore destinations</button>}</div>}
+  </div>;
+}
+
+function ChangeBookingSheet({ booking, catalog, api, close, done, notify }) {
+  const currentStation = booking.pickup_station?.id ?? null;
+  const currentAddress = booking.pickup_station?.pickup_address ?? '';
+  const currency = booking.currency || 'ETB';
+  const paid = booking.payment_status === 'paid';
+  const [tab, setTab] = useState('pickup');
+  const [stationId, setStationId] = useState(currentStation);
+  const [address, setAddress] = useState(currentAddress);
+  const [seats, setSeats] = useState(booking.seats || 1);
+  const [tripId, setTripId] = useState('');
+  const [newStationId, setNewStationId] = useState(null);
+  const [newAddress, setNewAddress] = useState(currentAddress);
+  const [quote, setQuote] = useState(null);
+  const [working, setWorking] = useState(false);
+  const request = useRef(0);
+
+  const pickupsFor = useCallback(id => {
+    const links = new Map((catalog.trip_pickup_stations || []).filter(link => link.trip_id === id).map(link => [link.station_id, link]));
+    return (catalog.stations || []).filter(station => links.has(station.id)).map(station => {
+      const link = links.get(station.id);
+      return { ...station, time: link.pickup_time?.slice(0, 5), extraPrice: Number(link.extra_price || 0) };
+    });
+  }, [catalog]);
+  const pickups = useMemo(() => pickupsFor(booking.trip_id), [pickupsFor, booking.trip_id]);
+  const departures = useMemo(() => (catalog.trips || []).filter(trip =>
+    trip.id !== booking.trip_id && trip.destination_id === booking.destination_id
+    && (trip.currency ?? 'ETB') === currency && ['upcoming', 'active'].includes(trip.status)
+    && hasFutureDeparture(trip) && Number(trip.available_seats || 0) >= (booking.seats || 1),
+  ), [catalog, booking, currency]);
+  const newPickups = useMemo(() => (tripId ? pickupsFor(tripId) : []), [pickupsFor, tripId]);
+
+  useEffect(() => {
+    if (!tripId) return;
+    setNewStationId(newPickups.some(item => item.id === currentStation) ? currentStation
+      : newPickups.length === 1 ? newPickups[0].id : null);
+  }, [tripId, newPickups, currentStation]);
+
+  const change = useMemo(() => {
+    if (tab === 'pickup') {
+      if (!stationId || (stationId === currentStation && address === currentAddress)) return null;
+      const station = pickups.find(item => item.id === stationId);
+      return { action: 'pickup', station_id: stationId, pickup_address: station?.is_address_pickup ? address : null };
+    }
+    if (tab === 'seats') return seats === booking.seats ? null : { action: 'seats', seats };
+    if (!tripId) return null;
+    const station = newPickups.find(item => item.id === newStationId);
+    return { action: 'reschedule', trip_id: tripId, station_id: newStationId, pickup_address: station?.is_address_pickup ? newAddress : null };
+  }, [tab, stationId, address, seats, tripId, newStationId, newAddress, pickups, newPickups]);
+
+  useEffect(() => {
+    if (!change) { setQuote(null); return undefined; }
+    const id = ++request.current;
+    const timer = setTimeout(() => {
+      api(`/api/bookings/${booking.id}/change`, { method: 'POST', body: JSON.stringify({ change, apply: false }) })
+        .then(({ change: result }) => { if (id === request.current) setQuote(result); })
+        .catch(error => { if (id === request.current) setQuote({ allowed: false, reason: error.message }); });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [change]);
+
+  const confirmWith = async question => {
+    const webApp = window.Telegram?.WebApp;
+    return webApp?.showConfirm ? new Promise(resolve => webApp.showConfirm(question, resolve)) : window.confirm(question);
+  };
+
+  const submit = async () => {
+    if (!quote || working) return;
+    if (quote.needs_top_up) {
+      if (!await confirmWith(`Pay ${money(quote.top_up_amount, currency)} to make this change? If it can no longer be made, you get the money back.`)) return;
+      setWorking(true);
+      try {
+        const { checkout_url } = await api(`/api/bookings/${booking.id}/change-payment`, { method: 'POST', body: JSON.stringify({ change }) });
+        window.location.assign(checkout_url);
+      } catch (error) {
+        notify(error.message);
+        setWorking(false);
+      }
+      return;
+    }
+    if (!quote.allowed) return;
+    const refund = Number(quote.refund_amount || 0);
+    if (!await confirmWith(`Confirm this change? New total ${money(quote.new_total, currency)}.${refund > 0 ? ` You get ${money(refund, currency)} back.` : ''}`)) return;
+    setWorking(true);
+    try {
+      await api(`/api/bookings/${booking.id}/change`, { method: 'POST', body: JSON.stringify({ change, apply: true }) });
+      notify(refund > 0 ? `Booking updated. Your refund of ${money(refund, currency)} is being processed.` : 'Booking updated.');
+      await done();
+    } catch (error) {
+      notify(error.message);
+      setWorking(false);
+    }
+  };
+
+  const pickupControl = (options, selected, setSelected, addr, setAddr) => {
+    const chosen = options.find(item => item.id === selected);
+    return <div className="interest-pickup">
+      <label htmlFor={`change-pickup-${tab}`}>Pickup point</label>
+      <select id={`change-pickup-${tab}`} value={selected || ''} disabled={working} onChange={event => setSelected(event.target.value || null)}>
+        <option value="">Choose a pickup point…</option>
+        {options.map(item => <option key={item.id} value={item.id}>
+          {item.name}{item.time ? ` · ${item.time}` : ''}{item.extraPrice > 0 ? ` · +${money(item.extraPrice, currency)}` : ''}
+        </option>)}
+      </select>
+      {chosen?.is_address_pickup && <input type="text" value={addr} maxLength={240} disabled={working} aria-label="Pickup address"
+        placeholder="Your pickup address, e.g. Bole, near Edna Mall" onChange={event => setAddr(event.target.value)} />}
+    </div>;
+  };
+
+  const action = !quote ? null : quote.needs_top_up ? `Pay ${money(quote.top_up_amount, currency)} and change` : quote.allowed ? 'Confirm change' : null;
+
+  return <div className="change-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="change-sheet-title">
+    <div className="change-sheet">
+      <header>
+        <h2 id="change-sheet-title">Change booking</h2>
+        <button type="button" onClick={close} aria-label="Close" disabled={working}><X size={20} /></button>
+      </header>
+      <div className="segmented" role="tablist">
+        {[['pickup', 'Pickup'], ['seats', 'Seats'], ['reschedule', 'Departure']].map(([key, label]) =>
+          <button key={key} type="button" role="tab" aria-selected={tab === key} className={tab === key ? 'active' : ''}
+            onClick={() => setTab(key)} disabled={working}>{label}</button>)}
+      </div>
+
+      {tab === 'pickup' && pickupControl(pickups, stationId, setStationId, address, setAddress)}
+
+      {tab === 'seats' && <div className="interest-seats change-seats" aria-label="Seats">
+        <button type="button" disabled={working || seats <= 1} onClick={() => setSeats(seats - 1)} aria-label="Fewer seats"><Minus /></button>
+        <b aria-live="polite">{seats} {seats === 1 ? 'seat' : 'seats'}</b>
+        <button type="button" disabled={working || seats >= 8} onClick={() => setSeats(seats + 1)} aria-label="More seats"><Plus /></button>
+      </div>}
+
+      {tab === 'reschedule' && <div className="interest-pickup">
+        <label htmlFor="change-departure">Departure</label>
+        {departures.length ? <select id="change-departure" value={tripId} disabled={working} onChange={event => setTripId(event.target.value)}>
+          <option value="">Choose a departure…</option>
+          {departures.map(trip => <option key={trip.id} value={trip.id}>
+            {tripDay.format(new Date(trip.departure_date))} · {tripClock.format(new Date(trip.departure_date))} · {money(trip.price, trip.currency)} each
+          </option>)}
+        </select> : <p className="interest-hint">No other departures to this destination have room right now.</p>}
+        {tripId && newPickups.length > 0 && pickupControl(newPickups, newStationId, setNewStationId, newAddress, setNewAddress)}
+      </div>}
+
+      {paid && <p className="interest-hint">
+        {tab === 'seats'
+          ? 'Extra seats are paid now. Removed seats are refunded by the cancellation policy (48h+ 100%, 24–48h 50%, under 24h none).'
+          : tab === 'reschedule'
+            ? 'You can move up to 48 hours before departure. Any price difference is paid or refunded.'
+            : 'Any price difference is paid now or refunded.'}
+      </p>}
+
+      {change && <div className="change-quote" aria-live="polite">
+        {!quote ? <small>Checking…</small> : quote.allowed || quote.needs_top_up ? <>
+          <div><span>New total</span><b>{money(quote.new_total, currency)}</b></div>
+          <div><span>{paid ? 'Already paid' : 'Was'}</span><span>{money(quote.old_total, currency)}</span></div>
+          {quote.needs_top_up && <div><span>To pay now</span><b>{money(quote.top_up_amount, currency)}</b></div>}
+          {Number(quote.refund_amount) > 0 && <div><span>You get back</span><b>{money(quote.refund_amount, currency)}</b></div>}
+        </> : <p className="change-reason">{quote.reason}</p>}
+      </div>}
+
+      <button type="button" className="change-submit" disabled={!action || working} onClick={submit}>
+        {working ? 'Working…' : action || 'Choose a change'}
+      </button>
+    </div>
   </div>;
 }
 

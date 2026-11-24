@@ -12,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { useFeedback } from '../contexts/FeedbackContext';
-import { useBooking } from '../contexts/BookingContext';
 import {
   applyBookingChange,
   getBookingChangeQuote,
@@ -20,7 +19,9 @@ import {
   getRescheduleOptions,
 } from '../services/bookingManagement';
 import { formatTripPrice } from '../utils/tripCurrency';
+import { startChangePayment, verifyChapaPayment } from '../services/payment';
 import ModernButton from '../components/ModernButton';
+import PaymentWebView from '../components/PaymentWebView';
 
 const TABS = [
   { key: 'pickup', label: 'Pickup' },
@@ -75,7 +76,6 @@ function PickupList({ options, selectedId, onSelect, address, onAddress, currenc
 const ManageBookingScreen = ({ navigation, route }) => {
   const { booking } = route.params || {};
   const { showToast, confirm, alert: customAlert } = useFeedback();
-  const { updateBooking, resetBooking } = useBooking();
   const currentStationId = booking?.pickup_station?.id ?? null;
   const currency = booking?.currency || 'ETB';
   const paid = booking?.payment_status === 'paid';
@@ -93,6 +93,7 @@ const ManageBookingScreen = ({ navigation, route }) => {
   const [quote, setQuote] = useState(null);
   const [quoting, setQuoting] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [checkout, setCheckout] = useState(null); // { url, transactionRef, amount }
   const quoteRequest = useRef(0);
 
   useEffect(() => {
@@ -148,13 +149,61 @@ const ManageBookingScreen = ({ navigation, route }) => {
     );
   }
 
-  const extraSeats = seats - booking.seats;
-  const busy = applying;
+  const busy = applying || Boolean(checkout);
+  const topUp = Number(quote?.top_up_amount || 0);
 
-  const bookExtraSeats = () => {
-    resetBooking();
-    updateBooking({ destination: { id: booking.destination_id, name: booking.destination_name } });
-    navigation.navigate('BookingFlow', { screen: 'SelectTrip' });
+  // Pay only the difference; the server applies the change after Chapa confirms.
+  const payTopUp = async () => {
+    if (!quote?.needs_top_up || !change || busy) return;
+    const ok = await confirm({
+      title: `Pay ${formatTripPrice(topUp, currency)}?`,
+      message: `Your new total is ${formatTripPrice(quote.new_total, currency)}. The change is made as soon as your payment is confirmed. If it can no longer be made, you get the money back.`,
+      confirmText: 'Continue to payment',
+      cancelText: 'Go back',
+      variant: 'info',
+    });
+    if (!ok) return;
+    setApplying(true);
+    try {
+      const started = await startChangePayment(booking.id, change);
+      setCheckout({ url: started.checkoutUrl, transactionRef: started.transactionRef, amount: started.amount });
+    } catch (error) {
+      showToast({ type: 'error', title: 'Could not start payment', message: error?.message || 'Please try again.' });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const finishTopUp = async (transactionRef) => {
+    setCheckout(null);
+    if (!transactionRef) return;
+    setApplying(true);
+    try {
+      const outcome = await verifyChapaPayment(transactionRef);
+      if (!outcome.paid) {
+        const again = await confirm({
+          title: 'Payment still processing',
+          message: "We haven't received confirmation from Chapa yet. Your booking changes once it arrives.",
+          confirmText: 'Check again',
+          cancelText: 'Later',
+          variant: 'info',
+        });
+        if (again) finishTopUp(transactionRef);
+        return;
+      }
+      await customAlert({
+        title: outcome.applied ? 'Booking updated' : "We couldn't make that change",
+        message: outcome.applied
+          ? 'Your payment went through and your booking has been updated.'
+          : `${outcome.reason || 'The change is no longer possible.'} Your booking is unchanged and your payment will be refunded.`,
+        variant: outcome.applied ? 'info' : 'warning',
+      });
+      navigation.navigate('MainTabs', { screen: 'Trips' });
+    } catch (error) {
+      showToast({ type: 'error', title: 'Could not check payment', message: error?.message || 'Check My Trips shortly.' });
+    } finally {
+      setApplying(false);
+    }
   };
 
   const apply = async () => {
@@ -221,7 +270,7 @@ const ManageBookingScreen = ({ navigation, route }) => {
               <PickupList options={pickups} selectedId={stationId} onSelect={setStationId}
                 address={address} onAddress={setAddress} currency={currency} disabled={busy} />
             )}
-            {paid ? <Text style={styles.note}>Paid bookings can switch to a pickup point that costs the same or less.</Text> : null}
+            {paid ? <Text style={styles.note}>If the new pickup point costs more, you pay the difference. If it costs less, you get the difference back.</Text> : null}
           </>
         )}
 
@@ -243,8 +292,8 @@ const ManageBookingScreen = ({ navigation, route }) => {
             </View>
             {paid ? (
               <Text style={styles.note}>
-                Removing seats follows the cancellation policy for the removed seats: 48h+ before departure 100% back,
-                24–48h 50%, under 24h nothing back.
+                Adding seats: you pay for the extra seats. Removing seats follows the cancellation policy for the removed
+                seats: 48h+ before departure 100% back, 24–48h 50%, under 24h nothing back.
               </Text>
             ) : null}
           </>
@@ -281,7 +330,7 @@ const ManageBookingScreen = ({ navigation, route }) => {
             ) : null}
             {paid ? (
               <Text style={styles.note}>
-                Paid bookings can move up to 48 hours before departure, to a departure that costs the same or less.
+                Paid bookings can move up to 48 hours before departure. You pay or get back any price difference.
               </Text>
             ) : null}
           </>
@@ -311,13 +360,24 @@ const ManageBookingScreen = ({ navigation, route }) => {
                   ) : null}
                 </>
               ) : (
-                <>
+                quote.needs_top_up ? (
+                  <>
+                    <View style={styles.quoteRow}>
+                      <Text style={styles.quoteLabel}>New total</Text>
+                      <Text style={styles.quoteValue}>{formatTripPrice(quote.new_total, currency)}</Text>
+                    </View>
+                    <View style={styles.quoteRow}>
+                      <Text style={styles.quoteLabel}>Already paid</Text>
+                      <Text style={styles.quoteMuted}>{formatTripPrice(quote.old_total, currency)}</Text>
+                    </View>
+                    <View style={styles.quoteRow}>
+                      <Text style={styles.quoteLabel}>To pay now</Text>
+                      <Text style={styles.quoteValue}>{formatTripPrice(topUp, currency)}</Text>
+                    </View>
+                  </>
+                ) : (
                   <Text style={styles.quoteReason}>{quote.reason}</Text>
-                  {quote.needs_new_booking ? (
-                    <ModernButton title={`Book ${extraSeats} more ${extraSeats === 1 ? 'seat' : 'seats'}`}
-                      onPress={bookExtraSeats} variant="outline" size="medium" icon="add-circle-outline" />
-                  ) : null}
-                </>
+                )
               )
             ) : null}
           </View>
@@ -326,14 +386,25 @@ const ManageBookingScreen = ({ navigation, route }) => {
 
       <View style={styles.footer}>
         <ModernButton
-          title={applying ? 'Saving…' : 'Confirm change'}
-          onPress={apply}
-          disabled={!quote?.allowed || quoting || busy}
+          title={applying ? 'Working…' : quote?.needs_top_up ? `Pay ${formatTripPrice(topUp, currency)} and change` : 'Confirm change'}
+          onPress={quote?.needs_top_up ? payTopUp : apply}
+          disabled={!(quote?.allowed || quote?.needs_top_up) || quoting || busy}
           loading={applying}
           variant="primary"
           size="large"
         />
       </View>
+      <PaymentWebView
+        visible={Boolean(checkout?.url)}
+        checkoutUrl={checkout?.url}
+        providerName="Chapa"
+        onSuccess={() => finishTopUp(checkout?.transactionRef)}
+        onCancel={() => setCheckout(null)}
+        onError={(message) => {
+          setCheckout(null);
+          showToast({ type: 'error', title: 'Payment error', message: message || 'Could not complete checkout.' });
+        }}
+      />
     </SafeAreaView>
   );
 };

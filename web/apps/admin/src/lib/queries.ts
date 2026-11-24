@@ -1723,6 +1723,8 @@ export interface HandoverTrip {
   provider: { id: string; name: string } | null;
   bookings: number;
   paidBookings: number;
+  /** Position on the marketing homepage featured list, or null. */
+  featuredRank: number | null;
 }
 
 export interface TripHandoverPreview {
@@ -1769,7 +1771,7 @@ export interface TripHandoverRecord {
 export async function getHandoverTrips(options?: { providerId?: string }): Promise<HandoverTrip[]> {
   let query = supabase
     .from('trips')
-    .select('id, status, departure_date, currency, max_seats, available_seats, destinations (name), providers (id, name)')
+    .select('id, status, departure_date, currency, max_seats, available_seats, featured_rank, destinations (name), providers (id, name)')
     .neq('status', 'cancelled')
     .order('departure_date', { ascending: false, nullsFirst: false })
     .limit(200);
@@ -1805,7 +1807,14 @@ export async function getHandoverTrips(options?: { providerId?: string }): Promi
     provider: trip.providers ?? null,
     bookings: counts.get(trip.id)?.bookings ?? 0,
     paidBookings: counts.get(trip.id)?.paid ?? 0,
+    featuredRank: trip.featured_rank ?? null,
   }));
+}
+
+/** Replace the homepage featured list (in display order). Pass [] to take all down. */
+export async function setFeaturedTrips(tripIds: string[]): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_featured_trips', { p_trip_ids: tripIds });
+  if (error) throw new Error(error.message);
 }
 
 export async function getTripHandoverPreview(tripId: string): Promise<TripHandoverPreview> {
