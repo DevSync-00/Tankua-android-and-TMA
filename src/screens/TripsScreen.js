@@ -58,7 +58,7 @@ const getStatusConfig = (status) =>
 
 // ─── Booking Card ─────────────────────────────────────────────────────────────
 
-const BookingCard = ({ item, onViewTicket, onPay, onRelease, releasing }) => {
+const BookingCard = ({ item, onViewTicket, onPay, onRelease, onChange, releasing }) => {
   const destinationName =
     item.destination_name || item.church_name || item.churchName || 'Unknown Destination';
   const status        = item.status || 'confirmed';
@@ -178,6 +178,17 @@ const BookingCard = ({ item, onViewTicket, onPay, onRelease, releasing }) => {
           <Text style={styles.reservationNote}>Payment opens when the trip is active</Text>
         ) : null}
       </View>
+      {pendingPayment && tab === 'upcoming' && onChange ? (
+        <TouchableOpacity
+          style={styles.releaseBtn}
+          onPress={() => onChange(item)}
+          disabled={releasing}
+          accessibilityRole="button"
+          accessibilityLabel={`Change booking for ${destinationName}`}
+        >
+          <Text style={styles.changeBtnText}>Change pickup, seats or date</Text>
+        </TouchableOpacity>
+      ) : null}
       {pendingPayment && tab === 'upcoming' && onRelease ? (
         <TouchableOpacity
           style={styles.releaseBtn}
@@ -346,6 +357,7 @@ const TripsScreen = ({ navigation }) => {
               onViewTicket={(b) => navigation.navigate('Ticket', { booking: b })}
               onPay={(b) => navigation.navigate('BookingFlow', { screen: 'Payment', params: { bookingId: b.id } })}
               onRelease={handleRelease}
+              onChange={(b) => navigation.navigate('ManageBooking', { booking: b })}
               releasing={releasingId === item.id}
             />
           )}
@@ -594,6 +606,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     marginTop: SPACING.xs,
+  },
+  changeBtnText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.semibold || '600',
+    color: COLORS.secondary,
+    textDecorationLine: 'underline',
   },
   releaseBtnText: {
     fontSize: FONTS.sizes.sm,

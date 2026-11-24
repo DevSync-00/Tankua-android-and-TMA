@@ -40,6 +40,8 @@ const originalFetch = globalThis.fetch;
 let lastEdgePayload = null;
 let lastInterestPayload = null;
 let lastReleasePayload = null;
+let lastCancelPayload = null;
+let lastQuotePayload = null;
 let lastBookingPayload = null;
 let bookingRecord = null;
 let transactionRecord = null;
@@ -68,6 +70,10 @@ globalThis.fetch = async (url, options = {}) => {
       }
       assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
       assert.match(requestUrl.searchParams.get('select'), /scheduled_trip:trips\(status,departure_date,return_date,duration_minutes,revised_end_at,closeout_reason\)/);
+      // The My Trips list (select=*) carries refunds; payment lookups don't need them.
+      if (requestUrl.searchParams.get('select').startsWith('*')) {
+        assert.match(requestUrl.searchParams.get('select'), /refunds\(status,amount,currency\)/);
+      }
       return Response.json(bookingRecord ? [bookingRecord] : []);
     case '/rest/v1/payment_transactions': {
       if (!options.method || options.method === 'GET') {
@@ -82,6 +88,12 @@ globalThis.fetch = async (url, options = {}) => {
     case '/v1/transaction/initialize':
       paymentSteps.push({ method: 'CHAPA', body: JSON.parse(options.body) });
       return Response.json({ status: 'success', data: { checkout_url: 'https://checkout.chapa.co/test' } });
+    case '/rest/v1/rpc/booking_cancellation_terms':
+      lastQuotePayload = JSON.parse(options.body);
+      return Response.json({ can_cancel: true, paid: true, refund_amount: 1050, refund_percentage: 100, currency: 'ETB' });
+    case '/rest/v1/rpc/cancel_paid_booking_for_user':
+      lastCancelPayload = JSON.parse(options.body);
+      return Response.json({ status: 'cancelled', refund_amount: 1050 });
     case '/rest/v1/rpc/release_unpaid_booking_for_user':
       lastReleasePayload = JSON.parse(options.body);
       return Response.json({ booking_id: lastReleasePayload.p_booking_id, status: 'cancelled', seats_released: 2 });
@@ -280,6 +292,27 @@ test('interest registration requires a session and uses its traveler identity', 
   }), env);
   assert.equal(badPickup.status, 400);
   assert.equal(lastInterestPayload, null);
+});
+
+test('travelers quote and cancel their own paid booking through the Worker', async () => {
+  const base = `${env.APP_ORIGIN}/api/bookings/c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f`;
+  assert.equal((await worker.fetch(new Request(`${base}/cancellation`), env)).status, 401);
+  assert.equal((await worker.fetch(new Request(`${base}/cancel`, { method: 'POST' }), env)).status, 401);
+  assert.equal(lastQuotePayload, null);
+  assert.equal(lastCancelPayload, null);
+
+  const quote = await worker.fetch(new Request(`${base}/cancellation`, { headers: { cookie: travelerSession() } }), env);
+  assert.equal(quote.status, 200);
+  assert.deepEqual(lastQuotePayload, { p_booking_id: 'c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f', p_user_id: userId });
+  assert.equal((await quote.json()).quote.refund_amount, 1050);
+
+  const cancelled = await worker.fetch(new Request(`${base}/cancel`, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
+    body: JSON.stringify({ user_id: 'ignore-caller-identity', reason: '  Plans changed  ' }),
+  }), env);
+  assert.equal(cancelled.status, 200);
+  assert.deepEqual(lastCancelPayload, { p_booking_id: 'c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f', p_user_id: userId, p_reason: 'Plans changed' });
 });
 
 test('travelers release their own unpaid reservation through the Worker', async () => {

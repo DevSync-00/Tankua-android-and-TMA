@@ -360,7 +360,7 @@ async function getBookings(session, env) {
   await supabase(env, 'rpc/delete_expired_unpaid_bookings', { method: 'POST', body: {} });
   const bookings = await supabase(
     env,
-    `bookings?select=*,${BOOKING_TRIP_SELECT}&user_id=eq.${session.uid}&order=created_at.desc`,
+    `bookings?select=*,${BOOKING_TRIP_SELECT},refunds(status,amount,currency)&user_id=eq.${session.uid}&order=created_at.desc`,
   );
   return json({ bookings });
 }
@@ -800,6 +800,24 @@ async function handleApi(request, env, requestId) {
   if (tripInterestMatch && request.method === 'POST') return expressTripInterest(request, tripInterestMatch[1], session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
+  const cancellationMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/cancellation$/i);
+  if (cancellationMatch && BOOKING_UUID_PATTERN.test(cancellationMatch[1]) && request.method === 'GET') {
+    const quote = await supabase(env, 'rpc/booking_cancellation_terms', {
+      method: 'POST',
+      body: { p_booking_id: cancellationMatch[1], p_user_id: session.uid },
+    });
+    return json({ quote });
+  }
+  const cancelMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/cancel$/i);
+  if (cancelMatch && BOOKING_UUID_PATTERN.test(cancelMatch[1]) && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    const reason = typeof body?.reason === 'string' ? body.reason.trim().slice(0, 300) : '';
+    const cancelled = await supabase(env, 'rpc/cancel_paid_booking_for_user', {
+      method: 'POST',
+      body: { p_booking_id: cancelMatch[1], p_user_id: session.uid, p_reason: reason || null },
+    });
+    return json({ cancelled });
+  }
   const releaseMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/release$/i);
   if (releaseMatch && BOOKING_UUID_PATTERN.test(releaseMatch[1]) && request.method === 'POST') {
     const released = await supabase(env, 'rpc/release_unpaid_booking_for_user', {

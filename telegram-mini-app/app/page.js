@@ -366,6 +366,33 @@ export default function App() {
     }
   };
 
+  const cancelPaidBooking = async booking => {
+    try {
+      const { quote } = await api(`/api/bookings/${booking.id}/cancellation`);
+      if (!quote?.can_cancel) {
+        notify(quote?.reason || 'This booking cannot be cancelled here.');
+        return;
+      }
+      const refund = Number(quote.refund_amount || 0);
+      const question = refund > 0
+        ? `Cancel this booking? You'll get ${money(refund, quote.currency)} back (${quote.refund_percentage}%). Your seats go back on sale.`
+        : 'Cancel this booking? It is within 24 hours of departure, so no refund applies. Your seats go back on sale.';
+      const webApp = window.Telegram?.WebApp;
+      const confirmed = webApp?.showConfirm
+        ? await new Promise(resolve => webApp.showConfirm(question, resolve))
+        : window.confirm(question);
+      if (!confirmed) return;
+      await api(`/api/bookings/${booking.id}/cancel`, { method: 'POST', body: JSON.stringify({}) });
+      notify(refund > 0
+        ? `Booking cancelled. Your refund of ${money(refund, quote.currency)} is being processed; we will message you here when it is sent.`
+        : 'Booking cancelled.');
+      await refreshBookings();
+      refreshCatalog().catch(() => {});
+    } catch (error) {
+      notify(error.message);
+    }
+  };
+
   const releaseBooking = async booking => {
     const seats = booking.seats || 1;
     const question = `Release your ${seats} ${seats === 1 ? 'seat' : 'seats'}? They go back on sale for other travelers.`;
@@ -502,7 +529,7 @@ export default function App() {
     if (screen === 'refer') return <ReferFriendView back={goBack} notify={notify} code={profileData.referral_code} />;
     if (tab === 'home') return <HomeView user={user} destinations={liveDestinations.length ? liveDestinations : fallbackDestinations} trips={catalog.trips} category={category} setCategory={setCategory} open={openDetail} goSearch={() => goTab('search')} openNotifications={() => setScreen('notifications')} />;
     if (tab === 'search') return <SearchView destinations={liveDestinations} query={query} setQuery={setQuery} open={openDetail} />;
-    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} release={releaseBooking} explore={() => goTab('home')} submitting={submitting} />;
+    if (tab === 'trips') return <TripsView destinations={liveDestinations} trips={bookedTrips} receipt={receipt} dismissReceipt={() => setReceipt(null)} open={openTrip} release={releaseBooking} cancelPaid={cancelPaidBooking} explore={() => goTab('home')} submitting={submitting} />;
     if (tab === 'map') return <MapView destinations={liveDestinations} open={openDetail} back={() => goTab('home')} />;
     return <ProfileView user={user} open={(s) => setScreen(s)} notify={notify} api={api} />;
   };
@@ -1297,7 +1324,7 @@ function bookingTab(booking) {
   return ending <= Date.now() ? 'completed' : 'upcoming';
 }
 
-function TripsView({trips,destinations,receipt,dismissReceipt,open,release,explore,submitting}) {
+function TripsView({trips,destinations,receipt,dismissReceipt,open,release,cancelPaid,explore,submitting}) {
   const [filter,setFilter]=useState('upcoming');
   const latestReceipt = receipt && (trips.find(trip => trip.id === receipt.id) || receipt);
   const filtered=trips.filter(trip=>bookingTab(trip)===filter);
@@ -1321,7 +1348,10 @@ function TripsView({trips,destinations,receipt,dismissReceipt,open,release,explo
       const awaitingActivation = isAwaitingActivation(raw);
       const canPay = canPayBooking(raw);
       let status = 'Payment unavailable';
+      const openRefund = (raw.refunds || []).some(refund => ['pending', 'approved', 'processing'].includes(refund.status));
       if (filter === 'cancelled') status = raw.payment_status === 'refunded' ? 'Refunded' :
+        openRefund ? 'Refund pending' :
+        paid && raw.cancelled_at ? 'Cancelled · no refund' :
         paid && (raw.expired_at || raw.scheduled_trip?.closeout_reason === 'did_not_run') ? 'Refund review' :
         raw.expired_at ? 'Reservation expired' : 'Cancelled';
       else if (filter === 'completed') status = raw.status === 'completed' ? 'Trip completed' :
@@ -1346,9 +1376,13 @@ function TripsView({trips,destinations,receipt,dismissReceipt,open,release,explo
       const body = action
         ? <button className="booked-card" onClick={() => open(raw)} disabled={submitting}>{card}</button>
         : <article className="booked-card">{card}</article>;
+      const cancellable = filter === 'upcoming' && paid && raw.status === 'confirmed'
+        && ['upcoming', 'active'].includes(raw.scheduled_trip?.status) && hasFutureDeparture(raw.scheduled_trip);
       return filter === 'upcoming' && isPendingBooking(raw) && release
         ? <div className="booked-card-group" key={booking.id}>{body}<button type="button" className="release-seats" onClick={() => release(raw)} disabled={submitting}>Can’t make it? Release seats</button></div>
-        : <div className="booked-card-group" key={booking.id}>{body}</div>;
+        : cancellable && cancelPaid
+          ? <div className="booked-card-group" key={booking.id}>{body}<button type="button" className="release-seats" onClick={() => cancelPaid(raw)} disabled={submitting}>Cancel booking</button></div>
+          : <div className="booked-card-group" key={booking.id}>{body}</div>;
     }) : <div className="empty"><span><Bus/></span><h2>No {labels[filter].toLowerCase()} trips</h2><p>{filter==='upcoming'?'Your next adventure is waiting. Book a trip and it will show up here.':`Your ${labels[filter].toLowerCase()} journeys will appear here.`}</p>{filter==='upcoming'&&<button onClick={explore}>Explore destinations</button>}</div>}
   </div>;
 }

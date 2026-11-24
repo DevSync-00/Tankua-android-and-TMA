@@ -19,6 +19,7 @@ import DestinationDetailScreen from '../screens/DestinationDetailScreen';
 import BookingFlowNavigator from './BookingFlowNavigator';
 import TicketScreen from '../screens/TicketScreen';
 import CancelBookingScreen from '../screens/CancelBookingScreen';
+import ManageBookingScreen from '../screens/ManageBookingScreen';
 
 // Profile Screens
 import MyAccountScreen from '../screens/MyAccountScreen';
@@ -67,6 +68,11 @@ const AuthenticatedStack = () => {
         <Stack.Screen 
           name="Ticket" 
           component={TicketScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManageBooking"
+          component={ManageBookingScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

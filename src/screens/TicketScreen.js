@@ -68,13 +68,22 @@ const TicketScreen = ({ route, navigation }) => {
           loading={sharing}
         />
         {cancellable ? (
-          <TouchableOpacity
-            style={styles.cancelLink}
-            onPress={() => navigation.navigate('CancelBooking', { booking })}
-            accessibilityRole="button"
-          >
-            <Text style={styles.cancelLinkText}>Cancel booking</Text>
-          </TouchableOpacity>
+          <View style={styles.manageRow}>
+            <TouchableOpacity
+              style={styles.manageLink}
+              onPress={() => navigation.navigate('ManageBooking', { booking })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.manageLinkText}>Change booking</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelLink}
+              onPress={() => navigation.navigate('CancelBooking', { booking })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cancelLinkText}>Cancel booking</Text>
+            </TouchableOpacity>
+          </View>
         ) : null}
       </View>
     </SafeAreaView>
@@ -82,6 +91,22 @@ const TicketScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  manageRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.lg,
+  },
+  manageLink: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageLinkText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '600',
+    color: COLORS.secondary,
+    textDecorationLine: 'underline',
+  },
   cancelLink: {
     minHeight: 44,
     alignItems: 'center',
