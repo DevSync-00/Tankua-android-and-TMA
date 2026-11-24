@@ -18,9 +18,6 @@ dist/
 # macOS
 .DS_Store
 
-# Supabase
-src/config/supabase.js
-
 # Environment
 .env
 .env.local

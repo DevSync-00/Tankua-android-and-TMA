@@ -1,5 +1,17 @@
 # Payment Integration Setup Guide
 
+> **Outdated — do not follow the environment-variable steps below.**
+> Mobile payments now run through the `chapa-payment` Supabase Edge Function
+> (`supabase/functions/chapa-payment`). The Chapa key is a server secret:
+>
+> ```bash
+> supabase secrets set CHAPA_SECRET_KEY=your_chapa_secret_key
+> supabase functions deploy chapa-payment
+> ```
+>
+> Never put a payment key in an `EXPO_PUBLIC_*` variable; those ship inside the app.
+> Telebirr is not implemented.
+
 This guide explains how to set up Chapa and Telebirr payment integrations for Tankua.
 
 ## Overview

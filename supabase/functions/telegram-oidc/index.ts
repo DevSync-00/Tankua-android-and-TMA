@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const configuredClientId = Deno.env.get('TELEGRAM_OIDC_CLIENT_ID') || '8319181574';
     const configuredAppId = Deno.env.get('TELEGRAM_APP_ID') || '731553455';
     const allowedAudiences = [

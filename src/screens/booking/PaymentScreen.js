@@ -10,13 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/theme';
-import { isChapaKeyConfigured } from '../../config/payment';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeedback } from '../../contexts/FeedbackContext';
-import { generateTransactionRef, processPayment, verifyPayment, sanitizeEmailForChapa } from '../../services/payment';
-import { createPaymentTransaction, updatePaymentTransaction } from '../../services/paymentService';
+import { startChapaPayment, verifyChapaPayment } from '../../services/payment';
 import {
   canPayForTrip,
   getBookingForPayment,
@@ -34,7 +32,6 @@ const PaymentScreen = ({ navigation, route }) => {
   const { currentBooking, calculateTotalPrice, createBooking } = useBooking();
   const { user } = useAuth();
   const { showToast, confirm, alert: customAlert } = useFeedback();
-  const paymentMethod = 'chapa';
   const bookingIdToPay = route.params?.bookingId;
   const tripId = currentBooking.trip?.id;
   const [initializing, setInitializing] = useState(true);
@@ -48,7 +45,6 @@ const PaymentScreen = ({ navigation, route }) => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const submitting = useRef(false);
   const bookingRequest = useRef(null);
-  const chapaReady = isChapaKeyConfigured();
 
   const canPay = !initializing && isBookingValid(booking);
   const canReserve = !initializing && !booking && trip?.status === 'upcoming';
@@ -165,7 +161,7 @@ const PaymentScreen = ({ navigation, route }) => {
   };
 
   const handlePayment = async () => {
-    if (submitting.current || !canPay || !chapaReady) return;
+    if (submitting.current || !canPay) return;
 
     submitting.current = true;
     setLoading(true);
@@ -181,54 +177,19 @@ const PaymentScreen = ({ navigation, route }) => {
         return;
       }
 
-      const { id: bookingId, total_price: amount } = verification.booking;
-      const paymentCurrency = getTripCurrency(verification.booking.currency);
-      const phoneNumber = user?.phone_number || user?.phoneNumber || '';
-      const customerName = user?.name || 'Customer';
-      const customerEmail = sanitizeEmailForChapa(user?.email, phoneNumber);
-      const transactionRef = generateTransactionRef(bookingId);
+      const bookingId = verification.booking.id;
+      const { checkoutUrl: url, transactionRef } = await startChapaPayment(bookingId);
+      if (!url) throw new Error('Failed to initiate payment');
 
-      await createPaymentTransaction({
-        bookingId,
-        userId: user.id,
-        amount,
-        currency: paymentCurrency,
-        paymentMethod,
-        transactionRef,
-      });
-
-      const paymentResult = await processPayment(paymentMethod, {
-        amount,
-        currency: paymentCurrency,
-        phoneNumber,
-        bookingId,
-        customerName,
-        customerEmail,
-        transactionRef,
-      });
-
-      if (paymentResult.success && paymentResult.checkoutUrl) {
-        await updatePaymentTransaction(transactionRef, {
-          checkout_url: paymentResult.checkoutUrl,
-          external_ref: paymentResult.paymentId ?? null,
-          status: 'processing',
-        }).catch(() => {});
-
-        setPendingPayment({ txRef: transactionRef, bookingId, amount, currency: paymentCurrency });
-        setCheckoutUrl(paymentResult.checkoutUrl);
-        setCheckoutVisible(true);
-        return;
-      }
-
-      throw new Error(paymentResult.message || 'Failed to initiate payment');
+      setPendingPayment({ txRef: transactionRef, bookingId });
+      setCheckoutUrl(url);
+      setCheckoutVisible(true);
     } catch (error) {
       console.error('Payment error:', error);
       let errorMessage = error.message || 'Failed to process payment. Please try again.';
 
-      if (errorMessage.includes('API key') || errorMessage.includes('not configured')) {
-        errorMessage = 'Payment gateway is not configured. Please contact support or use a different payment method.';
-      } else if (errorMessage.includes('401') || errorMessage.includes('Invalid')) {
-        errorMessage = 'Payment gateway authentication failed. Please check your payment configuration.';
+      if (errorMessage.includes('not configured')) {
+        errorMessage = 'Payment gateway is not configured. Please contact support.';
       }
 
       showToast({ type: 'error', title: 'Payment Error', message: errorMessage });
@@ -252,35 +213,14 @@ const PaymentScreen = ({ navigation, route }) => {
   };
 
   const verifyPaymentStatus = async (payment) => {
-    const { txRef, bookingId, amount, currency: paymentCurrency } = payment;
+    const { txRef, bookingId } = payment;
     setLoading(true);
     setPaymentProcessing(true);
     try {
-      const verificationResult = await verifyPayment(paymentMethod, txRef);
+      // The server verifies amount, currency and tx_ref with Chapa and marks the booking paid.
+      const verificationResult = await verifyChapaPayment(txRef);
 
-      if (verificationResult.success && verificationResult.verified) {
-        const verified = verificationResult.paymentData;
-        if (verified?.tx_ref !== txRef || verified?.currency !== paymentCurrency ||
-            Number(verified?.amount) !== Number(amount)) {
-          throw new Error('Chapa returned different payment details.');
-        }
-
-        const { error: updateError } = await supabase
-          .from('bookings')
-          .update({ 
-            payment_status: 'paid',
-          })
-          .eq('id', bookingId)
-          .eq('payment_status', 'pending');
-
-        if (updateError) throw updateError;
-
-        await updatePaymentTransaction(txRef, {
-          status: 'success',
-          verified_at: new Date().toISOString(),
-          verified_by: 'api',
-        }).catch(() => {});
-
+      if (verificationResult.paid) {
         const { data: updatedBooking, error: fetchError } = await supabase
           .from('bookings')
           .select('*')
@@ -526,15 +466,6 @@ const PaymentScreen = ({ navigation, route }) => {
             <Ionicons name="shield-checkmark-outline" size={14} color={COLORS.success} />
             <Text style={styles.sslTrustText}>256-Bit SSL Encrypted Payment</Text>
           </View>
-
-          {!chapaReady ? (
-            <View style={styles.configWarning}>
-              <Ionicons name="warning-outline" size={18} color={COLORS.warning} />
-              <Text style={styles.configWarningText}>
-                Chapa environment variables are missing. Please configure EXPO_PUBLIC_CHAPA_SECRET_KEY in your local .env file.
-              </Text>
-            </View>
-          ) : null}
         </View> : null}
       </ScrollView>
 
@@ -549,7 +480,7 @@ const PaymentScreen = ({ navigation, route }) => {
             ? (paymentProcessing ? 'Verifying payment…' : 'Pay with Chapa')
             : (canReserve ? 'Reserve seats' : 'View My Trips')}
           onPress={canPay ? handlePayment : canReserve ? handleReservation : viewTrips}
-          disabled={loading || checkoutVisible || (canPay && !chapaReady)}
+          disabled={loading || checkoutVisible}
           loading={loading}
           variant="primary"
           size="medium"
@@ -812,24 +743,6 @@ const styles = StyleSheet.create({
   sslTrustText: {
     fontSize: 10,
     color: COLORS.gray,
-    fontWeight: '600',
-  },
-  configWarning: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: SPACING.sm,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-  },
-  configWarningText: {
-    flex: 1,
-    marginLeft: SPACING.sm,
-    fontSize: FONTS.sizes.xs,
-    color: COLORS.iconSecondary,
-    lineHeight: 18,
     fontWeight: '600',
   },
   footer: {
