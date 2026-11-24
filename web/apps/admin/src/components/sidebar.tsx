@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3, Bell, Building2, CalendarCheck, CalendarDays, CreditCard, FileText,
+  BarChart3, Bell, Building2, Bus, CalendarCheck, CalendarDays, CreditCard, FileText,
   Gift, HelpCircle, LayoutDashboard, LogOut, MapPin, Menu, Settings, Shield, Ticket, Users, X,
 } from "lucide-react";
 
@@ -15,6 +15,7 @@ const groups = [
     items: [
       { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
       { label: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
+      { label: "Trips", href: "/dashboard/trips", icon: Bus },
       { label: "Applications", href: "/dashboard/provider-applications", icon: FileText },
       { label: "Providers", href: "/dashboard/providers", icon: Building2 },
       { label: "Destinations", href: "/dashboard/destinations", icon: MapPin },

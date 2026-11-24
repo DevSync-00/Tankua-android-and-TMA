@@ -80,7 +80,7 @@ export default function EarningsPage() {
       const cutoff = Date.now() - rangeDays * 86400000;
       const transactionList = bookings
         .filter(b => new Date(b.created_at).getTime() >= cutoff)
-        .filter(b => b.payment_status === 'paid')
+        .filter(b => b.payment_status === 'paid' && !b.platform_retained_revenue)
         .map(b => ({
           id: b.id.substring(0, 8),
           type: "earning" as const,
@@ -97,7 +97,7 @@ export default function EarningsPage() {
       // Calculate earnings by destination
       const destinationMap = new Map<string, { earnings: number; bookings: number }>();
       bookings
-        .filter(b => b.payment_status === 'paid')
+        .filter(b => b.payment_status === 'paid' && !b.platform_retained_revenue)
         .forEach(b => {
           const destName = b.trip?.destination?.name || b.destination_name || 'Unknown';
           const existing = destinationMap.get(destName) || { earnings: 0, bookings: 0 };
@@ -116,7 +116,7 @@ export default function EarningsPage() {
       // Calculate earnings by trip
       const tripMap = new Map<string, { tripId: string; destination: string; date: string; earnings: number; bookings: number }>();
       bookings
-        .filter(b => b.payment_status === 'paid' && b.trip)
+        .filter(b => b.payment_status === 'paid' && !b.platform_retained_revenue && b.trip)
         .forEach(b => {
           const tripId = b.trip!.id;
           const destName = b.trip!.destination?.name || b.destination_name || 'Unknown';

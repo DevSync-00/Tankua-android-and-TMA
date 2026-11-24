@@ -1705,3 +1705,142 @@ export async function updateAdminPassword(
 }
 
 
+
+// ============================================
+// TRIP HANDOVER
+// ============================================
+
+export type HandoverRevenuePolicy = 'platform_retains' | 'provider_receives';
+
+export interface HandoverTrip {
+  id: string;
+  status: string;
+  departure_date: string | null;
+  currency: TripCurrency;
+  max_seats: number;
+  available_seats: number;
+  destination: string;
+  provider: { id: string; name: string } | null;
+  bookings: number;
+  paidBookings: number;
+}
+
+export interface TripHandoverPreview {
+  trip_id: string;
+  status: string;
+  departure_date: string | null;
+  provider_id: string | null;
+  provider_name: string | null;
+  bookings: number;
+  paid_bookings: number;
+  paid_totals: Partial<Record<TripCurrency, number>>;
+  payments_in_progress: number;
+  pickup_points: number;
+  reviews: number;
+  previous_handovers: number;
+}
+
+export interface TripHandoverResult {
+  trip_id: string;
+  to_provider_id: string;
+  to_provider_name: string;
+  bookings_moved: number;
+  paid_bookings: number;
+  paid_totals: Partial<Record<TripCurrency, number>>;
+  stations_copied: number;
+  revenue_policy: HandoverRevenuePolicy;
+}
+
+export interface TripHandoverRecord {
+  id: string;
+  trip_id: string;
+  created_at: string;
+  revenue_policy: HandoverRevenuePolicy;
+  bookings_moved: number;
+  paid_bookings: number;
+  paid_totals: Partial<Record<TripCurrency, number>>;
+  note: string | null;
+  from_provider: { name: string } | null;
+  to_provider: { name: string } | null;
+  trip: { departure_date: string | null; destinations: { name: string } | null } | null;
+}
+
+/** Trips an admin can hand over, newest departure first, with booking counts. */
+export async function getHandoverTrips(options?: { providerId?: string }): Promise<HandoverTrip[]> {
+  let query = supabase
+    .from('trips')
+    .select('id, status, departure_date, currency, max_seats, available_seats, destinations (name), providers (id, name)')
+    .neq('status', 'cancelled')
+    .order('departure_date', { ascending: false, nullsFirst: false })
+    .limit(200);
+
+  if (options?.providerId) query = query.eq('provider_id', options.providerId);
+
+  const { data: trips, error } = await query;
+  if (error) throw new Error(error.message);
+  if (!trips?.length) return [];
+
+  const { data: bookings, error: bookingsError } = await supabase
+    .from('bookings')
+    .select('trip_id, payment_status')
+    .in('trip_id', trips.map((trip) => trip.id));
+  if (bookingsError) throw new Error(bookingsError.message);
+
+  const counts = new Map<string, { bookings: number; paid: number }>();
+  for (const booking of bookings ?? []) {
+    const entry = counts.get(booking.trip_id) ?? { bookings: 0, paid: 0 };
+    entry.bookings += 1;
+    if (booking.payment_status === 'paid') entry.paid += 1;
+    counts.set(booking.trip_id, entry);
+  }
+
+  return trips.map((trip: any) => ({
+    id: trip.id,
+    status: trip.status,
+    departure_date: trip.departure_date,
+    currency: getTripCurrency(trip.currency),
+    max_seats: trip.max_seats,
+    available_seats: trip.available_seats,
+    destination: trip.destinations?.name ?? 'Unknown destination',
+    provider: trip.providers ?? null,
+    bookings: counts.get(trip.id)?.bookings ?? 0,
+    paidBookings: counts.get(trip.id)?.paid ?? 0,
+  }));
+}
+
+export async function getTripHandoverPreview(tripId: string): Promise<TripHandoverPreview> {
+  const { data, error } = await supabase.rpc('admin_trip_handover_preview', { p_trip_id: tripId });
+  if (error) throw new Error(error.message);
+  return data as TripHandoverPreview;
+}
+
+export async function handOverTrip(params: {
+  tripId: string;
+  toProviderId: string;
+  revenuePolicy: HandoverRevenuePolicy;
+  note?: string;
+}): Promise<TripHandoverResult> {
+  const { data, error } = await supabase.rpc('admin_hand_over_trip', {
+    p_trip_id: params.tripId,
+    p_to_provider_id: params.toProviderId,
+    p_revenue_policy: params.revenuePolicy,
+    p_note: params.note?.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+  return data as TripHandoverResult;
+}
+
+export async function getTripHandovers(limit = 20): Promise<TripHandoverRecord[]> {
+  const { data, error } = await supabase
+    .from('trip_handovers')
+    .select(`
+      id, trip_id, created_at, revenue_policy, bookings_moved, paid_bookings, paid_totals, note,
+      from_provider:providers!trip_handovers_from_provider_id_fkey (name),
+      to_provider:providers!trip_handovers_to_provider_id_fkey (name),
+      trip:trips (departure_date, destinations (name))
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as TripHandoverRecord[];
+}

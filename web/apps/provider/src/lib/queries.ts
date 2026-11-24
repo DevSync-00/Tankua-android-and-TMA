@@ -82,12 +82,14 @@ export async function getProviderStats(providerId: string): Promise<ProviderStat
       .select('base_price, total_price, currency')
       .eq('provider_id', providerId)
       .eq('payment_status', 'paid')
+      .eq('platform_retained_revenue', false)
       .gte('created_at', firstDayOfMonth.toISOString()),
     supabase
       .from('bookings')
       .select('base_price, total_price, currency')
       .eq('provider_id', providerId)
       .eq('payment_status', 'paid')
+      .eq('platform_retained_revenue', false)
       .gte('created_at', lastMonthStart.toISOString())
       .lt('created_at', firstDayOfMonth.toISOString()),
     supabase
@@ -298,6 +300,8 @@ export interface BookingDetails {
   currency: TripCurrency;
   status: string;
   payment_status: string;
+  /** Revenue Tankua kept at a trip handover; not part of the provider's earnings. */
+  platform_retained_revenue: boolean;
   created_at: string;
 }
 
@@ -323,6 +327,7 @@ export async function getProviderBookings(
       currency,
       status,
       payment_status,
+      platform_retained_revenue,
       created_at,
       pickup_station,
       destination_id,
@@ -385,6 +390,7 @@ export async function getProviderBookings(
       currency: getTripCurrency(b.currency),
       status: b.status,
       payment_status: b.payment_status,
+      platform_retained_revenue: Boolean(b.platform_retained_revenue),
       created_at: b.created_at,
     })),
     total: count || 0,
@@ -966,13 +972,15 @@ export async function getEarningsSummary(providerId: string, currency: TripCurre
       .select('base_price, total_price, provider_fee')
       .eq('provider_id', providerId)
       .eq('currency', currency)
-      .eq('payment_status', 'paid'),
+      .eq('payment_status', 'paid')
+      .eq('platform_retained_revenue', false),
     supabase
       .from('bookings')
       .select('base_price, total_price, created_at')
       .eq('provider_id', providerId)
       .eq('currency', currency)
       .eq('payment_status', 'paid')
+      .eq('platform_retained_revenue', false)
       .gte('created_at', startOfChart.toISOString()),
     supabase
       .from('payouts')
