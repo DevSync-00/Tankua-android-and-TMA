@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { getTripCurrency, type CurrencyTotals } from '@tankua/ui';
+import { getTripCurrency, richTextToPlain, type CurrencyTotals } from '@tankua/ui';
 
 const FALLBACK_TOUR_IMAGE = 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop';
 const BOOKABLE_TOUR_STATUSES = ['active', 'upcoming'];
@@ -94,7 +94,7 @@ function mapListing(trip: {
     interest: trip.status === 'collecting_interest' && trip.minimum_interest !== null
       ? { count: trip.interest_count, minimum: trip.minimum_interest }
       : null,
-    description: destination.description || '',
+    description: richTextToPlain(destination.description),
     tags: destination.category ? [destination.category] : [],
     providerReviews,
   };
@@ -226,7 +226,7 @@ export async function getDestinations(options?: CatalogOptions) {
           ETB: destination.etb_trips?.[0]?.price ?? undefined,
           USD: destination.usd_trips?.[0]?.price ?? undefined,
         } as CurrencyTotals,
-        description: (destination.description || '') as string,
+        description: richTextToPlain(destination.description as string | null),
         tags: (destination.tags || [destination.category].filter(Boolean)) as string[],
       })),
       total: count ?? 0,

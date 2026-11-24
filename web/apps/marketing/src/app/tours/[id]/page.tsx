@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { getTripPromotionChannel } from "@tankua/ui";
+import { getTripPromotionChannel, richTextToPlain } from "@tankua/ui";
 import { getTourById } from "@/lib/queries";
 import { SITE_URL } from "@/lib/seo";
 import TourDetail from "./TourDetail";
@@ -27,8 +27,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tour = await requireTour(params.id);
   const path = `/tours/${encodeURIComponent(tour.id)}`;
   const title = `${tour.name} Tour`;
-  const description = tour.description
-    ? tour.description.slice(0, 155)
+  const plain = richTextToPlain(tour.description);
+  const description = plain
+    ? plain.slice(0, 155)
     : `Explore ${tour.name} in ${tour.location}, Ethiopia, with a local provider on Tankua.`;
 
   return {
@@ -53,7 +54,7 @@ export default async function TourPage({ params, searchParams }: Props) {
     "@context": "https://schema.org",
     "@type": "TouristTrip",
     name: tour.name,
-    description: tour.description || `A guided tour of ${tour.name} in Ethiopia.`,
+    description: richTextToPlain(tour.description) || `A guided tour of ${tour.name} in Ethiopia.`,
     url,
     touristType: tour.category,
     itinerary: { "@type": "Place", name: tour.location, address: { "@type": "PostalAddress", addressCountry: "ET" } },

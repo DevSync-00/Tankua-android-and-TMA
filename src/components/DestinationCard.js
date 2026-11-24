@@ -5,6 +5,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../config/theme'
 import { getPlaceTypeLabel, resolvePlaceMarker } from '../utils/placeTypeResolver';
 import PlaceTypeIcon from './map/PlaceTypeIcon';
 import { getPlaceholderImage } from '../services/database';
+import { richTextToPlain } from '../utils/richText';
 
 const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
   const imageUri = destination.images && destination.images.length > 0
@@ -45,7 +46,7 @@ const DestinationCard = ({ destination, onPress, variant = 'list' }) => {
         </View>
         <Text style={styles.listName} numberOfLines={1}>{destination.name}</Text>
         <Text style={styles.listDescription} numberOfLines={2}>
-          {destination.description || ''}
+          {richTextToPlain(destination.description)}
         </Text>
         <View style={styles.listFooter}>
           <View style={styles.locationContainer}>

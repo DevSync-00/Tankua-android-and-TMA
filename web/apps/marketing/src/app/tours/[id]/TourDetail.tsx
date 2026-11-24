@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Check, Clock3, MapPin, Share2, Star, UsersRound } from "lucide-react";
-import { formatCurrency, type TripPromotionChannel } from "@tankua/ui";
+import { formatCurrency, RichText, type TripPromotionChannel } from "@tankua/ui";
 import { formatDepartureDate } from "@/lib/departure-date";
 import type { getTourById } from "@/lib/queries";
 import { getTelegramTripUrl } from "@/lib/telegram";
@@ -195,7 +195,7 @@ export default function TourDetail({ tour, from, channel }: Props) {
           {tour.description && (
             <section>
               <h2 className="field-display">About the tour</h2>
-              <p className="mt-4 max-w-[70ch] whitespace-pre-line leading-7 text-[var(--field-muted)]">{tour.description}</p>
+              <RichText text={tour.description} className="mt-4 max-w-[70ch] leading-7 text-[var(--field-muted)]" headingClassName="text-[var(--field-ink)]" />
             </section>
           )}
           {tour.inclusions.length > 0 && (

@@ -13,3 +13,7 @@ export { tripPromotionChannels, getTripPromotionChannel, type TripPromotionChann
 export { cn, formatCurrency, formatCurrencyTotals, getTripCurrency, sumByCurrency, formatDate, formatRelativeTime, truncate, generateInitials, slugify, type CurrencyTotals, type TripCurrency } from "./lib/utils";
 
 
+
+// Formatted descriptions
+export { RichText, type RichTextProps } from "./components/rich-text";
+export { parseRichText, parseInline, richTextToPlain, type RichTextBlock } from "./lib/rich-text";

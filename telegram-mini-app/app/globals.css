@@ -3875,6 +3875,36 @@ img {
   line-height: 1.65;
 }
 
+.rich-text > * + * {
+  margin-top: 10px;
+}
+
+.rich-text p,
+.rich-text ul {
+  margin: 0;
+}
+
+.rich-text h3 {
+  margin: 0;
+  padding-top: 4px;
+  color: #0f1b2d;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.rich-text ul {
+  padding-left: 20px;
+}
+
+.rich-text li + li {
+  margin-top: 4px;
+}
+
+.rich-text strong {
+  color: #0f1b2d;
+  font-weight: 700;
+}
+
 .included {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -34,6 +34,8 @@ import { useFeedback } from '../contexts/FeedbackContext';
 import { validateProfile, getProfileIncompleteMessage } from '../utils/profileValidation';
 import { isFavorited, toggleFavorite } from '../services/favorites';
 import ModernButton from '../components/ModernButton';
+import FormattedText from '../components/FormattedText';
+import { parseRichText, richTextToPlain } from '../utils/richText';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_HEIGHT = 380;
@@ -436,14 +438,14 @@ const DestinationDetailScreen = ({ route, navigation }) => {
           {/* About Section */}
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionHeading}>About Destination</Text>
-            <Text
-              style={styles.descriptionText}
-              numberOfLines={isDescriptionExpanded ? undefined : 4}
-            >
-              {description ||
-                'Discover this captivating location filled with vibrant local culture, stunning natural landscapes, rich historic heritage, and memorable outdoor activities for travelers and adventure lovers.'}
-            </Text>
-            {(description.length > 140 || !description) && (
+            <View style={isDescriptionExpanded ? undefined : styles.descriptionCollapsed}>
+              <FormattedText
+                style={styles.descriptionText}
+                text={description ||
+                  'Discover this captivating location filled with vibrant local culture, stunning natural landscapes, rich historic heritage, and memorable outdoor activities for travelers and adventure lovers.'}
+              />
+            </View>
+            {(richTextToPlain(description).length > 140 || parseRichText(description).length > 1 || !description) && (
               <TouchableOpacity
                 onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                 style={styles.readMoreButton}
@@ -881,6 +883,10 @@ const styles = StyleSheet.create({
     color: COLORS.charcoal,
     lineHeight: 24,
     fontWeight: FONTS.weights.regular,
+  },
+  descriptionCollapsed: {
+    maxHeight: 96,
+    overflow: 'hidden',
   },
   readMoreButton: {
     flexDirection: 'row',

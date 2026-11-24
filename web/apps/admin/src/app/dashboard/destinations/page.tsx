@@ -28,7 +28,8 @@ import {
   updateDestination,
   type Destination as DestinationType,
 } from "@/lib/queries";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, ConfirmDialog, Input } from "@tankua/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, ConfirmDialog, Input, richTextToPlain } from "@tankua/ui";
+import { DescriptionEditor } from "@/components/description-editor";
 
 const CATEGORIES = [
   { value: "all", label: "All", icon: "🗺️" },
@@ -540,7 +541,7 @@ export default function DestinationsPage() {
 
                   {destination.description && (
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                      {destination.description}
+                      {richTextToPlain(destination.description)}
                     </p>
                   )}
 
@@ -661,12 +662,10 @@ export default function DestinationsPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Description</label>
-                  <textarea
+                  <DescriptionEditor
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Destination description"
-                    rows={3}
-                    className="w-full px-4 py-2 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-background resize-none"
+                    onChange={(description) => setFormData((current) => ({ ...current, description }))}
+                    placeholder={"What makes this place worth visiting?\n\n## Highlights\n- First highlight\n- Second highlight"}
                   />
                 </div>
 
