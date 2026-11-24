@@ -8,7 +8,7 @@ function Inline({ text }) {
 }
 
 /** Renders a formatted description (headings, bullets, bold, paragraphs). Never interprets HTML. */
-export default function RichText({ text, className = '' }) {
+export default function FormattedText({ text, className = '' }) {
   const blocks = parseRichText(text);
   if (!blocks.length) return null;
   return (

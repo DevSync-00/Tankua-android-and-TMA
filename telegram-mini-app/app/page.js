@@ -8,7 +8,7 @@ import {
   Tag, Ticket, UserRound, UsersRound, X, LogOut, Settings, Phone, ShieldAlert
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import RichText from './RichText';
+import FormattedText from './FormattedText';
 
 const fallbackDestinations = [
   { id: 1, name: 'Church of St. George (Biete Ghiorgis)', city: 'Lalibela', region: 'Amhara', category: 'religious', rating: 4.9, reviews: 492, price: 3200, duration: '2 days', image: '/destinations/pexels-mussie-belachew-2153963984-33101756.jpg', description: 'The iconic monolith rock-hewn church carved from red volcanic tuff in the shape of a Greek cross. The most famous symbol of Lalibela.', location: { lat: 12.0319, lng: 39.0411 } },
@@ -826,7 +826,7 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
         </section>
       )}
       <div className="quick-facts"><div><Star/><b>{d.rating}</b><span>{d.reviews} reviews</span></div><div><Clock3/><b>{d.duration}</b><span>Duration</span></div><div><ShieldCheck/><b>Verified</b><span>Tankua partner</span></div></div>
-      <h2>About this place</h2><RichText className="body-copy" text={d.description}/>
+      <h2>About this place</h2><FormattedText className="body-copy" text={d.description}/>
       {destinationTrip && <><h2>What’s included</h2><div className="included"><span><Check/>Round-trip transport</span><span><Check/>Professional guide</span><span><Check/>Entrance fees</span><span><Check/>24/7 trip support</span></div></>}
       {provider&&<div className="provider">{provider.logo_url?<img className="provider-logo-image" src={provider.logo_url} alt={`${provider.name} logo`}/>:<div className="provider-logo"><Building2/></div>}<div><small>OPERATED BY</small><b>{provider.name}</b><p>{Number(provider.rating||0).toFixed(1)} ★ · Verified provider</p></div><ChevronRight/></div>}
       {!bookableTrips.length && !interestTrips.length && <p className="body-copy">No scheduled trips are currently available.</p>}
