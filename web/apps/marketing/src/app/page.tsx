@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Search } from "lucide-react";
 import { HomeDepartures } from "@/components/HomeDepartures";
 import { WeekendPhoto } from "@/components/WeekendPhoto";
+import { getFeaturedTours } from "@/lib/queries";
 
 const destinations = [
   { name: "Simien Mountains", region: "Amhara", image: "/siemen.jpg" },
@@ -10,7 +11,11 @@ const destinations = [
   { name: "Lake Tana", region: "Amhara", image: "/images/pexels-lovetosmile-5034469.jpg" },
 ];
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const { tours, error } = await getFeaturedTours();
+
   return (
     <main className="tankua-home">
       <section className="home-hero" aria-labelledby="home-title" data-enter>
@@ -77,7 +82,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <HomeDepartures />
+      <HomeDepartures initialTours={tours} initialError={error} />
 
       <section className="home-guide" aria-labelledby="home-guide-title">
         <div className="tankua-wrap home-guide-grid">

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, HelpCircle } from "lucide-react";
-import { Button, Card, Badge } from "@tankua/ui";
+import { Badge, buttonVariants, Card } from "@tankua/ui";
+import { TELEGRAM_MINI_APP_URL } from "@/lib/telegram";
 
 const faqs = [
   {
@@ -11,19 +12,27 @@ const faqs = [
     questions: [
       {
         q: "How do I book a tour?",
-        a: "Booking is easy! Browse our tours, select your preferred date and trip type, choose a pickup point, and complete payment. You'll receive a QR code ticket instantly.",
+        a: (
+          <>
+            <Link href="/tours" className="font-medium underline">Browse tours</Link> and choose a departure. Select <strong>Book in Telegram</strong> to choose your pickup and seats and continue to payment. If you see <strong>Reserve in Telegram</strong>, you can hold seats and pay from My Trips after the operator confirms the departure.
+          </>
+        ),
       },
       {
         q: "What payment methods do you accept?",
-        a: "We accept Chapa, Telebirr, and other popular Ethiopian payment methods. All payments are secure and processed instantly.",
+        a: "Tankua uses Chapa checkout in Telegram. The checkout shows the payment options for your booking currency.",
       },
       {
         q: "Can I cancel my booking?",
-        a: "Yes, you can cancel your booking up to 24 hours before departure. Refunds are processed according to our cancellation policy.",
+        a: (
+          <>
+            <Link href="/contact" className="font-medium underline">Contact support</Link> for help with a cancellation. See the <Link href="/terms" className="font-medium underline">cancellation policy</Link> for refund terms.
+          </>
+        ),
       },
       {
         q: "How do I get my ticket?",
-        a: "After payment, you'll receive a digital QR code ticket in the app. No printing needed - just show it on your phone at pickup.",
+        a: "After payment is confirmed, open the Trips tab in Tankua on Telegram to view your QR ticket. Show it on your phone at pickup.",
       },
     ],
   },
@@ -53,19 +62,19 @@ const faqs = [
     questions: [
       {
         q: "How do I download the Tankua app?",
-        a: "Download from the App Store (iOS) or Google Play Store (Android). Links are available on our website homepage.",
+        a: <Link href="/download" className="font-medium underline">See the Tankua download options.</Link>,
       },
       {
         q: "Do I need to create an account?",
         a: "Yes, creating an account allows you to manage bookings, save favorites, and access your booking history.",
       },
       {
-        q: "How do I reset my password?",
-        a: "Use the 'Forgot Password' link on the login page. You'll receive reset instructions via SMS or email.",
+        q: "How do I sign in on Telegram?",
+        a: <><a href={TELEGRAM_MINI_APP_URL} className="font-medium underline">Open Tankua in Telegram</a> to sign in with your Telegram account.</>,
       },
       {
-        q: "Can I book without the app?",
-        a: "Currently, booking requires the mobile app. However, you can browse tours and destinations on our website.",
+        q: "Can I book without downloading the Tankua app?",
+        a: <>Yes. <Link href="/tours" className="font-medium underline">Choose a tour on our website</Link> and continue in the Tankua Mini App inside Telegram.</>,
       },
     ],
   },
@@ -113,9 +122,7 @@ export default function FAQPage() {
               <Link href="/tours" className="text-[#181714]/70 hover:text-[#181714]">Tours</Link>
               <Link href="/contact" className="text-[#181714]/70 hover:text-[#181714]">Contact</Link>
             </div>
-            <Link href="/download">
-              <Button>Download App</Button>
-            </Link>
+            <a href={TELEGRAM_MINI_APP_URL} className={buttonVariants()}>Open in Telegram</a>
           </div>
         </div>
       </nav>
@@ -130,7 +137,7 @@ export default function FAQPage() {
               <span className="text-[#ffb800]"> Questions</span>
             </h1>
             <p className="text-lg text-[#181714]/70">
-              Find answers to common questions about booking tours, using the app, and becoming a provider.
+              Find answers about booking tours in Telegram, getting tickets, and becoming a provider.
             </p>
           </div>
         </div>
@@ -141,7 +148,7 @@ export default function FAQPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-8">
             {faqs.map((category, categoryIndex) => (
-              <div key={categoryIndex}>
+              <div key={category.category}>
                 <h2 className="text-2xl font-bold text-[#181714] mb-4 flex items-center gap-2">
                   <HelpCircle className="h-6 w-6 text-[#ffb800]" />
                   {category.category}
@@ -150,24 +157,27 @@ export default function FAQPage() {
                   {category.questions.map((faq, index) => {
                     const globalIndex = categoryIndex * 100 + index;
                     const isOpen = openIndex === globalIndex;
+                    const answerId = `faq-answer-${globalIndex}`;
                     return (
-                      <Card key={index} className="overflow-hidden">
+                      <Card key={faq.q} className="overflow-hidden">
                         <button
+                          type="button"
+                          aria-expanded={isOpen}
+                          aria-controls={answerId}
                           onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
                           className="w-full p-6 flex items-center justify-between text-left hover:bg-[#f7f5f0] transition-colors"
                         >
                           <span className="font-semibold text-[#181714] pr-4">{faq.q}</span>
                           <ChevronDown
+                            aria-hidden="true"
                             className={`h-5 w-5 text-[#ffb800] flex-shrink-0 transition-transform ${
                               isOpen ? "rotate-180" : ""
                             }`}
                           />
                         </button>
-                        {isOpen && (
-                          <div className="px-6 pb-6 text-[#181714]/70">
-                            {faq.a}
-                          </div>
-                        )}
+                        <div id={answerId} hidden={!isOpen} className="px-6 pb-6 text-[#181714]/70">
+                          {faq.a}
+                        </div>
                       </Card>
                     );
                   })}
@@ -187,10 +197,8 @@ export default function FAQPage() {
           <p className="text-lg text-white/70 mb-8">
             Can't find what you're looking for? Our support team is here to help.
           </p>
-          <Link href="/contact">
-            <Button size="lg" className="bg-[#ffb800] hover:bg-[#d99c00]">
-              Contact Support
-            </Button>
+          <Link href="/contact" className={buttonVariants({ size: "lg", className: "bg-[#ffb800] hover:bg-[#d99c00]" })}>
+            Contact Support
           </Link>
         </div>
       </section>

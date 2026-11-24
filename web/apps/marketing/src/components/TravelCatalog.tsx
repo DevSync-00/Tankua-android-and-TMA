@@ -25,6 +25,7 @@ type Tour = Awaited<ReturnType<typeof getTours>>["tours"][number];
 type Destination = Awaited<ReturnType<typeof getDestinations>>["destinations"][number];
 type CatalogEntry = Tour | Destination;
 type CatalogType = "tours" | "destinations";
+type CatalogResults = { items: CatalogEntry[]; total: number; error: boolean };
 
 const settings = {
   tours: {
@@ -47,7 +48,7 @@ function CatalogCard({ entry, listView, catalogHref }: { entry: CatalogEntry; li
   const [imageFailed, setImageFailed] = useState(false);
   const tour = "currency" in entry ? entry : null;
   const destination = "fares" in entry ? entry : null;
-  const href = tour ? `/tours/${tour.id}?from=${encodeURIComponent(catalogHref)}` : `/tours?q=${encodeURIComponent(entry.name)}`;
+  const href = tour ? `/tours/${encodeURIComponent(tour.id)}` : `/tours?q=${encodeURIComponent(entry.name)}`;
   const fares = destination?.fares;
   const price = tour && tour.price !== null
     ? formatCurrency(tour.price, tour.currency)
@@ -59,9 +60,9 @@ function CatalogCard({ entry, listView, catalogHref }: { entry: CatalogEntry; li
 
   return (
     <article className="field-card">
-      <Link href={href} prefetch={false} onClick={() => {
-        if (!tour) return;
-        try { sessionStorage.setItem("tankua-catalog-return", JSON.stringify([catalogHref, window.scrollY])); } catch {}
+      <Link href={href} prefetch={false} onClick={(event) => {
+        if (!tour || event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        try { sessionStorage.setItem("tankua-catalog-return", JSON.stringify([catalogHref, window.scrollY, tour.id])); } catch {}
       }} className="field-card-link">
         <div className="field-card-image">
           {imageFailed ? <MapPin size={28} aria-hidden="true" /> : (
@@ -104,22 +105,26 @@ function CatalogCard({ entry, listView, catalogHref }: { entry: CatalogEntry; li
   );
 }
 
-export function TravelCatalog({ type, initialQuery = "", initialCategory = "all", initialRegion = "", initialListView = false }: {
+export function TravelCatalog({ type, initialQuery = "", initialCategory = "all", initialRegion = "", initialListView = false, initialResults }: {
   type: CatalogType;
   initialQuery?: string;
   initialCategory?: string;
   initialRegion?: string;
   initialListView?: boolean;
+  initialResults?: CatalogResults;
 }) {
   const [search, setSearch] = useState(initialQuery);
   const [region, setRegion] = useState(initialRegion);
   const [category, setCategory] = useState(initialCategory);
   const [listView, setListView] = useState(initialListView);
-  const [items, setItems] = useState<CatalogEntry[]>([]);
-  const [total, setTotal] = useState(0);
-  const [pending, setPending] = useState(true);
-  const [failed, setFailed] = useState(false);
+  const [items, setItems] = useState<CatalogEntry[]>(initialResults?.items ?? []);
+  const [total, setTotal] = useState(initialResults?.total ?? 0);
+  const [pending, setPending] = useState(initialResults === undefined);
+  const [failed, setFailed] = useState(initialResults?.error ?? false);
   const [attempt, setAttempt] = useState(0);
+  const loadedRequest = useRef(initialResults ? {
+    type, search: initialQuery, category: initialCategory, region: initialRegion, attempt: 0,
+  } : null);
   const config = settings[type];
   const hasFilters = Boolean(search || region || category !== "all");
   const restored = useRef(false);
@@ -148,6 +153,12 @@ export function TravelCatalog({ type, initialQuery = "", initialCategory = "all"
   }, [catalogHref, failed, pending]);
 
   useEffect(() => {
+    const loaded = loadedRequest.current;
+    if (loaded?.type === type && loaded.search === search && loaded.category === category && loaded.region === region && loaded.attempt === attempt) {
+      setPending(false);
+      return;
+    }
+
     let ignore = false;
     setPending(true);
 
@@ -160,6 +171,7 @@ export function TravelCatalog({ type, initialQuery = "", initialCategory = "all"
       };
       const result = type === "tours" ? await getTours(options) : await getDestinations(options);
       if (ignore) return;
+      loadedRequest.current = { type, search, category, region, attempt };
       setItems("tours" in result ? result.tours : result.destinations);
       setTotal(result.total);
       setFailed(result.error);

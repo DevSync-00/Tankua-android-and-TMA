@@ -3,13 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Clock, MapPin } from "lucide-react";
+import { formatDepartureDate } from "@/lib/departure-date";
+import { getTours } from "@/lib/queries";
 import { getGuide, travelGuides } from "@/lib/travel-guides";
 import { SITE_URL } from "@/lib/seo";
 
 type Props = { params: { slug: string } };
 
+export const revalidate = 300;
+
 export function generateStaticParams() {
-  return travelGuides.map(({ slug }) => ({ slug }));
+  // Generate guides with live inventory on their first request.
+  return travelGuides.filter((guide) => !guide.showRelatedDepartures).map(({ slug }) => ({ slug }));
 }
 
 export function generateMetadata({ params }: Props): Metadata {
@@ -25,9 +30,15 @@ export function generateMetadata({ params }: Props): Metadata {
   };
 }
 
-export default function GuidePage({ params }: Props) {
+export default async function GuidePage({ params }: Props) {
   const guide = getGuide(params.slug);
   if (!guide) notFound();
+  const relatedDepartures = guide.showRelatedDepartures
+    ? await getTours({ search: guide.relatedTourQuery, limit: 3, bookableOnly: true })
+    : null;
+  const tours = relatedDepartures?.tours ?? [];
+  const showAllTours = relatedDepartures && !relatedDepartures.error && tours.length === 0;
+  const catalogHref = showAllTours ? "/tours" : `/tours?q=${encodeURIComponent(guide.relatedTourQuery)}`;
   const canonicalUrl = `${SITE_URL}/guides/${guide.slug}`;
   const structuredData = {
     "@context": "https://schema.org",
@@ -85,7 +96,25 @@ export default function GuidePage({ params }: Props) {
           <aside className="h-fit border border-[var(--field-line)] bg-[var(--field-wash)] p-6 lg:sticky lg:top-24">
             <h2 className="text-xl font-semibold leading-tight">Tours in {guide.location}</h2>
             <p className="mt-3 text-sm leading-6 text-[var(--field-muted)]">Compare options from local providers and review the itinerary before booking.</p>
-            <Link href={`/tours?q=${encodeURIComponent(guide.relatedTourQuery)}`} className="field-button mt-5">Find related tours<ArrowRight size={17} aria-hidden="true" /></Link>
+            {tours.length > 0 && (
+              <ul className="mt-4 divide-y divide-[var(--field-line)] border-y border-[var(--field-line)]">
+                {tours.map((tour) => (
+                  <li key={tour.id}>
+                    <Link href={`/tours/${encodeURIComponent(tour.id)}`} className="block py-3 text-sm font-semibold hover:underline">
+                      {tour.name}
+                      {tour.departureDate && (
+                        <time dateTime={tour.departureDate} className="mt-1 block font-normal text-[var(--field-muted)]">
+                          {formatDepartureDate(tour.departureDate)}
+                        </time>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href={catalogHref} className="field-button mt-5">
+              {showAllTours ? "Browse all tours" : "Find related tours"}<ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </aside>
         </div>
       </article>

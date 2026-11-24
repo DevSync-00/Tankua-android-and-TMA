@@ -10,11 +10,13 @@ import type { getFeaturedTours } from "@/lib/queries";
 
 type FeaturedTours = Awaited<ReturnType<typeof getFeaturedTours>>["tours"];
 
-export function HomeDepartures() {
-  const [featured, setFeatured] = useState<FeaturedTours | "error" | null>(null);
+export function HomeDepartures({ initialTours, initialError }: { initialTours: FeaturedTours; initialError: boolean }) {
+  const [featured, setFeatured] = useState<FeaturedTours | "error" | null>(initialError ? "error" : initialTours);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (attempt === 0) return;
+
     const request = new AbortController();
 
     async function loadTours() {
@@ -47,7 +49,7 @@ export function HomeDepartures() {
         {Array.isArray(featured) && featured.length > 0 ? (
           <div className="home-departure-grid">
             {featured.map((tour) => (
-              <Link key={tour.id} href={`/tours/${tour.id}`} className="home-departure">
+              <Link key={tour.id} href={`/tours/${encodeURIComponent(tour.id)}`} className="home-departure">
                 <div className="home-departure-photo">
                   <Image src={tour.image} alt="" fill sizes="(max-width: 620px) 100vw, (max-width: 950px) 50vw, 25vw" unoptimized={tour.image.startsWith("http")} />
                 </div>

@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
 import { travelGuides } from "@/lib/travel-guides";
 import { weekendPlans } from "@/lib/weekend-plans";
+import { getIndexableTourIds } from "@/lib/queries";
+
+export const dynamic = "force-dynamic";
 
 const routes = [
   ["", 1, "weekly"], ["/tours", 0.9, "daily"], ["/destinations", 0.9, "weekly"],
@@ -11,7 +14,8 @@ const routes = [
   ["/contact", 0.5, "yearly"], ["/privacy", 0.3, "yearly"], ["/terms", 0.3, "yearly"],
 ] as const;
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const tourIds = await getIndexableTourIds();
   const staticRoutes: MetadataRoute.Sitemap = routes.map(([path, priority, changeFrequency]) => ({ url: `${SITE_URL}${path}`, priority, changeFrequency }));
   const guideRoutes: MetadataRoute.Sitemap = travelGuides.map((guide) => ({
     url: `${SITE_URL}/guides/${guide.slug}`,
@@ -24,5 +28,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.7,
   }));
-  return [...staticRoutes, ...guideRoutes, ...outingRoutes];
+  const tourRoutes = tourIds.map((id) => ({ url: `${SITE_URL}/tours/${encodeURIComponent(id)}` }));
+  return [...staticRoutes, ...guideRoutes, ...outingRoutes, ...tourRoutes];
 }

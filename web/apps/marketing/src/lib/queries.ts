@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { getTripCurrency, type CurrencyTotals } from '@tankua/ui';
 
 const FALLBACK_TOUR_IMAGE = 'https://images.pexels.com/photos/12109950/pexels-photo-12109950.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop';
+const BOOKABLE_TOUR_STATUSES = ['active', 'upcoming'];
 
 type CatalogOptions = {
   search?: string;
@@ -121,8 +122,8 @@ async function loadTours(
       .order(orderBy, { ascending });
 
     query = includeInterest && !options?.bookableOnly
-      ? query.in('status', ['active', 'upcoming', 'collecting_interest'])
-      : query.in('status', ['active', 'upcoming']);
+      ? query.in('status', [...BOOKABLE_TOUR_STATUSES, 'collecting_interest'])
+      : query.in('status', BOOKABLE_TOUR_STATUSES);
 
     if (options?.bookableOnly) {
       query = query.gte('available_seats', 1);
@@ -223,63 +224,87 @@ export async function getDestinations(options?: CatalogOptions) {
   }
 }
 
-export async function getTourById(id: string) {
-  try {
-    const { data, error } = await supabase
+export async function getIndexableTourIds() {
+  const departureAfter = new Date().toISOString();
+  const pageSize = 500;
+  const ids: string[] = [];
+
+  while (true) {
+    const lastId = ids.at(-1);
+    let query = supabase
       .from('trips')
-      .select(`
-        *,
-        destination:destinations(name, city, region, category, images, description),
-        provider:providers(id, name, description),
-        pickups:trip_pickup_stations(pickup_time, station:pickup_stations(id,name,city,address,is_active,is_address_pickup))
-      `)
-      .eq('id', id)
-      .maybeSingle();
+      .select('id, destination:destinations!inner(id)')
+      .in('status', BOOKABLE_TOUR_STATUSES)
+      .gt('departure_date', departureAfter)
+      .gte('available_seats', 1)
+      .order('id')
+      .limit(pageSize);
 
-    if (error) throw error;
-    if (!data) return null;
+    if (lastId) query = query.gt('id', lastId);
 
-    const destination = data.destination;
-    const provider = data.provider as unknown as { id: string; name: string; description: string | null } | null;
-    const departureDate = data.departure_date as string | null;
-    const minimumInterest = (data.minimum_interest ?? null) as number | null;
-    const isFutureDeparture = departureDate !== null && Date.parse(departureDate) > Date.now();
-    const interest = data.status === 'collecting_interest' && minimumInterest !== null && isFutureDeparture
-      ? { count: data.interest_count as number, minimum: minimumInterest }
-      : null;
-    const reservationsOpen = (data.status === 'upcoming' || data.status === 'active') && isFutureDeparture;
-    const soldOut = reservationsOpen && Number(data.available_seats) < 1;
-    const bookingOpen = reservationsOpen && !soldOut;
-    const pickups = (data.pickups as {
-      pickup_time: string | null;
-      station: { id: string; name: string; city: string | null; address: string | null; is_active: boolean; is_address_pickup: boolean } | null;
-    }[] | null)?.flatMap(({ station, pickup_time }) => station?.is_active ? [{ ...station, time: pickup_time }] : []) ?? [];
+    const { data, error } = await query;
+    if (error) throw new Error('Could not load tours for the sitemap', { cause: error });
+    if (data.length === 0) return ids;
 
-    return {
-      id: data.id as string,
-      name: (destination?.name || 'Unknown Destination') as string,
-      location: (destination?.city || destination?.region || 'Ethiopia') as string,
-      category: (destination?.category || 'general') as string,
-      image: (destination?.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
-      price: (data.price ?? null) as number | null,
-      currency: getTripCurrency(data.currency),
-      interest,
-      bookingOpen,
-      soldOut,
-      paymentOpen: bookingOpen && data.status === 'active',
-      description: (data.summary || destination?.description || '') as string,
-      provider,
-      providerReviews: await getProviderReviewSummary(provider?.id),
-      departureDate,
-      pickups,
-      tripType: (data.trip_type ?? null) as string | null,
-      durationMinutes: (data.duration_minutes ?? null) as number | null,
-      inclusions: (data.inclusions ?? []) as string[],
-    };
-  } catch (error) {
-    console.error('Error fetching tour:', error);
-    return null;
+    ids.push(...data.map(({ id }) => id as string));
+    if (data.length < pageSize) return ids;
   }
+}
+
+export async function getTourById(id: string) {
+  const { data, error } = await supabase
+    .from('trips')
+    .select(`
+      id, status, departure_date, minimum_interest, interest_count, available_seats,
+      price, currency, summary, trip_type, duration_minutes, inclusions,
+      destination:destinations(name, city, region, category, images, description),
+      provider:providers(id, name, description),
+      pickups:trip_pickup_stations(pickup_time, station:pickup_stations(id,name,city,address,is_active,is_address_pickup))
+    `)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error('Could not load tour', { cause: error });
+  if (!data) return null;
+
+  const destination = data.destination as unknown as Parameters<typeof mapListing>[0]['destination'] | null;
+  const provider = data.provider as unknown as { id: string; name: string; description: string | null } | null;
+  const departureDate = data.departure_date as string | null;
+  const minimumInterest = (data.minimum_interest ?? null) as number | null;
+  const isFutureDeparture = departureDate !== null && Date.parse(departureDate) > Date.now();
+  const interest = data.status === 'collecting_interest' && minimumInterest !== null && isFutureDeparture
+    ? { count: data.interest_count as number, minimum: minimumInterest }
+    : null;
+  const reservationsOpen = BOOKABLE_TOUR_STATUSES.includes(data.status) && isFutureDeparture;
+  const soldOut = reservationsOpen && Number(data.available_seats) < 1;
+  const bookingOpen = reservationsOpen && !soldOut;
+  const pickups = (data.pickups as unknown as {
+    pickup_time: string | null;
+    station: { id: string; name: string; city: string | null; address: string | null; is_active: boolean; is_address_pickup: boolean } | null;
+  }[] | null)?.flatMap(({ station, pickup_time }) => station?.is_active ? [{ ...station, time: pickup_time }] : []) ?? [];
+
+  return {
+    id: data.id as string,
+    name: (destination?.name || 'Unknown Destination') as string,
+    location: (destination?.city || destination?.region || 'Ethiopia') as string,
+    category: (destination?.category || 'general') as string,
+    image: (destination?.images?.[0] || FALLBACK_TOUR_IMAGE) as string,
+    price: (data.price ?? null) as number | null,
+    currency: getTripCurrency(data.currency),
+    interest,
+    bookingOpen,
+    soldOut,
+    indexable: bookingOpen && destination !== null,
+    paymentOpen: bookingOpen && data.status === 'active',
+    description: (data.summary || destination?.description || '') as string,
+    provider,
+    providerReviews: await getProviderReviewSummary(provider?.id),
+    departureDate,
+    pickups,
+    tripType: (data.trip_type ?? null) as string | null,
+    durationMinutes: (data.duration_minutes ?? null) as number | null,
+    inclusions: (data.inclusions ?? []) as string[],
+  };
 }
 
 export async function submitContactForm(data: {

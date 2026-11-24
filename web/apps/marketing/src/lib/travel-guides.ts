@@ -14,6 +14,7 @@ export type TravelGuide = {
   intro: string;
   sections: GuideSection[];
   relatedTourQuery: string;
+  showRelatedDepartures?: boolean;
   sources?: { label: string; url: string }[];
 };
 
@@ -913,6 +914,7 @@ export const travelGuides: TravelGuide[] = [
       { heading: "Plan around festivals carefully", paragraphs: ["Major religious celebrations can make Lalibela extraordinary and extremely busy. Accommodation, guides, and transport may sell out well in advance. Expect crowds and accept that worship takes priority over sightseeing.", "If you prefer quieter observation, travel outside peak festival dates. You will still encounter a living religious landscape, with more space to understand individual churches and speak with your guide."] },
     ],
     relatedTourQuery: "Lalibela",
+    showRelatedDepartures: true,
   },
   {
     slug: "simien-mountains-trekking-guide",
@@ -933,6 +935,7 @@ export const travelGuides: TravelGuide[] = [
       { heading: "Watch wildlife without crowding it", paragraphs: ["Gelada groups are often seen in the Simiens, alongside highland birds and other endemic wildlife. Keep the distance set by your guide, do not feed animals, and avoid blocking their movement for photographs.", "Choose operators who manage waste, respect park instructions, and employ local teams fairly. Responsible trekking protects both the landscape and the communities whose work makes these journeys possible."] },
     ],
     relatedTourQuery: "Simien Mountains",
+    showRelatedDepartures: true,
   },
   {
     slug: "danakil-depression-travel-guide",
