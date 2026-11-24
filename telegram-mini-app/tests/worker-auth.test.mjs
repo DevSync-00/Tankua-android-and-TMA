@@ -97,7 +97,7 @@ globalThis.fetch = async (url, options = {}) => {
       return Response.json([]);
     case '/rest/v1/trip_interests':
       assert.equal(requestUrl.searchParams.get('user_id'), `eq.${userId}`);
-      return Response.json([{ trip_id: tripId }]);
+      return Response.json([{ trip_id: tripId, seats: 3 }]);
   }
   if (requestUrl.pathname.startsWith('/v1/transaction/verify/')) {
     assert.equal(requestUrl.pathname.split('/').at(-1), transactionRecord.transaction_ref);
@@ -239,13 +239,31 @@ test('interest registration requires a session and uses its traveler identity', 
   const response = await worker.fetch(new Request(interestUrl, {
     method: 'POST',
     headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
-    body: JSON.stringify({ user_id: 'ignore-caller-identity' }),
+    body: JSON.stringify({ user_id: 'ignore-caller-identity', seats: 3 }),
   }), env);
   assert.equal(response.status, 200);
-  assert.deepEqual(lastInterestPayload, { p_trip_id: tripId, p_user_id: userId });
+  assert.deepEqual(lastInterestPayload, { p_trip_id: tripId, p_user_id: userId, p_seats: 3 });
   assert.deepEqual(await response.json(), {
     interest: { trip_id: tripId, status: 'upcoming', minimum_interest: 3, interest_count: 3, interested: true },
   });
+
+  // Older clients send no seat count: one seat.
+  await worker.fetch(new Request(interestUrl, {
+    method: 'POST',
+    headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
+  }), env);
+  assert.deepEqual(lastInterestPayload, { p_trip_id: tripId, p_user_id: userId, p_seats: 1 });
+
+  lastInterestPayload = null;
+  for (const seats of [0, 21, 2.5, 'four']) {
+    const invalid = await worker.fetch(new Request(interestUrl, {
+      method: 'POST',
+      headers: { cookie: travelerSession(), origin: env.APP_ORIGIN },
+      body: JSON.stringify({ seats }),
+    }), env);
+    assert.equal(invalid.status, 400, `seats ${seats} should be rejected`);
+  }
+  assert.equal(lastInterestPayload, null);
 });
 
 test('catalog displays interest progress without using gated fares as bookable prices', async () => {
@@ -257,7 +275,10 @@ test('catalog displays interest progress without using gated fares as bookable p
   const catalog = await authorized.json();
   assert.equal(catalog.destinations[0].price, 200);
   assert.equal(catalog.destinations[0].currency, 'ETB');
-  assert.deepEqual(catalog.trips, [{ ...collectingTrip, interested: true }, { ...bookableTrip, interested: false }]);
+  assert.deepEqual(catalog.trips, [
+    { ...collectingTrip, interested: true, pledged_seats: 3 },
+    { ...bookableTrip, interested: false, pledged_seats: null },
+  ]);
   assert.equal((await anonymous.json()).trips[0].interested, false);
 });
 

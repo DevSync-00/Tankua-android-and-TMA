@@ -319,20 +319,22 @@ export const getTrips = async (filters = {}) => {
   }
 };
 
-export const getMyInterestedTripIds = async (tripIds) => {
-  if (tripIds.length === 0) return [];
+/** Seats the signed-in traveler pledged, keyed by trip id. */
+export const getMyTripInterests = async (tripIds) => {
+  if (tripIds.length === 0) return {};
 
   const { data, error } = await supabase
     .from('trip_interests')
-    .select('trip_id')
+    .select('trip_id, seats')
     .in('trip_id', tripIds);
 
   if (error) throw error;
-  return data.map(({ trip_id }) => trip_id);
+  return Object.fromEntries(data.map(({ trip_id, seats }) => [trip_id, seats ?? 1]));
 };
 
-export const expressTripInterest = async (tripId) => {
-  const { data, error } = await supabase.rpc('express_trip_interest', { p_trip_id: tripId });
+/** Pledge (or change) seats on a trip that is collecting interest. */
+export const expressTripInterest = async (tripId, seats = 1) => {
+  const { data, error } = await supabase.rpc('express_trip_interest', { p_trip_id: tripId, p_seats: seats });
   if (error) throw error;
   return data;
 };

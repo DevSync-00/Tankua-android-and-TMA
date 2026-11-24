@@ -207,7 +207,7 @@ export default function EditTripPage() {
         {savedTrip?.minimumInterest != null && (
           <div className="md:col-span-2 rounded-xl border bg-muted/30 p-4">
             <p className="text-sm font-medium">
-              {savedTrip.interestCount.toLocaleString()} / {savedTrip.minimumInterest.toLocaleString()} interested
+              {savedTrip.interestCount.toLocaleString()} / {savedTrip.minimumInterest.toLocaleString()} seats pledged
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {isCollectingInterest

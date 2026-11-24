@@ -237,7 +237,7 @@ export function TripFormFields({
         </fieldset>
         {waitsForInterest ? (
           <div className="max-w-xs">
-            <Field id="minimumInterest" label="Minimum interested travelers" error={errors.minimumInterest}>
+            <Field id="minimumInterest" label="Seats needed to open reservations" error={errors.minimumInterest}>
               <input {...bind("minimumInterest")} type="number" inputMode="numeric" required min="1" max={maxInterest} step="1" />
             </Field>
           </div>

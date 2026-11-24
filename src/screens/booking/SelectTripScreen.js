@@ -15,7 +15,7 @@ import { COLORS, FONTS, SPACING, BORDER_RADIUS, SHADOWS } from '../../config/the
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useFeedback } from '../../contexts/FeedbackContext';
-import { expressTripInterest, getMyInterestedTripIds, getTrips } from '../../services/database';
+import { expressTripInterest, getMyTripInterests, getTrips } from '../../services/database';
 import ModernButton from '../../components/ModernButton';
 import { formatTripPrice } from '../../utils/tripCurrency';
 
@@ -27,7 +27,9 @@ const SelectTripScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(currentBooking.trip || null);
-  const [interestedTripIds, setInterestedTripIds] = useState(() => new Set());
+  // Seats this traveler has pledged per trip, and the seat count they are choosing now.
+  const [pledgedSeats, setPledgedSeats] = useState({});
+  const [draftSeats, setDraftSeats] = useState({});
   const [pendingInterestId, setPendingInterestId] = useState(null);
   const submittingInterest = useRef(false);
 
@@ -71,12 +73,12 @@ const SelectTripScreen = ({ navigation }) => {
 
       const data = await getTrips({ destinationId: destination.id, includeInterest: true });
       const interestIds = data.filter((trip) => trip.status === 'collecting_interest').map((trip) => trip.id);
-      const myTripIds = await getMyInterestedTripIds(interestIds).catch((error) => {
+      const myInterests = await getMyTripInterests(interestIds).catch((error) => {
         console.error('Error loading trip interests:', error);
         return null;
       });
-      if (myTripIds) {
-        setInterestedTripIds((previous) => new Set([...previous, ...myTripIds]));
+      if (myInterests) {
+        setPledgedSeats((previous) => ({ ...previous, ...myInterests }));
       }
       setTrips(data);
     } catch (error) {
@@ -100,24 +102,38 @@ const SelectTripScreen = ({ navigation }) => {
     }
   };
 
+  const seatLimit = (trip) => Math.max(1, Math.min(20, trip.max_seats || 20));
+  const chosenSeats = (trip) => draftSeats[trip.id] ?? pledgedSeats[trip.id] ?? 1;
+  const changeSeats = (trip, delta) => {
+    const next = Math.min(seatLimit(trip), Math.max(1, chosenSeats(trip) + delta));
+    setDraftSeats((previous) => ({ ...previous, [trip.id]: next }));
+  };
+
   const handleExpressInterest = async (trip) => {
-    if (submittingInterest.current || interestedTripIds.has(trip.id)) return;
+    const seats = chosenSeats(trip);
+    if (submittingInterest.current || pledgedSeats[trip.id] === seats) return;
 
     submittingInterest.current = true;
     setPendingInterestId(trip.id);
     try {
-      const result = await expressTripInterest(trip.id);
-      if (result.interested) {
-        setInterestedTripIds((previous) => new Set(previous).add(trip.id));
+      const wasPledged = pledgedSeats[trip.id] != null;
+      const result = await expressTripInterest(trip.id, seats);
+      if (result.interested && result.seats != null) {
+        setPledgedSeats((previous) => ({ ...previous, [trip.id]: result.seats }));
+        setDraftSeats((previous) => ({ ...previous, [trip.id]: result.seats }));
       }
       setTrips((previous) => previous.map((item) => item.id === trip.id
         ? { ...item, status: result.status, interest_count: result.interest_count }
         : item));
       if ((result.status === 'upcoming' || result.status === 'active')
         && Date.parse(trip.departure_date) > Date.now()) {
-        showToast({ type: 'success', title: 'Booking is open', message: 'You can now book this trip.' });
+        showToast({ type: 'success', title: 'Booking is open', message: 'The group goal was reached. You can now book this trip.' });
       } else if (result.status === 'collecting_interest' && result.interested) {
-        showToast({ type: 'success', title: 'Interest registered', message: 'Check back to see when reservations open.' });
+        showToast({
+          type: 'success',
+          title: wasPledged ? 'Seats updated' : 'Interest registered',
+          message: `${result.seats} ${result.seats === 1 ? 'seat' : 'seats'} pledged. We'll message you when reservations open.`,
+        });
       } else {
         showToast({ type: 'warning', title: 'Trip unavailable', message: 'This trip is no longer accepting interest.' });
       }
@@ -364,27 +380,73 @@ const SelectTripScreen = ({ navigation }) => {
         {interestTrips.length > 0 && (
           <View style={styles.interestSection}>
             <Text style={styles.interestSectionTitle}>Planned departures</Text>
-            <Text style={styles.subtitle}>Reservations open once the minimum group size is met.</Text>
+            <Text style={styles.subtitle}>
+              Reservations open once enough seats are pledged. Pledging is free, and we&apos;ll message you when it happens.
+            </Text>
             <View style={styles.tripsList}>
-              {interestTrips.map((trip) => (
-                <View key={trip.id} style={[styles.tripCard, styles.interestCard]}>
-                  <Text style={styles.providerName}>{trip.providers?.name || 'Travel Provider'}</Text>
-                  {trip.summary ? <Text style={styles.subtitle}>{trip.summary}</Text> : null}
-                  <Text style={styles.subtitle}>{formatDate(trip.departure_date || trip.date)}</Text>
-                  {trip.price != null && (
-                    <Text style={styles.subtitle}>{formatTripPrice(trip.price, trip.currency)} per person</Text>
-                  )}
-                  <ModernButton
-                    title={interestedTripIds.has(trip.id) ? 'Interest registered' : 'Register interest'}
-                    onPress={() => handleExpressInterest(trip)}
-                    disabled={refreshing || pendingInterestId !== null || interestedTripIds.has(trip.id)}
-                    loading={pendingInterestId === trip.id}
-                    icon="hand-left-outline"
-                    variant="outline"
-                    size="medium"
-                  />
-                </View>
-              ))}
+              {interestTrips.map((trip) => {
+                const pledged = pledgedSeats[trip.id];
+                const seats = chosenSeats(trip);
+                const goal = trip.minimum_interest || 0;
+                const progress = goal ? Math.min(1, (trip.interest_count || 0) / goal) : 0;
+                const busy = refreshing || pendingInterestId !== null;
+                return (
+                  <View key={trip.id} style={[styles.tripCard, styles.interestCard]}>
+                    <Text style={styles.providerName}>{trip.providers?.name || 'Travel Provider'}</Text>
+                    {trip.summary ? <Text style={styles.subtitle}>{trip.summary}</Text> : null}
+                    <Text style={styles.subtitle}>{formatDate(trip.departure_date || trip.date)}</Text>
+                    {trip.price != null && (
+                      <Text style={styles.subtitle}>{formatTripPrice(trip.price, trip.currency)} per person</Text>
+                    )}
+                    {goal > 0 && (
+                      <View accessible accessibilityLabel={`${trip.interest_count || 0} of ${goal} seats pledged`}>
+                        <View style={styles.interestBar}>
+                          <View style={[styles.interestBarFill, { width: `${Math.round(progress * 100)}%` }]} />
+                        </View>
+                        <Text style={styles.interestProgressText}>
+                          {trip.interest_count || 0} of {goal} seats pledged
+                          {goal > (trip.interest_count || 0) ? ` · ${goal - (trip.interest_count || 0)} to go` : ''}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.seatPicker}>
+                      <Text style={styles.seatPickerLabel}>Seats</Text>
+                      <TouchableOpacity
+                        style={[styles.seatButton, seats <= 1 && styles.seatButtonDisabled]}
+                        onPress={() => changeSeats(trip, -1)}
+                        disabled={busy || seats <= 1}
+                        accessibilityRole="button"
+                        accessibilityLabel="Fewer seats"
+                      >
+                        <Ionicons name="remove" size={18} color={COLORS.secondary} />
+                      </TouchableOpacity>
+                      <Text style={styles.seatCount} accessibilityLiveRegion="polite">{seats}</Text>
+                      <TouchableOpacity
+                        style={[styles.seatButton, seats >= seatLimit(trip) && styles.seatButtonDisabled]}
+                        onPress={() => changeSeats(trip, 1)}
+                        disabled={busy || seats >= seatLimit(trip)}
+                        accessibilityRole="button"
+                        accessibilityLabel="More seats"
+                      >
+                        <Ionicons name="add" size={18} color={COLORS.secondary} />
+                      </TouchableOpacity>
+                    </View>
+                    <ModernButton
+                      title={pledged == null
+                        ? `Pledge ${seats} ${seats === 1 ? 'seat' : 'seats'}`
+                        : pledged === seats
+                          ? `${pledged} ${pledged === 1 ? 'seat' : 'seats'} pledged`
+                          : `Update to ${seats} ${seats === 1 ? 'seat' : 'seats'}`}
+                      onPress={() => handleExpressInterest(trip)}
+                      disabled={busy || pledged === seats}
+                      loading={pendingInterestId === trip.id}
+                      icon="hand-left-outline"
+                      variant="outline"
+                      size="medium"
+                    />
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -539,6 +601,54 @@ const styles = StyleSheet.create({
   },
   interestCard: {
     gap: SPACING.sm,
+  },
+  interestBar: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.borderLight,
+    overflow: 'hidden',
+  },
+  interestBarFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  interestProgressText: {
+    marginTop: 4,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '600',
+    color: COLORS.secondary,
+  },
+  seatPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  seatPickerLabel: {
+    flex: 1,
+    fontSize: FONTS.sizes.md,
+    fontWeight: '600',
+    color: COLORS.secondary,
+  },
+  seatButton: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+  },
+  seatButtonDisabled: {
+    opacity: 0.35,
+  },
+  seatCount: {
+    minWidth: 28,
+    textAlign: 'center',
+    fontSize: FONTS.sizes.lg,
+    fontWeight: '700',
+    color: COLORS.secondary,
   },
   tripCard: {
     backgroundColor: COLORS.white,

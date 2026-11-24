@@ -290,14 +290,14 @@ async function getCatalog(env, session) {
     supabase(env, 'pickup_stations?select=id,provider_id,name,city,address,lat,lng,is_active,is_address_pickup&is_active=eq.true&order=name.asc'),
     supabase(env, 'trip_pickup_stations?select=trip_id,station_id,pickup_time,extra_price'),
     session
-      ? supabaseAll(env, `trip_interests?select=trip_id&user_id=eq.${encodeURIComponent(session.uid)}&order=trip_id.asc`)
+      ? supabaseAll(env, `trip_interests?select=trip_id,seats&user_id=eq.${encodeURIComponent(session.uid)}&order=trip_id.asc`)
       : [],
   ]);
   const activeProviders = new Set(providers.map(provider => provider.id));
-  const interestedTrips = new Set(interests.map(interest => interest.trip_id));
+  const pledgedSeats = new Map(interests.map(interest => [interest.trip_id, interest.seats ?? 1]));
   const catalogTrips = trips
     .filter(trip => trip.status !== 'collecting_interest' || activeProviders.has(trip.provider_id))
-    .map(trip => ({ ...trip, interested: interestedTrips.has(trip.id) }));
+    .map(trip => ({ ...trip, interested: pledgedSeats.has(trip.id), pledged_seats: pledgedSeats.get(trip.id) ?? null }));
   const catalogDestinations = destinations.map(destination => {
     const pricedTrips = catalogTrips.filter(trip =>
       trip.destination_id === destination.id && trip.status !== 'collecting_interest' &&
@@ -400,13 +400,16 @@ async function createBooking(request, session, env) {
   return json({ booking: Array.isArray(booking) ? booking[0] : booking }, 201);
 }
 
-async function expressTripInterest(tripId, session, env) {
+async function expressTripInterest(request, tripId, session, env) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tripId)) {
     return json({ error: 'Invalid trip' }, 400);
   }
+  const body = await request.json().catch(() => ({}));
+  const seats = body?.seats === undefined ? 1 : Number(body.seats);
+  if (!Number.isInteger(seats) || seats < 1 || seats > 20) return json({ error: 'Choose between 1 and 20 seats' }, 400);
   const interest = await supabase(env, 'rpc/express_trip_interest_for_user', {
     method: 'POST',
-    body: { p_trip_id: tripId, p_user_id: session.uid },
+    body: { p_trip_id: tripId, p_user_id: session.uid, p_seats: seats },
   });
   return json({ interest });
 }
@@ -773,7 +776,7 @@ async function handleApi(request, env, requestId) {
   if (url.pathname === '/api/bookings' && request.method === 'GET') return getBookings(session, env);
   if (url.pathname === '/api/bookings' && request.method === 'POST') return createBooking(request, session, env);
   const tripInterestMatch = url.pathname.match(/^\/api\/trips\/([^/]+)\/interest$/);
-  if (tripInterestMatch && request.method === 'POST') return expressTripInterest(tripInterestMatch[1], session, env);
+  if (tripInterestMatch && request.method === 'POST') return expressTripInterest(request, tripInterestMatch[1], session, env);
   if (url.pathname === '/api/payments/chapa' && request.method === 'POST') return initializePayment(request, session, env);
   if (url.pathname === '/api/payments/status' && request.method === 'GET') return verifyPayment(url.searchParams.get('tx_ref') || '', env, session.uid);
   const reviewMatch = url.pathname.match(/^\/api\/bookings\/([0-9a-f-]{36})\/review$/i);

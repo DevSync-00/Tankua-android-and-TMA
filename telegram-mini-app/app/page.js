@@ -321,24 +321,25 @@ export default function App() {
       const freshCatalog = await refreshCatalog();
       const trip = freshCatalog.trips.find(item => item.id === tripId);
       if (trip && isBookableTrip(trip)) notify('Reservations are open.');
-      else if (trip && isCollectingInterest(trip)) notify('Reservations open once the minimum group size is met.');
+      else if (trip && isCollectingInterest(trip)) notify(`${trip.interest_count ?? 0} of ${trip.minimum_interest} seats pledged so far.`);
       else notify('This trip is currently unavailable.');
     } catch (error) {
       notify(error.message);
     }
   };
 
-  const expressInterest = async trip => {
+  const expressInterest = async (trip, seats = 1) => {
     try {
-      const { interest } = await api(`/api/trips/${trip.id}/interest`, { method: 'POST' });
-      const { trip_id, ...updates } = interest;
+      const { interest } = await api(`/api/trips/${trip.id}/interest`, { method: 'POST', body: JSON.stringify({ seats }) });
+      const { trip_id, seats: pledgedSeats, ...updates } = interest;
+      if (updates.interested) updates.pledged_seats = pledgedSeats;
       const result = { ...trip, ...updates };
       setCatalog(previous => ({
         ...previous,
         trips: previous.trips.map(item => item.id === trip_id ? { ...item, ...updates } : item),
       }));
-      if (isBookableTrip(result)) notify(result.interested ? 'Interest registered. Reservations are open.' : 'Reservations are open.');
-      else if (isCollectingInterest(result) && result.interested) notify('Interest registered.');
+      if (isBookableTrip(result)) notify(result.interested ? 'The group goal was reached. Reservations are open.' : 'Reservations are open.');
+      else if (isCollectingInterest(result) && result.interested) notify(`${pledgedSeats} ${pledgedSeats === 1 ? 'seat' : 'seats'} pledged. We will message you here when reservations open.`);
       else notify('This trip is currently unavailable.');
       refreshCatalog().catch(() => {});
     } catch (error) {
@@ -738,14 +739,13 @@ function Detail({ destination:d, catalog, linkedTripId, back, book, expressInter
       {interestTrips.length > 0 && (
         <section className="interest-trips">
           <h2>Planned departures</h2>
-          <p className="body-copy">Reservations open once the minimum group size is met.</p>
+          <p className="body-copy">Reservations open once enough seats are pledged. Pledging is free, and we will message you in Telegram when it happens.</p>
           {interestTrips.map(trip => (
             <InterestTripCard
               key={trip.id}
               trip={trip}
               provider={catalog.providers.find(item => item.id === trip.provider_id)}
               expressInterest={expressInterest}
-              checkTripInterest={checkTripInterest}
             />
           ))}
         </section>
@@ -783,15 +783,23 @@ function LinkedBookingAction({ trip, book }) {
   );
 }
 
-function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }) {
+function InterestTripCard({ trip, provider, expressInterest }) {
   const [pending, setPending] = useState(false);
+  const pledged = trip.interested ? (trip.pledged_seats ?? 1) : null;
+  const limit = Math.max(1, Math.min(20, trip.max_seats || 20));
+  const [seats, setSeats] = useState(pledged ?? 1);
   const departure = new Date(trip.departure_date);
   const departureLabel = tripDay.format(departure);
+  const goal = trip.minimum_interest || 0;
+  const count = trip.interest_count || 0;
+  const unchanged = pledged === seats;
+
+  useEffect(() => { if (pledged != null) setSeats(pledged); }, [pledged]);
 
   const handleAction = async () => {
     setPending(true);
     try {
-      await (trip.interested ? checkTripInterest(trip.id) : expressInterest(trip));
+      await expressInterest(trip, seats);
     } finally {
       setPending(false);
     }
@@ -807,10 +815,20 @@ function InterestTripCard({ trip, provider, expressInterest, checkTripInterest }
         {trip.price != null && <b>{money(trip.price, trip.currency)} <small>per person</small></b>}
       </div>
       {trip.summary && <p className="interest-trip-summary">{trip.summary}</p>}
+      {goal > 0 && (
+        <div className="interest-progress" role="img" aria-label={`${count} of ${goal} seats pledged`}>
+          <div className="interest-progress-bar"><i style={{ width: `${Math.min(100, Math.round(count / goal * 100))}%` }} /></div>
+          <small>{count} of {goal} seats pledged{goal > count ? ` · ${goal - count} to go` : ''}</small>
+        </div>
+      )}
       <div className="interest-trip-action">
-        <small>{trip.interested ? 'Interest registered' : 'Free to register'}</small>
-        <button type="button" disabled={pending} onClick={handleAction}>
-          {pending ? 'Updating…' : trip.interested ? 'Check status' : 'Register interest'}
+        <div className="interest-seats" aria-label="Seats to pledge">
+          <button type="button" disabled={pending || seats <= 1} onClick={() => setSeats(seats - 1)} aria-label="Fewer seats"><Minus /></button>
+          <b aria-live="polite">{seats} {seats === 1 ? 'seat' : 'seats'}</b>
+          <button type="button" disabled={pending || seats >= limit} onClick={() => setSeats(seats + 1)} aria-label="More seats"><Plus /></button>
+        </div>
+        <button type="button" disabled={pending || unchanged} onClick={handleAction}>
+          {pending ? 'Updating…' : pledged == null ? 'Pledge seats' : unchanged ? 'Pledged' : 'Update pledge'}
         </button>
       </div>
     </article>

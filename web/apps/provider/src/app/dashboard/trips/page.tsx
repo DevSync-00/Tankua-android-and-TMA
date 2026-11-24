@@ -43,7 +43,7 @@ function TripStatus({ trip }: { trip: TripDetails }) {
       </Badge>
       {trip.minimum_interest !== null && (
         <p className="text-xs text-muted-foreground">
-          {trip.interest_count.toLocaleString()} / {trip.minimum_interest.toLocaleString()} interested
+          {trip.interest_count.toLocaleString()} / {trip.minimum_interest.toLocaleString()} seats pledged
         </p>
       )}
     </div>

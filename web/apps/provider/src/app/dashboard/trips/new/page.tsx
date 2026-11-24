@@ -272,6 +272,8 @@ export default function NewTripPage() {
 
     if (waitsForInterest && (!Number.isInteger(minimumInterest) || minimumInterest < 1 || minimumInterest > maxInterest)) {
       issues.minimumInterest = "Enter a positive whole number up to 2,147,483,647.";
+    } else if (waitsForInterest && Number.isInteger(seats) && minimumInterest > seats) {
+      issues.minimumInterest = "The seat goal can't be more than the trip's seats.";
     }
     if ((!isRoundTrip || form.durationHours) && (!Number.isFinite(duration) || duration < 0.5 || durationMinutes > maxInterest)) {
       issues.durationHours = "Enter a duration of at least 0.5 hours.";
@@ -347,7 +349,7 @@ export default function NewTripPage() {
   }
 
   const bookingLabel = waitsForInterest
-    ? (Number(form.minimumInterest) > 0 ? "Interest goal: " + form.minimumInterest : "Collecting interest")
+    ? (Number(form.minimumInterest) > 0 ? "Seat goal: " + form.minimumInterest : "Collecting interest")
     : "Opens on publish";
   const preview = [
     ["Departure", departure ? dateFormat.format(departure) + " · " + form.departureTime + " EAT" : "Choose date and time"],

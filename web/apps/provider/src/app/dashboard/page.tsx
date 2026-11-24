@@ -146,7 +146,7 @@ function TripSchedule({ trips }: { trips: UpcomingTrip[] | null }) {
             </div>
             <div className="mt-5 max-w-xs">
               <p className="text-sm font-medium text-[#e5eee5]">
-                {seatsOrInterest}{goal ? ` of ${goal}` : ""} {collectingInterest ? "travelers interested" : "seats booked"}
+                {seatsOrInterest}{goal ? ` of ${goal}` : ""} {collectingInterest ? "seats pledged" : "seats booked"}
               </p>
               {goal && goal > 0 ? (
                 <progress

@@ -4057,6 +4057,39 @@ img {
 
 .interest-trip-action button:disabled { opacity: .65; }
 
+.interest-progress { margin-top: 12px; display: grid; gap: 6px; }
+.interest-progress small { color: var(--navy); font-weight: 700; }
+.interest-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.interest-progress-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold);
+}
+
+.interest-seats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.interest-seats b { min-width: 58px; text-align: center; font-size: 14px; }
+.interest-trip-action .interest-seats button {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  display: grid;
+  place-items: center;
+}
+.interest-seats button svg { width: 17px; height: 17px; }
+.interest-trip-action .interest-seats button:disabled { opacity: .3; }
+
 .booking-context-summary {
   position: sticky;
   top: 0;
