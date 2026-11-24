@@ -1,4 +1,6 @@
-export type GuideSection = { heading: string; paragraphs: string[]; bullets?: string[] };
+type GuideLink = { label: string; url: string };
+
+export type GuideSection = { heading: string; paragraphs: string[]; bullets?: string[]; links?: GuideLink[] };
 
 export type TravelGuide = {
   slug: string;
@@ -8,6 +10,7 @@ export type TravelGuide = {
   location: string;
   image: string;
   imageAlt: string;
+  imageCredit?: GuideLink;
   publishedAt: string;
   updatedAt: string;
   readingMinutes: number;
@@ -15,10 +18,86 @@ export type TravelGuide = {
   sections: GuideSection[];
   relatedTourQuery: string;
   showRelatedDepartures?: boolean;
-  sources?: { label: string; url: string }[];
+  sources?: GuideLink[];
 };
 
 export const travelGuides: TravelGuide[] = [
+  {
+    slug: "addis-ababa-airport-layover",
+    title: "Can you leave Addis Ababa airport during a layover?",
+    description: "Yes, if you meet Ethiopia's entry rules and have time to get back. Check your visa, baggage, and Ethiopian Airlines hotel options before you leave.",
+    category: "Travel planning",
+    location: "Addis Ababa",
+    image: "/images/addis-ababa-bole-airport-terminal-2.jpg",
+    imageAlt: "The glass exterior of Terminal 2 at Addis Ababa Bole International Airport",
+    imageCredit: { label: "Photo by CAPTAIN RAJU, Wikimedia Commons (CC0)", url: "https://commons.wikimedia.org/wiki/File:Addis_Ababa_Bole_International_Airport_in_2024.01.jpg" },
+    publishedAt: "2026-11-24",
+    updatedAt: "2026-11-24",
+    readingMinutes: 4,
+    intro: "Yes. You can leave Addis Ababa Bole International Airport (ADD) during a layover if you meet Ethiopia's entry rules and can return before your airline's reporting time. Before you plan a stop, find out where you need to collect your bag.",
+    sections: [
+      {
+        heading: "Do I need a visa for an Addis Ababa layover?",
+        paragraphs: [
+          "If you can stay in the international transfer area for your onward international flight, you can transit without an Ethiopian visa. Follow the transfer signs and ask at the transit desk if you need an onward boarding pass.",
+          "If you want to go into Addis Ababa, you'll cross Ethiopian immigration. Check the rules for the passport you're traveling on. Depending on your eligibility, you may be able to use an approved tourist eVisa, get a visa on arrival, or enter under an exemption or transit arrangement.",
+          "For a tourist eVisa, use the Ethiopian government's portal. The government asks for at least six months of passport validity from your intended entry date. Save the approved visa offline before you fly.",
+        ],
+        links: [
+          { label: "Ethiopian Embassy visa guidance", url: "https://consular.ethiopianembassy.org/service-details_visa" },
+          { label: "Official Ethiopian tourist eVisa", url: "https://www.evisa.gov.et/information/tourist" },
+          { label: "Visa-on-arrival eligibility", url: "https://www.evisa.gov.et/information/touristOnArrivalVisa" },
+        ],
+      },
+      {
+        heading: "Where do I collect my checked bag?",
+        paragraphs: [
+          "At your first check-in, show the agent your onward flight and ask where you'll next see your bag. If you booked separate tickets and the agent says you must collect and recheck it in Addis, check that you can enter Ethiopia before you fly.",
+          "Flying on to a city in Ethiopia? Ethiopian Airlines says to collect your checked bag and clear customs in Addis. That applies even if the bag tag shows your final airport. Drop the bag at domestic check-in after customs.",
+        ],
+        links: [{ label: "Ethiopian Airlines customs and baggage guidance", url: "https://www.ethiopianairlines.com/et/travel-update" }],
+      },
+      {
+        heading: "Will Ethiopian Airlines give me a layover hotel?",
+        paragraphs: [
+          "Ethiopian Airlines lists a hotel benefit for qualifying 8 to 24 hour connections when it operates both flights on one ticket. Ask for the voucher at your first check-in. If you arrive without one, ask at the transit desk in Addis.",
+          "The airline says the package typically covers a hotel, meals, and transfers, and that it can assist eligible passengers with a transit visa. Confirm where you're staying. The Skylight In-Terminal Hotel is inside Terminal 2. If staff assign a hotel outside the terminal, ask how immigration clearance works and when to catch the return shuttle.",
+        ],
+        links: [{ label: "Ethiopian Airlines stopover policy", url: "https://www.ethiopianairlines.com/services/services-at-the-airport/addis-ababa-stopovers" }],
+      },
+      {
+        heading: "How much of my layover can I spend in the city?",
+        paragraphs: [
+          "Work backward from the time your airline asks you to report at Bole. Ethiopian Airlines lists three hours before international departures from Addis and four hours for flights to or from the United States. Confirm the reporting time for your flight before you leave.",
+          "Say your flight departs at 18:00, your airline asks you to return by 15:00, and you reach the airport curb at 12:15. If you budget 45 minutes for each ride and 30 minutes for delays, you have 45 minutes at your stop. Use the drive times for your route and time of day when you do the math.",
+          "Set the time you'll leave your stop before you get in the car. If your flight arrives late or immigration takes longer than expected, use your return time to decide whether to stay at the airport.",
+        ],
+        links: [{ label: "Ethiopian Airlines airport reporting times", url: "https://www.ethiopianairlines.com/book/check-in/check-in-at-the-airport" }],
+      },
+      {
+        heading: "What's one short stop near the airport?",
+        paragraphs: [
+          "If you have time for one stop, pick coffee in Bole. Tomoca's roastery is on the ground floor of the Impress Building beside Kategna. Check the branch's hours and directions, and arrange your ride back before you order.",
+          "With a longer daytime stop, pick one area to explore. If you're staying airside and want a bed or a shower, ask the transit desk about the in-terminal hotel and whether it has space for your connection.",
+        ],
+        links: [
+          { label: "Tomoca hours and directions", url: "https://tomocacoffee.et/locations" },
+          { label: "Tankua's Bole food and coffee route", url: "/weekend/outings/bole-injera-and-buna" },
+          { label: "Tankua's Addis Ababa city guide", url: "/guides/best-things-to-do-addis-ababa" },
+        ],
+      },
+    ],
+    relatedTourQuery: "Addis Ababa",
+    sources: [
+      { label: "Ethiopian Embassy visa guidance", url: "https://consular.ethiopianembassy.org/service-details_visa" },
+      { label: "Ethiopian government tourist eVisa", url: "https://www.evisa.gov.et/information/tourist" },
+      { label: "Ethiopian government visa-on-arrival eligibility", url: "https://www.evisa.gov.et/information/touristOnArrivalVisa" },
+      { label: "Ethiopian Airlines customs and baggage guidance", url: "https://www.ethiopianairlines.com/et/travel-update" },
+      { label: "Ethiopian Airlines Addis Ababa stopovers", url: "https://www.ethiopianairlines.com/services/services-at-the-airport/addis-ababa-stopovers" },
+      { label: "Ethiopian Airlines airport check-in and reporting times", url: "https://www.ethiopianairlines.com/book/check-in/check-in-at-the-airport" },
+      { label: "Tomoca's roastery address", url: "https://www.tomocacoffee.com/outlet.html" },
+    ],
+  },
   {
     slug: "ethiopian-calendar-and-time-guide",
     title: "Ethiopian Calendar and Time: A Practical Guide for Travelers",
@@ -590,6 +669,7 @@ export const travelGuides: TravelGuide[] = [
           "Keep Merkato as a focused guided visit",
           "Allow extra time before flights and evening reservations",
         ],
+        links: [{ label: "See if you have time to leave Bole airport during a layover", url: "/guides/addis-ababa-airport-layover" }],
       },
       {
         heading: "For deep history: National Museum and the Arat Kilo area",
@@ -712,6 +792,7 @@ export const travelGuides: TravelGuide[] = [
           "Avoid sponsored lookalike domains",
           "Carry both digital and paper copies",
         ],
+        links: [{ label: "Check entry and baggage rules for an Addis Ababa layover", url: "/guides/addis-ababa-airport-layover" }],
       },
       {
         heading: "Yellow fever: your route matters",

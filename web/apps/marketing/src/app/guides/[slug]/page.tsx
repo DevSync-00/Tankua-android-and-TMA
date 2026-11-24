@@ -33,6 +33,7 @@ export function generateMetadata({ params }: Props): Metadata {
 export default async function GuidePage({ params }: Props) {
   const guide = getGuide(params.slug);
   if (!guide) notFound();
+  const { imageCredit } = guide;
   const relatedDepartures = guide.showRelatedDepartures
     ? await getTours({ search: guide.relatedTourQuery, limit: 3, bookableOnly: true })
     : null;
@@ -67,7 +68,16 @@ export default async function GuidePage({ params }: Props) {
           </div>
         </header>
 
-        <div className="field-wrap"><div className="relative aspect-[9/7] overflow-hidden bg-[var(--field-wash)] sm:aspect-[2/1]"><Image src={guide.image} alt={guide.imageAlt} fill priority className="object-cover" sizes="(max-width: 1280px) 100vw, 1280px" /></div></div>
+        <figure className="field-wrap">
+          <div className="relative aspect-[9/7] overflow-hidden bg-[var(--field-wash)] sm:aspect-[2/1]">
+            <Image src={guide.image} alt={guide.imageAlt} fill priority className="object-cover" sizes="(max-width: 1280px) 100vw, 1280px" />
+          </div>
+          {imageCredit && (
+            <figcaption className="mt-2 text-sm text-[var(--field-muted)]">
+              <a href={imageCredit.url} className="underline">{imageCredit.label}</a>
+            </figcaption>
+          )}
+        </figure>
 
         <div className="field-wrap grid gap-12 py-10 sm:py-14 lg:grid-cols-[minmax(0,760px)_minmax(14rem,1fr)] lg:gap-20 lg:py-20">
           <div className="max-w-[72ch] text-[17px] leading-8">
@@ -77,6 +87,19 @@ export default async function GuidePage({ params }: Props) {
                 <h2 className="field-display">{section.heading}</h2>
                 {section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-5">{paragraph}</p>)}
                 {section.bullets && <ul className="mt-6 space-y-3 border border-[var(--field-line)] bg-[var(--field-wash)] p-6 pl-8">{section.bullets.map((bullet) => <li key={bullet} className="list-disc pl-1">{bullet}</li>)}</ul>}
+                {section.links && (
+                  <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm leading-6">
+                    {section.links.map(({ label, url }) => (
+                      <li key={url}>
+                        {url.startsWith("/") ? (
+                          <Link href={url} className="field-link">{label}</Link>
+                        ) : (
+                          <a href={url} className="field-link">{label}</a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
             ))}
             {guide.sources && (
