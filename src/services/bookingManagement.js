@@ -7,176 +7,42 @@ import { supabase } from '../config/supabase';
 import { cancelTripReminder, showBookingCancellation } from './notifications';
 
 // ============================================
-// CANCELLATION POLICIES
-// ============================================
-
-export const CANCELLATION_POLICIES = {
-  // Free cancellation up to 48 hours before trip
-  FREE_CANCELLATION_HOURS: 48,
-  // 50% refund between 24-48 hours
-  PARTIAL_REFUND_HOURS: 24,
-  // No refund within 24 hours
-  NO_REFUND_HOURS: 0,
-};
-
-/**
- * Calculate refund amount based on cancellation time
- */
-export function calculateRefundAmount(booking, cancellationTime = new Date()) {
-  const tripDate = new Date(booking.trip_date || booking.departure_date);
-  const hoursUntilTrip = (tripDate - cancellationTime) / (1000 * 60 * 60);
-  const totalPaid = booking.total_price || 0;
-
-  if (hoursUntilTrip >= CANCELLATION_POLICIES.FREE_CANCELLATION_HOURS) {
-    // Full refund
-    return {
-      refundAmount: totalPaid,
-      refundPercentage: 100,
-      policy: 'full',
-      message: 'Full refund (cancelled more than 48 hours before trip)',
-    };
-  } else if (hoursUntilTrip >= CANCELLATION_POLICIES.PARTIAL_REFUND_HOURS) {
-    // 50% refund
-    const refundAmount = Math.round(totalPaid * 0.5);
-    return {
-      refundAmount,
-      refundPercentage: 50,
-      policy: 'partial',
-      message: '50% refund (cancelled 24-48 hours before trip)',
-    };
-  } else {
-    // No refund
-    return {
-      refundAmount: 0,
-      refundPercentage: 0,
-      policy: 'none',
-      message: 'No refund (cancelled less than 24 hours before trip)',
-    };
-  }
-}
-
-/**
- * Check if booking can be cancelled
- */
-export function canCancelBooking(booking) {
-  const validStatuses = ['pending', 'confirmed'];
-  
-  if (!validStatuses.includes(booking.status)) {
-    return {
-      canCancel: false,
-      reason: `Cannot cancel booking with status: ${booking.status}`,
-    };
-  }
-
-  const tripDate = new Date(booking.trip_date || booking.departure_date);
-  if (tripDate < new Date()) {
-    return {
-      canCancel: false,
-      reason: 'Cannot cancel past trips',
-    };
-  }
-
-  return {
-    canCancel: true,
-    refundInfo: calculateRefundAmount(booking),
-  };
-}
-
-// ============================================
 // CANCELLATION
 // ============================================
+// The refund policy lives in the database (booking_cancellation_terms):
+// 48h+ before departure: 100% · 24-48h: 50% · under 24h: no refund.
+// The app shows the server's quote and never computes refunds itself.
 
 /**
- * Cancel a booking
+ * What cancelling this booking right now would mean:
+ * { can_cancel, reason, paid, amount_paid, refund_percentage, refund_amount, currency, seats }
  */
-export async function cancelBooking(bookingId, userId, reason = null) {
-  try {
-    // Get booking details
-    const { data: booking, error: fetchError } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        trips (
-          id,
-          destination_id,
-          departure_date,
-          available_seats,
-          destinations (name)
-        )
-      `)
-      .eq('id', bookingId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    // Verify ownership
-    if (booking.user_id !== userId) {
-      throw new Error('Unauthorized to cancel this booking');
-    }
-
-    // Check if cancellation is allowed
-    const { canCancel, reason: cancelReason, refundInfo } = canCancelBooking(booking);
-    if (!canCancel) {
-      throw new Error(cancelReason);
-    }
-
-    // Begin transaction-like operations
-    // 1. Update booking status
-    const { error: updateError } = await supabase
-      .from('bookings')
-      .update({
-        status: 'cancelled',
-        payment_status: refundInfo.refundAmount > 0 ? 'refunded' : booking.payment_status,
-        cancelled_at: new Date().toISOString(),
-        cancellation_reason: reason,
-        refund_amount: refundInfo.refundAmount,
-      })
-      .eq('id', bookingId);
-
-    if (updateError) throw updateError;
-
-    // 2. Release seats back to trip
-    if (booking.trips) {
-      const newAvailableSeats = booking.trips.available_seats + booking.seats;
-      await supabase
-        .from('trips')
-        .update({ available_seats: newAvailableSeats })
-        .eq('id', booking.trips.id);
-    }
-
-    // 3. Create refund record if applicable
-    if (refundInfo.refundAmount > 0) {
-      await supabase
-        .from('refunds')
-        .insert({
-          booking_id: bookingId,
-          user_id: userId,
-          amount: refundInfo.refundAmount,
-          reason: reason || 'User requested cancellation',
-          status: 'pending',
-        });
-    }
-
-    // 4. Cancel any scheduled notifications
-    await cancelTripReminder(bookingId);
-
-    // 5. Send cancellation notification
-    await showBookingCancellation({
-      id: bookingId,
-      destinationName: booking.trips?.destinations?.name || 'Trip',
-    });
-
-    return {
-      success: true,
-      refundAmount: refundInfo.refundAmount,
-      refundPercentage: refundInfo.refundPercentage,
-      message: refundInfo.message,
-    };
-  } catch (error) {
-    console.error('Error cancelling booking:', error);
-    throw error;
-  }
+export async function getCancellationQuote(bookingId) {
+  const { data, error } = await supabase.rpc('booking_cancellation_quote', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data;
 }
+
+/**
+ * Cancel a booking. Paid bookings queue a refund for review; unpaid
+ * reservations are released. Either way the seats go back on sale.
+ */
+export async function cancelBooking(booking, reason = null) {
+  const cleanReason = reason?.trim() || null;
+  const result = booking.payment_status === 'paid'
+    ? await supabase.rpc('cancel_paid_booking', { p_booking_id: booking.id, p_reason: cleanReason })
+    : await supabase.rpc('release_unpaid_booking', { p_booking_id: booking.id });
+  if (result.error) throw result.error;
+
+  await cancelTripReminder(booking.id).catch(() => {});
+  await showBookingCancellation({
+    id: booking.id,
+    destinationName: booking.destination_name || booking.trip?.destinations?.name || 'Trip',
+  }).catch(() => {});
+
+  return result.data;
+}
+
 
 // ============================================
 // RESCHEDULING

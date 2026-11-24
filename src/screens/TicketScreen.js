@@ -11,6 +11,8 @@ import { shareTicketAsImage } from '../utils/shareTicketImage';
 const TicketScreen = ({ route, navigation }) => {
   const { booking } = route.params || {};
   const receipt = ['completed', 'cancelled'].includes(booking?.status) || Date.parse(booking?.trip?.departure_date) <= Date.now();
+  const cancellable = !receipt && booking?.status === 'confirmed' && booking?.payment_status === 'paid'
+    && ['upcoming', 'active'].includes(booking?.trip?.status);
   const { showToast } = useFeedback();
   const ticketRef = useRef(null);
   const [sharing, setSharing] = useState(false);
@@ -65,12 +67,32 @@ const TicketScreen = ({ route, navigation }) => {
           disabled={sharing}
           loading={sharing}
         />
+        {cancellable ? (
+          <TouchableOpacity
+            style={styles.cancelLink}
+            onPress={() => navigation.navigate('CancelBooking', { booking })}
+            accessibilityRole="button"
+          >
+            <Text style={styles.cancelLinkText}>Cancel booking</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  cancelLink: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelLinkText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: '600',
+    color: COLORS.error,
+    textDecorationLine: 'underline',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

@@ -73,9 +73,12 @@ const BookingCard = ({ item, onViewTicket, onPay, onRelease, releasing }) => {
   const awaitingActivation = pendingPayment && item.trip?.status === 'upcoming' && Date.parse(item.trip.departure_date) > Date.now();
   const payable = isBookingValid(item);
   const tab = bookingTab(item);
+  const openRefund = (item.refunds || []).find((refund) => ['pending', 'approved', 'processing'].includes(refund.status));
   const sc = tab === 'cancelled' ? {
     ...STATUS_CONFIG.cancelled,
     label: item.payment_status === 'refunded' ? 'Refunded' :
+      openRefund ? 'Refund pending' :
+      item.payment_status === 'paid' && item.cancelled_at ? 'Cancelled · no refund' :
       item.payment_status === 'paid' && (item.expired_at || item.trip?.closeout_reason === 'did_not_run') ? 'Refund review' :
       item.expired_at ? 'Reservation expired' : 'Cancelled',
   } : tab === 'completed' && status !== 'completed' ? {

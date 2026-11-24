@@ -27,7 +27,7 @@ export default function PaymentsPage() {
       const [paymentRows, refundRows] = await Promise.all([
         getPayments(),
         supabase.from("refunds").select("id,booking_id,amount,currency,reason")
-          .like("reason", "Trip closeout:%").in("status", ["pending", "approved", "processing"])
+          .or('reason.like."Trip closeout:*",reason.like."Traveler cancellation:*"').in("status", ["pending", "approved", "processing"])
           .order("created_at", { ascending: true }),
       ]);
       setPayments(paymentRows);
@@ -136,10 +136,10 @@ export default function PaymentsPage() {
 
       <div className="space-y-6 p-4 sm:p-6">
         {refunds.length > 0 && <Card>
-          <h2 className="text-lg font-semibold">Trip closeout refund review</h2>
+          <h2 className="text-lg font-semibold">Refunds to send</h2>
           <ul className="mt-3 divide-y">
             {refunds.map(refund => <li key={refund.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-              <span>Booking {refund.booking_id.slice(0, 8)} · {formatCurrency(refund.amount, refund.currency)}</span>
+              <span>Booking {refund.booking_id.slice(0, 8)} · {formatCurrency(refund.amount, refund.currency)} · <span className="text-muted-foreground">{refund.reason.startsWith("Traveler cancellation") ? "Traveler cancelled" : "Trip closeout"}</span></span>
               <Button size="sm" variant="outline" onClick={() => { setSelectedRefund(refund); setRefundReference(""); }}>Record refund sent</Button>
             </li>)}
           </ul>

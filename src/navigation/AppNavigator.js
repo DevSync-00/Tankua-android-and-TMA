@@ -18,6 +18,7 @@ import MainTabNavigator from './MainTabNavigator';
 import DestinationDetailScreen from '../screens/DestinationDetailScreen';
 import BookingFlowNavigator from './BookingFlowNavigator';
 import TicketScreen from '../screens/TicketScreen';
+import CancelBookingScreen from '../screens/CancelBookingScreen';
 
 // Profile Screens
 import MyAccountScreen from '../screens/MyAccountScreen';
@@ -66,6 +67,11 @@ const AuthenticatedStack = () => {
         <Stack.Screen 
           name="Ticket" 
           component={TicketScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CancelBooking"
+          component={CancelBookingScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen 

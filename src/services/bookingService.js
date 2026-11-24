@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase';
 
-export const BOOKING_WITH_TRIP = '*, trip:trips(status, departure_date, return_date, duration_minutes, revised_end_at, closeout_reason)';
+export const BOOKING_WITH_TRIP = '*, trip:trips(status, departure_date, return_date, duration_minutes, revised_end_at, closeout_reason), refunds(status, amount, currency)';
 
 export const canPayForTrip = (trip) => (
   trip?.status === 'active' && Date.parse(trip.departure_date) > Date.now()
