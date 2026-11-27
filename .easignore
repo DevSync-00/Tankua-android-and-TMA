@@ -57,3 +57,8 @@ database/
 # Unreferenced local destination photos; app destination images come from backend URLs
 assets/*.jpg
 assets/*.jpeg
+
+# AI coding-assistant skills (installed as symlinks into ~50 tool folders; EAS cannot
+# copy symlinks on Windows and the app does not use them)
+.agents/
+skills/

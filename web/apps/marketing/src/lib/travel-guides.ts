@@ -19,9 +19,137 @@ export type TravelGuide = {
   relatedTourQuery: string;
   showRelatedDepartures?: boolean;
   sources?: GuideLink[];
+  advisory?: { checkedAt: string; text: string; links?: GuideLink[] };
 };
 
+const northAdvisoryLinks: GuideLink[] = [
+  { label: "Holiday travel update for 2026-27", url: "/guides/genna-timkat-2027-holiday-travel" },
+  { label: "UK travel advice for Ethiopia", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/warnings-and-insurance" },
+];
+
 export const travelGuides: TravelGuide[] = [
+  {
+    slug: "genna-timkat-2027-holiday-travel",
+    title: "Genna and Timkat 2027: Planning Holiday Travel While the North Is Off Limits",
+    description: "Dates for the fast, Genna, and Timkat in 2026-27, what current travel advice means for Lalibela and Gondar, and how to spend the holidays in Addis Ababa instead.",
+    category: "Travel planning",
+    location: "Addis Ababa",
+    image: "/images/ethiopian-timkat-addis-ababa.jpg",
+    imageAlt: "Orthodox priests hold an icon of Saint Mary beneath ceremonial umbrellas during Timkat in Addis Ababa",
+    imageCredit: {
+      label: "Photo by Jean Rebiffé, Wikimedia Commons, resized",
+      url: "https://commons.wikimedia.org/wiki/File:Celebrating_Timkat_in_Ethiopia.jpg",
+      license: { label: "CC BY 4.0", url: "https://creativecommons.org/licenses/by/4.0/" },
+    },
+    publishedAt: "2026-11-27",
+    updatedAt: "2026-11-27",
+    readingMinutes: 8,
+    intro: "December and January are when most people travel to Ethiopia, and when many in the diaspora come home. This year the usual plan of Christmas in Lalibela and Timkat in Gondar doesn't work. The UK and Irish governments advise against all travel to Amhara, the region that includes both towns. The holidays are still worth the trip. This guide covers the dates, what has changed in the north, and how to spend Genna and Timkat in Addis Ababa.",
+    sections: [
+      {
+        heading: "What are the holiday dates this season?",
+        paragraphs: [
+          "The Advent fast, Tsome Nebiyat, began on November 24, 2026 and runs until Genna eve. Ethiopian Christmas, Genna, falls on Thursday, January 7, 2027, and the main services take place through the night of January 6. Ketera, the eve of Timkat, is Monday, January 18. Timkat itself is Tuesday, January 19.",
+          "These dates follow the Ethiopian Orthodox calendar. In some years Genna and Timkat move by a day. They don't move for 2026-27, but confirm with your hotel or a local church before you book a flight around a single service. If the calendar conversion is new to you, our calendar guide explains it.",
+        ],
+        bullets: [
+          "Advent fast: November 24, 2026 to January 6, 2027",
+          "Kulubi Gabriel pilgrimage: December 28 (Tahsas 19)",
+          "Genna eve services: night of January 6",
+          "Genna, a public holiday: Thursday, January 7",
+          "Ketera processions: Monday, January 18, from early afternoon",
+          "Timkat: Tuesday, January 19, starting at dawn",
+        ],
+        links: [{ label: "Tankua's Ethiopian calendar guide", url: "/guides/ethiopian-calendar-and-time-guide" }],
+      },
+      {
+        heading: "Can I still go to Lalibela or Gondar for the holidays?",
+        paragraphs: [
+          "Current advice says no. The UK Foreign Office advises against all travel to the whole of Amhara region, which includes Lalibela, Gondar, and Bahir Dar. It also advises against all travel to Tigray. That advice was last updated on November 23, 2026. Ireland's advice from November 12 is the same and describes fighting in and around Gondar, Bahir Dar, and Lalibela. The US lists Amhara at its highest level, Do Not Travel.",
+          "Flights are also affected. Lalibela flights were reported suspended in late September after fighting near the town, and no restart date has been announced. The government suspended flights to all airports in Tigray on September 23. Some reports say Gondar and Bahir Dar flights are still running. A flight that operates doesn't make a destination safe, and the UK warns that northern flights can be cancelled at short notice.",
+          "Check your insurance before you buy anything. Many policies don't cover travel to areas your government advises against, and that can include medical evacuation. If you booked a northern festival trip months ago, ask your operator now about moving it to Addis or postponing. Waiting until January leaves you fewer options.",
+        ],
+        links: [
+          { label: "UK travel advice: warnings and insurance", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/warnings-and-insurance" },
+          { label: "Irish travel advice for Ethiopia", url: "https://www.ireland.ie/en/dfa/overseas-travel/advice/ethiopia/" },
+        ],
+      },
+      {
+        heading: "What changes during the Advent fast?",
+        paragraphs: [
+          "Orthodox Christians who keep the fast don't eat meat, dairy, or eggs until Genna. You'll still find meat in restaurants, but fasting dishes take up more of the menu, and a fasting combination platter is easy to order almost anywhere. If you're vegan, this is the easiest time of year to eat in Ethiopia.",
+          "If someone hosts you during the fast, they may serve you a meat dish and not eat any themselves. Don't press them to join you. In the last days before Genna, markets fill with people buying chickens, sheep, butter, and spices for the holiday meal, and prices go up. If you're cooking for a family gathering, shop early.",
+        ],
+        links: [{ label: "Tankua's guide to fasting food and ordering", url: "/guides/ethiopian-food-guide" }],
+      },
+      {
+        heading: "How do I spend Genna in Addis Ababa?",
+        paragraphs: [
+          "The main service is the overnight vigil on January 6. In recent years, large crowds have gathered at Bole Medhane Alem, Bole Debre Salem, and Meskel Square. Many worshippers wear white, often with a netela, the thin cotton shawl. Services run late into the night and often finish in the early hours of January 7.",
+          "You don't have to go to the biggest church. A neighborhood church with a friend or a guide who attends it is often a better first visit, and it's easier to leave when you're tired. Stand at the back or edge, keep your phone put away during prayer, and follow what the people around you do.",
+          "On January 7, families break the fast together, usually with doro wot. Banks, government offices, and many businesses close for the day. Withdraw cash, confirm restaurant hours, and arrange transport before the holiday.",
+        ],
+        bullets: [
+          "Wear modest clothing, with something warm for the night air",
+          "Carry very little: a phone, some cash, and your hotel's address",
+          "Agree on a meeting point in case you're separated in the crowd",
+          "Book your ride back before you go, not at midnight",
+        ],
+      },
+      {
+        heading: "How do I see Timkat in Addis Ababa?",
+        paragraphs: [
+          "Timkat is the easier festival to watch as a visitor because most of it happens outdoors. On Ketera, January 18, each church's tabot is carried through the streets from early afternoon. Priests walk under embroidered umbrellas while people sing, drum, and dance alongside them. In Addis, many processions go to Jan Meda, which has hosted Timkat for more than a century. The tabots stay there overnight.",
+          "Before dawn on January 19, the clergy bless the water and sprinkle the crowd. The tabots are carried back to their churches later that morning. Some parishes return their tabot a day later, so you may still see processions on January 20.",
+          "You don't have to be at Jan Meda to see Timkat. Every parish holds a procession, so the street outside your hotel may be the best spot you'll find. Jan Meda gets very crowded on the main morning and pickpocketing is common there. If you go, arrive early, stay near the edge, and don't step into the path of a procession or a tabot.",
+        ],
+        links: [
+          { label: "UNESCO: Ethiopian Epiphany", url: "https://ich.unesco.org/en/RL/ethiopian-epiphany-01491" },
+          { label: "Tankua's festivals guide", url: "/guides/ethiopian-festivals-travel-guide" },
+        ],
+      },
+      {
+        heading: "Is it safe to join the holiday crowds?",
+        paragraphs: [
+          "The UK names Genna and Timkat as days with large crowds and advises visitors to avoid large gatherings. It also warns that attacks can happen at religious events and public holidays. That doesn't mean you have to stay in your hotel, but it is a good reason to keep your plans modest.",
+          "A small church instead of the biggest venue, a spot on the edge of a procession, and a known way home lower your risk without making you miss the holiday. Avoid demonstrations, follow police directions, and leave if a crowd starts to push.",
+        ],
+        links: [{ label: "UK travel advice: safety and security", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/safety-and-security" }],
+      },
+      {
+        heading: "What about the Kulubi Gabriel pilgrimage on December 28?",
+        paragraphs: [
+          "Tens of thousands of pilgrims walk up the hill to St. Gabriel's church at Kulubi, about 70 kilometres from Dire Dawa, every December 28. People in Addis will ask whether you're going. The usual road east crosses parts of Oromia that the UK advises against except for essential travel. In 2023, at least eight people were killed and others abducted when pilgrims were attacked on their way back near Metehara.",
+          "If you want to go east, fly to Dire Dawa, check the current advice for East Hararghe, and only travel with someone who knows the area and is following the local news. Harar is a good add-on for the same flight.",
+        ],
+        links: [{ label: "Tankua's two-day Harar guide", url: "/guides/harar-travel-guide" }],
+      },
+      {
+        heading: "What else should I plan for this season?",
+        paragraphs: [
+          "Book flights and hotels now. Diaspora visitors fill flights into Addis through December and early January, and good hotels near Bole sell out around Genna. The UK reports increased security checks at Bole, so leave extra time at the airport.",
+          "Fuel is in short supply across the country, and queues at petrol stations can be long. Ask your hotel or tour provider how they're handling it, and keep a buffer around airport transfers. Outside Addis, the UK advises against driving after dark. Plan any day trips to finish in daylight.",
+          "Outside the north, look up the advice for the specific zone you want to visit, not just the region. It varies within Oromia and the south. For a long trip, flying is usually a better choice than a long road journey this season.",
+        ],
+        links: [
+          { label: "Tankua's Ethiopia entry requirements", url: "/guides/ethiopia-travel-requirements" },
+          { label: "Tankua's Addis Ababa city guide", url: "/guides/best-things-to-do-addis-ababa" },
+        ],
+      },
+    ],
+    relatedTourQuery: "Addis Ababa",
+    sources: [
+      { label: "UK FCDO - Ethiopia warnings and insurance (updated November 23, 2026)", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/warnings-and-insurance" },
+      { label: "UK FCDO - Ethiopia safety and security", url: "https://www.gov.uk/foreign-travel-advice/ethiopia/safety-and-security" },
+      { label: "Irish Department of Foreign Affairs - Ethiopia travel advice", url: "https://www.ireland.ie/en/dfa/overseas-travel/advice/ethiopia/" },
+      { label: "US Department of State - Ethiopia travel advisory", url: "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/ethiopia-travel-advisory.html" },
+      { label: "Ethiopia Driver - Lalibela access and flight status (October 2026)", url: "https://ethiopiadriver.com/ethiopia/can-you-visit-lalibela-right-now" },
+      { label: "UNESCO - Ethiopian Epiphany", url: "https://ich.unesco.org/en/RL/ethiopian-epiphany-01491" },
+      { label: "Africanews - Christmas Eve in Addis Ababa, January 2026", url: "https://www.africanews.com/2026/01/07/ethiopias-orthodox-christians-celebrate-christmas-eve-in-addis-ababa/" },
+      { label: "ENA - Ketera celebrated ahead of Timket", url: "https://www.ena.et/web/eng/w/eng_8142622" },
+      { label: "AllAfrica - Attack on pilgrims returning from Kulubi, January 2024", url: "https://allafrica.com/stories/202401020391.html" },
+    ],
+  },
   {
     slug: "addis-ababa-airport-layover",
     title: "Can you leave Addis Ababa airport during a layover?",
@@ -547,6 +675,7 @@ export const travelGuides: TravelGuide[] = [
     updatedAt: "2026-10-02",
     readingMinutes: 11,
     intro: "A festival can become the most memorable part of an Ethiopia journey—or the moment a poorly planned itinerary falls apart. Dates may follow religious, lunar, or community calendars; accommodation fills; streets close; and ceremonies belong first to the people who observe them. This guide helps you choose a celebration for its meaning, not merely its photographs.",
+    advisory: { checkedAt: "2026-11-27", text: "The UK and Irish governments currently advise against all travel to Amhara and Tigray. For now, that rules out the northern festival trips in this guide, including Genna in Lalibela and Timkat in Gondar. Lalibela flights were reported suspended in late September. For this season's dates and how to celebrate in Addis Ababa instead, read our holiday travel update.", links: northAdvisoryLinks },
     sections: [
       {
         heading: "First, understand that Ethiopia does not have one festival calendar",
@@ -899,6 +1028,7 @@ export const travelGuides: TravelGuide[] = [
     updatedAt: "2026-09-29",
     readingMinutes: 8,
     intro: "Seven days is enough for a memorable introduction to Ethiopia, but not enough to cover the whole country. The best first itinerary chooses one connected region, protects time for delays, and leaves room to understand each place. This route combines the capital with Lalibela, Gondar, and a short Simien Mountains experience.",
+    advisory: { checkedAt: "2026-11-27", text: "This route goes through Amhara region. Lalibela, Gondar, and the Simien Mountains are all inside it. The UK and Irish governments currently advise against all travel to Amhara, and Lalibela flights were reported suspended in late September. Don't book this itinerary until that advice changes. Ask your provider about a trip based in Addis Ababa, or a route east to Harar.", links: northAdvisoryLinks },
     sections: [
       {
         heading: "Before you choose this route",
@@ -992,6 +1122,7 @@ export const travelGuides: TravelGuide[] = [
     updatedAt: "2026-09-28",
     readingMinutes: 7,
     intro: "Ethiopia can be visited throughout the year, but the right month depends on where you are going. The northern highlands, the hot Danakil lowlands, and the rainy southwest do not share one climate. Use your route—not a single national forecast—to choose your dates.",
+    advisory: { checkedAt: "2026-11-27", text: "October to January is still the dry season, but the northern route this guide describes isn't open to visitors right now. The UK and Irish governments currently advise against all travel to Amhara and Tigray, which include Lalibela, Gondar, Bahir Dar, the Simien Mountains, and Aksum. For this season, read our holiday travel update and check the current advice for each region on your route.", links: northAdvisoryLinks },
     sections: [
       { heading: "October to January: clear highland days", paragraphs: ["For many first-time visitors, October through January offers the easiest conditions in Addis Ababa and the northern highlands. The main rains have usually eased, visibility is good, and daytime temperatures are comfortable at destinations such as Lalibela, Gondar, and the Simien Mountains.", "This period also includes major celebrations. Ethiopian Christmas is observed in early January, while Timkat usually follows later in the month. Festival dates create memorable journeys but can also mean fuller hotels and busy transport, so reserve early."], bullets: ["Good for the northern historical route", "Clearer views for highland trekking", "Book early around major religious festivals"] },
       { heading: "February to May: warmer and often quieter", paragraphs: ["February and March remain strong months for highland travel. Trails are generally drier, visitor numbers may be lower than during the January festival period, and days become gradually warmer.", "Short rains can arrive in parts of the country during March, April, and May. They rarely affect every region in the same way. Leave flexibility for road journeys and ask your local provider about current conditions before departing."], bullets: ["Consider February or March for trekking", "Carry a light waterproof layer", "Confirm road conditions for remote routes"] },
@@ -1012,6 +1143,7 @@ export const travelGuides: TravelGuide[] = [
     updatedAt: "2026-09-28",
     readingMinutes: 6,
     intro: "Lalibela is a living place of worship, not an open-air museum. Its rock-hewn churches reward unhurried exploration, a knowledgeable local guide, and consideration for the people who pray and serve there every day.",
+    advisory: { checkedAt: "2026-11-27", text: "Lalibela is in Amhara region. The UK and Irish governments currently advise against all travel there, and Lalibela flights were reported suspended in late September after fighting near the town. Don't plan a visit until the advice changes and flights resume. Check your government's current advice before you book.", links: northAdvisoryLinks },
     sections: [
       { heading: "Give the churches enough time", paragraphs: ["The churches are arranged in groups connected by paths, trenches, and passages. A rushed stop can reduce the experience to photographs. Allow at least a full day for the principal sites; two days create room for deeper context, changing light, and a less hurried pace.", "Opening conditions and religious services can affect access. A local guide can sequence the visit sensibly and explain the engineering, religious symbolism, and continuing traditions without interrupting worship."], bullets: ["Wear shoes that are easy to remove", "Carry socks for hot or rough stone", "Ask before photographing people or services"] },
       { heading: "Dress and behave respectfully", paragraphs: ["Choose clothing that covers shoulders and knees. Women may wish to carry a light scarf for church visits. Speak quietly near worshippers and follow instructions from clergy, attendants, and your guide.", "Photography rules can change by location or occasion. Never assume that a camera ticket permits every kind of image. Avoid flashes during services and request permission before photographing clergy or worshippers at close range."] },
@@ -1019,7 +1151,6 @@ export const travelGuides: TravelGuide[] = [
       { heading: "Plan around festivals carefully", paragraphs: ["Major religious celebrations can make Lalibela extraordinary and extremely busy. Accommodation, guides, and transport may sell out well in advance. Expect crowds and accept that worship takes priority over sightseeing.", "If you prefer quieter observation, travel outside peak festival dates. You will still encounter a living religious landscape, with more space to understand individual churches and speak with your guide."] },
     ],
     relatedTourQuery: "Lalibela",
-    showRelatedDepartures: true,
   },
   {
     slug: "simien-mountains-trekking-guide",
@@ -1038,6 +1169,7 @@ export const travelGuides: TravelGuide[] = [
     updatedAt: "2026-09-28",
     readingMinutes: 7,
     intro: "The Simien Mountains combine dramatic escarpments, high-altitude trails, and distinctive wildlife. The scenery is accessible on short visits, but a safe and satisfying trek still requires realistic distances, warm layers, and time to adjust to elevation.",
+    advisory: { checkedAt: "2026-11-27", text: "The Simien Mountains are in Amhara region, and so is Gondar, the usual starting point for treks. The UK and Irish governments currently advise against all travel to Amhara. Don't book a Simien trek until that advice changes. Check your government's current advice before you pay a deposit.", links: northAdvisoryLinks },
     sections: [
       { heading: "Choose a route for your time and fitness", paragraphs: ["Day trips can reveal major viewpoints, while multi-day routes provide a stronger sense of the landscape. Longer is not automatically better: elevation, repeated climbs, and basic camps can make modest daily distances tiring.", "Tell your provider honestly about your hiking experience and any health concerns. Ask for daily distance, expected ascent, sleeping arrangements, vehicle support, and the highest elevation—not simply the number of days."], bullets: ["Compare elevation gain as well as distance", "Include an easier first day where possible", "Keep buffer time after the trek"] },
       { heading: "Prepare for cold nights and strong sun", paragraphs: ["Highland weather changes quickly. Days may feel warm in direct sun while evenings and exposed ridges become cold. Pack layered clothing, a waterproof shell, a warm hat, gloves, and dependable walking shoes.", "Sun exposure is strong at altitude. Carry sunscreen, sunglasses, water, and a brimmed hat. Your operator should explain water treatment, meals, sleeping equipment, and what you must bring yourself."], bullets: ["Break in footwear before traveling", "Keep rain gear in your daypack", "Bring a headlamp and personal medication"] },
@@ -1045,7 +1177,6 @@ export const travelGuides: TravelGuide[] = [
       { heading: "Watch wildlife without crowding it", paragraphs: ["Gelada groups are often seen in the Simiens, alongside highland birds and other endemic wildlife. Keep the distance set by your guide, do not feed animals, and avoid blocking their movement for photographs.", "Choose operators who manage waste, respect park instructions, and employ local teams fairly. Responsible trekking protects both the landscape and the communities whose work makes these journeys possible."] },
     ],
     relatedTourQuery: "Simien Mountains",
-    showRelatedDepartures: true,
   },
   {
     slug: "danakil-depression-travel-guide",

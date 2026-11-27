@@ -88,6 +88,23 @@ export default async function GuidePage({ params }: Props) {
 
         <div className="field-wrap grid gap-12 py-10 sm:py-14 lg:grid-cols-[minmax(0,760px)_minmax(14rem,1fr)] lg:gap-20 lg:py-20">
           <div className="max-w-[72ch] text-[17px] leading-8">
+            {guide.advisory && (
+              <aside role="note" aria-labelledby="travel-advisory" className="mb-10 border-l-4 border-[var(--field-accent)] bg-[var(--field-wash)] p-6">
+                <h2 id="travel-advisory" className="text-base font-semibold leading-6">
+                  Travel advisory, checked {new Date(`${guide.advisory.checkedAt}T00:00:00Z`).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                </h2>
+                <p className="mt-2 text-base leading-7">{guide.advisory.text}</p>
+                {guide.advisory.links && (
+                  <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm leading-6">
+                    {guide.advisory.links.map(({ label, url }) => (
+                      <li key={url}>
+                        {url.startsWith("/") ? <Link href={url} className="field-link">{label}</Link> : <a href={url} className="field-link">{label}</a>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </aside>
+            )}
             <p className="text-xl font-medium leading-9">{guide.intro}</p>
             {guide.sections.map((section) => (
               <section key={section.heading} className="mt-12">
